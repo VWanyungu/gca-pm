@@ -1,4 +1,5 @@
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import { Users } from '../database/utils/database.js';
 import hashPassword from '../utils/hashPassword.js';
 import { createUserSchema } from '../utils/validation.js';
@@ -9,6 +10,7 @@ router.post('/', async (req, res) => {
   try {
     const passwordHash = await hashPassword(req.body.password);
     const userObj = {
+      id: randomUUID(),
       firstName: req.body.firstName,
       lastName: req.body.lastName,
       email: req.body.email,

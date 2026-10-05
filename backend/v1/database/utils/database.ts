@@ -7,7 +7,7 @@ export interface Paginated<T> {
 }
 
 export interface UserListItem {
-  id: number;
+  id: string;
   first_name: string;
   last_name: string;
   email: string;
@@ -18,13 +18,14 @@ export interface UserListItem {
 }
 
 export interface UserAuthView {
-  userId: number | null;
+  userId: string | null;
   email: string | null;
   passwordHash: string | null;
   role: UserRole | null;
 }
 
 export interface CreateUserInput {
+  id: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -35,7 +36,7 @@ export interface CreateUserInput {
 }
 
 export interface UpdatePasswordInput {
-  userId: number;
+  userId: string;
   passwordHash: string;
 }
 
@@ -62,7 +63,7 @@ export class Users {
 
   static async getSingleUserByEmail(email: string): Promise<UserAuthView> {
     const [user] = await db('users')
-      .select<{ id: number; email: string; password_hash: string; role: UserRole }[]>(
+      .select<{ id: string; email: string; password_hash: string; role: UserRole }[]>(
         'id',
         'email',
         'password_hash',
@@ -80,9 +81,10 @@ export class Users {
     };
   }
 
-  static async createUser(input: CreateUserInput): Promise<{ userId: number; email: string }> {
+  static async createUser(input: CreateUserInput): Promise<{ userId: string; email: string }> {
     const [user] = await db('users')
       .insert({
+        id: input.id,
         first_name: input.firstName,
         last_name: input.lastName,
         email: input.email,
@@ -91,7 +93,7 @@ export class Users {
         is_verified: input.isVerified || 'false',
         role: input.role || 'user',
       })
-      .returning<{ id: number; email: string }[]>(['id', 'email']);
+      .returning<{ id: string; email: string }[]>(['id', 'email']);
 
     if (!user) throw new Error('Failed to create user');
     return { userId: user.id, email: user.email };
@@ -121,7 +123,7 @@ export class Tokens {
     return { refreshToken: row ? row.refresh_token : null };
   }
 
-  static async storeRefreshToken(userId: number, token: string): Promise<void> {
+  static async storeRefreshToken(userId: string, token: string): Promise<void> {
     await db('refreshTokens').insert({ user_id: userId, refresh_token: token });
   }
 

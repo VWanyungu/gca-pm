@@ -1,13 +1,13 @@
 export type UserRole = 'user' | 'admin';
 
 export interface JwtUserPayload {
-  userId: number;
+  userId: string;
   email: string;
   role: UserRole;
 }
 
 export interface UserRow {
-  id: number;
+  id: string;
   first_name: string;
   last_name: string;
   email: string;
