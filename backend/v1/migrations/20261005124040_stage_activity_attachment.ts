@@ -2,10 +2,10 @@ import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('stage_activity_attachment', (table) => {
-    table.uuid('attachment_id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+    table.uuid('attachment_id').primary();
     table.uuid('activity_id').notNullable().references('activity_id').inTable('stage_activity');
     table.uuid('file_id').notNullable().unique();
-    table.text('caption');
+    table.string('caption', 1000);
     table.smallint('sort_order').notNullable().defaultTo(0);
     table.uuid('uploaded_by').notNullable().references('id').inTable('users');
     table.timestamp('uploaded_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());

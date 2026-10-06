@@ -13,9 +13,9 @@ export async function up(knex: Knex): Promise<void> {
       .onDelete('CASCADE')
       .index();
 
-    table.text('name').notNullable();
-    table.text('email').notNullable();
-    table.text('title');
+    table.string('name').notNullable();
+    table.string('email').notNullable();
+    table.string('title', 500);
     table.boolean('receives_reports').notNullable().defaultTo(false);
   });
 }

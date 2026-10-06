@@ -11,7 +11,7 @@ const STAGE_EVENTS = [
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('stage_state_history', (table) => {
-    table.uuid('event_id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+    table.uuid('event_id').primary();
     table.uuid('project_id').notNullable();
     table.smallint('stage_no').notNullable();
     table
@@ -21,9 +21,9 @@ export async function up(knex: Knex): Promise<void> {
     table
       .enu('to_state', [], { useNative: true, existingType: true, enumName: 'stage_state' })
       .notNullable();
-    table.text('reason');
+    table.string('reason', 10000);
     table.jsonb('checklist_snapshot');
-    table.text('closure_notes');
+    table.string('closure_notes', 10000);
     table.uuid('actor_id').notNullable().references('id').inTable('users');
     table.timestamp('occurred_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
 

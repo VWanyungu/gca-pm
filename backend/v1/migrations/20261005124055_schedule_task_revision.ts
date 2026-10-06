@@ -6,7 +6,7 @@ const TASK_TYPES = ['fixed_units', 'fixed_duration', 'fixed_work'] as const;
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('schedule_task_revision', (table) => {
-    table.uuid('revision_id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+    table.uuid('revision_id').primary();
     table.uuid('task_id').notNullable().references('task_id').inTable('schedule_task');
     table
       .uuid('schedule_version_id')
@@ -18,7 +18,7 @@ export async function up(knex: Knex): Promise<void> {
       .enu('source', [...REVISION_SOURCES], { useNative: true, enumName: 'revision_source' })
       .notNullable();
 
-    // ponytail: FK deferred — dpr_activity_progress doesn't exist yet. Add when that migration lands.
+    // FK added in 20261005124130 (dpr_activity_progress) once that table exists.
     table.uuid('dpr_activity_progress_id');
 
     table
@@ -30,8 +30,8 @@ export async function up(knex: Knex): Promise<void> {
 
     table.uuid('parent_task_id').references('task_id').inTable('schedule_task');
     table.smallint('outline_level').notNullable();
-    table.text('wbs');
-    table.text('task_name').notNullable();
+    table.string('wbs');
+    table.string('task_name', 500).notNullable();
     table.integer('duration_minutes').notNullable();
 
     table.timestamp('baseline_start', { useTz: true });

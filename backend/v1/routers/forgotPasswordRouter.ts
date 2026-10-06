@@ -13,13 +13,13 @@ router.post('/', async (req, res) => {
   }
 
   const user = await Users.getSingleUserByEmail(email);
-  if (!user.email || user.userId === null || !user.role) {
+  if (!user.email || user.userId === null) {
     res.status(404).json({ status: 'error', data: null, message: 'Email not found' });
     return;
   }
 
   const { forgotPasswordToken } = generateJwtToken(
-    { userId: user.userId, email: user.email, role: user.role },
+    { userId: user.userId, email: user.email },
     'forgotPassword',
   );
   if (!forgotPasswordToken) throw new Error('Token generation failed');

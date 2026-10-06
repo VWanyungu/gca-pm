@@ -4,7 +4,7 @@ export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('pdm_stage', (table) => {
     table.smallint('stage_no').primary();
     table.smallint('phase_id').notNullable().references('phase_id').inTable('pdm_phase');
-    table.text('name').notNullable().unique();
+    table.string('name').notNullable().unique();
     table.check('stage_no BETWEEN 1 AND 10', [], 'pdm_stage_stage_no_check');
     table.index(['phase_id'], 'ix_pdm_stage_phase');
   });

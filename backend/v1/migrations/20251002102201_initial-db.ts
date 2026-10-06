@@ -13,27 +13,30 @@ export async function up(knex: Knex): Promise<void> {
       table.string('phone_number').unique();
       table.enum('status', ['active', 'deactivated']).defaultTo('active');
       table.string('username').index();
-      table.string('is_verified').notNullable().defaultTo('false');
-      table.timestamp('last_login');
-      table.timestamp('created_at').defaultTo(knex.fn.now());
-      table.timestamp('updated_at').defaultTo(knex.fn.now());
+      table.boolean('is_verified').notNullable().defaultTo(false);
+      table.timestamp('last_login', { useTz: true });
+      table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
+      table.timestamp('updated_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
     });
   }
 
-  if (!(await knex.schema.hasTable('sessions'))) {
-    await knex.schema.createTable('sessions', (table) => {
-      table.increments('id').primary();
-      table.integer('user_id').unsigned().notNullable().references('id').inTable('users').onDelete('CASCADE');
-      table.string('user_email').notNullable();
-      table.string('session_id').notNullable();
-      table.string('refresh_token').notNullable();
-      table.timestamp('created_at').defaultTo(knex.fn.now());
-      table.timestamp('expires_at').notNullable();
-    });
-  }
+  // Seeded `system` user — AC-GEN-07 actor for jobs & schedule service.
+  // Fixed nil UUID so code can reference it as a constant; password_hash is a non-bcrypt
+  // sentinel that cannot authenticate.
+  await knex('users')
+    .insert({
+      id: '00000000-0000-0000-0000-000000000000',
+      first_name: 'System',
+      last_name: 'Actor',
+      email: 'system@gca.internal',
+      password_hash: '!',
+      is_verified: true,
+      status: 'active',
+    })
+    .onConflict('id')
+    .ignore();
 }
 
 export async function down(knex: Knex): Promise<void> {
-  await knex.schema.dropTableIfExists('sessions');
   await knex.schema.dropTableIfExists('users');
 }

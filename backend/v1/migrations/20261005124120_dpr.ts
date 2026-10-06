@@ -5,24 +5,23 @@ const DPR_STATUS = ['draft', 'submitted'] as const;
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('dpr', (table) => {
-    table.uuid('dpr_id').primary().defaultTo(knex.raw('gen_random_uuid()'));
-    table.text('dpr_ref').unique();
+    table.uuid('dpr_id').primary();
+    table.string('dpr_ref').unique();
     table.uuid('project_id').notNullable().references('project_id').inTable('projects');
     table.smallint('stage_no').notNullable();
     table.date('report_date').notNullable();
 
-    // ponytail: FKs to shift_type and weather_category deferred — tables land in Step 8.
-    table.uuid('shift_type_id').notNullable();
-    table.text('site_location').notNullable();
-    table.text('contract_no');
-    table.uuid('weather_category_id');
+    table.string('site_location', 500).notNullable();
+    table.string('contract_no');
+    // FK added in 20261005124245 (weather_category) once that table exists.
+    table.smallint('weather_category_id');
 
     table.decimal('temp_min_c', 4, 1);
     table.decimal('temp_max_c', 4, 1);
     table.smallint('humidity_pct');
-    table.text('wind');
+    table.string('wind');
 
-    table.text('effects_text');
+    table.string('effects_text', 10000);
     table
       .enu('effects_severity', [...EFFECTS_SEVERITY], {
         useNative: true,
@@ -31,11 +30,11 @@ export async function up(knex: Knex): Promise<void> {
       .notNullable()
       .defaultTo('none');
 
-    table.text('equipment_text');
-    table.text('visitors_text');
-    table.text('delays_text');
-    table.text('incidents_text');
-    table.text('other_notes_text');
+    table.string('equipment_text', 10000);
+    table.string('visitors_text', 10000);
+    table.string('delays_text', 10000);
+    table.string('incidents_text', 10000);
+    table.string('other_notes_text', 10000);
 
     table
       .enu('status', [...DPR_STATUS], { useNative: true, enumName: 'dpr_status' })
@@ -53,6 +52,8 @@ export async function up(knex: Knex): Promise<void> {
       .foreign(['project_id', 'stage_no'])
       .references(['project_id', 'stage_no'])
       .inTable('project_stage');
+
+    table.unique(['project_id', 'report_date']);
 
     table.check('humidity_pct BETWEEN 0 AND 100', [], 'ck_dpr_humidity_range');
     table.check(

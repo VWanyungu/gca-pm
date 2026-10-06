@@ -8,5 +8,4 @@ export const createUserSchema = Joi.object<CreateUserInput>({
   email: Joi.string().email().lowercase().required(),
   passwordHash: Joi.string().required(),
   username: Joi.string().alphanum().min(3).max(30).required(),
-  role: Joi.string().valid('user', 'admin').default('user'),
 });

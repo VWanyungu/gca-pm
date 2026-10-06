@@ -4,8 +4,8 @@ export async function up(knex: Knex): Promise<void> {
   if (!(await knex.schema.hasTable('projects'))) {
     await knex.schema.createTable('projects', (table) => {
       table.uuid('project_id').primary();
-      table.text('project_code').notNullable().unique();
-      table.text('name').notNullable();
+      table.string('project_code').notNullable().unique();
+      table.string('name').notNullable();
       table
         .smallint('program_id')
         .notNullable()
@@ -13,12 +13,12 @@ export async function up(knex: Knex): Promise<void> {
         .inTable('programs')
         .index();
 
-      table.text('client_name');
-      table.text('country');
-      table.text('site_location');
+      table.string('client_name', 500);
+      table.string('country');
+      table.string('site_location', 500);
       table.decimal('site_lat', 9, 6).nullable();
       table.decimal('site_lng', 9, 6).nullable();
-      table.text('timezone').notNullable();
+      table.string('timezone').notNullable();
 
       table.boolean('is_civil').notNullable().defaultTo(false);
       table.boolean('is_mechanical').notNullable().defaultTo(false);
@@ -35,7 +35,14 @@ export async function up(knex: Knex): Promise<void> {
         .notNullable()
         .defaultTo('active');
 
-      table.text('legacy_source_ref').nullable();
+      table.string('legacy_source_ref').nullable();
+
+      // FK added in 20261005124255 (holiday_calendar) once that table exists.
+      table.smallint('holiday_calendar_id');
+      table
+        .specificType('dpr_expected_weekdays', 'smallint[]')
+        .notNullable()
+        .defaultTo(knex.raw(`'{1,2,3,4,5,6}'::smallint[]`));
 
       table.uuid('created_by').notNullable().references('id').inTable('users');
       table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());

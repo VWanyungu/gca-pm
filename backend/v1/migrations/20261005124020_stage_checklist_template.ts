@@ -2,7 +2,7 @@ import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('stage_checklist_template', (table) => {
-    table.uuid('template_id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+    table.uuid('template_id').primary();
     table.smallint('stage_no').notNullable().references('stage_no').inTable('pdm_stage');
     table.integer('version_no').notNullable();
     table.boolean('is_current').notNullable().defaultTo(false);

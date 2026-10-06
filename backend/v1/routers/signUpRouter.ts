@@ -16,7 +16,6 @@ router.post('/', async (req, res) => {
       email: req.body.email,
       username: req.body.username,
       passwordHash,
-      role: req.body.role,
     };
 
     const { error, value } = createUserSchema.validate(userObj, { abortEarly: false });

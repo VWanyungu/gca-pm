@@ -6,7 +6,7 @@ export async function up(knex: Knex): Promise<void> {
     table.smallint('stage_no').notNullable();
     table.uuid('item_id').notNullable();
     table.boolean('is_checked').notNullable().defaultTo(false);
-    table.text('note');
+    table.string('note', 10000);
     table.uuid('updated_by').notNullable().references('id').inTable('users');
     table.timestamp('updated_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
 

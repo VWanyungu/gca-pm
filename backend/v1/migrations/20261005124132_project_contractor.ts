@@ -4,7 +4,7 @@ const PARTY_TYPES = ['contractor', 'subcontractor'] as const;
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('project_contractor', (table) => {
-    table.uuid('project_contractor_id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+    table.uuid('project_contractor_id').primary();
     table.uuid('project_id').notNullable().references('project_id').inTable('projects');
     table.uuid('contractor_id').notNullable().references('contractor_id').inTable('contractor');
     table

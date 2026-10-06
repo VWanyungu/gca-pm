@@ -2,16 +2,16 @@ import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('dpr_photo', (table) => {
-    table.uuid('photo_id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+    table.uuid('photo_id').primary();
     table
       .uuid('dpr_id')
       .notNullable()
       .references('dpr_id')
       .inTable('dpr')
       .onDelete('CASCADE');
-    // ponytail: FK to file_object deferred — table lands in Step 8.
+    // FK added in 20261005124235 (file_object) once that table exists.
     table.uuid('file_id').notNullable().unique();
-    table.text('caption');
+    table.string('caption', 1000);
     table.smallint('sort_order').notNullable();
     table.timestamp('taken_at', { useTz: true });
     table.decimal('gps_lat', 9, 6);

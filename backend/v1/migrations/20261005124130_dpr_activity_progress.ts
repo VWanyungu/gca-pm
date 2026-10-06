@@ -4,7 +4,7 @@ const PROGRESS_SOURCES = ['schedule_task', 'free_text'] as const;
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('dpr_activity_progress', (table) => {
-    table.uuid('dpr_activity_progress_id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+    table.uuid('dpr_activity_progress_id').primary();
     table
       .uuid('dpr_id')
       .notNullable()
@@ -19,7 +19,7 @@ export async function up(knex: Knex): Promise<void> {
       })
       .notNullable();
     table.uuid('task_id').references('task_id').inTable('schedule_task');
-    table.text('free_text');
+    table.string('free_text', 10000);
     table.decimal('today_pct', 5, 2).notNullable();
     table.decimal('total_pct', 5, 2).notNullable();
 
@@ -44,9 +44,20 @@ export async function up(knex: Knex): Promise<void> {
 
     table.index(['dpr_id', 'sort_order'], 'ix_dpr_activity_progress_order');
   });
+
+  // Wire the FK that schedule_task_revision had to defer.
+  await knex.schema.alterTable('schedule_task_revision', (table) => {
+    table
+      .foreign('dpr_activity_progress_id')
+      .references('dpr_activity_progress_id')
+      .inTable('dpr_activity_progress');
+  });
 }
 
 export async function down(knex: Knex): Promise<void> {
+  await knex.schema.alterTable('schedule_task_revision', (table) => {
+    table.dropForeign('dpr_activity_progress_id');
+  });
   await knex.schema.dropTableIfExists('dpr_activity_progress');
   await knex.raw(`DROP TYPE IF EXISTS dpr_progress_source`);
 }

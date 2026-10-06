@@ -16,7 +16,7 @@ router.post('/', async (req, res) => {
   try {
     const user = await Users.getSingleUserByEmail(email);
 
-    if (!user.email || !user.passwordHash || user.userId === null || !user.role) {
+    if (!user.email || !user.passwordHash || user.userId === null) {
       res.status(404).json({ status: 'error', data: null, message: 'User not found' });
       return;
     }
@@ -28,7 +28,7 @@ router.post('/', async (req, res) => {
     }
 
     const { token, refreshToken } = generateJwtToken(
-      { userId: user.userId, email: user.email, role: user.role },
+      { userId: user.userId, email: user.email },
       'all',
     );
     if (!token || !refreshToken) throw new Error('Token generation failed');

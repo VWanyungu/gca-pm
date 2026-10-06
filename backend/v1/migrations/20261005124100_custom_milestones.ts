@@ -2,15 +2,15 @@ import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('custom_milestones', (table) => {
-    table.uuid('milestone_id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+    table.uuid('milestone_id').primary();
     table.uuid('project_id').notNullable().references('project_id').inTable('projects');
     table.smallint('stage_no');
 
-    table.text('title').notNullable();
+    table.string('title', 500).notNullable();
     table.date('planned_date').notNullable();
     table.date('forecast_date');
     table.date('actual_date');
-    table.text('notes');
+    table.string('notes', 10000);
 
     table.uuid('created_by').notNullable().references('id').inTable('users');
     table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());

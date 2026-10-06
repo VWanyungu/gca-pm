@@ -4,18 +4,22 @@ export async function up(knex: Knex): Promise<void> {
   if (!(await knex.schema.hasTable('refreshTokens'))) {
     await knex.schema.createTable('refreshTokens', (table) => {
       table.increments('id').primary();
-      table.integer('user_id').unsigned().notNullable().references('id').inTable('users').onDelete('CASCADE');
-      table.string('refresh_token').notNullable();
-      table.timestamp('created_at').defaultTo(knex.fn.now());
+      table
+        .uuid('user_id')
+        .notNullable()
+        .references('id')
+        .inTable('users')
+        .onDelete('CASCADE');
+      table.string('refresh_token').notNullable().unique();
+      table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
     });
   }
 
   if (!(await knex.schema.hasTable('tokens'))) {
     await knex.schema.createTable('tokens', (table) => {
       table.increments('id').primary();
-      table.string('token').notNullable();
-      table.boolean('blacklisted').defaultTo(true);
-      table.timestamp('created_at').defaultTo(knex.fn.now());
+      table.string('token').notNullable().unique();
+      table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
     });
   }
 }

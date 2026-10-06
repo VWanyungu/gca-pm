@@ -20,7 +20,7 @@ export async function up(knex: Knex): Promise<void> {
 
     table.uuid('revoked_by').nullable().references('id').inTable('users');
     table.timestamp('revoked_at', { useTz: true }).nullable();
-    table.text('revoke_reason').nullable();
+    table.string('revoke_reason', 10000).nullable();
   });
 }
 

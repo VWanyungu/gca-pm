@@ -3,8 +3,8 @@ import type { Knex } from 'knex';
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('pdm_phase', (table) => {
     table.smallint('phase_id').primary();
-    table.text('code').notNullable().unique();
-    table.text('name').notNullable().unique();
+    table.string('code').notNullable().unique();
+    table.string('name').notNullable().unique();
     table.smallint('sort_order').notNullable().unique();
   });
 

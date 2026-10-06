@@ -7,7 +7,7 @@ export async function up(knex: Knex): Promise<void> {
   });
 
   await knex.schema.createTable('schedule_reconciliation_flag', (table) => {
-    table.uuid('flag_id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+    table.uuid('flag_id').primary();
     table.uuid('project_id').notNullable();
     table.uuid('task_id').notNullable();
 

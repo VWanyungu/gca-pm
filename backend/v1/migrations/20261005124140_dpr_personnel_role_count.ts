@@ -8,8 +8,8 @@ export async function up(knex: Knex): Promise<void> {
       .references('personnel_group_id')
       .inTable('dpr_personnel_group')
       .onDelete('CASCADE');
-    // ponytail: FK to personnel_role deferred — catalogue table lands in Step 8.
-    table.uuid('personnel_role_id').notNullable();
+    // FK added in 20261005124240 (personnel_role) once that table exists.
+    table.smallint('personnel_role_id').notNullable();
     table.integer('headcount').notNullable();
 
     table.primary(['personnel_group_id', 'personnel_role_id']);

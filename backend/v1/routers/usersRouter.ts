@@ -1,10 +1,10 @@
 import express from 'express';
-import { Users } from '../database/utils/database.js';
+import { Users, Roles } from '../database/utils/database.js';
 
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-  if (req.user?.role !== 'admin') {
+  if (!req.user?.userId || !(await Roles.hasGlobalRole(req.user.userId, 'Admin'))) {
     res.status(401).json({
       status: 'error',
       data: null,
@@ -46,7 +46,7 @@ router.get('/', async (req, res) => {
         }
         res.status(200).json({
           status: 'success',
-          data: { email: user.email, role: user.role },
+          data: { email: user.email },
           message: 'User retrieved successfully',
         });
       } catch (err) {

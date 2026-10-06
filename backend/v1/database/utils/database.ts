@@ -1,5 +1,4 @@
 import db from '../dbSetup.js';
-import type { UserRole } from '../../../types.js';
 
 export interface Paginated<T> {
   users: T[];
@@ -12,8 +11,7 @@ export interface UserListItem {
   last_name: string;
   email: string;
   username: string | null;
-  role: UserRole;
-  is_verified: string;
+  is_verified: boolean;
   created_at: Date;
 }
 
@@ -21,7 +19,6 @@ export interface UserAuthView {
   userId: string | null;
   email: string | null;
   passwordHash: string | null;
-  role: UserRole | null;
 }
 
 export interface CreateUserInput {
@@ -31,8 +28,7 @@ export interface CreateUserInput {
   email: string;
   passwordHash: string;
   username: string;
-  isVerified?: string;
-  role?: UserRole;
+  isVerified?: boolean;
 }
 
 export interface UpdatePasswordInput {
@@ -47,7 +43,7 @@ export class Users {
   }: { page?: number; limit?: number }): Promise<Paginated<UserListItem>> {
     const offset = (page - 1) * limit;
     const users = await db<UserListItem>('users')
-      .select('id', 'first_name', 'last_name', 'email', 'username', 'role', 'is_verified', 'created_at')
+      .select('id', 'first_name', 'last_name', 'email', 'username', 'is_verified', 'created_at')
       .limit(limit)
       .offset(offset)
       .orderBy('id');
@@ -63,22 +59,16 @@ export class Users {
 
   static async getSingleUserByEmail(email: string): Promise<UserAuthView> {
     const [user] = await db('users')
-      .select<{ id: string; email: string; password_hash: string; role: UserRole }[]>(
+      .select<{ id: string; email: string; password_hash: string }[]>(
         'id',
         'email',
         'password_hash',
-        'role',
       )
       .where('email', email);
 
-    if (!user) return { userId: null, email: null, passwordHash: null, role: null };
+    if (!user) return { userId: null, email: null, passwordHash: null };
 
-    return {
-      userId: user.id,
-      email: user.email,
-      passwordHash: user.password_hash,
-      role: user.role,
-    };
+    return { userId: user.id, email: user.email, passwordHash: user.password_hash };
   }
 
   static async createUser(input: CreateUserInput): Promise<{ userId: string; email: string }> {
@@ -90,8 +80,7 @@ export class Users {
         email: input.email,
         password_hash: input.passwordHash,
         username: input.username,
-        is_verified: input.isVerified || 'false',
-        role: input.role || 'user',
+        is_verified: input.isVerified ?? false,
       })
       .returning<{ id: string; email: string }[]>(['id', 'email']);
 
@@ -117,9 +106,7 @@ export class Users {
 
 export class Tokens {
   static async getRefreshToken(token: string): Promise<{ refreshToken: string | null }> {
-    const [row] = await db('refreshTokens')
-      .select<{ refresh_token: string }[]>('refresh_token')
-      .where('refresh_token', token);
+    const [row] = await db('refreshTokens').select('refresh_token').where('refresh_token', token);
     return { refreshToken: row ? row.refresh_token : null };
   }
 
@@ -135,18 +122,25 @@ export class Tokens {
     return { deletedToken: deleted ? deleted.refresh_token : null };
   }
 
-  static async blacklistToken(token: string): Promise<{ token: string; blacklisted: boolean }> {
-    const [row] = await db('tokens')
-      .insert({ token })
-      .returning<{ token: string; blacklisted: boolean }[]>(['token', 'blacklisted']);
-    if (!row) throw new Error('Failed to blacklist token');
-    return { token: row.token, blacklisted: row.blacklisted };
+  static async blacklistToken(token: string): Promise<void> {
+    await db('tokens').insert({ token }).onConflict('token').ignore();
   }
 
   static async checkBlacklistToken(token: string): Promise<boolean> {
-    const [row] = await db('tokens')
-      .select<{ blacklisted: boolean }[]>('blacklisted')
-      .where('token', token);
-    return row ? row.blacklisted : false;
+    const row = await db('tokens').select('id').where('token', token).first();
+    return !!row;
+  }
+}
+
+export type RoleName = 'PM' | 'Planner' | 'SiteEngineer' | 'ExCo' | 'Admin' | 'ProjectCreator';
+
+export class Roles {
+  static async hasGlobalRole(userId: string, role: RoleName): Promise<boolean> {
+    const row = await db('roles')
+      .select('attribute_id')
+      .where({ user_id: userId, role, scope_type: 'global' })
+      .whereNull('revoked_at')
+      .first();
+    return !!row;
   }
 }

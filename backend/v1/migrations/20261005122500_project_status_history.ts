@@ -17,7 +17,7 @@ export async function up(knex: Knex): Promise<void> {
 
     table.enum('from_status', [...STATUSES]).notNullable();
     table.enum('to_status', [...STATUSES]).notNullable();
-    table.text('reason');
+    table.string('reason', 10000);
 
     table.uuid('actor_id').notNullable().references('id').inTable('users');
     table.timestamp('changed_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());

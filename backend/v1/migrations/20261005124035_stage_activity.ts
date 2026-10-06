@@ -4,11 +4,11 @@ const ACTIVITY_STATUSES = ['open', 'in_progress', 'done', 'cancelled'] as const;
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('stage_activity', (table) => {
-    table.uuid('activity_id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+    table.uuid('activity_id').primary();
     table.uuid('project_id').notNullable();
     table.smallint('stage_no').notNullable();
-    table.text('title').notNullable();
-    table.text('description');
+    table.string('title', 500).notNullable();
+    table.string('description', 10000);
     table
       .enu('status', [...ACTIVITY_STATUSES], { useNative: true, enumName: 'activity_status' })
       .notNullable()
