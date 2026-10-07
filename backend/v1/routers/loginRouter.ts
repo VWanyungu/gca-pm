@@ -32,8 +32,8 @@ router.post('/', async (req, res) => {
     const tokenData = {
       userId: user.userId,
       email: user.email,
-      roles: roles
-    }
+      role: roles,
+    };
 
     const { token, refreshToken } = generateJwtToken(
       tokenData,

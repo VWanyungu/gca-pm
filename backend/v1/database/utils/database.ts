@@ -133,9 +133,8 @@ export class Tokens {
 }
 
 export type RoleName = 'PM' | 'Planner' | 'SiteEngineer' | 'ExCo' | 'Admin' | 'ProjectCreator';
-export type ScopeType = 'global' | 'progrma' | 'project';
+export type ScopeType = 'global' | 'program' | 'project';
 export interface UserRolesItem {
-  attribute_id: string;
   role: RoleName;
   scope_type: ScopeType;
   program_id: string | null;
@@ -143,18 +142,9 @@ export interface UserRolesItem {
 }
 
 export class Roles {
-  static async hasGlobalRole(userId: string, role: RoleName): Promise<boolean> {
-    const row = await db('roles')
-      .select('attribute_id')
-      .where({ user_id: userId, role, scope_type: 'global' })
-      .whereNull('revoked_at')
-      .first();
-    return !!row;
-  }
-
   static async getRoles(userId: string): Promise<UserRolesItem[]> {
     const rows = await db('roles')
-      .select('attribute_id', 'role', 'scope_type', 'program_id', 'project_id')
+      .select('role', 'scope_type', 'program_id', 'project_id')
       .where({ user_id: userId })
       .whereNull('revoked_at');
     return rows;

@@ -6,14 +6,6 @@ import { isTokenBlacklisted } from '../utils/checkCache.js';
 
 export default function authenticateToken(): RequestHandler {
   return (req, res, next) => {
-    const permittedPaths = ['/login', '/signup', '/forgot-password'];
-    const isPermitted =
-      permittedPaths.includes(req.path) ||
-      req.path.startsWith('/reset-password/') ||
-      (req.path === '/users' && req.method === 'POST');
-
-    if (isPermitted) return next();
-
     const authHeader = req.headers['authorization'];
     const token = authHeader?.split(' ')[1];
 

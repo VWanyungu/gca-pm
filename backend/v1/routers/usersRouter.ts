@@ -4,14 +4,14 @@ import { Users, Roles } from '../database/utils/database.js';
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-  if (!req.user?.userId || !(await Roles.hasGlobalRole(req.user.userId, 'Admin'))) {
-    res.status(401).json({
-      status: 'error',
-      data: null,
-      message: 'You are not authorized to access this resource',
-    });
-    return;
-  }
+  // if (!req.user?.userId || !(await Roles.hasGlobalRole(req.user.userId, 'Admin'))) {
+  //   res.status(401).json({
+  //     status: 'error',
+  //     data: null,
+  //     message: 'You are not authorized to access this resource',
+  //   });
+  //   return;
+  // }
 
   const { type, inputEmail } = req.body as { type?: string; inputEmail?: string };
 

@@ -10,7 +10,7 @@ export async function up(knex: Knex): Promise<void> {
         .references('id')
         .inTable('users')
         .onDelete('CASCADE');
-      table.string('refresh_token').notNullable().unique();
+      table.text('refresh_token').notNullable().unique();
       table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
     });
   }
@@ -18,7 +18,7 @@ export async function up(knex: Knex): Promise<void> {
   if (!(await knex.schema.hasTable('tokens'))) {
     await knex.schema.createTable('tokens', (table) => {
       table.increments('id').primary();
-      table.string('token').notNullable().unique();
+      table.text('token').notNullable().unique();
       table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
     });
   }

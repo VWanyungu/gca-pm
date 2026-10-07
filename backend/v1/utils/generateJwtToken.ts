@@ -17,7 +17,7 @@ function requireSecret(name: string): string {
 }
 
 export default function generateJwtToken(user: JwtUserPayload, type: TokenType): TokenBundle {
-  const payload: JwtUserPayload = { userId: user.userId, email: user.email };
+  const payload: JwtUserPayload = { userId: user.userId, email: user.email, role: user.role };
 
   switch (type) {
     case 'all':

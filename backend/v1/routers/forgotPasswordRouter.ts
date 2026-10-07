@@ -19,7 +19,7 @@ router.post('/', async (req, res) => {
   }
 
   const { forgotPasswordToken } = generateJwtToken(
-    { userId: user.userId, email: user.email },
+    { userId: user.userId, email: user.email, role: [] },
     'forgotPassword',
   );
   if (!forgotPasswordToken) throw new Error('Token generation failed');
