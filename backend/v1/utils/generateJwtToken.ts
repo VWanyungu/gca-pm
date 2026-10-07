@@ -28,15 +28,20 @@ export default function generateJwtToken(user: JwtUserPayload, type: TokenType):
           expiresIn: '15m',
         }),
       };
+
     case 'forgotPassword':
       return {
         forgotPasswordToken: jwt.sign(payload, requireSecret('FORGOT_PASSWORD_TOKEN_SECRET'), {
           expiresIn: '15m',
         }),
       };
+
     case 'refreshToken':
       return { refreshToken: jwt.sign(payload, requireSecret('REFRESH_TOKEN_SECRET')) };
+
     case 'token':
+      return { token: jwt.sign(payload, requireSecret('ACCESS_TOKEN_SECRET'), { expiresIn: '15m' }) };
+
     default:
       return {
         token: jwt.sign(payload, requireSecret('ACCESS_TOKEN_SECRET'), { expiresIn: '15m' }),

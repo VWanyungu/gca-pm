@@ -1,6 +1,6 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
-import { Users, Tokens } from '../database/utils/database.js';
+import { Users, Tokens, Roles } from '../database/utils/database.js';
 import generateJwtToken from '../utils/generateJwtToken.js';
 
 const router = express.Router();
@@ -27,8 +27,16 @@ router.post('/', async (req, res) => {
       return;
     }
 
+    const roles = await Roles.getRoles(user.userId);
+
+    const tokenData = {
+      userId: user.userId,
+      email: user.email,
+      roles: roles
+    }
+
     const { token, refreshToken } = generateJwtToken(
-      { userId: user.userId, email: user.email },
+      tokenData,
       'all',
     );
     if (!token || !refreshToken) throw new Error('Token generation failed');
