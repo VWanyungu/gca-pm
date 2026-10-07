@@ -24,16 +24,16 @@ router.post('/', async (req, res) => {
   );
   if (!forgotPasswordToken) throw new Error('Token generation failed');
 
-  const sendRes = await sendPasswordResetMail({
-    to: user.email,
-    subject: 'Gas Connect Africa - Password Reset',
-    html: `<p><a href="${process.env.FRONTEND_URL}/reset-password/${forgotPasswordToken}">Click to reset your password. This link is valid for 15 minutes.</a></p>`,
-  });
+  // const sendRes = await sendPasswordResetMail({
+  //   to: user.email,
+  //   subject: 'Gas Connect Africa - Password Reset',
+  //   html: `<p><a href="${process.env.FRONTEND_URL}/reset-password/${forgotPasswordToken}">Click to reset your password. This link is valid for 15 minutes.</a></p>`,
+  // });
 
-  if (sendRes.status === 'error') {
-    res.status(500).json({ status: 'error', data: null, message: sendRes.message });
-    return;
-  }
+  // if (sendRes.status === 'error') {
+  //   res.status(500).json({ status: 'error', data: null, message: sendRes.message });
+  //   return;
+  // }
 
   res.status(200).json({
     status: 'success',

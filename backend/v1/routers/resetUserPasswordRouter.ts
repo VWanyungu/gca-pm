@@ -21,7 +21,12 @@ router.post('/:resetToken', async (req, res) => {
     }
 
     const user = decoded as JwtUserPayload;
-    const hashedPassword = await hashPassword((req.body as { password: string }).password);
+    const { password } = req.body as { password?: string };
+    if (!password) {
+      res.status(400).json({ status: 'error', data: null, message: 'Password required' });
+      return;
+    }
+    const hashedPassword = await hashPassword(password);
     const updateRes = await Users.updateUserPassword({
       userId: user.userId,
       passwordHash: hashedPassword,
