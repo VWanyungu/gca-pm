@@ -60,7 +60,7 @@ export async function up(knex: Knex): Promise<void> {
 
     table.index(['dpr_id'], 'ix_dpra_dpr');
     table.index(['status'], 'ix_dpra_pending', {
-      predicate: knex.where('status', 'pending'),
+      predicate: knex.queryBuilder().whereRaw('"status" = \'pending\''),
     });
   });
 }

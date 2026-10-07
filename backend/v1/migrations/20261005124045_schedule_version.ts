@@ -86,13 +86,15 @@ export async function up(knex: Knex): Promise<void> {
     );
 
     table.index(['project_id'], 'ux_sv_one_inflight', {
-      predicate: knex.whereIn('status', ['queued', 'parsing']),
+      predicate: knex.queryBuilder().whereRaw('"status" IN (\'queued\', \'parsing\')'),
     });
     table.index(['project_id'], 'ux_sv_one_initial_baseline', {
-      predicate: knex.where('upload_kind', 'initial_baseline').where('status', 'applied'),
+      predicate: knex
+        .queryBuilder()
+        .whereRaw('"upload_kind" = \'initial_baseline\' AND "status" = \'applied\''),
     });
     table.index(['project_id', 'version_no'], 'ix_sv_project_applied', {
-      predicate: knex.where('status', 'applied'),
+      predicate: knex.queryBuilder().whereRaw('"status" = \'applied\''),
     });
   });
 }

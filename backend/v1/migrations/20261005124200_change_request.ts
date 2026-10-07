@@ -47,7 +47,9 @@ export async function up(knex: Knex): Promise<void> {
     );
 
     table.index(['project_id', 'status'], 'ix_cr_project_status');
-    table.index(['status'], 'ix_cr_pending', { predicate: knex.where('status', 'pending') });
+    table.index(['status'], 'ix_cr_pending', {
+      predicate: knex.queryBuilder().whereRaw('"status" = \'pending\''),
+    });
   });
 
   // Wire the FK that schedule_version had to defer.

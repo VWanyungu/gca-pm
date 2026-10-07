@@ -40,7 +40,9 @@ export async function up(knex: Knex): Promise<void> {
     );
 
     table.index(['project_id'], 'ix_esc_project');
-    table.index(['status'], 'ix_esc_open', { predicate: knex.where('status', 'open') });
+    table.index(['status'], 'ix_esc_open', {
+      predicate: knex.queryBuilder().whereRaw('"status" = \'open\''),
+    });
   });
 }
 

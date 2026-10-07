@@ -13,7 +13,7 @@ export async function up(knex: Knex): Promise<void> {
     table.unique(['stage_no', 'version_no']);
     table.unique(['template_id', 'stage_no']);
     table.index(['stage_no'], 'ux_checklist_template_current', {
-      predicate: knex.where('is_current', true),
+      predicate: knex.queryBuilder().whereRaw('"is_current" = true'),
     });
   });
 }

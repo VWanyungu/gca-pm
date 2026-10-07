@@ -34,7 +34,7 @@ export async function up(knex: Knex): Promise<void> {
 
     table.index(['submission_id'], 'ix_crs_submission');
     table.index(['status', 'requested_at'], 'ix_crs_queue', {
-      predicate: knex.where('status', 'queued'),
+      predicate: knex.queryBuilder().whereRaw('"status" = \'queued\''),
     });
   });
 }

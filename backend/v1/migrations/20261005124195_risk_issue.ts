@@ -118,7 +118,7 @@ export async function up(knex: Knex): Promise<void> {
     table.index(['project_id', 'status'], 'ix_risk_project_status');
     table.index(['project_id', 'stage_no'], 'ix_risk_project_stage');
     table.index(['owner_id'], 'ix_risk_owner_open', {
-      predicate: knex.whereIn('status', ['open', 'mitigated']),
+      predicate: knex.queryBuilder().whereRaw('"status" IN (\'open\', \'mitigated\')'),
     });
     table.index(['source_task_id'], 'ix_risk_source_task', {
       predicate: knex.whereNotNull('source_task_id'),

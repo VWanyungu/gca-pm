@@ -69,7 +69,7 @@ export async function up(knex: Knex): Promise<void> {
 
     table.index(['project_id', 'stage_no', 'report_date'], 'ix_dpr_project_stage_date');
     table.index(['status', 'updated_at'], 'ix_dpr_stale_draft_sweep', {
-      predicate: knex.where('status', 'draft'),
+      predicate: knex.queryBuilder().whereRaw('"status" = \'draft\''),
     });
   });
 

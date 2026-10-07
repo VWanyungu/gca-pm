@@ -88,7 +88,9 @@ export async function up(knex: Knex): Promise<void> {
     );
 
     table.index(['project_id', 'week_start'], 'ix_ws_project_week');
-    table.index(['status'], 'ix_ws_draft', { predicate: knex.where('status', 'draft') });
+    table.index(['status'], 'ix_ws_draft', {
+      predicate: knex.queryBuilder().whereRaw('"status" = \'draft\''),
+    });
   });
 
   await knex.raw(`

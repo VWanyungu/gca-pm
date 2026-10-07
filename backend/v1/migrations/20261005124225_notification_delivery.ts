@@ -41,7 +41,7 @@ export async function up(knex: Knex): Promise<void> {
     );
 
     table.index(['status', 'notification_id'], 'ix_nd_pending', {
-      predicate: knex.where('status', 'pending'),
+      predicate: knex.queryBuilder().whereRaw('"status" = \'pending\''),
     });
   });
 }

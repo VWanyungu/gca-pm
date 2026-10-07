@@ -91,10 +91,10 @@ export async function up(knex: Knex): Promise<void> {
     });
     table.index(['task_id', 'valid_from'], 'ix_str_task_history');
     table.index(['schedule_version_id'], 'ix_str_upload_per_version', {
-      predicate: knex.where('source', 'upload'),
+      predicate: knex.queryBuilder().whereRaw('"source" = \'upload\''),
     });
     table.index(['expected_finish'], 'ix_str_overdue_sweep', {
-      predicate: knex.whereNull('valid_to').where('pct_work_complete', '<', 100),
+      predicate: knex.queryBuilder().whereRaw('"valid_to" IS NULL AND "pct_work_complete" < 100'),
     });
     table.index(['dpr_activity_progress_id'], 'ix_str_writebacks_per_dpr_row', {
       predicate: knex.whereNotNull('dpr_activity_progress_id'),

@@ -31,7 +31,7 @@ export async function up(knex: Knex): Promise<void> {
     );
     table.index(['project_id', 'stage_no', 'status'], 'ix_activity_project_stage');
     table.index(['owner_id'], 'ix_activity_owner_open', {
-      predicate: knex.whereIn('status', ['open', 'in_progress']),
+      predicate: knex.queryBuilder().whereRaw('"status" IN (\'open\', \'in_progress\')'),
     });
   });
 

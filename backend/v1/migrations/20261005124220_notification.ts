@@ -22,7 +22,7 @@ export async function up(knex: Knex): Promise<void> {
     });
     table.index(['recipient_id', 'created_at'], 'ix_notification_recipient_time');
     table.index(['recipient_id'], 'ix_notification_unread', {
-      predicate: knex.whereNull('read_at').where('in_app', true),
+      predicate: knex.queryBuilder().whereRaw('"read_at" IS NULL AND "in_app" = true'),
     });
     table.index(['project_id', 'created_at'], 'ix_notification_project_time', {
       predicate: knex.whereNotNull('project_id'),

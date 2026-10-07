@@ -19,7 +19,7 @@ export async function up(knex: Knex): Promise<void> {
     table.primary(['project_id', 'stage_no']);
     table.check("in_scope OR state <> 'active'", [], 'ck_project_stage_active_in_scope');
     table.index(['project_id'], 'ix_project_stage_active', {
-      predicate: knex.where('state', 'active'),
+      predicate: knex.queryBuilder().whereRaw('"state" = \'active\''),
     });
   });
 }

@@ -44,7 +44,7 @@ export async function up(knex: Knex): Promise<void> {
     table.index(['project_id', 'purpose'], 'ix_file_project_purpose');
     table.index(['parent_file_id'], 'ix_file_parent');
     table.index(['status', 'created_at'], 'ix_file_orphan_sweep', {
-      predicate: knex.where('status', 'pending_upload'),
+      predicate: knex.queryBuilder().whereRaw('"status" = \'pending_upload\''),
     });
     table.index(['deleted_at'], 'ix_file_soft_deleted', {
       predicate: knex.whereNotNull('deleted_at'),
