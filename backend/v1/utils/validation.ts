@@ -61,3 +61,47 @@ export const listRolesQuerySchema = Joi.object<ListRolesQuery>({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(10),
 });
+
+export interface CreateRiskCategoryBody {
+  code: string;
+  name: string;
+  sort_order: number;
+  is_active?: boolean;
+}
+
+export interface UpdateRiskCategoryBody {
+  code?: string;
+  name?: string;
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+export interface ListRiskCategoriesQuery {
+  includeInactive?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export const createRiskCategorySchema = Joi.object<CreateRiskCategoryBody>({
+  code: Joi.string().trim().lowercase().pattern(/^[a-z0-9_]+$/).min(2).max(50).required(),
+  name: Joi.string().trim().min(1).max(100).required(),
+  sort_order: Joi.number().integer().min(0).max(32767).required(),
+  is_active: Joi.boolean().optional(),
+});
+
+export const updateRiskCategorySchema = Joi.object<UpdateRiskCategoryBody>({
+  code: Joi.string().trim().lowercase().pattern(/^[a-z0-9_]+$/).min(2).max(50).optional(),
+  name: Joi.string().trim().min(1).max(100).optional(),
+  sort_order: Joi.number().integer().min(0).max(32767).optional(),
+  is_active: Joi.boolean().optional(),
+}).min(1);
+
+export const riskCategoryIdParamSchema = Joi.object({
+  id: Joi.number().integer().positive().required(),
+});
+
+export const listRiskCategoriesQuerySchema = Joi.object<ListRiskCategoriesQuery>({
+  includeInactive: Joi.boolean().default(false),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(50),
+});

@@ -214,3 +214,85 @@ export class Roles {
     return row ?? null;
   }
 }
+
+export interface RiskCategoryRow {
+  risk_category_id: number;
+  code: string;
+  name: string;
+  is_system: boolean;
+  sort_order: number;
+  is_active: boolean;
+}
+
+export interface RiskCategoryCreateInput {
+  code: string;
+  name: string;
+  sort_order: number;
+  is_active?: boolean;
+}
+
+export interface RiskCategoryUpdateInput {
+  code?: string;
+  name?: string;
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+export class RiskCategories {
+  static async list({
+    includeInactive = false,
+    page = 1,
+    limit = 50,
+  }: { includeInactive?: boolean; page?: number; limit?: number }): Promise<{
+    categories: RiskCategoryRow[];
+    pagination: { page: number; limit: number; total: number; pages: number };
+  }> {
+    const base = db('risk_category');
+    if (!includeInactive) base.where({ is_active: true });
+
+    const countRows = await base.clone().count<{ count: string }[]>('risk_category_id as count');
+    const total = Number(countRows[0]?.count ?? 0);
+
+    const categories = await base
+      .clone()
+      .select('risk_category_id', 'code', 'name', 'is_system', 'sort_order', 'is_active')
+      .orderBy('sort_order', 'asc')
+      .limit(limit)
+      .offset((page - 1) * limit);
+
+    return { categories, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
+  }
+
+  static async getById(id: number): Promise<RiskCategoryRow | null> {
+    const row = await db('risk_category').where({ risk_category_id: id }).first();
+    return row ?? null;
+  }
+
+  static async getByCode(code: string): Promise<RiskCategoryRow | null> {
+    const row = await db('risk_category').where({ code }).first();
+    return row ?? null;
+  }
+
+  static async create(input: RiskCategoryCreateInput): Promise<RiskCategoryRow> {
+    const [row] = await db('risk_category')
+      .insert({ ...input, is_active: input.is_active ?? true })
+      .returning(['risk_category_id', 'code', 'name', 'is_system', 'sort_order', 'is_active']);
+    return row;
+  }
+
+  static async update(id: number, input: RiskCategoryUpdateInput): Promise<RiskCategoryRow | null> {
+    const [row] = await db('risk_category')
+      .where({ risk_category_id: id })
+      .update(input)
+      .returning(['risk_category_id', 'code', 'name', 'is_system', 'sort_order', 'is_active']);
+    return row ?? null;
+  }
+
+  static async deactivate(id: number): Promise<RiskCategoryRow | null> {
+    const [row] = await db('risk_category')
+      .where({ risk_category_id: id })
+      .update({ is_active: false })
+      .returning(['risk_category_id', 'code', 'name', 'is_system', 'sort_order', 'is_active']);
+    return row ?? null;
+  }
+}
