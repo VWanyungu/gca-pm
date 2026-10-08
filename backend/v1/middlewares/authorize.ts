@@ -1,6 +1,6 @@
 import type { RequestHandler } from 'express';
 import type { RoleName, ScopeType } from '../database/utils/database.js';
-import type { TokenRoleItem } from '../../types.js';
+import type { TokenGrant } from '../../types.js';
 
 type RequiredRole = { role: RoleName; scopeType: ScopeType };
 
@@ -17,7 +17,7 @@ export default function authorize(requestedRole: RequiredRole[]): RequestHandler
 
         const { programId, projectId } = req.params;
 
-        const matches = (userRole: TokenRoleItem, requiredRole: RequiredRole) =>
+        const matches = (userRole: TokenGrant, requiredRole: RequiredRole) =>
             userRole.role === requiredRole.role &&
             userRole.scope_type === requiredRole.scopeType &&
             (requiredRole.scopeType !== 'program' || userRole.program_id === programId) &&

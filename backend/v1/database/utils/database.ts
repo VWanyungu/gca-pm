@@ -134,19 +134,83 @@ export class Tokens {
 
 export type RoleName = 'PM' | 'Planner' | 'SiteEngineer' | 'ExCo' | 'Admin' | 'ProjectCreator';
 export type ScopeType = 'global' | 'program' | 'project';
-export interface UserRolesItem {
+export interface RoleGrant {
   role: RoleName;
   scope_type: ScopeType;
   program_id: string | null;
   project_id: string | null;
 }
 
+export interface RoleGrantRow extends RoleGrant {
+  attribute_id: string;
+  user_id: string;
+  granted_by: string;
+  granted_at: Date;
+}
+
+export interface GrantInput {
+  attribute_id: string;
+  user_id: string;
+  role: RoleName;
+  scope_type: ScopeType;
+  program_id: number | null;
+  project_id: string | null;
+  granted_by: string;
+}
+
 export class Roles {
-  static async getRoles(userId: string): Promise<UserRolesItem[]> {
+  static async getRoles(userId: string): Promise<RoleGrant[]> {
     const rows = await db('roles')
       .select('role', 'scope_type', 'program_id', 'project_id')
       .where({ user_id: userId })
       .whereNull('revoked_at');
     return rows;
+  }
+
+  static async grant(input: GrantInput): Promise<string> {
+    const [row] = await db('roles').insert(input).returning('attribute_id');
+    return row.attribute_id;
+  }
+
+  static async revoke(attributeId: string, revokedBy: string, reason: string | null): Promise<RoleGrantRow | null> {
+    const [row] = await db('roles')
+      .where({ attribute_id: attributeId })
+      .whereNull('revoked_at')
+      .update({ revoked_by: revokedBy, revoked_at: db.fn.now(), revoke_reason: reason })
+      .returning(['attribute_id', 'user_id', 'role', 'scope_type', 'program_id', 'project_id', 'granted_by', 'granted_at']);
+    return row ?? null;
+  }
+
+  static async list({
+    userId,
+    page = 1,
+    limit = 10,
+  }: { userId?: string; page?: number; limit?: number }): Promise<{
+    roles: RoleGrantRow[];
+    pagination: { page: number; limit: number; total: number; pages: number };
+  }> {
+    const base = db('roles').whereNull('revoked_at');
+    if (userId) base.where({ user_id: userId });
+
+    const countRows = await base.clone().count<{ count: string }[]>('attribute_id as count');
+    const total = Number(countRows[0]?.count ?? 0);
+
+    const roles = await base
+      .clone()
+      .select('attribute_id', 'user_id', 'role', 'scope_type', 'program_id', 'project_id', 'granted_by', 'granted_at')
+      .orderBy('granted_at', 'desc')
+      .limit(limit)
+      .offset((page - 1) * limit);
+
+    return { roles, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
+  }
+
+  static async getById(attributeId: string): Promise<RoleGrantRow | null> {
+    const row = await db('roles')
+      .select('attribute_id', 'user_id', 'role', 'scope_type', 'program_id', 'project_id', 'granted_by', 'granted_at')
+      .where({ attribute_id: attributeId })
+      .whereNull('revoked_at')
+      .first();
+    return row ?? null;
   }
 }

@@ -8,6 +8,7 @@ import logoutRouter from './routers/logoutRouter.js';
 import refreshTokenRouter from './routers/refreshTokenRouter.js';
 import forgotPasswordRouter from './routers/forgotPasswordRouter.js';
 import resetUserPasswordRouter from './routers/resetUserPasswordRouter.js';
+import rolesRouter from './routers/rolesRouter.js';
 
 const router = express.Router();
 
@@ -19,6 +20,7 @@ router.use('/reset-password', resetUserPasswordRouter);
 router.use(authenticateToken());
 
 router.use('/users', authorize([{ role: 'Admin', scopeType: 'global' }]), usersRouter);
+router.use('/roles', rolesRouter);
 router.use('/logout', logoutRouter);
 router.use('/token', refreshTokenRouter);
 

@@ -1,11 +1,11 @@
-import type { UserRolesItem } from "./v1/database/utils/database.js";
+import type { RoleGrant } from "./v1/database/utils/database.js";
 
-export type TokenRoleItem = Omit<UserRolesItem, 'attribute_id'>;
+export type TokenGrant = RoleGrant;
 
 export interface JwtUserPayload {
   userId: string;
   email: string;
-  role: TokenRoleItem[];
+  role: TokenGrant[];
 }
 
 export interface ApiResponse<T = unknown> {
