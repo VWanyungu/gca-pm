@@ -1,5 +1,13 @@
 import type { Knex } from 'knex';
 
+// Mirror of PROGRAM_IDS from 02_programs.ts (inlined — knex ESM seeds don't
+// cross-import cleanly here). Keep in sync if programs are reordered.
+const PROGRAM_IDS = {
+  BULK_IMPORT_AND_WHOLESALE: 1,
+  AUTOGAS: 3,
+  RETICULATION: 4,
+};
+
 export const PROJECT_IDS = {
   PROJECT_1: '20000000-0000-0000-0000-000000000001',
   PROJECT_2: '20000000-0000-0000-0000-000000000002',
@@ -21,7 +29,7 @@ export const SEEDED_PROJECTS = [
     project_id: PROJECT_IDS.PROJECT_1,
     project_code: '001-001.2026',
     name: 'Mombasa Port LPG Bulk Storage Terminal',
-    program_id: 1,
+    program_id: PROGRAM_IDS.BULK_IMPORT_AND_WHOLESALE,
     client_name: 'Kenya Pipeline Company',
     country: 'Kenya',
     site_location: 'Kipevu Oil Terminal, Mombasa',
@@ -42,7 +50,7 @@ export const SEEDED_PROJECTS = [
     project_id: PROJECT_IDS.PROJECT_2,
     project_code: '001-002.2026',
     name: 'Nairobi Industrial Area Gas Reticulation Loop',
-    program_id: 3,
+    program_id: PROGRAM_IDS.RETICULATION,
     client_name: 'Ministry of Energy & Petroleum',
     country: 'Kenya',
     site_location: 'Enterprise Road, Industrial Area, Nairobi',
@@ -63,7 +71,7 @@ export const SEEDED_PROJECTS = [
     project_id: PROJECT_IDS.PROJECT_3,
     project_code: '002-001.2026',
     name: 'Eldoret-Kisumu CNG Daughter Station',
-    program_id: 4,
+    program_id: PROGRAM_IDS.AUTOGAS,
     client_name: 'TotalEnergies Marketing Kenya',
     country: 'Kenya',
     site_location: 'Eldoret Depot, Highway Junction, Eldoret',

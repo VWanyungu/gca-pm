@@ -194,3 +194,40 @@ export const listRiskIssuesQuerySchema = Joi.object<ListRiskIssuesQuery>({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(25),
 });
+
+
+export interface CreateProgramBody {
+  name: string;
+  is_active?: boolean;
+}
+
+export interface UpdateProgramBody {
+  name?: string;
+  is_active?: boolean;
+}
+
+export interface ListProgramsQuery {
+  includeInactive?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export const createProgramSchema = Joi.object<CreateProgramBody>({
+  name: Joi.string().trim().min(1).max(255).required(),
+  is_active: Joi.boolean().optional(),
+});
+
+export const updateProgramSchema = Joi.object<UpdateProgramBody>({
+  name: Joi.string().trim().min(1).max(255).optional(),
+  is_active: Joi.boolean().optional(),
+}).min(1);
+
+export const programIdParamSchema = Joi.object({
+  id: Joi.number().integer().positive().required(),
+});
+
+export const listProgramsQuerySchema = Joi.object<ListProgramsQuery>({
+  includeInactive: Joi.boolean().default(false),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(50),
+});

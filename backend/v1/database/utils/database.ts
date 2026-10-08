@@ -297,6 +297,71 @@ export class RiskCategories {
   }
 }
 
+export interface ProgramRow {
+  program_id: number;
+  name: string;
+  is_active: boolean;
+}
+
+export class Programs {
+  static async list({
+    includeInactive = false,
+    page = 1,
+    limit = 50,
+  }: { includeInactive?: boolean; page?: number; limit?: number }): Promise<{
+    programs: ProgramRow[];
+    pagination: { page: number; limit: number; total: number; pages: number };
+  }> {
+    const base = db('programs');
+    if (!includeInactive) base.where({ is_active: true });
+
+    const countRows = await base.clone().count<{ count: string }[]>('program_id as count');
+    const total = Number(countRows[0]?.count ?? 0);
+
+    const programs = await base
+      .clone()
+      .select('program_id', 'name', 'is_active')
+      .orderBy('program_id', 'asc')
+      .limit(limit)
+      .offset((page - 1) * limit);
+
+    return { programs, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
+  }
+
+  static async getById(id: number): Promise<ProgramRow | null> {
+    const row = await db('programs').where({ program_id: id }).first();
+    return row ?? null;
+  }
+
+  static async getByName(name: string): Promise<ProgramRow | null> {
+    const row = await db('programs').where({ name }).first();
+    return row ?? null;
+  }
+
+  static async create(input: { name: string; is_active?: boolean }): Promise<ProgramRow> {
+    const [row] = await db('programs')
+      .insert({ name: input.name, is_active: input.is_active ?? true })
+      .returning(['program_id', 'name', 'is_active']);
+    return row;
+  }
+
+  static async update(id: number, input: { name?: string; is_active?: boolean }): Promise<ProgramRow | null> {
+    const [row] = await db('programs')
+      .where({ program_id: id })
+      .update(input)
+      .returning(['program_id', 'name', 'is_active']);
+    return row ?? null;
+  }
+
+  static async deactivate(id: number): Promise<ProgramRow | null> {
+    const [row] = await db('programs')
+      .where({ program_id: id })
+      .update({ is_active: false })
+      .returning(['program_id', 'name', 'is_active']);
+    return row ?? null;
+  }
+}
+
 export type RiskStatus = 'open' | 'mitigated' | 'closed' | 'dismissed' | 'auto_resolved';
 export type RiskKind = 'risk' | 'issue';
 export type RiskSource = 'manual' | 'auto_overdue_task';
