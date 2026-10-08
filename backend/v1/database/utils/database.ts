@@ -296,3 +296,128 @@ export class RiskCategories {
     return row ?? null;
   }
 }
+
+export type RiskStatus = 'open' | 'mitigated' | 'closed' | 'dismissed' | 'auto_resolved';
+export type RiskKind = 'risk' | 'issue';
+export type RiskSource = 'manual' | 'auto_overdue_task';
+
+export interface RiskIssueRow {
+  risk_id: string;
+  project_id: string;
+  stage_no: number | null;
+  title: string;
+  description: string | null;
+  category_id: number;
+  likelihood: number | null;
+  impact: number;
+  score: number;
+  owner_id: string;
+  mitigation: string | null;
+  status: RiskStatus;
+  addressed_at: Date | null;
+  addressed_submission_id: string | null;
+  dismissal_reason: string | null;
+  auto_resolution_reason: string | null;
+  source: RiskSource;
+  source_task_id: string | null;
+  source_schedule_version_id: string | null;
+  kind: RiskKind;
+  realised_at: Date | null;
+  realised_by: string | null;
+  opened_at: Date;
+  closed_at: Date | null;
+  created_by: string;
+  updated_at: Date;
+}
+
+export interface RiskIssueCreateInput {
+  risk_id: string;
+  project_id: string;
+  stage_no: number | null;
+  title: string;
+  description: string | null;
+  category_id: number;
+  likelihood: number | null;
+  impact: number;
+  owner_id: string;
+  mitigation: string | null;
+  status: RiskStatus;
+  source: RiskSource;
+  kind: RiskKind;
+  realised_at: Date | null;
+  realised_by: string | null;
+  created_by: string;
+}
+
+export interface RiskIssueUpdateFields {
+  title?: string;
+  description?: string | null;
+  category_id?: number;
+  stage_no?: number | null;
+  likelihood?: number | null;
+  impact?: number;
+  owner_id?: string;
+  mitigation?: string | null;
+  status?: RiskStatus;
+  dismissal_reason?: string | null;
+  closed_at?: Date | null;
+  kind?: RiskKind;
+  realised_at?: Date | null;
+  realised_by?: string | null;
+}
+
+const RISK_COLS = [
+  'risk_id', 'project_id', 'stage_no', 'title', 'description', 'category_id',
+  'likelihood', 'impact', 'score', 'owner_id', 'mitigation', 'status',
+  'addressed_at', 'addressed_submission_id', 'dismissal_reason', 'auto_resolution_reason',
+  'source', 'source_task_id', 'source_schedule_version_id',
+  'kind', 'realised_at', 'realised_by',
+  'opened_at', 'closed_at', 'created_by', 'updated_at',
+];
+
+export class RiskIssues {
+  static async create(input: RiskIssueCreateInput): Promise<RiskIssueRow> {
+    const [row] = await db('risk').insert(input).returning(RISK_COLS);
+    return row;
+  }
+
+  static async list({
+    projectId,
+    status,
+    kind,
+    page = 1,
+    limit = 25,
+  }: { projectId: string; status?: RiskStatus; kind?: RiskKind; page?: number; limit?: number }): Promise<{
+    riskIssues: RiskIssueRow[];
+    pagination: { page: number; limit: number; total: number; pages: number };
+  }> {
+    const base = db('risk').where({ project_id: projectId });
+    if (status) base.andWhere({ status });
+    if (kind) base.andWhere({ kind });
+
+    const countRows = await base.clone().count<{ count: string }[]>('risk_id as count');
+    const total = Number(countRows[0]?.count ?? 0);
+
+    const riskIssues = await base
+      .clone()
+      .select(RISK_COLS)
+      .orderBy('opened_at', 'desc')
+      .limit(limit)
+      .offset((page - 1) * limit);
+
+    return { riskIssues, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
+  }
+
+  static async getById(projectId: string, riskId: string): Promise<RiskIssueRow | null> {
+    const row = await db('risk').where({ project_id: projectId, risk_id: riskId }).first();
+    return row ?? null;
+  }
+
+  static async update(projectId: string, riskId: string, patch: RiskIssueUpdateFields): Promise<RiskIssueRow | null> {
+    const [row] = await db('risk')
+      .where({ project_id: projectId, risk_id: riskId })
+      .update(patch)
+      .returning(RISK_COLS);
+    return row ?? null;
+  }
+}

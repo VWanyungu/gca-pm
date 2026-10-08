@@ -13,8 +13,6 @@ import {
 
 const router = express.Router();
 
-// AC-IAM-09: reference data is managed by Admin (ExCo included via requirements doc).
-// Deletion is a soft deactivate; is_system rows cannot be renamed, deactivated, or deleted.
 const canManage = authorize([
     { role: 'ExCo', scopeType: 'global' },
     { role: 'Admin', scopeType: 'global' },
@@ -101,7 +99,7 @@ router.patch('/:id', canManage, async (req, res) => {
             res.status(404).json({ status: 'error', data: null, message: 'Risk category not found' });
             return;
         }
-        // AC-IAM-09: is_system rows can't be renamed (code) or deactivated.
+
         if (existing.is_system && update.code !== undefined && update.code !== existing.code) {
             res.status(403).json({ status: 'error', data: null, message: 'System risk category code cannot be changed' });
             return;

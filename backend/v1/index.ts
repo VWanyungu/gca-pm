@@ -10,6 +10,7 @@ import forgotPasswordRouter from './routers/forgotPasswordRouter.js';
 import resetUserPasswordRouter from './routers/resetUserPasswordRouter.js';
 import rolesRouter from './routers/rolesRouter.js';
 import riskCategoriesRouter from './routers/riskCategoriesRouter.js';
+import riskIssuesRouter from './routers/riskIssuesRouter.js';
 
 const router = express.Router();
 
@@ -24,6 +25,7 @@ router.use('/users', authorize([{ role: 'Admin', scopeType: 'global' }]), usersR
 
 router.use('/roles', rolesRouter);
 router.use('/risk-categories', riskCategoriesRouter);
+router.use('/projects/:projectId/risk-issues', riskIssuesRouter);
 
 router.use('/logout', logoutRouter);
 router.use('/token', refreshTokenRouter);

@@ -105,3 +105,92 @@ export const listRiskCategoriesQuerySchema = Joi.object<ListRiskCategoriesQuery>
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(50),
 });
+
+export type RiskStatusLiteral = 'open' | 'mitigated' | 'closed' | 'dismissed';
+export type RiskKindLiteral = 'risk' | 'issue';
+
+export interface CreateRiskIssueBody {
+  title: string;
+  description?: string | null;
+  category_id: number;
+  stage_no?: number | null;
+  likelihood?: number | null;
+  impact: number;
+  owner_id?: string;
+  mitigation?: string | null;
+  kind: RiskKindLiteral;
+}
+
+export interface UpdateRiskIssueBody {
+  title?: string;
+  description?: string | null;
+  category_id?: number;
+  stage_no?: number | null;
+  likelihood?: number | null;
+  impact?: number;
+  owner_id?: string;
+  mitigation?: string | null;
+  status?: RiskStatusLiteral;
+  dismissal_reason?: string | null;
+  kind?: 'issue';
+}
+
+export interface ListRiskIssuesQuery {
+  status?: RiskStatusLiteral | 'auto_resolved';
+  kind?: RiskKindLiteral;
+  page?: number;
+  limit?: number;
+}
+
+export const riskIssueProjectParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+});
+
+export const riskIssueParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+  riskId: Joi.string().uuid().required(),
+});
+
+export const createRiskIssueSchema = Joi.object<CreateRiskIssueBody>({
+  title: Joi.string().trim().min(1).max(500).required(),
+  description: Joi.string().trim().max(10000).allow(null, '').optional(),
+  category_id: Joi.number().integer().positive().required(),
+  stage_no: Joi.number().integer().min(1).allow(null).optional(),
+  // likelihood is required when kind='risk' (AC-RSK-01 + DB check ck_risk_likelihood_for_risks).
+  likelihood: Joi.when('kind', {
+    is: 'risk',
+    then: Joi.number().integer().min(1).max(5).required(),
+    otherwise: Joi.any().strip(),
+  }),
+  impact: Joi.number().integer().min(1).max(5).required(),
+  owner_id: Joi.string().uuid().optional(),
+  mitigation: Joi.string().trim().max(10000).allow(null, '').optional(),
+  kind: Joi.string().valid('risk', 'issue').required(),
+});
+
+export const updateRiskIssueSchema = Joi.object<UpdateRiskIssueBody>({
+  title: Joi.string().trim().min(1).max(500).optional(),
+  description: Joi.string().trim().max(10000).allow(null, '').optional(),
+  category_id: Joi.number().integer().positive().optional(),
+  stage_no: Joi.number().integer().min(1).allow(null).optional(),
+  likelihood: Joi.number().integer().min(1).max(5).allow(null).optional(),
+  impact: Joi.number().integer().min(1).max(5).optional(),
+  owner_id: Joi.string().uuid().optional(),
+  mitigation: Joi.string().trim().max(10000).allow(null, '').optional(),
+  status: Joi.string().valid('open', 'mitigated', 'closed', 'dismissed').optional(),
+  // Required when transitioning to dismissed (AC-RSK-02).
+  dismissal_reason: Joi.when('status', {
+    is: 'dismissed',
+    then: Joi.string().trim().min(1).max(10000).required(),
+    otherwise: Joi.string().trim().max(10000).allow(null, '').optional(),
+  }),
+  // AC-RSK-03: risk → issue conversion is one-way; kind can only ever be set to 'issue'.
+  kind: Joi.string().valid('issue').optional(),
+}).min(1);
+
+export const listRiskIssuesQuerySchema = Joi.object<ListRiskIssuesQuery>({
+  status: Joi.string().valid('open', 'mitigated', 'closed', 'dismissed', 'auto_resolved').optional(),
+  kind: Joi.string().valid('risk', 'issue').optional(),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(25),
+});
