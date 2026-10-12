@@ -231,3 +231,43 @@ export const listProgramsQuerySchema = Joi.object<ListProgramsQuery>({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(50),
 });
+
+export interface CreateWeatherCategoryBody {
+  name: string;
+  sort_order: number;
+  is_active?: boolean;
+}
+
+export interface UpdateWeatherCategoryBody {
+  name?: string;
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+export interface ListWeatherCategoriesQuery {
+  includeInactive?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export const createWeatherCategorySchema = Joi.object<CreateWeatherCategoryBody>({
+  name: Joi.string().trim().min(1).max(100).required(),
+  sort_order: Joi.number().integer().min(0).max(32767).required(),
+  is_active: Joi.boolean().optional(),
+});
+
+export const updateWeatherCategorySchema = Joi.object<UpdateWeatherCategoryBody>({
+  name: Joi.string().trim().min(1).max(100).optional(),
+  sort_order: Joi.number().integer().min(0).max(32767).optional(),
+  is_active: Joi.boolean().optional(),
+}).min(1);
+
+export const weatherCategoryIdParamSchema = Joi.object({
+  id: Joi.number().integer().positive().required(),
+});
+
+export const listWeatherCategoriesQuerySchema = Joi.object<ListWeatherCategoriesQuery>({
+  includeInactive: Joi.boolean().default(false),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(50),
+});

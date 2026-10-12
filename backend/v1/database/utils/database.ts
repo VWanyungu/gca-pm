@@ -362,6 +362,72 @@ export class Programs {
   }
 }
 
+export interface WeatherCategoryRow {
+  weather_category_id: number;
+  name: string;
+  sort_order: number;
+  is_active: boolean;
+}
+
+export class WeatherCategories {
+  static async list({
+    includeInactive = false,
+    page = 1,
+    limit = 50,
+  }: { includeInactive?: boolean; page?: number; limit?: number }): Promise<{
+    categories: WeatherCategoryRow[];
+    pagination: { page: number; limit: number; total: number; pages: number };
+  }> {
+    const base = db('weather_category');
+    if (!includeInactive) base.where({ is_active: true });
+
+    const countRows = await base.clone().count<{ count: string }[]>('weather_category_id as count');
+    const total = Number(countRows[0]?.count ?? 0);
+
+    const categories = await base
+      .clone()
+      .select('weather_category_id', 'name', 'sort_order', 'is_active')
+      .orderBy('sort_order', 'asc')
+      .limit(limit)
+      .offset((page - 1) * limit);
+
+    return { categories, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
+  }
+
+  static async getById(id: number): Promise<WeatherCategoryRow | null> {
+    const row = await db('weather_category').where({ weather_category_id: id }).first();
+    return row ?? null;
+  }
+
+  static async getByName(name: string): Promise<WeatherCategoryRow | null> {
+    const row = await db('weather_category').where({ name }).first();
+    return row ?? null;
+  }
+
+  static async create(input: { name: string; sort_order: number; is_active?: boolean }): Promise<WeatherCategoryRow> {
+    const [row] = await db('weather_category')
+      .insert({ ...input, is_active: input.is_active ?? true })
+      .returning(['weather_category_id', 'name', 'sort_order', 'is_active']);
+    return row;
+  }
+
+  static async update(id: number, input: { name?: string; sort_order?: number; is_active?: boolean }): Promise<WeatherCategoryRow | null> {
+    const [row] = await db('weather_category')
+      .where({ weather_category_id: id })
+      .update(input)
+      .returning(['weather_category_id', 'name', 'sort_order', 'is_active']);
+    return row ?? null;
+  }
+
+  static async deactivate(id: number): Promise<WeatherCategoryRow | null> {
+    const [row] = await db('weather_category')
+      .where({ weather_category_id: id })
+      .update({ is_active: false })
+      .returning(['weather_category_id', 'name', 'sort_order', 'is_active']);
+    return row ?? null;
+  }
+}
+
 export type RiskStatus = 'open' | 'mitigated' | 'closed' | 'dismissed' | 'auto_resolved';
 export type RiskKind = 'risk' | 'issue';
 export type RiskSource = 'manual' | 'auto_overdue_task';

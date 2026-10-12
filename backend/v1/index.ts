@@ -12,6 +12,7 @@ import rolesRouter from './routers/rolesRouter.js';
 import riskCategoriesRouter from './routers/riskCategoriesRouter.js';
 import riskIssuesRouter from './routers/riskIssuesRouter.js';
 import programsRouter from './routers/programsRouter.js';
+import weatherCategoriesRouter from './routers/weatherCategoriesRouter.js';
 
 const router = express.Router();
 
@@ -27,6 +28,7 @@ router.use('/roles', rolesRouter);
 
 router.use('/programs', programsRouter);
 router.use('/risk-categories', riskCategoriesRouter);
+router.use('/weather-categories', weatherCategoriesRouter);
 router.use('/projects/:projectId/risk-issues', riskIssuesRouter);
 
 router.use('/logout', logoutRouter);
