@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import type { CreateUserInput, RoleName, ScopeType, StageEvent, StageState, ActivityStatus, ProjectStatus } from '../database/utils/database.js';
+import type { CreateUserInput, RoleName, ScopeType, StageEvent, StageState, ActivityStatus, ProjectStatus, PartyType } from '../database/utils/database.js';
 
 export const createUserSchema = Joi.object<CreateUserInput>({
   id: Joi.string().uuid().required(),
@@ -660,4 +660,100 @@ export const listProjectsQuerySchema = Joi.object<ListProjectsQuery>({
   search: Joi.string().trim().max(100).optional(),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(25),
+});
+
+const PARTY_TYPES: PartyType[] = ['contractor', 'subcontractor'];
+
+export interface CreateContractorBody {
+  name: string;
+  registration_no?: string | null;
+  is_active?: boolean;
+}
+
+export interface UpdateContractorBody {
+  name?: string;
+  registration_no?: string | null;
+  is_active?: boolean;
+}
+
+export interface MergeContractorBody {
+  target_contractor_id: string;
+}
+
+export interface ListContractorsQuery {
+  search?: string;
+  includeInactive?: boolean;
+  includeMerged?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export interface CreateProjectContractorBody {
+  contractor_id?: string;
+  contractor_name?: string;
+  party_type?: PartyType;
+  is_active?: boolean;
+}
+
+export interface UpdateProjectContractorBody {
+  party_type?: PartyType;
+  is_active?: boolean;
+}
+
+export interface ListProjectContractorsQuery {
+  includeInactive?: boolean;
+}
+
+export const contractorIdParamSchema = Joi.object({
+  contractorId: Joi.string().uuid().required(),
+});
+
+export const projectContractorParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+  contractorId: Joi.string().uuid().optional(),
+});
+
+export const projectContractorLinkIdParamSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+  projectContractorId: Joi.string().uuid().required(),
+});
+
+export const createContractorSchema = Joi.object<CreateContractorBody>({
+  name: Joi.string().trim().min(1).max(500).required(),
+  registration_no: Joi.string().trim().max(100).allow(null, '').optional(),
+  is_active: Joi.boolean().default(true),
+});
+
+export const updateContractorSchema = Joi.object<UpdateContractorBody>({
+  name: Joi.string().trim().min(1).max(500).optional(),
+  registration_no: Joi.string().trim().max(100).allow(null, '').optional(),
+  is_active: Joi.boolean().optional(),
+}).min(1);
+
+export const mergeContractorSchema = Joi.object<MergeContractorBody>({
+  target_contractor_id: Joi.string().uuid().required(),
+});
+
+export const listContractorsQuerySchema = Joi.object<ListContractorsQuery>({
+  search: Joi.string().trim().max(100).optional(),
+  includeInactive: Joi.boolean().default(false),
+  includeMerged: Joi.boolean().default(false),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(25),
+});
+
+export const createProjectContractorSchema = Joi.object<CreateProjectContractorBody>({
+  contractor_id: Joi.string().uuid().optional(),
+  contractor_name: Joi.string().trim().min(1).max(500).optional(),
+  party_type: Joi.string().valid(...PARTY_TYPES).default('contractor'),
+  is_active: Joi.boolean().default(true),
+}).or('contractor_id', 'contractor_name');
+
+export const updateProjectContractorSchema = Joi.object<UpdateProjectContractorBody>({
+  party_type: Joi.string().valid(...PARTY_TYPES).optional(),
+  is_active: Joi.boolean().optional(),
+}).min(1);
+
+export const listProjectContractorsQuerySchema = Joi.object<ListProjectContractorsQuery>({
+  includeInactive: Joi.boolean().default(false),
 });

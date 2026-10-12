@@ -1805,3 +1805,379 @@ export class StageActivityAttachments {
     return row ?? null;
   }
 }
+
+export interface ContractorRow {
+  contractor_id: string;
+  name: string;
+  name_normalized: string;
+  registration_no: string | null;
+  merged_into_id: string | null;
+  is_active: boolean;
+  created_by: string;
+  created_at: Date;
+}
+
+export interface CreateContractorInput {
+  contractor_id?: string;
+  name: string;
+  registration_no?: string | null;
+  is_active?: boolean;
+  created_by: string;
+}
+
+export interface UpdateContractorFields {
+  name?: string;
+  registration_no?: string | null;
+  is_active?: boolean;
+}
+
+const CONTRACTOR_COLS = [
+  'contractor_id',
+  'name',
+  'name_normalized',
+  'registration_no',
+  'merged_into_id',
+  'is_active',
+  'created_by',
+  'created_at',
+];
+
+function normalizeContractorName(name: string): string {
+  return name.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+export class Contractors {
+  static async create(
+    input: CreateContractorInput,
+    trx?: Knex.Transaction,
+  ): Promise<ContractorRow> {
+    const q = trx ? trx('contractor') : db('contractor');
+    const [row] = await q
+      .insert({
+        contractor_id: input.contractor_id ?? randomUUID(),
+        name: input.name.trim(),
+        registration_no: input.registration_no ?? null,
+        is_active: input.is_active ?? true,
+        created_by: input.created_by,
+      })
+      .returning(CONTRACTOR_COLS);
+    return row;
+  }
+
+  static async getById(contractorId: string, trx?: Knex.Transaction): Promise<ContractorRow | null> {
+    const q = trx ? trx('contractor') : db('contractor');
+    const row = await q.where({ contractor_id: contractorId }).first();
+    return row ?? null;
+  }
+
+  static async getByName(name: string, trx?: Knex.Transaction): Promise<ContractorRow | null> {
+    const q = trx ? trx('contractor') : db('contractor');
+    const normalized = normalizeContractorName(name);
+    const row = await q.where({ name_normalized: normalized }).first();
+    return row ?? null;
+  }
+
+  static async findOrCreate(
+    name: string,
+    createdBy: string,
+    trx?: Knex.Transaction,
+  ): Promise<{ contractor: ContractorRow; created: boolean }> {
+    const normalized = normalizeContractorName(name);
+    const execute = async (t: Knex.Transaction) => {
+      let existing = await t('contractor').where({ name_normalized: normalized }).first();
+      if (existing) {
+        if (existing.merged_into_id) {
+          const target = await t('contractor').where({ contractor_id: existing.merged_into_id }).first();
+          if (target && !target.merged_into_id) {
+            existing = target;
+          }
+        }
+        return { contractor: existing, created: false };
+      }
+
+      const [created] = await t('contractor')
+        .insert({
+          contractor_id: randomUUID(),
+          name: name.trim(),
+          registration_no: null,
+          is_active: true,
+          created_by: createdBy,
+        })
+        .returning(CONTRACTOR_COLS);
+
+      return { contractor: created, created: true };
+    };
+
+    return trx ? await execute(trx) : await db.transaction(execute);
+  }
+
+  static async list({
+    search,
+    includeInactive = false,
+    includeMerged = false,
+    page = 1,
+    limit = 25,
+  }: {
+    search?: string;
+    includeInactive?: boolean;
+    includeMerged?: boolean;
+    page?: number;
+    limit?: number;
+  } = {}): Promise<{
+    contractors: ContractorRow[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const query = db('contractor');
+
+    if (!includeInactive) {
+      query.where('is_active', true);
+    }
+    if (!includeMerged) {
+      query.whereNull('merged_into_id');
+    }
+    if (search) {
+      const term = `%${search.trim().toLowerCase()}%`;
+      query.where((qb) => {
+        qb.whereILike('name', term).orWhereILike('registration_no', term);
+      });
+    }
+
+    const countRows = await query.clone().count<{ count: string }[]>('contractor_id as count');
+    const total = Number(countRows[0]?.count ?? 0);
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    const contractors = await query
+      .select(CONTRACTOR_COLS)
+      .orderBy('name', 'asc')
+      .offset((page - 1) * limit)
+      .limit(limit);
+
+    return {
+      contractors,
+      pagination: { page, limit, total, totalPages },
+    };
+  }
+
+  static async update(
+    contractorId: string,
+    patch: UpdateContractorFields,
+    trx?: Knex.Transaction,
+  ): Promise<ContractorRow | null> {
+    const q = trx ? trx('contractor') : db('contractor');
+    const updateData: Record<string, unknown> = {};
+    if (patch.name !== undefined) updateData.name = patch.name.trim();
+    if (patch.registration_no !== undefined) updateData.registration_no = patch.registration_no;
+    if (patch.is_active !== undefined) updateData.is_active = patch.is_active;
+
+    const [row] = await q
+      .where({ contractor_id: contractorId })
+      .update(updateData)
+      .returning(CONTRACTOR_COLS);
+    return row ?? null;
+  }
+
+  static async merge(
+    sourceId: string,
+    targetId: string,
+    trx?: Knex.Transaction,
+  ): Promise<ContractorRow> {
+    const execute = async (t: Knex.Transaction) => {
+      if (sourceId === targetId) {
+        throw new Error('Cannot merge a contractor into itself');
+      }
+
+      const source = await t('contractor').where({ contractor_id: sourceId }).first();
+      if (!source) {
+        throw new Error('Source contractor not found');
+      }
+
+      const target = await t('contractor').where({ contractor_id: targetId }).first();
+      if (!target) {
+        throw new Error('Target contractor not found');
+      }
+
+      if (target.merged_into_id) {
+        throw new Error(
+          'Target contractor is already merged into another contractor. Merge chains are not allowed',
+        );
+      }
+
+      const [updated] = await t('contractor')
+        .where({ contractor_id: sourceId })
+        .update({ merged_into_id: targetId, is_active: false })
+        .returning(CONTRACTOR_COLS);
+
+      return updated;
+    };
+
+    return trx ? await execute(trx) : await db.transaction(execute);
+  }
+
+  static async delete(contractorId: string, trx?: Knex.Transaction): Promise<boolean> {
+    const q = trx ? trx('contractor') : db('contractor');
+    const count = await q.where({ contractor_id: contractorId }).del();
+    return count > 0;
+  }
+}
+
+export type PartyType = 'contractor' | 'subcontractor';
+
+export interface ProjectContractorRow {
+  project_contractor_id: string;
+  project_id: string;
+  contractor_id: string;
+  party_type: PartyType;
+  is_active: boolean;
+  added_by: string;
+  added_at: Date;
+}
+
+export interface ProjectContractorWithDetailsRow extends ProjectContractorRow {
+  contractor_name: string;
+  registration_no: string | null;
+  merged_into_id: string | null;
+}
+
+export interface CreateProjectContractorInput {
+  project_contractor_id?: string;
+  project_id: string;
+  contractor_id: string;
+  party_type?: PartyType;
+  is_active?: boolean;
+  added_by: string;
+}
+
+export interface UpdateProjectContractorFields {
+  party_type?: PartyType;
+  is_active?: boolean;
+}
+
+const PROJECT_CONTRACTOR_COLS = [
+  'project_contractor_id',
+  'project_id',
+  'contractor_id',
+  'party_type',
+  'is_active',
+  'added_by',
+  'added_at',
+];
+
+export class ProjectContractors {
+  static async link(
+    input: CreateProjectContractorInput,
+    trx?: Knex.Transaction,
+  ): Promise<ProjectContractorRow> {
+    const q = trx ? trx('project_contractor') : db('project_contractor');
+    const [row] = await q
+      .insert({
+        project_contractor_id: input.project_contractor_id ?? randomUUID(),
+        project_id: input.project_id,
+        contractor_id: input.contractor_id,
+        party_type: input.party_type ?? 'contractor',
+        is_active: input.is_active ?? true,
+        added_by: input.added_by,
+      })
+      .returning(PROJECT_CONTRACTOR_COLS);
+    return row;
+  }
+
+  static async get(
+    projectId: string,
+    contractorId: string,
+    trx?: Knex.Transaction,
+  ): Promise<ProjectContractorWithDetailsRow | null> {
+    const q = trx ? trx('project_contractor') : db('project_contractor');
+    const row = await q
+      .join('contractor', 'project_contractor.contractor_id', 'contractor.contractor_id')
+      .where({
+        'project_contractor.project_id': projectId,
+        'project_contractor.contractor_id': contractorId,
+      })
+      .select(
+        'project_contractor.project_contractor_id',
+        'project_contractor.project_id',
+        'project_contractor.contractor_id',
+        'project_contractor.party_type',
+        'project_contractor.is_active',
+        'project_contractor.added_by',
+        'project_contractor.added_at',
+        'contractor.name as contractor_name',
+        'contractor.registration_no',
+        'contractor.merged_into_id',
+      )
+      .first();
+    return row ?? null;
+  }
+
+  static async getById(
+    projectContractorId: string,
+    trx?: Knex.Transaction,
+  ): Promise<ProjectContractorWithDetailsRow | null> {
+    const q = trx ? trx('project_contractor') : db('project_contractor');
+    const row = await q
+      .join('contractor', 'project_contractor.contractor_id', 'contractor.contractor_id')
+      .where({ 'project_contractor.project_contractor_id': projectContractorId })
+      .select(
+        'project_contractor.project_contractor_id',
+        'project_contractor.project_id',
+        'project_contractor.contractor_id',
+        'project_contractor.party_type',
+        'project_contractor.is_active',
+        'project_contractor.added_by',
+        'project_contractor.added_at',
+        'contractor.name as contractor_name',
+        'contractor.registration_no',
+        'contractor.merged_into_id',
+      )
+      .first();
+    return row ?? null;
+  }
+
+  static async listByProject(
+    projectId: string,
+    { includeInactive = false }: { includeInactive?: boolean } = {},
+  ): Promise<ProjectContractorWithDetailsRow[]> {
+    const query = db('project_contractor')
+      .join('contractor', 'project_contractor.contractor_id', 'contractor.contractor_id')
+      .where('project_contractor.project_id', projectId)
+      .select(
+        'project_contractor.project_contractor_id',
+        'project_contractor.project_id',
+        'project_contractor.contractor_id',
+        'project_contractor.party_type',
+        'project_contractor.is_active',
+        'project_contractor.added_by',
+        'project_contractor.added_at',
+        'contractor.name as contractor_name',
+        'contractor.registration_no',
+        'contractor.merged_into_id',
+      )
+      .orderBy('contractor.name', 'asc');
+
+    if (!includeInactive) {
+      query.where('project_contractor.is_active', true);
+    }
+
+    return await query;
+  }
+
+  static async update(
+    projectContractorId: string,
+    patch: UpdateProjectContractorFields,
+    trx?: Knex.Transaction,
+  ): Promise<ProjectContractorRow | null> {
+    const q = trx ? trx('project_contractor') : db('project_contractor');
+    const [row] = await q
+      .where({ project_contractor_id: projectContractorId })
+      .update(patch)
+      .returning(PROJECT_CONTRACTOR_COLS);
+    return row ?? null;
+  }
+
+  static async delete(projectContractorId: string, trx?: Knex.Transaction): Promise<boolean> {
+    const q = trx ? trx('project_contractor') : db('project_contractor');
+    const count = await q.where({ project_contractor_id: projectContractorId }).del();
+    return count > 0;
+  }
+}
+
