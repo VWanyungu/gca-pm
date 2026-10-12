@@ -355,3 +355,52 @@ export const listStageStateHistoryQuerySchema = Joi.object<ListStageStateHistory
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(25),
 });
+
+export interface CreateProjectStageBody {
+  stage_no: number;
+  in_scope?: boolean;
+  state?: StageState;
+  reason?: string | null;
+}
+
+export interface UpdateProjectStageBody {
+  state?: StageState;
+  in_scope?: boolean;
+  reason?: string | null;
+  checklist_snapshot?: Record<string, unknown> | null;
+  closure_notes?: string | null;
+}
+
+export interface ListProjectStagesQuery {
+  in_scope?: boolean;
+  state?: StageState;
+}
+
+export const projectStageProjectParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+});
+
+export const projectStageParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+  stageNo: Joi.number().integer().min(1).max(10).required(),
+});
+
+export const listProjectStagesQuerySchema = Joi.object<ListProjectStagesQuery>({
+  in_scope: Joi.boolean().optional(),
+  state: Joi.string().valid(...STAGE_STATES).optional(),
+});
+
+export const createProjectStageSchema = Joi.object<CreateProjectStageBody>({
+  stage_no: Joi.number().integer().min(1).max(10).required(),
+  in_scope: Joi.boolean().default(true),
+  state: Joi.string().valid(...STAGE_STATES).default('not_started'),
+  reason: Joi.string().trim().max(10000).allow(null, '').optional(),
+});
+
+export const updateProjectStageSchema = Joi.object<UpdateProjectStageBody>({
+  state: Joi.string().valid(...STAGE_STATES).optional(),
+  in_scope: Joi.boolean().optional(),
+  reason: Joi.string().trim().max(10000).allow(null, '').optional(),
+  checklist_snapshot: Joi.object().allow(null).optional(),
+  closure_notes: Joi.string().trim().max(10000).allow(null, '').optional(),
+}).min(1);

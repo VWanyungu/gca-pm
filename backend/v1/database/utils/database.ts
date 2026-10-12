@@ -805,54 +805,124 @@ const PROJECT_STAGE_COLS = [
   'last_changed_at',
 ];
 
+export interface ProjectStageWithDetailsRow extends ProjectStageRow {
+  stage_name: string;
+  phase_id: number;
+}
+
 export class ProjectStages {
   static async get(
     projectId: string,
     stageNo: number,
     trx?: Knex.Transaction,
-  ): Promise<ProjectStageRow | null> {
+  ): Promise<ProjectStageWithDetailsRow | null> {
     const q = trx ? trx('project_stage') : db('project_stage');
-    const row = await q.where({ project_id: projectId, stage_no: stageNo }).first();
+    const row = await q
+      .join('pdm_stage', 'project_stage.stage_no', 'pdm_stage.stage_no')
+      .where({ 'project_stage.project_id': projectId, 'project_stage.stage_no': stageNo })
+      .select(
+        'project_stage.project_id',
+        'project_stage.stage_no',
+        'pdm_stage.name as stage_name',
+        'pdm_stage.phase_id',
+        'project_stage.in_scope',
+        'project_stage.state',
+        'project_stage.added_to_scope_by',
+        'project_stage.added_to_scope_at',
+        'project_stage.last_changed_by',
+        'project_stage.last_changed_at',
+      )
+      .first();
     return row ?? null;
   }
 
-  static async list(projectId: string, trx?: Knex.Transaction): Promise<ProjectStageRow[]> {
-    const q = trx ? trx('project_stage') : db('project_stage');
-    return await q.where({ project_id: projectId }).orderBy('stage_no', 'asc');
+  static async list({
+    projectId,
+    inScope,
+    state,
+  }: {
+    projectId: string;
+    inScope?: boolean;
+    state?: StageState;
+  }): Promise<ProjectStageWithDetailsRow[]> {
+    const query = db('project_stage')
+      .join('pdm_stage', 'project_stage.stage_no', 'pdm_stage.stage_no')
+      .where('project_stage.project_id', projectId)
+      .select(
+        'project_stage.project_id',
+        'project_stage.stage_no',
+        'pdm_stage.name as stage_name',
+        'pdm_stage.phase_id',
+        'project_stage.in_scope',
+        'project_stage.state',
+        'project_stage.added_to_scope_by',
+        'project_stage.added_to_scope_at',
+        'project_stage.last_changed_by',
+        'project_stage.last_changed_at',
+      )
+      .orderBy('project_stage.stage_no', 'asc');
+
+    if (inScope !== undefined) {
+      query.andWhere('project_stage.in_scope', inScope);
+    }
+    if (state !== undefined) {
+      query.andWhere('project_stage.state', state);
+    }
+
+    return await query;
   }
 
-  static async upsert(
-    row: {
-      project_id: string;
-      stage_no: number;
-      in_scope?: boolean;
-      state: StageState;
-      added_to_scope_by: string;
-      last_changed_by: string;
-    },
-    trx?: Knex.Transaction,
-  ): Promise<ProjectStageRow> {
-    const q = trx ? trx('project_stage') : db('project_stage');
-    const [result] = await q
-      .insert({
-        project_id: row.project_id,
-        stage_no: row.stage_no,
-        in_scope: row.in_scope ?? true,
-        state: row.state,
-        added_to_scope_by: row.added_to_scope_by,
-        added_to_scope_at: db.fn.now(),
-        last_changed_by: row.last_changed_by,
-        last_changed_at: db.fn.now(),
-      })
-      .onConflict(['project_id', 'stage_no'])
-      .merge({
-        state: row.state,
-        ...(row.in_scope !== undefined ? { in_scope: row.in_scope } : {}),
-        last_changed_by: row.last_changed_by,
-        last_changed_at: db.fn.now(),
-      })
-      .returning(PROJECT_STAGE_COLS);
-    return result;
+  static async create({
+    projectId,
+    stageNo,
+    inScope = true,
+    state = 'not_started',
+    actorId,
+    reason,
+  }: {
+    projectId: string;
+    stageNo: number;
+    inScope?: boolean;
+    state?: StageState;
+    actorId: string;
+    reason?: string | null;
+  }): Promise<ProjectStageWithDetailsRow> {
+    return await db.transaction(async (trx) => {
+      const [stageRow] = await trx('project_stage')
+        .insert({
+          project_id: projectId,
+          stage_no: stageNo,
+          in_scope: inScope,
+          state,
+          added_to_scope_by: actorId,
+          added_to_scope_at: trx.fn.now(),
+          last_changed_by: actorId,
+          last_changed_at: trx.fn.now(),
+        })
+        .returning(PROJECT_STAGE_COLS);
+
+      await trx('stage_state_history').insert({
+        event_id: randomUUID(),
+        project_id: projectId,
+        stage_no: stageNo,
+        event: 'added_to_scope',
+        from_state: null,
+        to_state: state,
+        reason: reason ?? null,
+        checklist_snapshot: null,
+        closure_notes: null,
+        actor_id: actorId,
+        occurred_at: new Date(),
+      });
+
+      const pdmStage = await trx('pdm_stage').where({ stage_no: stageNo }).first();
+
+      return {
+        ...stageRow,
+        stage_name: pdmStage?.name ?? '',
+        phase_id: pdmStage?.phase_id ?? 1,
+      };
+    });
   }
 
   static async update(
@@ -875,7 +945,119 @@ export class ProjectStages {
       .returning(PROJECT_STAGE_COLS);
     return row ?? null;
   }
+
+  static async transition({
+    projectId,
+    stageNo,
+    toState,
+    inScope,
+    actorId,
+    reason,
+    checklistSnapshot,
+    closureNotes,
+  }: {
+    projectId: string;
+    stageNo: number;
+    toState?: StageState;
+    inScope?: boolean;
+    actorId: string;
+    reason?: string | null;
+    checklistSnapshot?: Record<string, unknown> | null;
+    closureNotes?: string | null;
+  }): Promise<{ stage: ProjectStageWithDetailsRow; event: StageStateHistoryRow | null }> {
+    return await db.transaction(async (trx) => {
+      const existing = await trx('project_stage')
+        .where({ project_id: projectId, stage_no: stageNo })
+        .first();
+
+      if (!existing) {
+        throw new Error('Project stage not found');
+      }
+
+      const patch: Record<string, unknown> = {
+        last_changed_by: actorId,
+        last_changed_at: trx.fn.now(),
+      };
+
+      let historyEvent: StageEvent | null = null;
+      const targetState = toState ?? existing.state;
+
+      if (toState && toState !== existing.state) {
+        patch.state = toState;
+        if (existing.state === 'not_started' && toState === 'active') {
+          historyEvent = 'activated';
+        } else if (existing.state === 'active' && toState === 'inactive') {
+          historyEvent = 'deactivated';
+        } else if (existing.state === 'inactive' && toState === 'active') {
+          historyEvent = 'activated';
+        } else if (toState === 'complete') {
+          historyEvent = 'completed';
+        } else if (existing.state === 'complete' && toState === 'active') {
+          historyEvent = 'reopened';
+        } else {
+          historyEvent = toState === 'active' ? 'activated' : 'deactivated';
+        }
+      }
+
+      if (inScope !== undefined && inScope !== existing.in_scope) {
+        patch.in_scope = inScope;
+        if (!historyEvent) {
+          historyEvent = inScope ? 'added_to_scope' : 'removed_from_scope';
+        }
+      }
+
+      const [updatedStage] = await trx('project_stage')
+        .where({ project_id: projectId, stage_no: stageNo })
+        .update(patch)
+        .returning(PROJECT_STAGE_COLS);
+
+      let createdEvent: StageStateHistoryRow | null = null;
+      if (historyEvent) {
+        const [evt] = await trx('stage_state_history')
+          .insert({
+            event_id: randomUUID(),
+            project_id: projectId,
+            stage_no: stageNo,
+            event: historyEvent,
+            from_state: existing.state,
+            to_state: targetState,
+            reason: reason ?? null,
+            checklist_snapshot: historyEvent === 'completed' ? (checklistSnapshot ?? { template_id: null, items: [] }) : null,
+            closure_notes: historyEvent === 'completed' ? (closureNotes ?? null) : null,
+            actor_id: actorId,
+            occurred_at: new Date(),
+          })
+          .returning(STAGE_STATE_HISTORY_COLS);
+        createdEvent = evt;
+      }
+
+      const pdmStage = await trx('pdm_stage').where({ stage_no: stageNo }).first();
+
+      return {
+        stage: {
+          ...updatedStage,
+          stage_name: pdmStage?.name ?? '',
+          phase_id: pdmStage?.phase_id ?? 1,
+        },
+        event: createdEvent,
+      };
+    });
+  }
+
+  static async delete(
+    projectId: string,
+    stageNo: number,
+    trx?: Knex.Transaction,
+  ): Promise<ProjectStageRow | null> {
+    const q = trx ? trx('project_stage') : db('project_stage');
+    const [row] = await q
+      .where({ project_id: projectId, stage_no: stageNo })
+      .del()
+      .returning(PROJECT_STAGE_COLS);
+    return row ?? null;
+  }
 }
+
 
 export interface ProjectRow {
   project_id: string;

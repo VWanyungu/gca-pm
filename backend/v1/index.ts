@@ -14,6 +14,7 @@ import riskRouter from './routers/riskRouter.js';
 import programsRouter from './routers/programsRouter.js';
 import weatherCategoriesRouter from './routers/weatherCategoriesRouter.js';
 import stageStateHistoryRouter from './routers/stageStateHistoryRouter.js';
+import projectStagesRouter from './routers/projectStagesRouter.js';
 
 const router = express.Router();
 
@@ -32,7 +33,7 @@ router.use('/risk-categories', riskCategoriesRouter);
 router.use('/weather-categories', weatherCategoriesRouter);
 router.use('/projects/:projectId/risk', riskRouter);
 router.use('/projects/:projectId/stage-state-history', stageStateHistoryRouter);
-router.use('/projects/:projectId/stage-history', stageStateHistoryRouter);
+router.use('/projects/:projectId/stages', projectStagesRouter);
 
 router.use('/logout', logoutRouter);
 router.use('/token', refreshTokenRouter);
