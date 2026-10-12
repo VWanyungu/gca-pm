@@ -1077,3 +1077,146 @@ export class Projects {
     return row ?? null;
   }
 }
+
+export type ActivityStatus = 'open' | 'in_progress' | 'done' | 'cancelled';
+
+export interface StageActivityRow {
+  activity_id: string;
+  project_id: string;
+  stage_no: number;
+  title: string;
+  description: string | null;
+  status: ActivityStatus;
+  due_date: string | null;
+  owner_id: string | null;
+  completed_at: Date | null;
+  created_by: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface CreateStageActivityInput {
+  activity_id: string;
+  project_id: string;
+  stage_no: number;
+  title: string;
+  description?: string | null;
+  status?: ActivityStatus;
+  due_date?: string | null;
+  owner_id?: string | null;
+  completed_at?: Date | null;
+  created_by: string;
+}
+
+export interface UpdateStageActivityFields {
+  stage_no?: number;
+  title?: string;
+  description?: string | null;
+  status?: ActivityStatus;
+  due_date?: string | null;
+  owner_id?: string | null;
+  completed_at?: Date | null;
+}
+
+const STAGE_ACTIVITY_COLS = [
+  'activity_id',
+  'project_id',
+  'stage_no',
+  'title',
+  'description',
+  'status',
+  'due_date',
+  'owner_id',
+  'completed_at',
+  'created_by',
+  'created_at',
+  'updated_at',
+];
+
+export class StageActivities {
+  static async create(
+    input: CreateStageActivityInput,
+    trx?: Knex.Transaction,
+  ): Promise<StageActivityRow> {
+    const q = trx ? trx('stage_activity') : db('stage_activity');
+    const [row] = await q.insert(input).returning(STAGE_ACTIVITY_COLS);
+    return row;
+  }
+
+  static async list({
+    projectId,
+    stageNo,
+    status,
+    ownerId,
+    page = 1,
+    limit = 25,
+  }: {
+    projectId: string;
+    stageNo?: number;
+    status?: ActivityStatus;
+    ownerId?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    stageActivities: StageActivityRow[];
+    pagination: { page: number; limit: number; total: number; pages: number };
+  }> {
+    const base = db('stage_activity').where({ project_id: projectId });
+    if (stageNo !== undefined) base.andWhere({ stage_no: stageNo });
+    if (status) base.andWhere({ status });
+    if (ownerId) base.andWhere({ owner_id: ownerId });
+
+    const countRows = await base.clone().count<{ count: string }[]>('activity_id as count');
+    const total = Number(countRows[0]?.count ?? 0);
+
+    const stageActivities = await base
+      .clone()
+      .select(STAGE_ACTIVITY_COLS)
+      .orderBy('created_at', 'desc')
+      .limit(limit)
+      .offset((page - 1) * limit);
+
+    return {
+      stageActivities,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    };
+  }
+
+  static async getById(
+    projectId: string,
+    activityId: string,
+  ): Promise<StageActivityRow | null> {
+    const row = await db('stage_activity')
+      .where({ project_id: projectId, activity_id: activityId })
+      .first();
+    return row ?? null;
+  }
+
+  static async update(
+    projectId: string,
+    activityId: string,
+    patch: UpdateStageActivityFields,
+    trx?: Knex.Transaction,
+  ): Promise<StageActivityRow | null> {
+    const q = trx ? trx('stage_activity') : db('stage_activity');
+    const [row] = await q
+      .where({ project_id: projectId, activity_id: activityId })
+      .update(patch)
+      .returning(STAGE_ACTIVITY_COLS);
+    return row ?? null;
+  }
+
+  static async delete(
+    projectId: string,
+    activityId: string,
+    trx?: Knex.Transaction,
+  ): Promise<StageActivityRow | null> {
+    const q = trx ? trx('stage_activity') : db('stage_activity');
+    const [row] = await q
+      .where({ project_id: projectId, activity_id: activityId })
+      .del()
+      .returning(STAGE_ACTIVITY_COLS);
+    return row ?? null;
+  }
+}
+

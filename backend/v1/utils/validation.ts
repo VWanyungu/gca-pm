@@ -1,7 +1,7 @@
 import Joi from 'joi';
 import type { CreateUserInput } from '../database/utils/database.js';
 import type { RoleName, ScopeType } from '../database/utils/database.js';
-import type { StageEvent, StageState } from '../database/utils/database.js';
+import type { StageEvent, StageState, ActivityStatus } from '../database/utils/database.js';
 
 export const createUserSchema = Joi.object<CreateUserInput>({
   id: Joi.string().uuid().required(),
@@ -404,3 +404,66 @@ export const updateProjectStageSchema = Joi.object<UpdateProjectStageBody>({
   checklist_snapshot: Joi.object().allow(null).optional(),
   closure_notes: Joi.string().trim().max(10000).allow(null, '').optional(),
 }).min(1);
+
+const ACTIVITY_STATUSES: ActivityStatus[] = ['open', 'in_progress', 'done', 'cancelled'];
+
+export interface CreateStageActivityBody {
+  stage_no: number;
+  title: string;
+  description?: string | null;
+  status?: ActivityStatus;
+  due_date?: string | null;
+  owner_id?: string | null;
+}
+
+export interface UpdateStageActivityBody {
+  stage_no?: number;
+  title?: string;
+  description?: string | null;
+  status?: ActivityStatus;
+  due_date?: string | null;
+  owner_id?: string | null;
+}
+
+export interface ListStageActivitiesQuery {
+  stage_no?: number;
+  status?: ActivityStatus;
+  owner_id?: string;
+  page?: number;
+  limit?: number;
+}
+
+export const stageActivityProjectParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+});
+
+export const stageActivityParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+  activityId: Joi.string().uuid().required(),
+});
+
+export const createStageActivitySchema = Joi.object<CreateStageActivityBody>({
+  stage_no: Joi.number().integer().min(1).max(10).required(),
+  title: Joi.string().trim().min(1).max(500).required(),
+  description: Joi.string().trim().max(10000).allow(null, '').optional(),
+  status: Joi.string().valid(...ACTIVITY_STATUSES).default('open'),
+  due_date: Joi.string().isoDate().allow(null).optional(),
+  owner_id: Joi.string().uuid().allow(null).optional(),
+});
+
+export const updateStageActivitySchema = Joi.object<UpdateStageActivityBody>({
+  stage_no: Joi.number().integer().min(1).max(10).optional(),
+  title: Joi.string().trim().min(1).max(500).optional(),
+  description: Joi.string().trim().max(10000).allow(null, '').optional(),
+  status: Joi.string().valid(...ACTIVITY_STATUSES).optional(),
+  due_date: Joi.string().isoDate().allow(null).optional(),
+  owner_id: Joi.string().uuid().allow(null).optional(),
+}).min(1);
+
+export const listStageActivitiesQuerySchema = Joi.object<ListStageActivitiesQuery>({
+  stage_no: Joi.number().integer().min(1).max(10).optional(),
+  status: Joi.string().valid(...ACTIVITY_STATUSES).optional(),
+  owner_id: Joi.string().uuid().optional(),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(25),
+});
