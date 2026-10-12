@@ -1,7 +1,5 @@
 import Joi from 'joi';
-import type { CreateUserInput } from '../database/utils/database.js';
-import type { RoleName, ScopeType } from '../database/utils/database.js';
-import type { StageEvent, StageState, ActivityStatus } from '../database/utils/database.js';
+import type { CreateUserInput, RoleName, ScopeType, StageEvent, StageState, ActivityStatus, ProjectStatus } from '../database/utils/database.js';
 
 export const createUserSchema = Joi.object<CreateUserInput>({
   id: Joi.string().uuid().required(),
@@ -526,4 +524,140 @@ export const updateStageActivityAttachmentSchema = Joi.object<UpdateStageActivit
 
 export const listStageActivityAttachmentsQuerySchema = Joi.object<ListStageActivityAttachmentsQuery>({
   includeRemoved: Joi.boolean().default(false),
+});
+
+const PROJECT_STATUSES: ProjectStatus[] = ['active', 'on_hold', 'complete', 'cancelled'];
+
+export interface CreateProjectBody {
+  project_code: string;
+  name: string;
+  program_id: number;
+  client_name?: string | null;
+  country?: string | null;
+  site_location?: string | null;
+  site_lat?: number | null;
+  site_lng?: number | null;
+  timezone?: string;
+  is_civil?: boolean;
+  is_mechanical?: boolean;
+  is_electrical?: boolean;
+  expected_start_date?: string | null;
+  expected_end_date?: string | null;
+  estimated_value?: number | null;
+  currency?: string | null;
+  status?: ProjectStatus;
+  legacy_source_ref?: string | null;
+  holiday_calendar_id?: number | null;
+  dpr_expected_weekdays?: number[];
+  pm_user_id?: string | null;
+  planner_user_id?: string | null;
+  scope_stages?: number[];
+  initial_active_stages?: number[];
+}
+
+export interface UpdateProjectBody {
+  name?: string;
+  program_id?: number;
+  client_name?: string | null;
+  country?: string | null;
+  site_location?: string | null;
+  site_lat?: number | null;
+  site_lng?: number | null;
+  timezone?: string;
+  is_civil?: boolean;
+  is_mechanical?: boolean;
+  is_electrical?: boolean;
+  expected_start_date?: string | null;
+  expected_end_date?: string | null;
+  estimated_value?: number | null;
+  currency?: string | null;
+  legacy_source_ref?: string | null;
+  holiday_calendar_id?: number | null;
+  dpr_expected_weekdays?: number[];
+  status?: ProjectStatus;
+  status_reason?: string | null;
+}
+
+export interface ListProjectsQuery {
+  program_id?: number;
+  status?: ProjectStatus;
+  country?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export const projectIdParamSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+});
+
+export const suggestProjectCodeQuerySchema = Joi.object({
+  program_id: Joi.number().integer().required(),
+  year: Joi.number().integer().min(2000).max(2100).optional(),
+});
+
+export const createProjectSchema = Joi.object<CreateProjectBody>({
+  project_code: Joi.string()
+    .pattern(/^[0-9]{3}-[0-9]{3}\.[0-9]{4}$/)
+    .required()
+    .messages({
+      'string.pattern.base': 'project_code must match NNN-NNN.YYYY format (e.g. 001-001.2026)',
+    }),
+  name: Joi.string().trim().min(1).max(500).required(),
+  program_id: Joi.number().integer().required(),
+  client_name: Joi.string().trim().max(500).allow(null, '').optional(),
+  country: Joi.string().trim().max(100).allow(null, '').optional(),
+  site_location: Joi.string().trim().max(500).allow(null, '').optional(),
+  site_lat: Joi.number().min(-90).max(90).allow(null).optional(),
+  site_lng: Joi.number().min(-180).max(180).allow(null).optional(),
+  timezone: Joi.string().trim().default('Africa/Nairobi'),
+  is_civil: Joi.boolean().default(false),
+  is_mechanical: Joi.boolean().default(false),
+  is_electrical: Joi.boolean().default(false),
+  expected_start_date: Joi.string().isoDate().allow(null).optional(),
+  expected_end_date: Joi.string().isoDate().allow(null).optional(),
+  estimated_value: Joi.number().min(0).allow(null).optional(),
+  currency: Joi.string().trim().length(3).uppercase().allow(null).optional(),
+  status: Joi.string().valid(...PROJECT_STATUSES).default('active'),
+  legacy_source_ref: Joi.string().trim().max(255).allow(null, '').optional(),
+  holiday_calendar_id: Joi.number().integer().allow(null).optional(),
+  dpr_expected_weekdays: Joi.array()
+    .items(Joi.number().integer().min(1).max(7))
+    .default([1, 2, 3, 4, 5, 6]),
+  pm_user_id: Joi.string().uuid().allow(null).optional(),
+  planner_user_id: Joi.string().uuid().allow(null).optional(),
+  scope_stages: Joi.array().items(Joi.number().integer().min(1).max(10)).min(1).optional(),
+  initial_active_stages: Joi.array().items(Joi.number().integer().min(1).max(10)).min(1).optional(),
+});
+
+export const updateProjectSchema = Joi.object<UpdateProjectBody>({
+  name: Joi.string().trim().min(1).max(500).optional(),
+  program_id: Joi.number().integer().optional(),
+  client_name: Joi.string().trim().max(500).allow(null, '').optional(),
+  country: Joi.string().trim().max(100).allow(null, '').optional(),
+  site_location: Joi.string().trim().max(500).allow(null, '').optional(),
+  site_lat: Joi.number().min(-90).max(90).allow(null).optional(),
+  site_lng: Joi.number().min(-180).max(180).allow(null).optional(),
+  timezone: Joi.string().trim().optional(),
+  is_civil: Joi.boolean().optional(),
+  is_mechanical: Joi.boolean().optional(),
+  is_electrical: Joi.boolean().optional(),
+  expected_start_date: Joi.string().isoDate().allow(null).optional(),
+  expected_end_date: Joi.string().isoDate().allow(null).optional(),
+  estimated_value: Joi.number().min(0).allow(null).optional(),
+  currency: Joi.string().trim().length(3).uppercase().allow(null).optional(),
+  legacy_source_ref: Joi.string().trim().max(255).allow(null, '').optional(),
+  holiday_calendar_id: Joi.number().integer().allow(null).optional(),
+  dpr_expected_weekdays: Joi.array().items(Joi.number().integer().min(1).max(7)).optional(),
+  status: Joi.string().valid(...PROJECT_STATUSES).optional(),
+  status_reason: Joi.string().trim().max(10000).allow(null, '').optional(),
+}).min(1);
+
+export const listProjectsQuerySchema = Joi.object<ListProjectsQuery>({
+  program_id: Joi.number().integer().optional(),
+  status: Joi.string().valid(...PROJECT_STATUSES).optional(),
+  country: Joi.string().trim().optional(),
+  search: Joi.string().trim().max(100).optional(),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(25),
 });

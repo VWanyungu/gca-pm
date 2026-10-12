@@ -1059,6 +1059,8 @@ export class ProjectStages {
 }
 
 
+export type ProjectStatus = 'active' | 'on_hold' | 'complete' | 'cancelled';
+
 export interface ProjectRow {
   project_id: string;
   project_code: string;
@@ -1067,14 +1069,476 @@ export interface ProjectRow {
   client_name: string | null;
   country: string | null;
   site_location: string | null;
+  site_lat: number | null;
+  site_lng: number | null;
   timezone: string;
-  status: 'active' | 'on_hold' | 'complete' | 'cancelled';
+  is_civil: boolean;
+  is_mechanical: boolean;
+  is_electrical: boolean;
+  expected_start_date: string | null;
+  expected_end_date: string | null;
+  estimated_value: number | null;
+  currency: string | null;
+  status: ProjectStatus;
+  legacy_source_ref: string | null;
+  holiday_calendar_id: number | null;
+  dpr_expected_weekdays: number[];
+  created_by: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface CreateProjectInput {
+  project_id?: string;
+  project_code: string;
+  name: string;
+  program_id: number;
+  client_name?: string | null;
+  country?: string | null;
+  site_location?: string | null;
+  site_lat?: number | null;
+  site_lng?: number | null;
+  timezone?: string;
+  is_civil?: boolean;
+  is_mechanical?: boolean;
+  is_electrical?: boolean;
+  expected_start_date?: string | null;
+  expected_end_date?: string | null;
+  estimated_value?: number | null;
+  currency?: string | null;
+  status?: ProjectStatus;
+  legacy_source_ref?: string | null;
+  holiday_calendar_id?: number | null;
+  dpr_expected_weekdays?: number[];
+  created_by: string;
+  pm_user_id?: string | null;
+  planner_user_id?: string | null;
+  scope_stages?: number[];
+  initial_active_stages?: number[];
+}
+
+export interface UpdateProjectFields {
+  name?: string;
+  program_id?: number;
+  client_name?: string | null;
+  country?: string | null;
+  site_location?: string | null;
+  site_lat?: number | null;
+  site_lng?: number | null;
+  timezone?: string;
+  is_civil?: boolean;
+  is_mechanical?: boolean;
+  is_electrical?: boolean;
+  expected_start_date?: string | null;
+  expected_end_date?: string | null;
+  estimated_value?: number | null;
+  currency?: string | null;
+  legacy_source_ref?: string | null;
+  holiday_calendar_id?: number | null;
+  dpr_expected_weekdays?: number[];
+  status?: ProjectStatus;
+}
+
+export const PROJECT_COLS = [
+  'project_id',
+  'project_code',
+  'name',
+  'program_id',
+  'client_name',
+  'country',
+  'site_location',
+  'site_lat',
+  'site_lng',
+  'timezone',
+  'is_civil',
+  'is_mechanical',
+  'is_electrical',
+  'expected_start_date',
+  'expected_end_date',
+  'estimated_value',
+  'currency',
+  'status',
+  'legacy_source_ref',
+  'holiday_calendar_id',
+  'dpr_expected_weekdays',
+  'created_by',
+  'created_at',
+  'updated_at',
+];
+
+export interface ProjectStatusHistoryRow {
+  history_id: string;
+  project_id: string;
+  from_status: ProjectStatus;
+  to_status: ProjectStatus;
+  reason: string | null;
+  actor_id: string;
+  changed_at: Date;
+}
+
+export interface CreateProjectStatusHistoryInput {
+  history_id?: string;
+  project_id: string;
+  from_status: ProjectStatus;
+  to_status: ProjectStatus;
+  reason?: string | null;
+  actor_id: string;
+}
+
+export class ProjectStatusHistory {
+  static async create(
+    input: CreateProjectStatusHistoryInput,
+    trx?: Knex.Transaction,
+  ): Promise<ProjectStatusHistoryRow> {
+    const q = trx ? trx('project_status_history') : db('project_status_history');
+    const [row] = await q
+      .insert({
+        history_id: input.history_id ?? randomUUID(),
+        project_id: input.project_id,
+        from_status: input.from_status,
+        to_status: input.to_status,
+        reason: input.reason ?? null,
+        actor_id: input.actor_id,
+      })
+      .returning('*');
+    return row;
+  }
+
+  static async listByProjectId(projectId: string): Promise<ProjectStatusHistoryRow[]> {
+    return await db('project_status_history')
+      .where({ project_id: projectId })
+      .orderBy('changed_at', 'desc');
+  }
 }
 
 export class Projects {
-  static async getById(projectId: string): Promise<ProjectRow | null> {
-    const row = await db('projects').where({ project_id: projectId }).first();
+  static async create(
+    input: CreateProjectInput,
+    trx?: Knex.Transaction,
+  ): Promise<{ project: ProjectRow; stages: ProjectStageWithDetailsRow[] }> {
+    const execute = async (t: Knex.Transaction) => {
+      const projectId = input.project_id ?? randomUUID();
+
+      const [project] = await t('projects')
+        .insert({
+          project_id: projectId,
+          project_code: input.project_code,
+          name: input.name,
+          program_id: input.program_id,
+          client_name: input.client_name ?? null,
+          country: input.country ?? null,
+          site_location: input.site_location ?? null,
+          site_lat: input.site_lat ?? null,
+          site_lng: input.site_lng ?? null,
+          timezone: input.timezone ?? 'Africa/Nairobi',
+          is_civil: input.is_civil ?? false,
+          is_mechanical: input.is_mechanical ?? false,
+          is_electrical: input.is_electrical ?? false,
+          expected_start_date: input.expected_start_date ?? null,
+          expected_end_date: input.expected_end_date ?? null,
+          estimated_value: input.estimated_value ?? null,
+          currency: input.currency ?? null,
+          status: input.status ?? 'active',
+          legacy_source_ref: input.legacy_source_ref ?? null,
+          holiday_calendar_id: input.holiday_calendar_id ?? null,
+          dpr_expected_weekdays: input.dpr_expected_weekdays ?? [1, 2, 3, 4, 5, 6],
+          created_by: input.created_by,
+        })
+        .returning(PROJECT_COLS);
+
+      // Grant PM@project to creator or designated PM
+      const pmUserId = input.pm_user_id || input.created_by;
+      await t('roles').insert({
+        attribute_id: randomUUID(),
+        user_id: pmUserId,
+        role: 'PM',
+        scope_type: 'project',
+        program_id: null,
+        project_id: projectId,
+        granted_by: input.created_by,
+        granted_at: t.fn.now(),
+      });
+
+      // Grant Planner@project if specified
+      if (input.planner_user_id) {
+        await t('roles').insert({
+          attribute_id: randomUUID(),
+          user_id: input.planner_user_id,
+          role: 'Planner',
+          scope_type: 'project',
+          program_id: null,
+          project_id: projectId,
+          granted_by: input.created_by,
+          granted_at: t.fn.now(),
+        });
+      }
+
+      // Populate stages 1..10
+      const scopeSet = new Set(
+        input.scope_stages && input.scope_stages.length > 0
+          ? input.scope_stages
+          : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      );
+      const activeSet = new Set(
+        input.initial_active_stages && input.initial_active_stages.length > 0
+          ? input.initial_active_stages
+          : [Array.from(scopeSet)[0] ?? 1],
+      );
+
+      const stageRows: any[] = [];
+      for (let s = 1; s <= 10; s++) {
+        const inScope = scopeSet.has(s);
+        const isActive = inScope && activeSet.has(s);
+        const state: StageState = isActive ? 'active' : 'not_started';
+
+        stageRows.push({
+          project_id: projectId,
+          stage_no: s,
+          in_scope: inScope,
+          state,
+          added_to_scope_by: input.created_by,
+          added_to_scope_at: t.fn.now(),
+          last_changed_by: input.created_by,
+          last_changed_at: t.fn.now(),
+        });
+      }
+
+      await t('project_stage').insert(stageRows);
+
+      // Log stage state history for in_scope stages
+      for (let s = 1; s <= 10; s++) {
+        if (scopeSet.has(s)) {
+          await t('stage_state_history').insert({
+            event_id: randomUUID(),
+            project_id: projectId,
+            stage_no: s,
+            event: 'added_to_scope',
+            from_state: null,
+            to_state: 'not_started',
+            reason: 'Project initialized',
+            checklist_snapshot: null,
+            closure_notes: null,
+            actor_id: input.created_by,
+            occurred_at: new Date(),
+          });
+
+          if (activeSet.has(s)) {
+            await t('stage_state_history').insert({
+              event_id: randomUUID(),
+              project_id: projectId,
+              stage_no: s,
+              event: 'activated',
+              from_state: 'not_started',
+              to_state: 'active',
+              reason: 'Initial active stage on project setup',
+              checklist_snapshot: null,
+              closure_notes: null,
+              actor_id: input.created_by,
+              occurred_at: new Date(),
+            });
+          }
+        }
+      }
+
+      // Fetch created stages with details
+      const stages = await t('project_stage')
+        .join('pdm_stage', 'project_stage.stage_no', 'pdm_stage.stage_no')
+        .where('project_stage.project_id', projectId)
+        .select(
+          'project_stage.project_id',
+          'project_stage.stage_no',
+          'pdm_stage.name as stage_name',
+          'pdm_stage.phase_id',
+          'project_stage.in_scope',
+          'project_stage.state',
+          'project_stage.added_to_scope_by',
+          'project_stage.added_to_scope_at',
+          'project_stage.last_changed_by',
+          'project_stage.last_changed_at',
+        )
+        .orderBy('project_stage.stage_no', 'asc');
+
+      return { project, stages };
+    };
+
+    return trx ? await execute(trx) : await db.transaction(execute);
+  }
+
+  static async getById(projectId: string, trx?: Knex.Transaction): Promise<ProjectRow | null> {
+    const q = trx ? trx('projects') : db('projects');
+    const row = await q.where({ project_id: projectId }).first();
     return row ?? null;
+  }
+
+  static async getByCode(projectCode: string, trx?: Knex.Transaction): Promise<ProjectRow | null> {
+    const q = trx ? trx('projects') : db('projects');
+    const row = await q.where({ project_code: projectCode }).first();
+    return row ?? null;
+  }
+
+  static async list({
+    programId,
+    status,
+    country,
+    search,
+    page = 1,
+    limit = 25,
+  }: {
+    programId?: number;
+    status?: ProjectStatus;
+    country?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    projects: ProjectRow[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const query = db('projects');
+
+    if (programId !== undefined) {
+      query.where('program_id', programId);
+    }
+    if (status !== undefined) {
+      query.where('status', status);
+    }
+    if (country) {
+      query.whereILike('country', `%${country}%`);
+    }
+    if (search) {
+      query.where((qb) => {
+        qb.whereILike('name', `%${search}%`).orWhereILike('project_code', `%${search}%`);
+      });
+    }
+
+    const countResult = await query.clone().count<{ count: string }[]>('project_id as count');
+    const total = Number(countResult[0]?.count ?? 0);
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    const projects = await query
+      .select(PROJECT_COLS)
+      .orderBy('created_at', 'desc')
+      .offset((page - 1) * limit)
+      .limit(limit);
+
+    return {
+      projects,
+      pagination: { page, limit, total, totalPages },
+    };
+  }
+
+  static async update(
+    projectId: string,
+    patch: UpdateProjectFields,
+    actorId?: string,
+    reason?: string | null,
+    trx?: Knex.Transaction,
+  ): Promise<ProjectRow | null> {
+    const execute = async (t: Knex.Transaction) => {
+      const existing = await t('projects').where({ project_id: projectId }).first();
+      if (!existing) return null;
+
+      // Handle status transition if status is being updated
+      if (patch.status && patch.status !== existing.status) {
+        const fromStatus = existing.status as ProjectStatus;
+        const toStatus = patch.status;
+
+        // AC-PRJ-04 validation:
+        // Allowed:
+        // active -> on_hold (reason required)
+        // on_hold -> active
+        // active -> complete
+        // active or on_hold -> cancelled (reason required)
+        // cancelled -> active (reason required)
+        const allowedTransitions: Record<ProjectStatus, ProjectStatus[]> = {
+          active: ['on_hold', 'complete', 'cancelled'],
+          on_hold: ['active', 'cancelled'],
+          complete: [],
+          cancelled: ['active'],
+        };
+
+        if (!allowedTransitions[fromStatus].includes(toStatus)) {
+          throw new Error(
+            `Invalid project status transition from '${fromStatus}' to '${toStatus}'`,
+          );
+        }
+
+        if (['on_hold', 'cancelled'].includes(toStatus) && !reason) {
+          throw new Error(`Reason is required when transitioning to '${toStatus}'`);
+        }
+
+        // Record status change in project_status_history
+        if (actorId) {
+          await t('project_status_history').insert({
+            history_id: randomUUID(),
+            project_id: projectId,
+            from_status: fromStatus,
+            to_status: toStatus,
+            reason: reason ?? null,
+            actor_id: actorId,
+            changed_at: t.fn.now(),
+          });
+        }
+
+        // AC-PRJ-05: On cancellation, void all open escalations
+        if (toStatus === 'cancelled') {
+          const hasEscalations = await t.schema.hasTable('escalation');
+          if (hasEscalations) {
+            await t('escalation')
+              .where({ project_id: projectId })
+              .whereIn('status', ['open', 'escalated'])
+              .update({
+                status: 'voided',
+                void_reason: 'project cancelled',
+              });
+          }
+        }
+      }
+
+      const updateData: Record<string, unknown> = {
+        ...patch,
+        updated_at: t.fn.now(),
+      };
+
+      const [updated] = await t('projects')
+        .where({ project_id: projectId })
+        .update(updateData)
+        .returning(PROJECT_COLS);
+
+      return updated ?? null;
+    };
+
+    return trx ? await execute(trx) : await db.transaction(execute);
+  }
+
+  static async delete(projectId: string, trx?: Knex.Transaction): Promise<boolean> {
+    const q = trx ? trx('projects') : db('projects');
+    const count = await q.where({ project_id: projectId }).del();
+    return count > 0;
+  }
+
+  static async suggestNextCode(programId: number, year?: number): Promise<string> {
+    const currentYear = year ?? new Date().getFullYear();
+    const programPrefix = String(programId).padStart(3, '0');
+    const pattern = `${programPrefix}-%.${currentYear}`;
+
+    const rows = await db('projects')
+      .select('project_code')
+      .where('program_id', programId)
+      .whereILike('project_code', pattern);
+
+    let maxSeq = 0;
+    const regex = new RegExp(`^${programPrefix}-(\\d{3})\\.${currentYear}$`);
+    for (const r of rows) {
+      const match = r.project_code.match(regex);
+      if (match && match[1]) {
+        const seq = parseInt(match[1], 10);
+        if (seq > maxSeq) maxSeq = seq;
+      }
+    }
+
+    const nextSeq = String(maxSeq + 1).padStart(3, '0');
+    return `${programPrefix}-${nextSeq}.${currentYear}`;
   }
 }
 
