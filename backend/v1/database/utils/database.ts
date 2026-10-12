@@ -3124,5 +3124,373 @@ export class Dprs {
   }
 }
 
+export type EscalationStatus = 'open' | 'acknowledged' | 'resolved' | 'voided';
+
+export interface EscalationRow {
+  escalation_id: string;
+  submission_id: string;
+  project_id: string;
+  status: EscalationStatus;
+  acknowledged_by: string | null;
+  acknowledged_at: Date | null;
+  resolved_by: string | null;
+  resolved_at: Date | null;
+  created_at: Date;
+}
+
+export interface EscalationWithDetailsRow extends EscalationRow {
+  escalation_reason?: string | null;
+  week_start?: Date | string | null;
+  submission_status?: string | null;
+  acknowledged_by_name?: string | null;
+  resolved_by_name?: string | null;
+  raiser_id?: string | null;
+  raiser_name?: string | null;
+  response_count?: number;
+}
+
+export interface EscalationResponseRow {
+  response_id: string;
+  escalation_id: string;
+  author_id: string;
+  body: string;
+  is_acknowledgement: boolean;
+  created_at: Date;
+  author_name?: string | null;
+}
+
+export interface CreateEscalationInput {
+  escalation_id?: string;
+  submission_id: string;
+  project_id: string;
+  status?: EscalationStatus;
+  acknowledged_by?: string | null;
+  acknowledged_at?: Date | null;
+  resolved_by?: string | null;
+  resolved_at?: Date | null;
+}
+
+export interface UpdateEscalationFields {
+  status?: EscalationStatus;
+  acknowledged_by?: string | null;
+  acknowledged_at?: Date | null;
+  resolved_by?: string | null;
+  resolved_at?: Date | null;
+}
+
+export interface CreateEscalationResponseInput {
+  response_id?: string;
+  escalation_id: string;
+  author_id: string;
+  body: string;
+  is_acknowledgement?: boolean;
+}
+
+const ESCALATION_COLS = [
+  'escalation_id',
+  'submission_id',
+  'project_id',
+  'status',
+  'acknowledged_by',
+  'acknowledged_at',
+  'resolved_by',
+  'resolved_at',
+  'created_at',
+];
+
+export class Escalations {
+  static async create(
+    input: CreateEscalationInput,
+    trx?: Knex.Transaction,
+  ): Promise<EscalationRow> {
+    const q = trx ? trx('escalation') : db('escalation');
+    const [row] = await q
+      .insert({
+        escalation_id: input.escalation_id ?? randomUUID(),
+        submission_id: input.submission_id,
+        project_id: input.project_id,
+        status: input.status ?? 'open',
+        acknowledged_by: input.acknowledged_by ?? null,
+        acknowledged_at: input.acknowledged_at ?? null,
+        resolved_by: input.resolved_by ?? null,
+        resolved_at: input.resolved_at ?? null,
+      })
+      .returning(ESCALATION_COLS);
+    return row;
+  }
+
+  static async list(
+    {
+      projectId,
+      status,
+      page = 1,
+      limit = 25,
+    }: {
+      projectId?: string;
+      status?: EscalationStatus;
+      page?: number;
+      limit?: number;
+    },
+    trx?: Knex.Transaction,
+  ): Promise<{
+    escalations: EscalationWithDetailsRow[];
+    pagination: { page: number; limit: number; total: number; pages: number };
+  }> {
+    const q = trx ? trx('escalation') : db('escalation');
+    const base = q;
+    if (projectId) base.where('escalation.project_id', projectId);
+    if (status) base.where('escalation.status', status);
+
+    const countRows = await base.clone().count<{ count: string }[]>('escalation.escalation_id as count');
+    const total = Number(countRows[0]?.count ?? 0);
+
+    const rows = await base
+      .clone()
+      .leftJoin('weekly_submission', 'escalation.submission_id', 'weekly_submission.submission_id')
+      .leftJoin('users as ack_u', 'escalation.acknowledged_by', 'ack_u.id')
+      .leftJoin('users as res_u', 'escalation.resolved_by', 'res_u.id')
+      .leftJoin('users as raiser_u', 'weekly_submission.created_by', 'raiser_u.id')
+      .select(
+        'escalation.*',
+        'weekly_submission.escalation_reason',
+        'weekly_submission.week_start',
+        'weekly_submission.status as submission_status',
+        'weekly_submission.created_by as raiser_id',
+        db.raw("NULLIF(CONCAT(ack_u.first_name, ' ', ack_u.last_name), ' ') as acknowledged_by_name"),
+        db.raw("NULLIF(CONCAT(res_u.first_name, ' ', res_u.last_name), ' ') as resolved_by_name"),
+        db.raw("NULLIF(CONCAT(raiser_u.first_name, ' ', raiser_u.last_name), ' ') as raiser_name"),
+        db.raw('(SELECT COUNT(*)::int FROM escalation_response WHERE escalation_response.escalation_id = escalation.escalation_id) as response_count'),
+      )
+      .orderBy('escalation.created_at', 'desc')
+      .limit(limit)
+      .offset((page - 1) * limit);
+
+    return {
+      escalations: rows,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    };
+  }
+
+  static async getById(
+    escalationId: string,
+    projectId?: string,
+    trx?: Knex.Transaction,
+  ): Promise<EscalationWithDetailsRow | null> {
+    const q = trx ? trx('escalation') : db('escalation');
+    let query = q
+      .leftJoin('weekly_submission', 'escalation.submission_id', 'weekly_submission.submission_id')
+      .leftJoin('users as ack_u', 'escalation.acknowledged_by', 'ack_u.id')
+      .leftJoin('users as res_u', 'escalation.resolved_by', 'res_u.id')
+      .leftJoin('users as raiser_u', 'weekly_submission.created_by', 'raiser_u.id')
+      .where('escalation.escalation_id', escalationId);
+
+    if (projectId) {
+      query = query.andWhere('escalation.project_id', projectId);
+    }
+
+    const row = await query
+      .select(
+        'escalation.*',
+        'weekly_submission.escalation_reason',
+        'weekly_submission.week_start',
+        'weekly_submission.status as submission_status',
+        'weekly_submission.created_by as raiser_id',
+        db.raw("NULLIF(CONCAT(ack_u.first_name, ' ', ack_u.last_name), ' ') as acknowledged_by_name"),
+        db.raw("NULLIF(CONCAT(res_u.first_name, ' ', res_u.last_name), ' ') as resolved_by_name"),
+        db.raw("NULLIF(CONCAT(raiser_u.first_name, ' ', raiser_u.last_name), ' ') as raiser_name"),
+        db.raw('(SELECT COUNT(*)::int FROM escalation_response WHERE escalation_response.escalation_id = escalation.escalation_id) as response_count'),
+      )
+      .first();
+
+    return row ?? null;
+  }
+
+  static async getBySubmissionId(
+    submissionId: string,
+    trx?: Knex.Transaction,
+  ): Promise<EscalationRow | null> {
+    const q = trx ? trx('escalation') : db('escalation');
+    const row = await q.where('submission_id', submissionId).first();
+    return row ?? null;
+  }
+
+  static async acknowledge({
+    escalationId,
+    projectId,
+    userId,
+    note,
+  }: {
+    escalationId: string;
+    projectId?: string;
+    userId: string;
+    note?: string;
+  }): Promise<{
+    escalation: EscalationRow | null;
+    alreadyAcknowledged: boolean;
+    current?: EscalationWithDetailsRow | null;
+    response?: EscalationResponseRow | null;
+  }> {
+    return await db.transaction(async (trx) => {
+      let query = trx('escalation').where({ escalation_id: escalationId, status: 'open' });
+      if (projectId) {
+        query = query.andWhere({ project_id: projectId });
+      }
+
+      const rows = await query
+        .update({
+          status: 'acknowledged',
+          acknowledged_by: userId,
+          acknowledged_at: new Date(),
+        })
+        .returning(ESCALATION_COLS);
+
+      if (rows.length === 0) {
+        const current = await Escalations.getById(escalationId, projectId, trx);
+        return { escalation: null, alreadyAcknowledged: current?.status !== 'open', current };
+      }
+
+      const escalation = rows[0];
+      let response: EscalationResponseRow | null = null;
+      if (note && note.trim()) {
+        response = await Escalations.addResponse(
+          {
+            escalation_id: escalationId,
+            author_id: userId,
+            body: note.trim(),
+            is_acknowledgement: true,
+          },
+          trx,
+        );
+      }
+
+      return { escalation, alreadyAcknowledged: false, response };
+    });
+  }
+
+  static async resolve({
+    escalationId,
+    projectId,
+    userId,
+    note,
+  }: {
+    escalationId: string;
+    projectId?: string;
+    userId: string;
+    note?: string;
+  }): Promise<{ escalation: EscalationRow | null; response?: EscalationResponseRow | null }> {
+    return await db.transaction(async (trx) => {
+      const current = await trx('escalation').where('escalation_id', escalationId).first();
+      if (!current) return { escalation: null };
+      if (projectId && current.project_id !== projectId) return { escalation: null };
+
+      const now = new Date();
+      const updates: Record<string, unknown> = {
+        status: 'resolved',
+        resolved_by: userId,
+        resolved_at: now,
+      };
+
+      if (current.status === 'open') {
+        updates.acknowledged_by = current.acknowledged_by ?? userId;
+        updates.acknowledged_at = current.acknowledged_at ?? now;
+      }
+
+      const rows = await trx('escalation')
+        .where('escalation_id', escalationId)
+        .update(updates)
+        .returning(ESCALATION_COLS);
+
+      const escalation = rows[0] ?? null;
+      let response: EscalationResponseRow | null = null;
+      if (note && note.trim() && escalation) {
+        response = await Escalations.addResponse(
+          {
+            escalation_id: escalationId,
+            author_id: userId,
+            body: note.trim(),
+            is_acknowledgement: false,
+          },
+          trx,
+        );
+      }
+
+      return { escalation, response };
+    });
+  }
+
+  static async update(
+    escalationId: string,
+    patch: UpdateEscalationFields,
+    projectId?: string,
+    trx?: Knex.Transaction,
+  ): Promise<EscalationRow | null> {
+    const q = trx ? trx('escalation') : db('escalation');
+    let query = q.where('escalation_id', escalationId);
+    if (projectId) {
+      query = query.andWhere('project_id', projectId);
+    }
+    const [row] = await query.update(patch).returning(ESCALATION_COLS);
+    return row ?? null;
+  }
+
+  static async delete(
+    escalationId: string,
+    projectId?: string,
+    trx?: Knex.Transaction,
+  ): Promise<EscalationRow | null> {
+    const q = trx ? trx('escalation') : db('escalation');
+    const respQ = trx ? trx('escalation_response') : db('escalation_response');
+    await respQ.where('escalation_id', escalationId).del();
+
+    let query = q.where('escalation_id', escalationId);
+    if (projectId) {
+      query = query.andWhere('project_id', projectId);
+    }
+    const [row] = await query.del().returning(ESCALATION_COLS);
+    return row ?? null;
+  }
+
+  static async addResponse(
+    input: CreateEscalationResponseInput,
+    trx?: Knex.Transaction,
+  ): Promise<EscalationResponseRow> {
+    const q = trx ? trx('escalation_response') : db('escalation_response');
+    const [row] = await q
+      .insert({
+        response_id: input.response_id ?? randomUUID(),
+        escalation_id: input.escalation_id,
+        author_id: input.author_id,
+        body: input.body,
+        is_acknowledgement: input.is_acknowledgement ?? false,
+      })
+      .returning(['response_id', 'escalation_id', 'author_id', 'body', 'is_acknowledgement', 'created_at']);
+    return row;
+  }
+
+  static async getResponses(
+    escalationId: string,
+    trx?: Knex.Transaction,
+  ): Promise<EscalationResponseRow[]> {
+    const q = trx ? trx('escalation_response') : db('escalation_response');
+    const rows = await q
+      .leftJoin('users', 'escalation_response.author_id', 'users.id')
+      .where('escalation_response.escalation_id', escalationId)
+      .select(
+        'escalation_response.*',
+        db.raw("NULLIF(CONCAT(users.first_name, ' ', users.last_name), ' ') as author_name"),
+      )
+      .orderBy('escalation_response.created_at', 'asc');
+    return rows;
+  }
+}
+
+export class WeeklySubmissions {
+  static async getById(submissionId: string, trx?: Knex.Transaction) {
+    const q = trx ? trx('weekly_submission') : db('weekly_submission');
+    const row = await q.where('submission_id', submissionId).first();
+    return row ?? null;
+  }
+}
+
 
 

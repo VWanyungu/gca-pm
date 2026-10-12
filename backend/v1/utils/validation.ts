@@ -1095,3 +1095,74 @@ export const listDprsQuerySchema = Joi.object<ListDprsQuery>({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(25),
 });
+
+export type EscalationStatusLiteral = 'open' | 'acknowledged' | 'resolved' | 'voided';
+
+export interface CreateEscalationBody {
+  submission_id: string;
+  status?: EscalationStatusLiteral;
+  note?: string;
+}
+
+export interface UpdateEscalationBody {
+  status?: EscalationStatusLiteral;
+  note?: string;
+}
+
+export interface AcknowledgeEscalationBody {
+  note?: string;
+}
+
+export interface ResolveEscalationBody {
+  note?: string;
+}
+
+export interface CreateEscalationResponseBody {
+  body: string;
+  is_acknowledgement?: boolean;
+}
+
+export interface ListEscalationsQuery {
+  status?: EscalationStatusLiteral;
+  page?: number;
+  limit?: number;
+}
+
+export const escalationProjectParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().optional(),
+});
+
+export const escalationParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().optional(),
+  escalationId: Joi.string().uuid().required(),
+});
+
+export const createEscalationSchema = Joi.object<CreateEscalationBody>({
+  submission_id: Joi.string().uuid().required(),
+  status: Joi.string().valid('open', 'acknowledged', 'resolved', 'voided').default('open'),
+  note: Joi.string().trim().max(10000).allow(null, '').optional(),
+});
+
+export const updateEscalationSchema = Joi.object<UpdateEscalationBody>({
+  status: Joi.string().valid('open', 'acknowledged', 'resolved', 'voided').optional(),
+  note: Joi.string().trim().max(10000).allow(null, '').optional(),
+}).min(1);
+
+export const acknowledgeEscalationSchema = Joi.object<AcknowledgeEscalationBody>({
+  note: Joi.string().trim().max(10000).allow(null, '').optional(),
+});
+
+export const resolveEscalationSchema = Joi.object<ResolveEscalationBody>({
+  note: Joi.string().trim().max(10000).allow(null, '').optional(),
+});
+
+export const createEscalationResponseSchema = Joi.object<CreateEscalationResponseBody>({
+  body: Joi.string().trim().min(1).max(10000).required(),
+  is_acknowledgement: Joi.boolean().default(false),
+});
+
+export const listEscalationsQuerySchema = Joi.object<ListEscalationsQuery>({
+  status: Joi.string().valid('open', 'acknowledged', 'resolved', 'voided').optional(),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(25),
+});

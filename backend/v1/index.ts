@@ -22,6 +22,7 @@ import contractorsRouter from './routers/contractorsRouter.js';
 import projectContractorsRouter from './routers/projectContractorsRouter.js';
 import customMilestonesRouter from './routers/customMilestonesRouter.js';
 import dprRouter from './routers/dprRouter.js';
+import escalationRouter from './routers/escalationRouter.js';
 
 const router = express.Router();
 
@@ -44,6 +45,7 @@ router.use('/projects/:projectId/contractors', projectContractorsRouter);
 router.use('/projects/:projectId/custom-milestones', customMilestonesRouter);
 router.use('/projects/:projectId/milestones', customMilestonesRouter);
 router.use('/projects/:projectId/risk', riskRouter);
+router.use('/projects/:projectId/risks', riskRouter);
 router.use('/projects/:projectId/stage-state-history', stageStateHistoryRouter);
 router.use('/projects/:projectId/stages', projectStagesRouter);
 router.use('/projects/:projectId/stage-activities', stageActivitiesRouter);
@@ -53,6 +55,9 @@ router.use(
 );
 router.use('/projects/:projectId/dpr', dprRouter);
 router.use('/projects/:projectId/dprs', dprRouter);
+router.use('/projects/:projectId/escalation', escalationRouter);
+router.use('/projects/:projectId/escalations', escalationRouter);
+router.use('/escalations', escalationRouter);
 
 router.use('/logout', logoutRouter);
 router.use('/token', refreshTokenRouter);
