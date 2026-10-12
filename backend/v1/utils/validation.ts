@@ -414,6 +414,8 @@ export interface CreateStageActivityBody {
   status?: ActivityStatus;
   due_date?: string | null;
   owner_id?: string | null;
+  attachment?: CreateStageActivityAttachmentBody | string;
+  attachments?: (CreateStageActivityAttachmentBody | string)[];
 }
 
 export interface UpdateStageActivityBody {
@@ -442,6 +444,17 @@ export const stageActivityParamsSchema = Joi.object({
   activityId: Joi.string().uuid().required(),
 });
 
+const stageActivityAttachmentItemSchema = Joi.alternatives().try(
+  Joi.string().trim().min(1),
+  Joi.object({
+    file: Joi.string().optional(),
+    file_id: Joi.string().uuid().optional(),
+    attachment_id: Joi.string().max(1000).optional(),
+    caption: Joi.string().trim().max(1000).allow(null, '').optional(),
+    sort_order: Joi.number().integer().min(0).max(32767).default(0),
+  }),
+);
+
 export const createStageActivitySchema = Joi.object<CreateStageActivityBody>({
   stage_no: Joi.number().integer().min(1).max(10).required(),
   title: Joi.string().trim().min(1).max(500).required(),
@@ -449,6 +462,8 @@ export const createStageActivitySchema = Joi.object<CreateStageActivityBody>({
   status: Joi.string().valid(...ACTIVITY_STATUSES).default('open'),
   due_date: Joi.string().isoDate().allow(null).optional(),
   owner_id: Joi.string().uuid().allow(null).optional(),
+  attachment: stageActivityAttachmentItemSchema.optional(),
+  attachments: Joi.array().items(stageActivityAttachmentItemSchema).max(20).optional(),
 });
 
 export const updateStageActivitySchema = Joi.object<UpdateStageActivityBody>({
@@ -466,4 +481,49 @@ export const listStageActivitiesQuerySchema = Joi.object<ListStageActivitiesQuer
   owner_id: Joi.string().uuid().optional(),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(25),
+});
+
+export interface CreateStageActivityAttachmentBody {
+  file?: string;
+  file_id?: string;
+  attachment_id?: string;
+  caption?: string | null;
+  sort_order?: number;
+}
+
+export interface UpdateStageActivityAttachmentBody {
+  caption?: string | null;
+  sort_order?: number;
+}
+
+export interface ListStageActivityAttachmentsQuery {
+  includeRemoved?: boolean;
+}
+
+export const stageActivityAttachmentParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+  activityId: Joi.string().uuid().required(),
+  attachmentId: Joi.string().required(),
+});
+
+export const stageActivityAttachmentListParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+  activityId: Joi.string().uuid().required(),
+});
+
+export const createStageActivityAttachmentSchema = Joi.object<CreateStageActivityAttachmentBody>({
+  file: Joi.string().optional(),
+  file_id: Joi.string().uuid().optional(),
+  attachment_id: Joi.string().max(1000).optional(),
+  caption: Joi.string().trim().max(1000).allow(null, '').optional(),
+  sort_order: Joi.number().integer().min(0).max(32767).default(0),
+});
+
+export const updateStageActivityAttachmentSchema = Joi.object<UpdateStageActivityAttachmentBody>({
+  caption: Joi.string().trim().max(1000).allow(null, '').optional(),
+  sort_order: Joi.number().integer().min(0).max(32767).optional(),
+}).min(1);
+
+export const listStageActivityAttachmentsQuerySchema = Joi.object<ListStageActivityAttachmentsQuery>({
+  includeRemoved: Joi.boolean().default(false),
 });

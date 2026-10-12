@@ -1220,3 +1220,124 @@ export class StageActivities {
   }
 }
 
+export interface StageActivityAttachmentRow {
+  attachment_id: string;
+  activity_id: string;
+  file_id: string;
+  caption: string | null;
+  sort_order: number;
+  uploaded_by: string;
+  uploaded_at: Date;
+  removed_by: string | null;
+  removed_at: Date | null;
+}
+
+export interface CreateStageActivityAttachmentInput {
+  attachment_id: string;
+  activity_id: string;
+  file_id: string;
+  caption?: string | null;
+  sort_order?: number;
+  uploaded_by: string;
+}
+
+export interface UpdateStageActivityAttachmentFields {
+  caption?: string | null;
+  sort_order?: number;
+}
+
+const STAGE_ACTIVITY_ATTACHMENT_COLS = [
+  'attachment_id',
+  'activity_id',
+  'file_id',
+  'caption',
+  'sort_order',
+  'uploaded_by',
+  'uploaded_at',
+  'removed_by',
+  'removed_at',
+];
+
+export class StageActivityAttachments {
+  static async create(
+    input: CreateStageActivityAttachmentInput,
+    trx?: Knex.Transaction,
+  ): Promise<StageActivityAttachmentRow> {
+    const q = trx ? trx('stage_activity_attachment') : db('stage_activity_attachment');
+    const [row] = await q.insert(input).returning(STAGE_ACTIVITY_ATTACHMENT_COLS);
+    return row;
+  }
+
+  static async list({
+    activityId,
+    includeRemoved = false,
+  }: {
+    activityId: string;
+    includeRemoved?: boolean;
+  }): Promise<StageActivityAttachmentRow[]> {
+    const query = db('stage_activity_attachment')
+      .where({ activity_id: activityId })
+      .orderBy('sort_order', 'asc')
+      .orderBy('uploaded_at', 'asc');
+
+    if (!includeRemoved) {
+      query.whereNull('removed_at');
+    }
+
+    return await query.select(STAGE_ACTIVITY_ATTACHMENT_COLS);
+  }
+
+  static async getById(
+    attachmentId: string,
+    activityId?: string,
+  ): Promise<StageActivityAttachmentRow | null> {
+    const query = db('stage_activity_attachment').where({ attachment_id: attachmentId });
+    if (activityId) {
+      query.andWhere({ activity_id: activityId });
+    }
+    const row = await query.first();
+    return row ?? null;
+  }
+
+  static async update(
+    attachmentId: string,
+    patch: UpdateStageActivityAttachmentFields,
+    trx?: Knex.Transaction,
+  ): Promise<StageActivityAttachmentRow | null> {
+    const q = trx ? trx('stage_activity_attachment') : db('stage_activity_attachment');
+    const [row] = await q
+      .where({ attachment_id: attachmentId })
+      .update(patch)
+      .returning(STAGE_ACTIVITY_ATTACHMENT_COLS);
+    return row ?? null;
+  }
+
+  static async softDelete(
+    attachmentId: string,
+    removedBy: string,
+    trx?: Knex.Transaction,
+  ): Promise<StageActivityAttachmentRow | null> {
+    const q = trx ? trx('stage_activity_attachment') : db('stage_activity_attachment');
+    const [row] = await q
+      .where({ attachment_id: attachmentId })
+      .whereNull('removed_at')
+      .update({
+        removed_by: removedBy,
+        removed_at: db.fn.now(),
+      })
+      .returning(STAGE_ACTIVITY_ATTACHMENT_COLS);
+    return row ?? null;
+  }
+
+  static async hardDelete(
+    attachmentId: string,
+    trx?: Knex.Transaction,
+  ): Promise<StageActivityAttachmentRow | null> {
+    const q = trx ? trx('stage_activity_attachment') : db('stage_activity_attachment');
+    const [row] = await q
+      .where({ attachment_id: attachmentId })
+      .del()
+      .returning(STAGE_ACTIVITY_ATTACHMENT_COLS);
+    return row ?? null;
+  }
+}

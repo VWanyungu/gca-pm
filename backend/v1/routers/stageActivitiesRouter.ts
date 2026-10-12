@@ -2,6 +2,7 @@ import express from 'express';
 import { randomUUID } from 'crypto';
 import {
   StageActivities,
+  StageActivityAttachments,
   ProjectStages,
   Projects,
   type UpdateStageActivityFields,
@@ -14,9 +15,11 @@ import {
   createStageActivitySchema,
   updateStageActivitySchema,
   type CreateStageActivityBody,
+  type CreateStageActivityAttachmentBody,
   type UpdateStageActivityBody,
   type ListStageActivitiesQuery,
 } from '../utils/validation.js';
+import { uploadAttachmentToCloudinary } from '../utils/cloudinary.js';
 
 // mergeParams so :projectId from the parent mount reaches authorize + handlers.
 const router = express.Router({ mergeParams: true });
@@ -67,12 +70,79 @@ router.post('/', canManage, async (req, res) => {
       return;
     }
 
+    // Collect attachments if provided
+    const rawAttachments: (CreateStageActivityAttachmentBody | string)[] = [];
+    if (input.attachment) {
+      rawAttachments.push(input.attachment);
+    }
+    if (Array.isArray(input.attachments)) {
+      rawAttachments.push(...input.attachments);
+    }
+
+    // AC-STG-09: Maximum 20 attachments per activity
+    if (rawAttachments.length > 20) {
+      res.status(400).json({
+        status: 'error',
+        data: null,
+        message: 'Maximum limit of 20 attachments per activity reached',
+      });
+      return;
+    }
+
+    const activityId = randomUUID();
+
+    // Process & upload attachments first (if any) to prevent creating an activity if upload fails
+    const processedAttachments: Array<{
+      attachment_id: string;
+      activity_id: string;
+      file_id: string;
+      caption: string | null;
+      sort_order: number;
+      uploaded_by: string;
+    }> = [];
+
+    for (const [i, item] of rawAttachments.entries()) {
+      const attObj: CreateStageActivityAttachmentBody =
+        typeof item === 'string' ? { file: item } : item;
+
+      let attachmentId = attObj.attachment_id;
+      if (attObj.file) {
+        try {
+          const uploadResult = await uploadAttachmentToCloudinary(attObj.file, {
+            folder: `projects/${projectId}/activities/${activityId}`,
+          });
+          attachmentId = uploadResult.secureUrl;
+        } catch (uploadError) {
+          const message = uploadError instanceof Error ? uploadError.message : 'Upload failed';
+          res.status(502).json({
+            status: 'error',
+            data: null,
+            message: `Failed to upload attachment to Cloudinary: ${message}`,
+          });
+          return;
+        }
+      }
+
+      if (!attachmentId) {
+        attachmentId = randomUUID();
+      }
+
+      processedAttachments.push({
+        attachment_id: attachmentId,
+        activity_id: activityId,
+        file_id: attObj.file_id ?? randomUUID(),
+        caption: attObj.caption ?? null,
+        sort_order: attObj.sort_order ?? i,
+        uploaded_by: req.user!.userId,
+      });
+    }
+
     // Enforce DB constraint ck_activity_completed_at: (status = 'done') = (completed_at IS NOT NULL)
     const isDone = input.status === 'done';
     const completedAt = isDone ? new Date() : null;
 
     const created = await StageActivities.create({
-      activity_id: randomUUID(),
+      activity_id: activityId,
       project_id: projectId,
       stage_no: input.stage_no,
       title: input.title,
@@ -84,9 +154,19 @@ router.post('/', canManage, async (req, res) => {
       created_by: req.user!.userId,
     });
 
+    // Save attachment records via StageActivityAttachments class
+    const createdAttachments = [];
+    for (const att of processedAttachments) {
+      const record = await StageActivityAttachments.create(att);
+      createdAttachments.push(record);
+    }
+
     res.status(201).json({
       status: 'success',
-      data: { stageActivity: created },
+      data: {
+        stageActivity: created,
+        ...(createdAttachments.length > 0 ? { attachments: createdAttachments } : {}),
+      },
       message: 'Stage activity created',
     });
   } catch (err) {
