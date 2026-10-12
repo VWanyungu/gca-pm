@@ -757,3 +757,64 @@ export const updateProjectContractorSchema = Joi.object<UpdateProjectContractorB
 export const listProjectContractorsQuerySchema = Joi.object<ListProjectContractorsQuery>({
   includeInactive: Joi.boolean().default(false),
 });
+
+export interface CreateCustomMilestoneBody {
+  stage_no?: number | null;
+  title: string;
+  planned_date: string;
+  forecast_date?: string | null;
+  actual_date?: string | null;
+  notes?: string | null;
+}
+
+export interface UpdateCustomMilestoneBody {
+  stage_no?: number | null;
+  title?: string;
+  planned_date?: string;
+  forecast_date?: string | null;
+  actual_date?: string | null;
+  notes?: string | null;
+}
+
+export interface ListCustomMilestonesQuery {
+  stage_no?: number;
+  includeRemoved?: boolean;
+  all?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export const customMilestoneProjectParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+});
+
+export const customMilestoneParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+  milestoneId: Joi.string().uuid().required(),
+});
+
+export const createCustomMilestoneSchema = Joi.object<CreateCustomMilestoneBody>({
+  stage_no: Joi.number().integer().min(1).max(10).allow(null).optional(),
+  title: Joi.string().trim().min(1).max(500).required(),
+  planned_date: Joi.string().isoDate().required(),
+  forecast_date: Joi.string().isoDate().allow(null).optional(),
+  actual_date: Joi.string().isoDate().allow(null).optional(),
+  notes: Joi.string().trim().max(10000).allow(null, '').optional(),
+});
+
+export const updateCustomMilestoneSchema = Joi.object<UpdateCustomMilestoneBody>({
+  stage_no: Joi.number().integer().min(1).max(10).allow(null).optional(),
+  title: Joi.string().trim().min(1).max(500).optional(),
+  planned_date: Joi.string().isoDate().optional(),
+  forecast_date: Joi.string().isoDate().allow(null).optional(),
+  actual_date: Joi.string().isoDate().allow(null).optional(),
+  notes: Joi.string().trim().max(10000).allow(null, '').optional(),
+}).min(1);
+
+export const listCustomMilestonesQuerySchema = Joi.object<ListCustomMilestonesQuery>({
+  stage_no: Joi.number().integer().min(1).max(10).optional(),
+  includeRemoved: Joi.boolean().default(false),
+  all: Joi.boolean().default(false),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(50),
+});

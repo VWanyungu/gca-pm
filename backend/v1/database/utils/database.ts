@@ -2181,3 +2181,223 @@ export class ProjectContractors {
   }
 }
 
+export interface CustomMilestoneRow {
+  milestone_id: string;
+  project_id: string;
+  stage_no: number | null;
+  title: string;
+  planned_date: string;
+  forecast_date: string | null;
+  actual_date: string | null;
+  notes: string | null;
+  created_by: string;
+  created_at: Date;
+  updated_by: string;
+  updated_at: Date;
+  removed_by: string | null;
+  removed_at: Date | null;
+  slippage_days?: number | null;
+}
+
+export interface CreateCustomMilestoneInput {
+  milestone_id?: string;
+  project_id: string;
+  stage_no?: number | null;
+  title: string;
+  planned_date: string;
+  forecast_date?: string | null;
+  actual_date?: string | null;
+  notes?: string | null;
+  created_by: string;
+  updated_by: string;
+}
+
+export interface UpdateCustomMilestoneFields {
+  stage_no?: number | null;
+  title?: string;
+  planned_date?: string;
+  forecast_date?: string | null;
+  actual_date?: string | null;
+  notes?: string | null;
+  updated_by: string;
+}
+
+const CUSTOM_MILESTONE_COLS = [
+  'milestone_id',
+  'project_id',
+  'stage_no',
+  'title',
+  'planned_date',
+  'forecast_date',
+  'actual_date',
+  'notes',
+  'created_by',
+  'created_at',
+  'updated_by',
+  'updated_at',
+  'removed_by',
+  'removed_at',
+];
+
+export class CustomMilestones {
+  static async create(
+    input: CreateCustomMilestoneInput,
+    trx?: Knex.Transaction,
+  ): Promise<CustomMilestoneRow> {
+    const q = trx ? trx('custom_milestones') : db('custom_milestones');
+    const [row] = await q
+      .insert({
+        milestone_id: input.milestone_id ?? randomUUID(),
+        project_id: input.project_id,
+        stage_no: input.stage_no ?? null,
+        title: input.title.trim(),
+        planned_date: input.planned_date,
+        forecast_date: input.forecast_date ?? null,
+        actual_date: input.actual_date ?? null,
+        notes: input.notes ?? null,
+        created_by: input.created_by,
+        updated_by: input.updated_by,
+      })
+      .returning(CUSTOM_MILESTONE_COLS);
+    return row;
+  }
+
+  static async getById(
+    milestoneId: string,
+    projectId?: string,
+    trx?: Knex.Transaction,
+  ): Promise<CustomMilestoneRow | null> {
+    const q = trx ? trx('custom_milestones') : db('custom_milestones');
+    q.where({ milestone_id: milestoneId });
+    if (projectId) {
+      q.andWhere({ project_id: projectId });
+    }
+    const row = await q
+      .select(
+        CUSTOM_MILESTONE_COLS.concat([
+          db.raw('(forecast_date - planned_date) as slippage_days') as any,
+        ]),
+      )
+      .first();
+    return row ?? null;
+  }
+
+  static async list({
+    projectId,
+    stageNo,
+    includeRemoved = false,
+    page = 1,
+    limit = 50,
+  }: {
+    projectId: string;
+    stageNo?: number;
+    includeRemoved?: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    milestones: CustomMilestoneRow[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const query = db('custom_milestones').where({ project_id: projectId });
+
+    if (!includeRemoved) {
+      query.whereNull('removed_at');
+    }
+    if (stageNo !== undefined) {
+      query.andWhere({ stage_no: stageNo });
+    }
+
+    const countRows = await query.clone().count<{ count: string }[]>('milestone_id as count');
+    const total = Number(countRows[0]?.count ?? 0);
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    const milestones = await query
+      .select(
+        CUSTOM_MILESTONE_COLS.concat([
+          db.raw('(forecast_date - planned_date) as slippage_days') as any,
+        ]),
+      )
+      .orderBy('planned_date', 'asc')
+      .offset((page - 1) * limit)
+      .limit(limit);
+
+    return {
+      milestones,
+      pagination: { page, limit, total, totalPages },
+    };
+  }
+
+  static async listAllMilestones(projectId: string): Promise<any[]> {
+    return await db('project_milestone_v')
+      .where({ project_id: projectId })
+      .orderBy('planned_date', 'asc');
+  }
+
+  static async update(
+    milestoneId: string,
+    patch: UpdateCustomMilestoneFields,
+    trx?: Knex.Transaction,
+  ): Promise<CustomMilestoneRow | null> {
+    const q = trx ? trx('custom_milestones') : db('custom_milestones');
+    const updateData: Record<string, unknown> = {
+      ...patch,
+      updated_at: (trx || db).fn.now(),
+    };
+    if (patch.title !== undefined) updateData.title = patch.title.trim();
+
+    const [row] = await q
+      .where({ milestone_id: milestoneId })
+      .update(updateData)
+      .returning(CUSTOM_MILESTONE_COLS);
+    return row ?? null;
+  }
+
+  static async softDelete(
+    milestoneId: string,
+    removedBy: string,
+    trx?: Knex.Transaction,
+  ): Promise<CustomMilestoneRow | null> {
+    const q = trx ? trx('custom_milestones') : db('custom_milestones');
+    const [row] = await q
+      .where({ milestone_id: milestoneId })
+      .whereNull('removed_at')
+      .update({
+        removed_by: removedBy,
+        removed_at: (trx || db).fn.now(),
+        updated_by: removedBy,
+        updated_at: (trx || db).fn.now(),
+      })
+      .returning(CUSTOM_MILESTONE_COLS);
+    return row ?? null;
+  }
+
+  static async restore(
+    milestoneId: string,
+    restoredBy: string,
+    trx?: Knex.Transaction,
+  ): Promise<CustomMilestoneRow | null> {
+    const q = trx ? trx('custom_milestones') : db('custom_milestones');
+    const [row] = await q
+      .where({ milestone_id: milestoneId })
+      .whereNotNull('removed_at')
+      .update({
+        removed_by: null,
+        removed_at: null,
+        updated_by: restoredBy,
+        updated_at: (trx || db).fn.now(),
+      })
+      .returning(CUSTOM_MILESTONE_COLS);
+    return row ?? null;
+  }
+
+  static async hardDelete(
+    milestoneId: string,
+    trx?: Knex.Transaction,
+  ): Promise<boolean> {
+    const q = trx ? trx('custom_milestones') : db('custom_milestones');
+    const count = await q.where({ milestone_id: milestoneId }).del();
+    return count > 0;
+  }
+}
+
+

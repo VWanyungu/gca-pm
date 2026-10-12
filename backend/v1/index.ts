@@ -20,6 +20,7 @@ import stageActivityAttachmentsRouter from './routers/stageActivityAttachmentsRo
 import projectsRouter from './routers/projectsRouter.js';
 import contractorsRouter from './routers/contractorsRouter.js';
 import projectContractorsRouter from './routers/projectContractorsRouter.js';
+import customMilestonesRouter from './routers/customMilestonesRouter.js';
 
 const router = express.Router();
 
@@ -39,6 +40,8 @@ router.use('/weather-categories', weatherCategoriesRouter);
 router.use('/contractors', contractorsRouter);
 router.use('/projects', projectsRouter);
 router.use('/projects/:projectId/contractors', projectContractorsRouter);
+router.use('/projects/:projectId/custom-milestones', customMilestonesRouter);
+router.use('/projects/:projectId/milestones', customMilestonesRouter);
 router.use('/projects/:projectId/risk', riskRouter);
 router.use('/projects/:projectId/stage-state-history', stageStateHistoryRouter);
 router.use('/projects/:projectId/stages', projectStagesRouter);
