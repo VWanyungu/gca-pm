@@ -2400,4 +2400,729 @@ export class CustomMilestones {
   }
 }
 
+export type DprStatus = 'draft' | 'submitted';
+export type DprEffectsSeverity = 'none' | 'minor' | 'significant' | 'stoppage';
+export type DprProgressSource = 'schedule_task' | 'free_text';
+
+export interface DprRow {
+  dpr_id: string;
+  dpr_ref: string | null;
+  project_id: string;
+  stage_no: number;
+  report_date: string;
+  site_location: string;
+  contract_no: string | null;
+  weather_category_id: number | null;
+  temp_min_c: number | null;
+  temp_max_c: number | null;
+  humidity_pct: number | null;
+  wind: string | null;
+  effects_text: string | null;
+  effects_severity: DprEffectsSeverity;
+  equipment_text: string | null;
+  visitors_text: string | null;
+  delays_text: string | null;
+  incidents_text: string | null;
+  other_notes_text: string | null;
+  status: DprStatus;
+  author_id: string;
+  submitted_by: string | null;
+  submitted_at: Date | null;
+  is_late: boolean | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface DprWorkItemRow {
+  work_item_id: string;
+  dpr_id: string;
+  sort_order: number;
+  work_area: string;
+  work_carried_out: string;
+}
+
+export interface DprActivityProgressRow {
+  dpr_activity_progress_id: string;
+  dpr_id: string;
+  sort_order: number;
+  source: DprProgressSource;
+  task_id: string | null;
+  free_text: string | null;
+  today_pct: number;
+  total_pct: number;
+}
+
+export interface DprPersonnelRoleCountRow {
+  personnel_group_id: string;
+  personnel_role_id: number;
+  headcount: number;
+}
+
+export interface DprPersonnelGroupRow {
+  personnel_group_id: string;
+  dpr_id: string;
+  project_contractor_id: string;
+  sort_order: number;
+  total_headcount: number;
+  role_counts?: DprPersonnelRoleCountRow[];
+  contractor_name?: string;
+  party_type?: PartyType;
+}
+
+export interface DprPhotoRow {
+  photo_id: string;
+  dpr_id: string;
+  file_id: string;
+  caption: string | null;
+  sort_order: number;
+  taken_at: Date | null;
+  gps_lat: number | null;
+  gps_lng: number | null;
+  uploaded_by: string;
+  uploaded_at: Date;
+}
+
+export interface DprDetailsRow extends DprRow {
+  work_items: DprWorkItemRow[];
+  activity_progress: DprActivityProgressRow[];
+  personnel_groups: DprPersonnelGroupRow[];
+  photos: DprPhotoRow[];
+}
+
+export interface CreateDprInput {
+  dpr_id?: string;
+  project_id: string;
+  stage_no: number;
+  report_date: string;
+  site_location: string;
+  contract_no?: string | null;
+  weather_category_id?: number | null;
+  temp_min_c?: number | null;
+  temp_max_c?: number | null;
+  humidity_pct?: number | null;
+  wind?: string | null;
+  effects_text?: string | null;
+  effects_severity?: DprEffectsSeverity;
+  equipment_text?: string | null;
+  visitors_text?: string | null;
+  delays_text?: string | null;
+  incidents_text?: string | null;
+  other_notes_text?: string | null;
+  status?: DprStatus;
+  author_id: string;
+  work_items?: Array<{
+    work_item_id?: string;
+    sort_order?: number;
+    work_area: string;
+    work_carried_out: string;
+  }>;
+  activity_progress?: Array<{
+    dpr_activity_progress_id?: string;
+    sort_order?: number;
+    source: DprProgressSource;
+    task_id?: string | null;
+    free_text?: string | null;
+    today_pct: number;
+    total_pct: number;
+  }>;
+  personnel_groups?: Array<{
+    personnel_group_id?: string;
+    project_contractor_id: string;
+    sort_order?: number;
+    total_headcount: number;
+    role_counts?: Array<{
+      personnel_role_id: number;
+      headcount: number;
+    }>;
+  }>;
+  photos?: Array<{
+    photo_id?: string;
+    file_id: string;
+    caption?: string | null;
+    sort_order?: number;
+    taken_at?: Date | string | null;
+    gps_lat?: number | null;
+    gps_lng?: number | null;
+    uploaded_by?: string;
+  }>;
+}
+
+export interface UpdateDprFields {
+  stage_no?: number;
+  report_date?: string;
+  site_location?: string;
+  contract_no?: string | null;
+  weather_category_id?: number | null;
+  temp_min_c?: number | null;
+  temp_max_c?: number | null;
+  humidity_pct?: number | null;
+  wind?: string | null;
+  effects_text?: string | null;
+  effects_severity?: DprEffectsSeverity;
+  equipment_text?: string | null;
+  visitors_text?: string | null;
+  delays_text?: string | null;
+  incidents_text?: string | null;
+  other_notes_text?: string | null;
+  work_items?: Array<{
+    work_item_id?: string;
+    sort_order?: number;
+    work_area: string;
+    work_carried_out: string;
+  }>;
+  activity_progress?: Array<{
+    dpr_activity_progress_id?: string;
+    sort_order?: number;
+    source: DprProgressSource;
+    task_id?: string | null;
+    free_text?: string | null;
+    today_pct: number;
+    total_pct: number;
+  }>;
+  personnel_groups?: Array<{
+    personnel_group_id?: string;
+    project_contractor_id: string;
+    sort_order?: number;
+    total_headcount: number;
+    role_counts?: Array<{
+      personnel_role_id: number;
+      headcount: number;
+    }>;
+  }>;
+  photos?: Array<{
+    photo_id?: string;
+    file_id: string;
+    caption?: string | null;
+    sort_order?: number;
+    taken_at?: Date | string | null;
+    gps_lat?: number | null;
+    gps_lng?: number | null;
+    uploaded_by?: string;
+  }>;
+}
+
+const DPR_COLS = [
+  'dpr_id',
+  'dpr_ref',
+  'project_id',
+  'stage_no',
+  'report_date',
+  'site_location',
+  'contract_no',
+  'weather_category_id',
+  'temp_min_c',
+  'temp_max_c',
+  'humidity_pct',
+  'wind',
+  'effects_text',
+  'effects_severity',
+  'equipment_text',
+  'visitors_text',
+  'delays_text',
+  'incidents_text',
+  'other_notes_text',
+  'status',
+  'author_id',
+  'submitted_by',
+  'submitted_at',
+  'is_late',
+  'created_at',
+  'updated_at',
+];
+
+function formatDprRef(reportDate: string, projectCode: string, seq: number): string {
+  const d = new Date(reportDate);
+  const yy = String(d.getUTCFullYear()).slice(-2);
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const yymmdd = `${yy}${mm}${dd}`;
+
+  const match = projectCode.match(/^(\d{3})-/);
+  const ppp = match ? match[1] : '001';
+  const nnn = String(seq).padStart(3, '0');
+
+  return `DPR-${yymmdd}-${ppp}-${nnn}`;
+}
+
+function computeIsLate(submittedAt: Date, reportDateStr: string, timezone: string = 'Africa/Nairobi'): boolean {
+  try {
+    const localDateStr = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(submittedAt);
+    const localTimeStr = new Intl.DateTimeFormat('en-GB', {
+      timeZone: timezone,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).format(submittedAt);
+
+    if (localDateStr > reportDateStr) {
+      return true;
+    }
+    if (localDateStr === reportDateStr && localTimeStr > '23:00:00') {
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+export class Dprs {
+  static async create(
+    input: CreateDprInput,
+    trx?: Knex.Transaction,
+  ): Promise<DprDetailsRow> {
+    const execute = async (t: Knex.Transaction) => {
+      const dprId = input.dpr_id ?? randomUUID();
+      const isSubmitting = input.status === 'submitted';
+
+      let dprRef: string | null = null;
+      let submittedAt: Date | null = null;
+      let submittedBy: string | null = null;
+      let isLate: boolean | null = null;
+
+      if (isSubmitting) {
+        const project = await t('projects').where({ project_id: input.project_id }).first();
+        const countRes = await t('dpr')
+          .where({ project_id: input.project_id, status: 'submitted' })
+          .count<{ count: string }[]>('dpr_id as count');
+        const seq = Number(countRes[0]?.count ?? 0) + 1;
+        dprRef = formatDprRef(input.report_date, project?.project_code ?? '001', seq);
+        submittedAt = new Date();
+        submittedBy = input.author_id;
+        isLate = computeIsLate(submittedAt, input.report_date, project?.timezone ?? 'Africa/Nairobi');
+      }
+
+      const [row] = await t('dpr')
+        .insert({
+          dpr_id: dprId,
+          dpr_ref: dprRef,
+          project_id: input.project_id,
+          stage_no: input.stage_no,
+          report_date: input.report_date,
+          site_location: input.site_location,
+          contract_no: input.contract_no ?? null,
+          weather_category_id: input.weather_category_id ?? null,
+          temp_min_c: input.temp_min_c ?? null,
+          temp_max_c: input.temp_max_c ?? null,
+          humidity_pct: input.humidity_pct ?? null,
+          wind: input.wind ?? null,
+          effects_text: input.effects_text ?? null,
+          effects_severity: input.effects_severity ?? 'none',
+          equipment_text: input.equipment_text ?? null,
+          visitors_text: input.visitors_text ?? null,
+          delays_text: input.delays_text ?? null,
+          incidents_text: input.incidents_text ?? null,
+          other_notes_text: input.other_notes_text ?? null,
+          status: input.status ?? 'draft',
+          author_id: input.author_id,
+          submitted_by: submittedBy,
+          submitted_at: submittedAt,
+          is_late: isLate,
+        })
+        .returning(DPR_COLS);
+
+      // Child sections
+      if (input.work_items && input.work_items.length > 0) {
+        const workItems = input.work_items.map((w, idx) => ({
+          work_item_id: w.work_item_id ?? randomUUID(),
+          dpr_id: dprId,
+          sort_order: w.sort_order ?? idx,
+          work_area: w.work_area,
+          work_carried_out: w.work_carried_out,
+        }));
+        await t('dpr_work_item').insert(workItems);
+      }
+
+      if (input.activity_progress && input.activity_progress.length > 0) {
+        const activities = input.activity_progress.map((a, idx) => ({
+          dpr_activity_progress_id: a.dpr_activity_progress_id ?? randomUUID(),
+          dpr_id: dprId,
+          sort_order: a.sort_order ?? idx,
+          source: a.source,
+          task_id: a.task_id ?? null,
+          free_text: a.free_text ?? null,
+          today_pct: a.today_pct,
+          total_pct: a.total_pct,
+        }));
+        await t('dpr_activity_progress').insert(activities);
+      }
+
+      if (input.personnel_groups && input.personnel_groups.length > 0) {
+        for (const [idx, group] of input.personnel_groups.entries()) {
+          const groupId = group.personnel_group_id ?? randomUUID();
+          await t('dpr_personnel_group').insert({
+            personnel_group_id: groupId,
+            dpr_id: dprId,
+            project_contractor_id: group.project_contractor_id,
+            sort_order: group.sort_order ?? idx,
+            total_headcount: group.total_headcount,
+          });
+
+          if (group.role_counts && group.role_counts.length > 0) {
+            const roleCounts = group.role_counts.map((rc) => ({
+              personnel_group_id: groupId,
+              personnel_role_id: rc.personnel_role_id,
+              headcount: rc.headcount,
+            }));
+            await t('dpr_personnel_role_count').insert(roleCounts);
+          }
+        }
+      }
+
+      if (input.photos && input.photos.length > 0) {
+        const photos = input.photos.map((p, idx) => ({
+          photo_id: p.photo_id ?? randomUUID(),
+          dpr_id: dprId,
+          file_id: p.file_id,
+          caption: p.caption ?? null,
+          sort_order: p.sort_order ?? idx,
+          taken_at: p.taken_at ? new Date(p.taken_at) : null,
+          gps_lat: p.gps_lat ?? null,
+          gps_lng: p.gps_lng ?? null,
+          uploaded_by: p.uploaded_by ?? input.author_id,
+        }));
+        await t('dpr_photo').insert(photos);
+      }
+
+      return (await Dprs.getById(dprId, input.project_id, t))!;
+    };
+
+    return trx ? await execute(trx) : await db.transaction(execute);
+  }
+
+  static async getById(
+    dprId: string,
+    projectId?: string,
+    trx?: Knex.Transaction,
+  ): Promise<DprDetailsRow | null> {
+    const q = trx ? trx('dpr') : db('dpr');
+    q.where({ dpr_id: dprId });
+    if (projectId) {
+      q.andWhere({ project_id: projectId });
+    }
+    const dpr = await q.first();
+    if (!dpr) return null;
+
+    const t = trx || db;
+
+    const [workItems, activityProgress, personnelGroups, photos] = await Promise.all([
+      t('dpr_work_item').where({ dpr_id: dprId }).orderBy('sort_order', 'asc'),
+      t('dpr_activity_progress').where({ dpr_id: dprId }).orderBy('sort_order', 'asc'),
+      t('dpr_personnel_group as dpg')
+        .join('project_contractor as pc', 'dpg.project_contractor_id', 'pc.project_contractor_id')
+        .join('contractor as c', 'pc.contractor_id', 'c.contractor_id')
+        .where({ 'dpg.dpr_id': dprId })
+        .select(
+          'dpg.*',
+          'c.name as contractor_name',
+          'pc.party_type',
+        )
+        .orderBy('dpg.sort_order', 'asc'),
+      t('dpr_photo').where({ dpr_id: dprId }).orderBy('sort_order', 'asc'),
+    ]);
+
+    // Attach role counts to personnel groups
+    const groupIds = personnelGroups.map((g: any) => g.personnel_group_id);
+    let roleCounts: DprPersonnelRoleCountRow[] = [];
+    if (groupIds.length > 0) {
+      roleCounts = await t('dpr_personnel_role_count')
+        .whereIn('personnel_group_id', groupIds);
+    }
+
+    const groupsWithRoles = personnelGroups.map((g: any) => ({
+      ...g,
+      role_counts: roleCounts.filter((rc) => rc.personnel_group_id === g.personnel_group_id),
+    }));
+
+    return {
+      ...dpr,
+      work_items: workItems,
+      activity_progress: activityProgress,
+      personnel_groups: groupsWithRoles,
+      photos,
+    };
+  }
+
+  static async getByProjectAndDate(
+    projectId: string,
+    reportDate: string,
+    trx?: Knex.Transaction,
+  ): Promise<DprRow | null> {
+    const q = trx ? trx('dpr') : db('dpr');
+    const row = await q.where({ project_id: projectId, report_date: reportDate }).first();
+    return row ?? null;
+  }
+
+  static async list({
+    projectId,
+    stageNo,
+    status,
+    fromDate,
+    toDate,
+    authorId,
+    page = 1,
+    limit = 25,
+    visibleToUserId,
+    isAdmin = false,
+  }: {
+    projectId: string;
+    stageNo?: number;
+    status?: DprStatus;
+    fromDate?: string;
+    toDate?: string;
+    authorId?: string;
+    page?: number;
+    limit?: number;
+    visibleToUserId?: string;
+    isAdmin?: boolean;
+  }): Promise<{
+    dprs: DprRow[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const query = db('dpr').where({ project_id: projectId });
+
+    // AC-DPR-01: Drafts are visible only to their author and Admins
+    if (!isAdmin && visibleToUserId) {
+      query.andWhere((qb) => {
+        qb.where('status', 'submitted').orWhere((subQb) => {
+          subQb.where('status', 'draft').andWhere('author_id', visibleToUserId);
+        });
+      });
+    }
+
+    if (stageNo !== undefined) {
+      query.andWhere({ stage_no: stageNo });
+    }
+    if (status !== undefined) {
+      query.andWhere({ status });
+    }
+    if (fromDate) {
+      query.andWhere('report_date', '>=', fromDate);
+    }
+    if (toDate) {
+      query.andWhere('report_date', '<=', toDate);
+    }
+    if (authorId) {
+      query.andWhere({ author_id: authorId });
+    }
+
+    const countRes = await query.clone().count<{ count: string }[]>('dpr_id as count');
+    const total = Number(countRes[0]?.count ?? 0);
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    const dprs = await query
+      .select(DPR_COLS)
+      .orderBy('report_date', 'desc')
+      .offset((page - 1) * limit)
+      .limit(limit);
+
+    return {
+      dprs,
+      pagination: { page, limit, total, totalPages },
+    };
+  }
+
+  static async update(
+    dprId: string,
+    patch: UpdateDprFields,
+    trx?: Knex.Transaction,
+  ): Promise<DprDetailsRow | null> {
+    const execute = async (t: Knex.Transaction) => {
+      const existing = await t('dpr').where({ dpr_id: dprId }).first();
+      if (!existing) return null;
+
+      const headerUpdate: Record<string, unknown> = {
+        updated_at: t.fn.now(),
+      };
+      if (patch.stage_no !== undefined) headerUpdate.stage_no = patch.stage_no;
+      if (patch.report_date !== undefined) headerUpdate.report_date = patch.report_date;
+      if (patch.site_location !== undefined) headerUpdate.site_location = patch.site_location;
+      if (patch.contract_no !== undefined) headerUpdate.contract_no = patch.contract_no;
+      if (patch.weather_category_id !== undefined) headerUpdate.weather_category_id = patch.weather_category_id;
+      if (patch.temp_min_c !== undefined) headerUpdate.temp_min_c = patch.temp_min_c;
+      if (patch.temp_max_c !== undefined) headerUpdate.temp_max_c = patch.temp_max_c;
+      if (patch.humidity_pct !== undefined) headerUpdate.humidity_pct = patch.humidity_pct;
+      if (patch.wind !== undefined) headerUpdate.wind = patch.wind;
+      if (patch.effects_text !== undefined) headerUpdate.effects_text = patch.effects_text;
+      if (patch.effects_severity !== undefined) headerUpdate.effects_severity = patch.effects_severity;
+      if (patch.equipment_text !== undefined) headerUpdate.equipment_text = patch.equipment_text;
+      if (patch.visitors_text !== undefined) headerUpdate.visitors_text = patch.visitors_text;
+      if (patch.delays_text !== undefined) headerUpdate.delays_text = patch.delays_text;
+      if (patch.incidents_text !== undefined) headerUpdate.incidents_text = patch.incidents_text;
+      if (patch.other_notes_text !== undefined) headerUpdate.other_notes_text = patch.other_notes_text;
+
+      await t('dpr').where({ dpr_id: dprId }).update(headerUpdate);
+
+      // Child sections replacements if provided
+      if (patch.work_items !== undefined) {
+        await t('dpr_work_item').where({ dpr_id: dprId }).del();
+        if (patch.work_items.length > 0) {
+          const items = patch.work_items.map((w, idx) => ({
+            work_item_id: w.work_item_id ?? randomUUID(),
+            dpr_id: dprId,
+            sort_order: w.sort_order ?? idx,
+            work_area: w.work_area,
+            work_carried_out: w.work_carried_out,
+          }));
+          await t('dpr_work_item').insert(items);
+        }
+      }
+
+      if (patch.activity_progress !== undefined) {
+        await t('dpr_activity_progress').where({ dpr_id: dprId }).del();
+        if (patch.activity_progress.length > 0) {
+          const activities = patch.activity_progress.map((a, idx) => ({
+            dpr_activity_progress_id: a.dpr_activity_progress_id ?? randomUUID(),
+            dpr_id: dprId,
+            sort_order: a.sort_order ?? idx,
+            source: a.source,
+            task_id: a.task_id ?? null,
+            free_text: a.free_text ?? null,
+            today_pct: a.today_pct,
+            total_pct: a.total_pct,
+          }));
+          await t('dpr_activity_progress').insert(activities);
+        }
+      }
+
+      if (patch.personnel_groups !== undefined) {
+        await t('dpr_personnel_group').where({ dpr_id: dprId }).del();
+        if (patch.personnel_groups.length > 0) {
+          for (const [idx, group] of patch.personnel_groups.entries()) {
+            const groupId = group.personnel_group_id ?? randomUUID();
+            await t('dpr_personnel_group').insert({
+              personnel_group_id: groupId,
+              dpr_id: dprId,
+              project_contractor_id: group.project_contractor_id,
+              sort_order: group.sort_order ?? idx,
+              total_headcount: group.total_headcount,
+            });
+
+            if (group.role_counts && group.role_counts.length > 0) {
+              const roleCounts = group.role_counts.map((rc) => ({
+                personnel_group_id: groupId,
+                personnel_role_id: rc.personnel_role_id,
+                headcount: rc.headcount,
+              }));
+              await t('dpr_personnel_role_count').insert(roleCounts);
+            }
+          }
+        }
+      }
+
+      if (patch.photos !== undefined) {
+        await t('dpr_photo').where({ dpr_id: dprId }).del();
+        if (patch.photos.length > 0) {
+          const photos = patch.photos.map((p, idx) => ({
+            photo_id: p.photo_id ?? randomUUID(),
+            dpr_id: dprId,
+            file_id: p.file_id,
+            caption: p.caption ?? null,
+            sort_order: p.sort_order ?? idx,
+            taken_at: p.taken_at ? new Date(p.taken_at) : null,
+            gps_lat: p.gps_lat ?? null,
+            gps_lng: p.gps_lng ?? null,
+            uploaded_by: p.uploaded_by ?? existing.author_id,
+          }));
+          await t('dpr_photo').insert(photos);
+        }
+      }
+
+      return await Dprs.getById(dprId, existing.project_id, t);
+    };
+
+    return trx ? await execute(trx) : await db.transaction(execute);
+  }
+
+  static async submit(
+    dprId: string,
+    submittedBy: string,
+    trx?: Knex.Transaction,
+  ): Promise<DprDetailsRow> {
+    const execute = async (t: Knex.Transaction) => {
+      const dpr = await t('dpr').where({ dpr_id: dprId }).first();
+      if (!dpr) {
+        throw new Error('DPR not found');
+      }
+      if (dpr.status === 'submitted') {
+        throw new Error('DPR has already been submitted');
+      }
+
+      const project = await t('projects').where({ project_id: dpr.project_id }).first();
+      const countRes = await t('dpr')
+        .where({ project_id: dpr.project_id, status: 'submitted' })
+        .count<{ count: string }[]>('dpr_id as count');
+      const seq = Number(countRes[0]?.count ?? 0) + 1;
+
+      const dprRef = formatDprRef(dpr.report_date, project?.project_code ?? '001', seq);
+      const submittedAt = new Date();
+      const isLate = computeIsLate(submittedAt, dpr.report_date, project?.timezone ?? 'Africa/Nairobi');
+
+      await t('dpr')
+        .where({ dpr_id: dprId })
+        .update({
+          status: 'submitted',
+          dpr_ref: dprRef,
+          submitted_by: submittedBy,
+          submitted_at: submittedAt,
+          is_late: isLate,
+          updated_at: t.fn.now(),
+        });
+
+      return (await Dprs.getById(dprId, dpr.project_id, t))!;
+    };
+
+    return trx ? await execute(trx) : await db.transaction(execute);
+  }
+
+  static async prefill(projectId: string): Promise<{
+    site_location: string;
+    contract_no: string | null;
+    personnel_groups: Array<{
+      project_contractor_id: string;
+      contractor_name: string;
+      party_type: PartyType;
+      sort_order: number;
+    }>;
+  } | null> {
+    const lastDpr = await db('dpr')
+      .where({ project_id: projectId, status: 'submitted' })
+      .orderBy('report_date', 'desc')
+      .first();
+
+    if (!lastDpr) return null;
+
+    const groups = await db('dpr_personnel_group as dpg')
+      .join('project_contractor as pc', 'dpg.project_contractor_id', 'pc.project_contractor_id')
+      .join('contractor as c', 'pc.contractor_id', 'c.contractor_id')
+      .where({ 'dpg.dpr_id': lastDpr.dpr_id, 'pc.is_active': true })
+      .select(
+        'dpg.project_contractor_id',
+        'c.name as contractor_name',
+        'pc.party_type',
+        'dpg.sort_order',
+      )
+      .orderBy('dpg.sort_order', 'asc');
+
+    return {
+      site_location: lastDpr.site_location,
+      contract_no: lastDpr.contract_no,
+      personnel_groups: groups,
+    };
+  }
+
+  static async delete(dprId: string, trx?: Knex.Transaction): Promise<boolean> {
+    const q = trx ? trx('dpr') : db('dpr');
+    const count = await q.where({ dpr_id: dprId }).del();
+    return count > 0;
+  }
+}
+
+
 

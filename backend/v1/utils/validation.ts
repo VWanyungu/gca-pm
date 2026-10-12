@@ -1,5 +1,17 @@
 import Joi from 'joi';
-import type { CreateUserInput, RoleName, ScopeType, StageEvent, StageState, ActivityStatus, ProjectStatus, PartyType } from '../database/utils/database.js';
+import type {
+  CreateUserInput,
+  RoleName,
+  ScopeType,
+  StageEvent,
+  StageState,
+  ActivityStatus,
+  ProjectStatus,
+  PartyType,
+  DprStatus,
+  DprEffectsSeverity,
+  DprProgressSource,
+} from '../database/utils/database.js';
 
 export const createUserSchema = Joi.object<CreateUserInput>({
   id: Joi.string().uuid().required(),
@@ -817,4 +829,269 @@ export const listCustomMilestonesQuerySchema = Joi.object<ListCustomMilestonesQu
   all: Joi.boolean().default(false),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(50),
+});
+
+const DPR_STATUSES: DprStatus[] = ['draft', 'submitted'];
+const DPR_EFFECTS_SEVERITIES: DprEffectsSeverity[] = ['none', 'minor', 'significant', 'stoppage'];
+const DPR_PROGRESS_SOURCES: DprProgressSource[] = ['schedule_task', 'free_text'];
+
+export interface CreateDprWorkItemInput {
+  work_item_id?: string;
+  sort_order?: number;
+  work_area: string;
+  work_carried_out: string;
+}
+
+export interface CreateDprActivityProgressInput {
+  dpr_activity_progress_id?: string;
+  sort_order?: number;
+  source: DprProgressSource;
+  task_id?: string | null;
+  free_text?: string | null;
+  today_pct: number;
+  total_pct: number;
+}
+
+export interface CreateDprPersonnelRoleCountInput {
+  personnel_role_id: number;
+  headcount: number;
+}
+
+export interface CreateDprPersonnelGroupInput {
+  personnel_group_id?: string;
+  project_contractor_id: string;
+  sort_order?: number;
+  total_headcount: number;
+  role_counts?: CreateDprPersonnelRoleCountInput[];
+}
+
+export interface CreateDprPhotoInput {
+  photo_id?: string;
+  file_id: string;
+  caption?: string | null;
+  sort_order?: number;
+  taken_at?: string | null;
+  gps_lat?: number | null;
+  gps_lng?: number | null;
+}
+
+export interface CreateDprBody {
+  stage_no?: number;
+  report_date: string;
+  site_location: string;
+  contract_no?: string | null;
+  weather_category_id?: number | null;
+  temp_min_c?: number | null;
+  temp_max_c?: number | null;
+  humidity_pct?: number | null;
+  wind?: string | null;
+  effects_text?: string | null;
+  effects_severity?: DprEffectsSeverity;
+  equipment_text?: string | null;
+  visitors_text?: string | null;
+  delays_text?: string | null;
+  incidents_text?: string | null;
+  other_notes_text?: string | null;
+  status?: DprStatus;
+  work_items?: CreateDprWorkItemInput[];
+  activity_progress?: CreateDprActivityProgressInput[];
+  personnel_groups?: CreateDprPersonnelGroupInput[];
+  photos?: CreateDprPhotoInput[];
+}
+
+export interface UpdateDprBody {
+  stage_no?: number;
+  report_date?: string;
+  site_location?: string;
+  contract_no?: string | null;
+  weather_category_id?: number | null;
+  temp_min_c?: number | null;
+  temp_max_c?: number | null;
+  humidity_pct?: number | null;
+  wind?: string | null;
+  effects_text?: string | null;
+  effects_severity?: DprEffectsSeverity;
+  equipment_text?: string | null;
+  visitors_text?: string | null;
+  delays_text?: string | null;
+  incidents_text?: string | null;
+  other_notes_text?: string | null;
+  work_items?: CreateDprWorkItemInput[];
+  activity_progress?: CreateDprActivityProgressInput[];
+  personnel_groups?: CreateDprPersonnelGroupInput[];
+  photos?: CreateDprPhotoInput[];
+}
+
+export interface ListDprsQuery {
+  stage_no?: number;
+  status?: DprStatus;
+  from_date?: string;
+  to_date?: string;
+  author_id?: string;
+  page?: number;
+  limit?: number;
+}
+
+export const dprIdParamSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+  dprId: Joi.string().uuid().required(),
+});
+
+export const createDprSchema = Joi.object<CreateDprBody>({
+  stage_no: Joi.number().integer().min(1).max(10).optional(),
+  report_date: Joi.string().isoDate().required(),
+  site_location: Joi.string().trim().min(1).max(500).required(),
+  contract_no: Joi.string().trim().max(100).allow(null, '').optional(),
+  weather_category_id: Joi.number().integer().allow(null).optional(),
+  temp_min_c: Joi.number().min(-50).max(60).allow(null).optional(),
+  temp_max_c: Joi.number().min(-50).max(60).allow(null).optional(),
+  humidity_pct: Joi.number().integer().min(0).max(100).allow(null).optional(),
+  wind: Joi.string().trim().max(100).allow(null, '').optional(),
+  effects_text: Joi.string().trim().max(10000).allow(null, '').optional(),
+  effects_severity: Joi.string().valid(...DPR_EFFECTS_SEVERITIES).default('none'),
+  equipment_text: Joi.string().trim().max(10000).allow(null, '').optional(),
+  visitors_text: Joi.string().trim().max(10000).allow(null, '').optional(),
+  delays_text: Joi.string().trim().max(10000).allow(null, '').optional(),
+  incidents_text: Joi.string().trim().max(10000).allow(null, '').optional(),
+  other_notes_text: Joi.string().trim().max(10000).allow(null, '').optional(),
+  status: Joi.string().valid(...DPR_STATUSES).default('draft'),
+  work_items: Joi.array()
+    .items(
+      Joi.object({
+        work_item_id: Joi.string().uuid().optional(),
+        sort_order: Joi.number().integer().min(0).optional(),
+        work_area: Joi.string().trim().min(1).max(500).required(),
+        work_carried_out: Joi.string().trim().min(1).max(10000).required(),
+      }),
+    )
+    .optional(),
+  activity_progress: Joi.array()
+    .items(
+      Joi.object({
+        dpr_activity_progress_id: Joi.string().uuid().optional(),
+        sort_order: Joi.number().integer().min(0).optional(),
+        source: Joi.string().valid(...DPR_PROGRESS_SOURCES).required(),
+        task_id: Joi.string().uuid().allow(null).optional(),
+        free_text: Joi.string().trim().max(10000).allow(null).optional(),
+        today_pct: Joi.number().min(0).max(100).required(),
+        total_pct: Joi.number().min(0).max(100).required(),
+      }),
+    )
+    .optional(),
+  personnel_groups: Joi.array()
+    .items(
+      Joi.object({
+        personnel_group_id: Joi.string().uuid().optional(),
+        project_contractor_id: Joi.string().uuid().required(),
+        sort_order: Joi.number().integer().min(0).optional(),
+        total_headcount: Joi.number().integer().min(0).required(),
+        role_counts: Joi.array()
+          .items(
+            Joi.object({
+              personnel_role_id: Joi.number().integer().required(),
+              headcount: Joi.number().integer().min(1).required(),
+            }),
+          )
+          .optional(),
+      }),
+    )
+    .optional(),
+  photos: Joi.array()
+    .items(
+      Joi.object({
+        photo_id: Joi.string().uuid().optional(),
+        file_id: Joi.string().uuid().required(),
+        caption: Joi.string().trim().max(1000).allow(null, '').optional(),
+        sort_order: Joi.number().integer().min(0).optional(),
+        taken_at: Joi.string().isoDate().allow(null).optional(),
+        gps_lat: Joi.number().min(-90).max(90).allow(null).optional(),
+        gps_lng: Joi.number().min(-180).max(180).allow(null).optional(),
+      }),
+    )
+    .max(20)
+    .optional(),
+});
+
+export const updateDprSchema = Joi.object<UpdateDprBody>({
+  stage_no: Joi.number().integer().min(1).max(10).optional(),
+  report_date: Joi.string().isoDate().optional(),
+  site_location: Joi.string().trim().min(1).max(500).optional(),
+  contract_no: Joi.string().trim().max(100).allow(null, '').optional(),
+  weather_category_id: Joi.number().integer().allow(null).optional(),
+  temp_min_c: Joi.number().min(-50).max(60).allow(null).optional(),
+  temp_max_c: Joi.number().min(-50).max(60).allow(null).optional(),
+  humidity_pct: Joi.number().integer().min(0).max(100).allow(null).optional(),
+  wind: Joi.string().trim().max(100).allow(null, '').optional(),
+  effects_text: Joi.string().trim().max(10000).allow(null, '').optional(),
+  effects_severity: Joi.string().valid(...DPR_EFFECTS_SEVERITIES).optional(),
+  equipment_text: Joi.string().trim().max(10000).allow(null, '').optional(),
+  visitors_text: Joi.string().trim().max(10000).allow(null, '').optional(),
+  delays_text: Joi.string().trim().max(10000).allow(null, '').optional(),
+  incidents_text: Joi.string().trim().max(10000).allow(null, '').optional(),
+  other_notes_text: Joi.string().trim().max(10000).allow(null, '').optional(),
+  work_items: Joi.array()
+    .items(
+      Joi.object({
+        work_item_id: Joi.string().uuid().optional(),
+        sort_order: Joi.number().integer().min(0).optional(),
+        work_area: Joi.string().trim().min(1).max(500).required(),
+        work_carried_out: Joi.string().trim().min(1).max(10000).required(),
+      }),
+    )
+    .optional(),
+  activity_progress: Joi.array()
+    .items(
+      Joi.object({
+        dpr_activity_progress_id: Joi.string().uuid().optional(),
+        sort_order: Joi.number().integer().min(0).optional(),
+        source: Joi.string().valid(...DPR_PROGRESS_SOURCES).required(),
+        task_id: Joi.string().uuid().allow(null).optional(),
+        free_text: Joi.string().trim().max(10000).allow(null).optional(),
+        today_pct: Joi.number().min(0).max(100).required(),
+        total_pct: Joi.number().min(0).max(100).required(),
+      }),
+    )
+    .optional(),
+  personnel_groups: Joi.array()
+    .items(
+      Joi.object({
+        personnel_group_id: Joi.string().uuid().optional(),
+        project_contractor_id: Joi.string().uuid().required(),
+        sort_order: Joi.number().integer().min(0).optional(),
+        total_headcount: Joi.number().integer().min(0).required(),
+        role_counts: Joi.array()
+          .items(
+            Joi.object({
+              personnel_role_id: Joi.number().integer().required(),
+              headcount: Joi.number().integer().min(1).required(),
+            }),
+          )
+          .optional(),
+      }),
+    )
+    .optional(),
+  photos: Joi.array()
+    .items(
+      Joi.object({
+        photo_id: Joi.string().uuid().optional(),
+        file_id: Joi.string().uuid().required(),
+        caption: Joi.string().trim().max(1000).allow(null, '').optional(),
+        sort_order: Joi.number().integer().min(0).optional(),
+        taken_at: Joi.string().isoDate().allow(null).optional(),
+        gps_lat: Joi.number().min(-90).max(90).allow(null).optional(),
+        gps_lng: Joi.number().min(-180).max(180).allow(null).optional(),
+      }),
+    )
+    .max(20)
+    .optional(),
+}).min(1);
+
+export const listDprsQuerySchema = Joi.object<ListDprsQuery>({
+  stage_no: Joi.number().integer().min(1).max(10).optional(),
+  status: Joi.string().valid(...DPR_STATUSES).optional(),
+  from_date: Joi.string().isoDate().optional(),
+  to_date: Joi.string().isoDate().optional(),
+  author_id: Joi.string().uuid().optional(),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(25),
 });

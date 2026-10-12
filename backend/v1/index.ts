@@ -21,6 +21,7 @@ import projectsRouter from './routers/projectsRouter.js';
 import contractorsRouter from './routers/contractorsRouter.js';
 import projectContractorsRouter from './routers/projectContractorsRouter.js';
 import customMilestonesRouter from './routers/customMilestonesRouter.js';
+import dprRouter from './routers/dprRouter.js';
 
 const router = express.Router();
 
@@ -50,6 +51,8 @@ router.use(
   '/projects/:projectId/stage-activities/:activityId/attachments',
   stageActivityAttachmentsRouter,
 );
+router.use('/projects/:projectId/dpr', dprRouter);
+router.use('/projects/:projectId/dprs', dprRouter);
 
 router.use('/logout', logoutRouter);
 router.use('/token', refreshTokenRouter);
