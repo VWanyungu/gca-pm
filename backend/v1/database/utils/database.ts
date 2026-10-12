@@ -1,3 +1,5 @@
+import type { Knex } from 'knex';
+import { randomUUID } from 'crypto';
 import db from '../dbSetup.js';
 
 export interface Paginated<T> {
@@ -549,6 +551,347 @@ export class RiskIssues {
       .where({ project_id: projectId, risk_id: riskId })
       .update(patch)
       .returning(RISK_COLS);
+    return row ?? null;
+  }
+}
+
+export type StageEvent =
+  | 'added_to_scope'
+  | 'removed_from_scope'
+  | 'activated'
+  | 'deactivated'
+  | 'completed'
+  | 'reopened';
+
+export type StageState = 'not_started' | 'active' | 'inactive' | 'complete';
+
+export interface StageStateHistoryRow {
+  event_id: string;
+  project_id: string;
+  stage_no: number;
+  event: StageEvent;
+  from_state: StageState | null;
+  to_state: StageState;
+  reason: string | null;
+  checklist_snapshot: Record<string, unknown> | null;
+  closure_notes: string | null;
+  actor_id: string;
+  occurred_at: Date;
+  submission_id: string | null;
+}
+
+export interface CreateStageStateHistoryInput {
+  event_id: string;
+  project_id: string;
+  stage_no: number;
+  event: StageEvent;
+  from_state?: StageState | null;
+  to_state: StageState;
+  reason?: string | null;
+  checklist_snapshot?: Record<string, unknown> | null;
+  closure_notes?: string | null;
+  actor_id: string;
+  occurred_at?: Date;
+  submission_id?: string | null;
+}
+
+export interface UpdateStageStateHistoryFields {
+  reason?: string | null;
+  checklist_snapshot?: Record<string, unknown> | null;
+  closure_notes?: string | null;
+  submission_id?: string | null;
+  from_state?: StageState | null;
+  to_state?: StageState;
+}
+
+const STAGE_STATE_HISTORY_COLS = [
+  'event_id',
+  'project_id',
+  'stage_no',
+  'event',
+  'from_state',
+  'to_state',
+  'reason',
+  'checklist_snapshot',
+  'closure_notes',
+  'actor_id',
+  'occurred_at',
+  'submission_id',
+];
+
+export class StageStateHistory {
+  static async create(
+    input: CreateStageStateHistoryInput,
+    trx?: Knex.Transaction,
+  ): Promise<StageStateHistoryRow> {
+    const q = trx ? trx('stage_state_history') : db('stage_state_history');
+    const [row] = await q.insert(input).returning(STAGE_STATE_HISTORY_COLS);
+    return row;
+  }
+
+  static async list({
+    projectId,
+    stageNo,
+    event,
+    page = 1,
+    limit = 25,
+  }: {
+    projectId: string;
+    stageNo?: number;
+    event?: StageEvent;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    stageStateHistory: StageStateHistoryRow[];
+    pagination: { page: number; limit: number; total: number; pages: number };
+  }> {
+    const base = db('stage_state_history').where({ project_id: projectId });
+    if (stageNo !== undefined) base.andWhere({ stage_no: stageNo });
+    if (event) base.andWhere({ event });
+
+    const countRows = await base.clone().count<{ count: string }[]>('event_id as count');
+    const total = Number(countRows[0]?.count ?? 0);
+
+    const stageStateHistory = await base
+      .clone()
+      .select(STAGE_STATE_HISTORY_COLS)
+      .orderBy('occurred_at', 'desc')
+      .limit(limit)
+      .offset((page - 1) * limit);
+
+    return {
+      stageStateHistory,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    };
+  }
+
+  static async getById(
+    projectId: string,
+    eventId: string,
+  ): Promise<StageStateHistoryRow | null> {
+    const row = await db('stage_state_history')
+      .where({ project_id: projectId, event_id: eventId })
+      .first();
+    return row ?? null;
+  }
+
+  static async update(
+    projectId: string,
+    eventId: string,
+    patch: UpdateStageStateHistoryFields,
+    trx?: Knex.Transaction,
+  ): Promise<StageStateHistoryRow | null> {
+    const q = trx ? trx('stage_state_history') : db('stage_state_history');
+    const [row] = await q
+      .where({ project_id: projectId, event_id: eventId })
+      .update(patch)
+      .returning(STAGE_STATE_HISTORY_COLS);
+    return row ?? null;
+  }
+
+  static async delete(
+    projectId: string,
+    eventId: string,
+    trx?: Knex.Transaction,
+  ): Promise<StageStateHistoryRow | null> {
+    const q = trx ? trx('stage_state_history') : db('stage_state_history');
+    const [row] = await q
+      .where({ project_id: projectId, event_id: eventId })
+      .del()
+      .returning(STAGE_STATE_HISTORY_COLS);
+    return row ?? null;
+  }
+
+  static async recordTransition({
+    projectId,
+    stageNo,
+    event,
+    fromState,
+    toState,
+    reason,
+    checklistSnapshot,
+    closureNotes,
+    actorId,
+    submissionId,
+    updateProjectStage = true,
+  }: {
+    projectId: string;
+    stageNo: number;
+    event: StageEvent;
+    fromState: StageState | null;
+    toState: StageState;
+    reason?: string | null;
+    checklistSnapshot?: Record<string, unknown> | null;
+    closureNotes?: string | null;
+    actorId: string;
+    submissionId?: string | null;
+    updateProjectStage?: boolean;
+  }): Promise<StageStateHistoryRow> {
+    return await db.transaction(async (trx) => {
+      if (updateProjectStage) {
+        const existing = await trx('project_stage')
+          .where({ project_id: projectId, stage_no: stageNo })
+          .first();
+
+        if (!existing) {
+          await trx('project_stage').insert({
+            project_id: projectId,
+            stage_no: stageNo,
+            in_scope: true,
+            state: toState,
+            added_to_scope_by: actorId,
+            added_to_scope_at: trx.fn.now(),
+            last_changed_by: actorId,
+            last_changed_at: trx.fn.now(),
+          });
+        } else {
+          const patch: Record<string, unknown> = {
+            state: toState,
+            last_changed_by: actorId,
+            last_changed_at: trx.fn.now(),
+          };
+          if (event === 'added_to_scope') {
+            patch.in_scope = true;
+          } else if (event === 'removed_from_scope') {
+            patch.in_scope = false;
+          }
+          await trx('project_stage')
+            .where({ project_id: projectId, stage_no: stageNo })
+            .update(patch);
+        }
+      }
+
+      const [created] = await trx('stage_state_history')
+        .insert({
+          event_id: randomUUID(),
+          project_id: projectId,
+          stage_no: stageNo,
+          event,
+          from_state: fromState,
+          to_state: toState,
+          reason: reason ?? null,
+          checklist_snapshot: checklistSnapshot ?? null,
+          closure_notes: closureNotes ?? null,
+          actor_id: actorId,
+          submission_id: submissionId ?? null,
+          occurred_at: new Date(),
+        })
+        .returning(STAGE_STATE_HISTORY_COLS);
+
+      return created;
+    });
+  }
+}
+
+export interface ProjectStageRow {
+  project_id: string;
+  stage_no: number;
+  in_scope: boolean;
+  state: StageState;
+  added_to_scope_by: string;
+  added_to_scope_at: Date;
+  last_changed_by: string;
+  last_changed_at: Date;
+}
+
+const PROJECT_STAGE_COLS = [
+  'project_id',
+  'stage_no',
+  'in_scope',
+  'state',
+  'added_to_scope_by',
+  'added_to_scope_at',
+  'last_changed_by',
+  'last_changed_at',
+];
+
+export class ProjectStages {
+  static async get(
+    projectId: string,
+    stageNo: number,
+    trx?: Knex.Transaction,
+  ): Promise<ProjectStageRow | null> {
+    const q = trx ? trx('project_stage') : db('project_stage');
+    const row = await q.where({ project_id: projectId, stage_no: stageNo }).first();
+    return row ?? null;
+  }
+
+  static async list(projectId: string, trx?: Knex.Transaction): Promise<ProjectStageRow[]> {
+    const q = trx ? trx('project_stage') : db('project_stage');
+    return await q.where({ project_id: projectId }).orderBy('stage_no', 'asc');
+  }
+
+  static async upsert(
+    row: {
+      project_id: string;
+      stage_no: number;
+      in_scope?: boolean;
+      state: StageState;
+      added_to_scope_by: string;
+      last_changed_by: string;
+    },
+    trx?: Knex.Transaction,
+  ): Promise<ProjectStageRow> {
+    const q = trx ? trx('project_stage') : db('project_stage');
+    const [result] = await q
+      .insert({
+        project_id: row.project_id,
+        stage_no: row.stage_no,
+        in_scope: row.in_scope ?? true,
+        state: row.state,
+        added_to_scope_by: row.added_to_scope_by,
+        added_to_scope_at: db.fn.now(),
+        last_changed_by: row.last_changed_by,
+        last_changed_at: db.fn.now(),
+      })
+      .onConflict(['project_id', 'stage_no'])
+      .merge({
+        state: row.state,
+        ...(row.in_scope !== undefined ? { in_scope: row.in_scope } : {}),
+        last_changed_by: row.last_changed_by,
+        last_changed_at: db.fn.now(),
+      })
+      .returning(PROJECT_STAGE_COLS);
+    return result;
+  }
+
+  static async update(
+    projectId: string,
+    stageNo: number,
+    patch: {
+      state?: StageState;
+      in_scope?: boolean;
+      last_changed_by: string;
+    },
+    trx?: Knex.Transaction,
+  ): Promise<ProjectStageRow | null> {
+    const q = trx ? trx('project_stage') : db('project_stage');
+    const [row] = await q
+      .where({ project_id: projectId, stage_no: stageNo })
+      .update({
+        ...patch,
+        last_changed_at: db.fn.now(),
+      })
+      .returning(PROJECT_STAGE_COLS);
+    return row ?? null;
+  }
+}
+
+export interface ProjectRow {
+  project_id: string;
+  project_code: string;
+  name: string;
+  program_id: number;
+  client_name: string | null;
+  country: string | null;
+  site_location: string | null;
+  timezone: string;
+  status: 'active' | 'on_hold' | 'complete' | 'cancelled';
+}
+
+export class Projects {
+  static async getById(projectId: string): Promise<ProjectRow | null> {
+    const row = await db('projects').where({ project_id: projectId }).first();
     return row ?? null;
   }
 }

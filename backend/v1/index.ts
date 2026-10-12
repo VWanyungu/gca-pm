@@ -10,9 +10,10 @@ import forgotPasswordRouter from './routers/forgotPasswordRouter.js';
 import resetUserPasswordRouter from './routers/resetUserPasswordRouter.js';
 import rolesRouter from './routers/rolesRouter.js';
 import riskCategoriesRouter from './routers/riskCategoriesRouter.js';
-import riskIssuesRouter from './routers/riskIssuesRouter.js';
+import riskRouter from './routers/riskRouter.js';
 import programsRouter from './routers/programsRouter.js';
 import weatherCategoriesRouter from './routers/weatherCategoriesRouter.js';
+import stageStateHistoryRouter from './routers/stageStateHistoryRouter.js';
 
 const router = express.Router();
 
@@ -29,7 +30,9 @@ router.use('/roles', rolesRouter);
 router.use('/programs', programsRouter);
 router.use('/risk-categories', riskCategoriesRouter);
 router.use('/weather-categories', weatherCategoriesRouter);
-router.use('/projects/:projectId/risk-issues', riskIssuesRouter);
+router.use('/projects/:projectId/risk', riskRouter);
+router.use('/projects/:projectId/stage-state-history', stageStateHistoryRouter);
+router.use('/projects/:projectId/stage-history', stageStateHistoryRouter);
 
 router.use('/logout', logoutRouter);
 router.use('/token', refreshTokenRouter);

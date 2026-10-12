@@ -1,6 +1,7 @@
 import Joi from 'joi';
 import type { CreateUserInput } from '../database/utils/database.js';
 import type { RoleName, ScopeType } from '../database/utils/database.js';
+import type { StageEvent, StageState } from '../database/utils/database.js';
 
 export const createUserSchema = Joi.object<CreateUserInput>({
   id: Joi.string().uuid().required(),
@@ -265,9 +266,92 @@ export const updateWeatherCategorySchema = Joi.object<UpdateWeatherCategoryBody>
 export const weatherCategoryIdParamSchema = Joi.object({
   id: Joi.number().integer().positive().required(),
 });
-
 export const listWeatherCategoriesQuerySchema = Joi.object<ListWeatherCategoriesQuery>({
   includeInactive: Joi.boolean().default(false),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(50),
+});
+
+export interface CreateStageStateHistoryBody {
+  stage_no: number;
+  event: StageEvent;
+  from_state?: StageState | null;
+  to_state: StageState;
+  reason?: string | null;
+  checklist_snapshot?: Record<string, unknown> | null;
+  closure_notes?: string | null;
+  submission_id?: string | null;
+  update_project_stage?: boolean;
+}
+
+export interface UpdateStageStateHistoryBody {
+  from_state?: StageState | null;
+  to_state?: StageState;
+  reason?: string | null;
+  checklist_snapshot?: Record<string, unknown> | null;
+  closure_notes?: string | null;
+  submission_id?: string | null;
+}
+
+export interface ListStageStateHistoryQuery {
+  stage_no?: number;
+  event?: StageEvent;
+  page?: number;
+  limit?: number;
+}
+
+const STAGE_EVENTS: StageEvent[] = [
+  'added_to_scope',
+  'removed_from_scope',
+  'activated',
+  'deactivated',
+  'completed',
+  'reopened',
+];
+
+const STAGE_STATES: StageState[] = ['not_started', 'active', 'inactive', 'complete'];
+
+export const stageStateHistoryProjectParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+});
+
+export const stageStateHistoryEventParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+  eventId: Joi.string().uuid().required(),
+});
+
+export const createStageStateHistorySchema = Joi.object<CreateStageStateHistoryBody>({
+  stage_no: Joi.number().integer().min(1).max(10).required(),
+  event: Joi.string().valid(...STAGE_EVENTS).required(),
+  from_state: Joi.string().valid(...STAGE_STATES).allow(null).optional(),
+  to_state: Joi.string().valid(...STAGE_STATES).required(),
+  reason: Joi.string().trim().max(10000).allow(null, '').optional(),
+  checklist_snapshot: Joi.when('event', {
+    is: 'completed',
+    then: Joi.object().default({ template_id: null, items: [] }),
+    otherwise: Joi.any().strip(),
+  }),
+  closure_notes: Joi.when('event', {
+    is: 'completed',
+    then: Joi.string().trim().max(10000).allow(null, '').optional(),
+    otherwise: Joi.any().strip(),
+  }),
+  submission_id: Joi.string().uuid().allow(null).optional(),
+  update_project_stage: Joi.boolean().default(true),
+});
+
+export const updateStageStateHistorySchema = Joi.object<UpdateStageStateHistoryBody>({
+  from_state: Joi.string().valid(...STAGE_STATES).allow(null).optional(),
+  to_state: Joi.string().valid(...STAGE_STATES).optional(),
+  reason: Joi.string().trim().max(10000).allow(null, '').optional(),
+  checklist_snapshot: Joi.object().allow(null).optional(),
+  closure_notes: Joi.string().trim().max(10000).allow(null, '').optional(),
+  submission_id: Joi.string().uuid().allow(null).optional(),
+}).min(1);
+
+export const listStageStateHistoryQuerySchema = Joi.object<ListStageStateHistoryQuery>({
+  stage_no: Joi.number().integer().min(1).max(10).optional(),
+  event: Joi.string().valid(...STAGE_EVENTS).optional(),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(25),
 });
