@@ -1166,3 +1166,182 @@ export const listEscalationsQuerySchema = Joi.object<ListEscalationsQuery>({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(25),
 });
+
+export type WeeklySubmissionStatusLiteral = 'draft' | 'approved' | 'superseded';
+export type AddressedRiskMethodLiteral = 'top_risk' | 'top_action' | 'commentary' | 'dismissed';
+
+export interface CreateWeeklySubmissionBody {
+  week_start: string;
+  active_stages?: number[];
+  scope_change_text?: string;
+  top_risk_id?: string | null;
+  top_risk_text?: string | null;
+  top_action?: string | null;
+  pm_commentary?: string | null;
+  exco_decision_needed?: string | null;
+  escalate?: boolean;
+  escalation_reason?: string | null;
+  addressed_risks?: Array<{
+    risk_id: string;
+    method: AddressedRiskMethodLiteral;
+    dismissal_reason?: string | null;
+  }>;
+}
+
+export interface UpdateWeeklySubmissionBody {
+  active_stages?: number[];
+  scope_change_text?: string;
+  top_risk_id?: string | null;
+  top_risk_text?: string | null;
+  top_action?: string | null;
+  pm_commentary?: string | null;
+  exco_decision_needed?: string | null;
+  escalate?: boolean;
+  escalation_reason?: string | null;
+  addressed_risks?: Array<{
+    risk_id: string;
+    method: AddressedRiskMethodLiteral;
+    dismissal_reason?: string | null;
+  }>;
+  updated_at?: string;
+}
+
+export interface ApproveWeeklySubmissionBody {
+  updated_at?: string;
+  planned_pct?: number;
+  actual_pct?: number;
+  spi?: number | null;
+  rag?: 'green' | 'amber' | 'red' | null;
+  schedule_version_id?: string | null;
+}
+
+export interface SupersedeWeeklySubmissionBody {
+  supersede_reason: string;
+}
+
+export interface AddSubmissionAddressedRiskBody {
+  risk_id: string;
+  method: AddressedRiskMethodLiteral;
+  dismissal_reason?: string | null;
+}
+
+export interface ListWeeklySubmissionsQuery {
+  status?: WeeklySubmissionStatusLiteral;
+  week_start?: string;
+  page?: number;
+  limit?: number;
+}
+
+const isMondayValidator = (value: string, helpers: Joi.CustomHelpers) => {
+  const parts = value.split('-');
+  if (parts.length !== 3) {
+    return helpers.error('any.invalid');
+  }
+  const year = Number(parts[0]);
+  const month = Number(parts[1]);
+  const day = Number(parts[2]);
+  const utcDate = new Date(Date.UTC(year, month - 1, day));
+  if (isNaN(utcDate.getTime())) {
+    return helpers.error('any.invalid');
+  }
+  if (utcDate.getUTCDay() !== 1) {
+    return helpers.message({ custom: 'week_start must be a Monday (day of week 1)' });
+  }
+  return value;
+};
+
+export const weeklySubmissionProjectParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().optional(),
+});
+
+export const weeklySubmissionParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().optional(),
+  submissionId: Joi.string().uuid().required(),
+});
+
+export const weeklySubmissionAddressedRiskParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().optional(),
+  submissionId: Joi.string().uuid().required(),
+  riskId: Joi.string().uuid().required(),
+});
+
+export const createWeeklySubmissionSchema = Joi.object<CreateWeeklySubmissionBody>({
+  week_start: Joi.string()
+    .pattern(/^\d{4}-\d{2}-\d{2}$/)
+    .custom(isMondayValidator)
+    .required(),
+  active_stages: Joi.array().items(Joi.number().integer().min(1).max(30)).optional(),
+  scope_change_text: Joi.string().trim().max(2000).default('No scope change'),
+  top_risk_id: Joi.string().uuid().allow(null).optional(),
+  top_risk_text: Joi.string().trim().max(1000).allow(null, '').optional(),
+  top_action: Joi.string().trim().max(2000).allow(null, '').optional(),
+  pm_commentary: Joi.string().trim().max(10000).allow(null, '').optional(),
+  exco_decision_needed: Joi.string().trim().max(2000).allow(null, '').optional(),
+  escalate: Joi.boolean().default(false),
+  escalation_reason: Joi.string()
+    .trim()
+    .max(10000)
+    .allow(null, '')
+    .when('escalate', {
+      is: true,
+      then: Joi.string().trim().min(1).required(),
+      otherwise: Joi.optional(),
+    }),
+  addressed_risks: Joi.array()
+    .items(
+      Joi.object({
+        risk_id: Joi.string().uuid().required(),
+        method: Joi.string().valid('top_risk', 'top_action', 'commentary', 'dismissed').required(),
+        dismissal_reason: Joi.string().trim().max(1000).allow(null, '').optional(),
+      }),
+    )
+    .optional(),
+});
+
+export const updateWeeklySubmissionSchema = Joi.object<UpdateWeeklySubmissionBody>({
+  active_stages: Joi.array().items(Joi.number().integer().min(1).max(30)).optional(),
+  scope_change_text: Joi.string().trim().max(2000).optional(),
+  top_risk_id: Joi.string().uuid().allow(null).optional(),
+  top_risk_text: Joi.string().trim().max(1000).allow(null, '').optional(),
+  top_action: Joi.string().trim().max(2000).allow(null, '').optional(),
+  pm_commentary: Joi.string().trim().max(10000).allow(null, '').optional(),
+  exco_decision_needed: Joi.string().trim().max(2000).allow(null, '').optional(),
+  escalate: Joi.boolean().optional(),
+  escalation_reason: Joi.string().trim().max(10000).allow(null, '').optional(),
+  addressed_risks: Joi.array()
+    .items(
+      Joi.object({
+        risk_id: Joi.string().uuid().required(),
+        method: Joi.string().valid('top_risk', 'top_action', 'commentary', 'dismissed').required(),
+        dismissal_reason: Joi.string().trim().max(1000).allow(null, '').optional(),
+      }),
+    )
+    .optional(),
+  updated_at: Joi.string().isoDate().optional(),
+}).min(1);
+
+export const approveWeeklySubmissionSchema = Joi.object<ApproveWeeklySubmissionBody>({
+  updated_at: Joi.string().isoDate().optional(),
+  planned_pct: Joi.number().min(0).max(100).optional(),
+  actual_pct: Joi.number().min(0).max(100).optional(),
+  spi: Joi.number().min(0).max(10).allow(null).optional(),
+  rag: Joi.string().valid('green', 'amber', 'red').allow(null).optional(),
+  schedule_version_id: Joi.string().uuid().allow(null).optional(),
+});
+
+export const supersedeWeeklySubmissionSchema = Joi.object<SupersedeWeeklySubmissionBody>({
+  supersede_reason: Joi.string().trim().min(1).max(10000).required(),
+});
+
+export const addSubmissionAddressedRiskSchema = Joi.object<AddSubmissionAddressedRiskBody>({
+  risk_id: Joi.string().uuid().required(),
+  method: Joi.string().valid('top_risk', 'top_action', 'commentary', 'dismissed').required(),
+  dismissal_reason: Joi.string().trim().max(1000).allow(null, '').optional(),
+});
+
+export const listWeeklySubmissionsQuerySchema = Joi.object<ListWeeklySubmissionsQuery>({
+  status: Joi.string().valid('draft', 'approved', 'superseded').optional(),
+  week_start: Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(25),
+});

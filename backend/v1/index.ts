@@ -23,6 +23,7 @@ import projectContractorsRouter from './routers/projectContractorsRouter.js';
 import customMilestonesRouter from './routers/customMilestonesRouter.js';
 import dprRouter from './routers/dprRouter.js';
 import escalationRouter from './routers/escalationRouter.js';
+import weeklySubmissionRouter from './routers/weeklySubmissionRouter.js';
 
 const router = express.Router();
 
@@ -55,6 +56,9 @@ router.use(
 );
 router.use('/projects/:projectId/dpr', dprRouter);
 router.use('/projects/:projectId/dprs', dprRouter);
+router.use('/projects/:projectId/weekly-submission', weeklySubmissionRouter);
+router.use('/projects/:projectId/weekly-submissions', weeklySubmissionRouter);
+router.use('/weekly-submissions', weeklySubmissionRouter);
 router.use('/projects/:projectId/escalation', escalationRouter);
 router.use('/projects/:projectId/escalations', escalationRouter);
 router.use('/escalations', escalationRouter);

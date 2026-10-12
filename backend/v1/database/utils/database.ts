@@ -3484,13 +3484,865 @@ export class Escalations {
   }
 }
 
-export class WeeklySubmissions {
-  static async getById(submissionId: string, trx?: Knex.Transaction) {
-    const q = trx ? trx('weekly_submission') : db('weekly_submission');
-    const row = await q.where('submission_id', submissionId).first();
-    return row ?? null;
+export type ProjectRag = 'green' | 'amber' | 'red';
+export type WeeklySubmissionStatus = 'draft' | 'approved' | 'superseded';
+export type AddressedRiskMethod = 'top_risk' | 'top_action' | 'commentary' | 'dismissed';
+
+export interface WeeklySubmissionRow {
+  submission_id: string;
+  project_id: string;
+  week_start: string | Date;
+  revision_no: number;
+  supersedes_submission_id: string | null;
+  supersede_reason: string | null;
+  supersede_authorised_by: string | null;
+  supersede_authorised_at: Date | null;
+  status: WeeklySubmissionStatus;
+  schedule_version_id: string | null;
+  planned_pct: number | null;
+  actual_pct: number | null;
+  spi: number | null;
+  rag: ProjectRag | null;
+  active_stages: number[];
+  scope_change_text: string;
+  top_risk_id: string | null;
+  top_risk_text: string | null;
+  top_action: string | null;
+  pm_commentary: string | null;
+  exco_decision_needed: string | null;
+  escalate: boolean;
+  escalation_reason: string | null;
+  is_late: boolean | null;
+  created_by: string;
+  created_at: Date;
+  updated_at: Date;
+  approved_by: string | null;
+  approved_at: Date | null;
+}
+
+export interface SubmissionAddressedRiskRow {
+  submission_id: string;
+  risk_id: string;
+  project_id: string;
+  method: AddressedRiskMethod;
+  added_by: string;
+  added_at: Date;
+  risk_code?: string;
+  risk_title?: string;
+  risk_status?: string;
+  dismissal_reason?: string | null;
+}
+
+export interface WeeklySubmissionDetailsRow extends WeeklySubmissionRow {
+  project_name?: string;
+  project_code?: string;
+  creator_name?: string;
+  approver_name?: string;
+  supersede_authoriser_name?: string;
+  addressed_risks?: SubmissionAddressedRiskRow[];
+  escalation?: EscalationRow | null;
+}
+
+export interface CreateWeeklySubmissionInput {
+  submission_id?: string;
+  project_id: string;
+  week_start: string;
+  revision_no?: number;
+  active_stages?: number[];
+  scope_change_text?: string;
+  top_risk_id?: string | null;
+  top_risk_text?: string | null;
+  top_action?: string | null;
+  pm_commentary?: string | null;
+  exco_decision_needed?: string | null;
+  escalate?: boolean;
+  escalation_reason?: string | null;
+  created_by: string;
+  addressed_risks?: Array<{
+    risk_id: string;
+    method: AddressedRiskMethod;
+    dismissal_reason?: string | null;
+  }>;
+}
+
+export interface UpdateWeeklySubmissionInput {
+  active_stages?: number[];
+  scope_change_text?: string;
+  top_risk_id?: string | null;
+  top_risk_text?: string | null;
+  top_action?: string | null;
+  pm_commentary?: string | null;
+  exco_decision_needed?: string | null;
+  escalate?: boolean;
+  escalation_reason?: string | null;
+  addressed_risks?: Array<{
+    risk_id: string;
+    method: AddressedRiskMethod;
+    dismissal_reason?: string | null;
+  }>;
+  updated_at?: string | Date;
+}
+
+export interface ApproveWeeklySubmissionInput {
+  approved_by: string;
+  updated_at?: string | Date;
+  planned_pct?: number;
+  actual_pct?: number;
+  spi?: number | null;
+  rag?: ProjectRag | null;
+  schedule_version_id?: string | null;
+}
+
+const WEEKLY_SUBMISSION_COLS = [
+  'weekly_submission.submission_id',
+  'weekly_submission.project_id',
+  'weekly_submission.week_start',
+  'weekly_submission.revision_no',
+  'weekly_submission.supersedes_submission_id',
+  'weekly_submission.supersede_reason',
+  'weekly_submission.supersede_authorised_by',
+  'weekly_submission.supersede_authorised_at',
+  'weekly_submission.status',
+  'weekly_submission.schedule_version_id',
+  'weekly_submission.planned_pct',
+  'weekly_submission.actual_pct',
+  'weekly_submission.spi',
+  'weekly_submission.rag',
+  'weekly_submission.active_stages',
+  'weekly_submission.scope_change_text',
+  'weekly_submission.top_risk_id',
+  'weekly_submission.top_risk_text',
+  'weekly_submission.top_action',
+  'weekly_submission.pm_commentary',
+  'weekly_submission.exco_decision_needed',
+  'weekly_submission.escalate',
+  'weekly_submission.escalation_reason',
+  'weekly_submission.is_late',
+  'weekly_submission.created_by',
+  'weekly_submission.created_at',
+  'weekly_submission.updated_at',
+  'weekly_submission.approved_by',
+  'weekly_submission.approved_at',
+];
+
+function computeWeeklyIsLate(
+  approvedAt: Date,
+  weekStart: string | Date,
+  timezone: string = 'Africa/Nairobi',
+): boolean {
+  try {
+    const weekStartStr =
+      typeof weekStart === 'string'
+        ? weekStart.slice(0, 10)
+        : weekStart.toISOString().slice(0, 10);
+    const parts = weekStartStr.split('-');
+    const year = Number(parts[0]);
+    const month = Number(parts[1]);
+    const day = Number(parts[2]);
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return false;
+
+    const nextMonday = new Date(Date.UTC(year, month - 1, day + 7));
+    const deadlineDateStr = nextMonday.toISOString().slice(0, 10);
+
+    const localDateStr = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(approvedAt);
+
+    const localTimeStr = new Intl.DateTimeFormat('en-GB', {
+      timeZone: timezone,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).format(approvedAt);
+
+    if (localDateStr > deadlineDateStr) {
+      return true;
+    }
+    if (localDateStr === deadlineDateStr && localTimeStr > '09:00:00') {
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
   }
 }
+
+export class WeeklySubmissions {
+  static async create(
+    input: CreateWeeklySubmissionInput,
+    trx?: Knex.Transaction,
+  ): Promise<WeeklySubmissionDetailsRow> {
+    const execute = async (t: Knex.Transaction) => {
+      const submissionId = input.submission_id ?? randomUUID();
+
+      // AC-WKS-02: If active_stages not provided, default to currently active stages for this project
+      let activeStages = input.active_stages;
+      if (!activeStages) {
+        const currentActive = await t('project_stage')
+          .where({ project_id: input.project_id, state: 'active', in_scope: true })
+          .select('stage_no');
+        activeStages = currentActive.map((s) => Number(s.stage_no));
+      }
+
+      await t('weekly_submission').insert({
+        submission_id: submissionId,
+        project_id: input.project_id,
+        week_start: input.week_start,
+        revision_no: input.revision_no ?? 1,
+        status: 'draft',
+        active_stages: activeStages,
+        scope_change_text: input.scope_change_text ?? 'No scope change',
+        top_risk_id: input.top_risk_id ?? null,
+        top_risk_text: input.top_risk_text ?? null,
+        top_action: input.top_action ?? null,
+        pm_commentary: input.pm_commentary ?? null,
+        exco_decision_needed: input.exco_decision_needed ?? null,
+        escalate: input.escalate ?? false,
+        escalation_reason: input.escalate ? (input.escalation_reason ?? null) : null,
+        created_by: input.created_by,
+      });
+
+      if (input.addressed_risks && input.addressed_risks.length > 0) {
+        const rows = input.addressed_risks.map((r) => ({
+          submission_id: submissionId,
+          risk_id: r.risk_id,
+          project_id: input.project_id,
+          method: r.method,
+          added_by: input.created_by,
+        }));
+        await t('submission_addressed_risk').insert(rows);
+      }
+
+      const created = await WeeklySubmissions.getById(submissionId, input.project_id, t);
+      return created!;
+    };
+
+    return trx ? execute(trx) : db.transaction(execute);
+  }
+
+  static async list(
+    {
+      projectId,
+      status,
+      week_start,
+      page = 1,
+      limit = 25,
+    }: {
+      projectId?: string;
+      status?: WeeklySubmissionStatus;
+      week_start?: string;
+      page?: number;
+      limit?: number;
+    },
+    trx?: Knex.Transaction,
+  ): Promise<{
+    submissions: WeeklySubmissionDetailsRow[];
+    pagination: { page: number; limit: number; total: number; pages: number };
+  }> {
+    const q = trx ? trx('weekly_submission') : db('weekly_submission');
+    const base = q;
+
+    if (projectId) {
+      base.where('weekly_submission.project_id', projectId);
+    }
+    if (status) {
+      base.where('weekly_submission.status', status);
+    }
+    if (week_start) {
+      base.where('weekly_submission.week_start', week_start);
+    }
+
+    const countRes = await base
+      .clone()
+      .count<{ count: string }[]>('weekly_submission.submission_id as count');
+    const total = Number(countRes[0]?.count ?? 0);
+
+    const rows = await base
+      .clone()
+      .leftJoin('projects', 'weekly_submission.project_id', 'projects.project_id')
+      .leftJoin('users as creator', 'weekly_submission.created_by', 'creator.id')
+      .leftJoin('users as approver', 'weekly_submission.approved_by', 'approver.id')
+      .leftJoin(
+        'users as authoriser',
+        'weekly_submission.supersede_authorised_by',
+        'authoriser.id',
+      )
+      .select(
+        ...WEEKLY_SUBMISSION_COLS,
+        'projects.name as project_name',
+        'projects.project_code',
+        db.raw("NULLIF(CONCAT(creator.first_name, ' ', creator.last_name), ' ') as creator_name"),
+        db.raw("NULLIF(CONCAT(approver.first_name, ' ', approver.last_name), ' ') as approver_name"),
+        db.raw(
+          "NULLIF(CONCAT(authoriser.first_name, ' ', authoriser.last_name), ' ') as supersede_authoriser_name",
+        ),
+      )
+      .orderBy('weekly_submission.week_start', 'desc')
+      .orderBy('weekly_submission.revision_no', 'desc')
+      .limit(limit)
+      .offset((page - 1) * limit);
+
+    return {
+      submissions: rows as WeeklySubmissionDetailsRow[],
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) || 1 },
+    };
+  }
+
+  static async getById(
+    submissionId: string,
+    projectId?: string,
+    trx?: Knex.Transaction,
+  ): Promise<WeeklySubmissionDetailsRow | null> {
+    const q = trx ? trx('weekly_submission') : db('weekly_submission');
+    let query = q
+      .leftJoin('projects', 'weekly_submission.project_id', 'projects.project_id')
+      .leftJoin('users as creator', 'weekly_submission.created_by', 'creator.id')
+      .leftJoin('users as approver', 'weekly_submission.approved_by', 'approver.id')
+      .leftJoin(
+        'users as authoriser',
+        'weekly_submission.supersede_authorised_by',
+        'authoriser.id',
+      )
+      .where('weekly_submission.submission_id', submissionId);
+
+    if (projectId) {
+      query = query.andWhere('weekly_submission.project_id', projectId);
+    }
+
+    const row = await query
+      .select(
+        ...WEEKLY_SUBMISSION_COLS,
+        'projects.name as project_name',
+        'projects.project_code',
+        db.raw("NULLIF(CONCAT(creator.first_name, ' ', creator.last_name), ' ') as creator_name"),
+        db.raw("NULLIF(CONCAT(approver.first_name, ' ', approver.last_name), ' ') as approver_name"),
+        db.raw(
+          "NULLIF(CONCAT(authoriser.first_name, ' ', authoriser.last_name), ' ') as supersede_authoriser_name",
+        ),
+      )
+      .first();
+
+    if (!row) return null;
+
+    const sarQuery = trx ? trx('submission_addressed_risk') : db('submission_addressed_risk');
+    const addressedRisks = await sarQuery
+      .leftJoin('risk', 'submission_addressed_risk.risk_id', 'risk.risk_id')
+      .where('submission_addressed_risk.submission_id', submissionId)
+      .select(
+        'submission_addressed_risk.*',
+        'risk.risk_code',
+        'risk.title as risk_title',
+        'risk.status as risk_status',
+      );
+
+    const escQuery = trx ? trx('escalation') : db('escalation');
+    const escalation = await escQuery.where('submission_id', submissionId).first();
+
+    return {
+      ...(row as WeeklySubmissionRow),
+      project_name: row.project_name,
+      project_code: row.project_code,
+      creator_name: row.creator_name,
+      approver_name: row.approver_name,
+      supersede_authoriser_name: row.supersede_authoriser_name,
+      addressed_risks: addressedRisks as SubmissionAddressedRiskRow[],
+      escalation: escalation ?? null,
+    };
+  }
+
+  static async update(
+    submissionId: string,
+    input: UpdateWeeklySubmissionInput,
+    userId: string,
+    projectId?: string,
+    trx?: Knex.Transaction,
+  ): Promise<{
+    submission?: WeeklySubmissionDetailsRow;
+    notFound?: boolean;
+    readOnly?: boolean;
+    concurrencyError?: boolean;
+  }> {
+    const execute = async (t: Knex.Transaction) => {
+      let q = t('weekly_submission').where('submission_id', submissionId);
+      if (projectId) {
+        q = q.andWhere('project_id', projectId);
+      }
+      const existing = await q.first();
+      if (!existing) return { notFound: true };
+
+      // AC-WKS-06: Approved/superseded submissions cannot be modified
+      if (existing.status !== 'draft') {
+        return { readOnly: true };
+      }
+
+      // AC-GEN-12: Optimistic concurrency check
+      if (input.updated_at) {
+        const existingTime = new Date(existing.updated_at).getTime();
+        const incomingTime = new Date(input.updated_at).getTime();
+        if (Math.abs(existingTime - incomingTime) > 1000) {
+          return { concurrencyError: true };
+        }
+      }
+
+      const updates: Record<string, unknown> = {
+        updated_at: new Date(),
+      };
+
+      if (input.active_stages !== undefined) updates.active_stages = input.active_stages;
+      if (input.scope_change_text !== undefined) updates.scope_change_text = input.scope_change_text;
+      if (input.top_risk_id !== undefined) updates.top_risk_id = input.top_risk_id;
+      if (input.top_risk_text !== undefined) updates.top_risk_text = input.top_risk_text;
+      if (input.top_action !== undefined) updates.top_action = input.top_action;
+      if (input.pm_commentary !== undefined) updates.pm_commentary = input.pm_commentary;
+      if (input.exco_decision_needed !== undefined)
+        updates.exco_decision_needed = input.exco_decision_needed;
+      if (input.escalate !== undefined) updates.escalate = input.escalate;
+      if (input.escalation_reason !== undefined)
+        updates.escalation_reason = input.escalation_reason;
+
+      await t('weekly_submission').where('submission_id', submissionId).update(updates);
+
+      if (input.addressed_risks !== undefined) {
+        await t('submission_addressed_risk').where('submission_id', submissionId).del();
+        if (input.addressed_risks.length > 0) {
+          const rows = input.addressed_risks.map((r) => ({
+            submission_id: submissionId,
+            risk_id: r.risk_id,
+            project_id: existing.project_id,
+            method: r.method,
+            added_by: userId,
+          }));
+          await t('submission_addressed_risk').insert(rows);
+        }
+      }
+
+      const full = await WeeklySubmissions.getById(submissionId, existing.project_id, t);
+      return { submission: full! };
+    };
+
+    return trx ? execute(trx) : db.transaction(execute);
+  }
+
+  static async delete(
+    submissionId: string,
+    projectId?: string,
+    trx?: Knex.Transaction,
+  ): Promise<{ success?: boolean; notFound?: boolean; readOnly?: boolean }> {
+    const execute = async (t: Knex.Transaction) => {
+      let q = t('weekly_submission').where('submission_id', submissionId);
+      if (projectId) {
+        q = q.andWhere('project_id', projectId);
+      }
+      const existing = await q.first();
+      if (!existing) return { notFound: true };
+
+      if (existing.status !== 'draft') {
+        return { readOnly: true };
+      }
+
+      await t('submission_addressed_risk').where('submission_id', submissionId).del();
+      await t('weekly_submission').where('submission_id', submissionId).del();
+      return { success: true };
+    };
+
+    return trx ? execute(trx) : db.transaction(execute);
+  }
+
+  static async approve(
+    submissionId: string,
+    input: ApproveWeeklySubmissionInput,
+    projectId?: string,
+    trx?: Knex.Transaction,
+  ): Promise<{
+    submission?: WeeklySubmissionDetailsRow;
+    notFound?: boolean;
+    alreadyApproved?: boolean;
+    concurrencyError?: boolean;
+    validationErrors?: string[];
+  }> {
+    const execute = async (t: Knex.Transaction) => {
+      let q = t('weekly_submission').where('submission_id', submissionId);
+      if (projectId) {
+        q = q.andWhere('project_id', projectId);
+      }
+      const existing = await q.first();
+      if (!existing) return { notFound: true };
+      if (existing.status === 'approved') return { alreadyApproved: true };
+
+      if (input.updated_at) {
+        const existingTime = new Date(existing.updated_at).getTime();
+        const incomingTime = new Date(input.updated_at).getTime();
+        if (Math.abs(existingTime - incomingTime) > 1000) {
+          return { concurrencyError: true };
+        }
+      }
+
+      // AC-WKS-04: Approval validations
+      const errors: string[] = [];
+      if (!existing.top_risk_text?.trim()) errors.push('Top risk text is required for approval');
+      if (!existing.top_action?.trim()) errors.push('Top action is required for approval');
+      if (!existing.pm_commentary?.trim()) errors.push('PM commentary is required for approval');
+      if (existing.escalate && !existing.escalation_reason?.trim()) {
+        errors.push('Escalation reason is required when escalate is enabled');
+      }
+
+      // Check active stages are in scope
+      const inScopeStages = await t('project_stage')
+        .where({ project_id: existing.project_id, in_scope: true })
+        .select('stage_no');
+      const inScopeSet = new Set(inScopeStages.map((s) => Number(s.stage_no)));
+      const activeStages: number[] = existing.active_stages || [];
+      for (const stg of activeStages) {
+        if (!inScopeSet.has(Number(stg))) {
+          errors.push(`Stage ${stg} is not in project scope`);
+        }
+      }
+
+      // BR-18: Check unaddressed overdue risk issues
+      const unaddressedRisks = await t('risk')
+        .where({
+          project_id: existing.project_id,
+          source: 'auto_overdue_task',
+          status: 'open',
+        })
+        .whereNull('addressed_at')
+        .whereNotIn(
+          'risk_id',
+          t('submission_addressed_risk')
+            .where('submission_id', submissionId)
+            .select('risk_id'),
+        )
+        .select('risk_id', 'title');
+
+      if (unaddressedRisks.length > 0) {
+        const titles = unaddressedRisks.map((r) => r.title).join(', ');
+        errors.push(`Unaddressed overdue task risks must be addressed before approval: ${titles}`);
+      }
+
+      if (errors.length > 0) {
+        return { validationErrors: errors };
+      }
+
+      // AC-WKS-05 (1): Schedule values
+      let scheduleVersionId = input.schedule_version_id ?? existing.schedule_version_id ?? null;
+      let plannedPct = input.planned_pct ?? existing.planned_pct ?? 0.0;
+      let actualPct = input.actual_pct ?? existing.actual_pct ?? 0.0;
+      let spi = input.spi ?? existing.spi ?? null;
+      let rag = input.rag ?? existing.rag ?? null;
+
+      if (!scheduleVersionId) {
+        const latestSchedule = await t('schedule_version')
+          .where({ project_id: existing.project_id, status: 'applied' })
+          .orderBy('version_no', 'desc')
+          .first();
+        if (latestSchedule) {
+          scheduleVersionId = latestSchedule.schedule_version_id;
+        }
+      }
+
+      // AC-WKS-05 (2): Set approved, is_late
+      const project = await t('projects').where('project_id', existing.project_id).first();
+      const approvedAt = new Date();
+      const isLate = computeWeeklyIsLate(
+        approvedAt,
+        existing.week_start,
+        project?.timezone ?? 'Africa/Nairobi',
+      );
+
+      await t('weekly_submission').where('submission_id', submissionId).update({
+        status: 'approved',
+        approved_by: input.approved_by,
+        approved_at: approvedAt,
+        is_late: isLate,
+        schedule_version_id: scheduleVersionId,
+        planned_pct: plannedPct,
+        actual_pct: actualPct,
+        spi: spi,
+        rag: rag,
+        updated_at: new Date(),
+      });
+
+      // AC-WKS-05 (3): Apply active stages transitions
+      const currentActiveRows = await t('project_stage')
+        .where({ project_id: existing.project_id, state: 'active' })
+        .select('stage_no', 'state');
+      const currentActiveSet = new Set(currentActiveRows.map((r) => Number(r.stage_no)));
+      const newActiveSet = new Set(activeStages.map(Number));
+
+      // Chips not currently active -> activated
+      for (const stg of newActiveSet) {
+        if (!currentActiveSet.has(stg)) {
+          const currentStage = await t('project_stage')
+            .where({ project_id: existing.project_id, stage_no: stg })
+            .first();
+          await t('project_stage')
+            .where({ project_id: existing.project_id, stage_no: stg })
+            .update({
+              state: 'active',
+              last_changed_by: input.approved_by,
+              last_changed_at: approvedAt,
+            });
+          await t('stage_state_history').insert({
+            event_id: randomUUID(),
+            project_id: existing.project_id,
+            stage_no: stg,
+            event: 'activated',
+            from_state: currentStage?.state ?? null,
+            to_state: 'active',
+            actor_id: input.approved_by,
+            occurred_at: approvedAt,
+            submission_id: submissionId,
+          });
+        }
+      }
+
+      // Currently active not in chips -> deactivated
+      for (const stg of currentActiveSet) {
+        if (!newActiveSet.has(stg)) {
+          await t('project_stage')
+            .where({ project_id: existing.project_id, stage_no: stg })
+            .update({
+              state: 'inactive',
+              last_changed_by: input.approved_by,
+              last_changed_at: approvedAt,
+            });
+          await t('stage_state_history').insert({
+            event_id: randomUUID(),
+            project_id: existing.project_id,
+            stage_no: stg,
+            event: 'deactivated',
+            from_state: 'active',
+            to_state: 'inactive',
+            actor_id: input.approved_by,
+            occurred_at: approvedAt,
+            submission_id: submissionId,
+          });
+        }
+      }
+
+      // AC-WKS-05 (4): Update addressed risks
+      const addressed = await t('submission_addressed_risk').where(
+        'submission_id',
+        submissionId,
+      );
+      for (const sar of addressed) {
+        if (sar.method === 'dismissed') {
+          await t('risk').where('risk_id', sar.risk_id).update({
+            status: 'dismissed',
+            closed_at: approvedAt,
+          });
+        } else {
+          await t('risk').where('risk_id', sar.risk_id).update({
+            addressed_at: approvedAt,
+            addressed_submission_id: submissionId,
+          });
+        }
+      }
+
+      // AC-WKS-05 (5): If escalate, create escalation
+      if (existing.escalate) {
+        const existingEsc = await t('escalation').where('submission_id', submissionId).first();
+        if (!existingEsc) {
+          await t('escalation').insert({
+            escalation_id: randomUUID(),
+            submission_id: submissionId,
+            project_id: existing.project_id,
+            status: 'open',
+            created_at: approvedAt,
+          });
+        }
+      }
+
+      // AC-WKS-05 (6): If supersedes another, set old one to superseded
+      if (existing.supersedes_submission_id) {
+        await t('weekly_submission')
+          .where('submission_id', existing.supersedes_submission_id)
+          .update({
+            status: 'superseded',
+            updated_at: approvedAt,
+          });
+      }
+
+      const full = await WeeklySubmissions.getById(submissionId, existing.project_id, t);
+      return { submission: full! };
+    };
+
+    return trx ? execute(trx) : db.transaction(execute);
+  }
+
+  static async supersede(
+    submissionId: string,
+    input: { supersede_reason: string; authorised_by: string },
+    projectId?: string,
+    trx?: Knex.Transaction,
+  ): Promise<{
+    newDraft?: WeeklySubmissionDetailsRow;
+    notFound?: boolean;
+    notApproved?: boolean;
+    draftAlreadyExists?: boolean;
+  }> {
+    const execute = async (t: Knex.Transaction) => {
+      let q = t('weekly_submission').where('submission_id', submissionId);
+      if (projectId) {
+        q = q.andWhere('project_id', projectId);
+      }
+      const existing = await q.first();
+      if (!existing) return { notFound: true };
+      if (existing.status !== 'approved') return { notApproved: true };
+
+      // AC-WKS-07: DB allows at most one draft per project-week
+      const existingDraft = await t('weekly_submission')
+        .where({
+          project_id: existing.project_id,
+          week_start: existing.week_start,
+          status: 'draft',
+        })
+        .first();
+
+      if (existingDraft) return { draftAlreadyExists: true };
+
+      const newSubmissionId = randomUUID();
+      const authorisedAt = new Date();
+
+      await t('weekly_submission').insert({
+        submission_id: newSubmissionId,
+        project_id: existing.project_id,
+        week_start: existing.week_start,
+        revision_no: Number(existing.revision_no) + 1,
+        supersedes_submission_id: existing.submission_id,
+        supersede_reason: input.supersede_reason,
+        supersede_authorised_by: input.authorised_by,
+        supersede_authorised_at: authorisedAt,
+        status: 'draft',
+        active_stages: existing.active_stages,
+        scope_change_text: existing.scope_change_text,
+        top_risk_id: existing.top_risk_id,
+        top_risk_text: existing.top_risk_text,
+        top_action: existing.top_action,
+        pm_commentary: existing.pm_commentary,
+        exco_decision_needed: existing.exco_decision_needed,
+        escalate: existing.escalate,
+        escalation_reason: existing.escalation_reason,
+        created_by: input.authorised_by,
+      });
+
+      // Copy addressed risks to the new draft
+      const oldRisks = await t('submission_addressed_risk').where(
+        'submission_id',
+        submissionId,
+      );
+      if (oldRisks.length > 0) {
+        const newRows = oldRisks.map((r) => ({
+          submission_id: newSubmissionId,
+          risk_id: r.risk_id,
+          project_id: existing.project_id,
+          method: r.method,
+          added_by: input.authorised_by,
+        }));
+        await t('submission_addressed_risk').insert(newRows);
+      }
+
+      const full = await WeeklySubmissions.getById(
+        newSubmissionId,
+        existing.project_id,
+        t,
+      );
+      return { newDraft: full! };
+    };
+
+    return trx ? execute(trx) : db.transaction(execute);
+  }
+
+  static async addAddressedRisk(
+    submissionId: string,
+    input: {
+      risk_id: string;
+      method: AddressedRiskMethod;
+      dismissal_reason?: string | null;
+      userId: string;
+      projectId?: string;
+    },
+    trx?: Knex.Transaction,
+  ): Promise<{
+    addressedRisk?: SubmissionAddressedRiskRow;
+    notFound?: boolean;
+    readOnly?: boolean;
+    riskNotFound?: boolean;
+  }> {
+    const execute = async (t: Knex.Transaction) => {
+      let q = t('weekly_submission').where('submission_id', submissionId);
+      if (input.projectId) {
+        q = q.andWhere('project_id', input.projectId);
+      }
+      const submission = await q.first();
+      if (!submission) return { notFound: true };
+      if (submission.status !== 'draft') return { readOnly: true };
+
+      // Validate risk belongs to same project and is open (AC-WKS-03)
+      const risk = await t('risk')
+        .where({ risk_id: input.risk_id, project_id: submission.project_id, status: 'open' })
+        .first();
+      if (!risk) return { riskNotFound: true };
+
+      const [row] = await t('submission_addressed_risk')
+        .insert({
+          submission_id: submissionId,
+          risk_id: input.risk_id,
+          project_id: submission.project_id,
+          method: input.method,
+          added_by: input.userId,
+        })
+        .onConflict(['submission_id', 'risk_id'])
+        .merge({
+          method: input.method,
+          added_by: input.userId,
+          added_at: new Date(),
+        })
+        .returning('*');
+
+      return {
+        addressedRisk: {
+          ...row,
+          risk_code: risk.risk_code,
+          risk_title: risk.title,
+          risk_status: risk.status,
+        },
+      };
+    };
+
+    return trx ? execute(trx) : db.transaction(execute);
+  }
+
+  static async removeAddressedRisk(
+    submissionId: string,
+    riskId: string,
+    projectId?: string,
+    trx?: Knex.Transaction,
+  ): Promise<{ success?: boolean; notFound?: boolean; readOnly?: boolean }> {
+    const execute = async (t: Knex.Transaction) => {
+      let q = t('weekly_submission').where('submission_id', submissionId);
+      if (projectId) {
+        q = q.andWhere('project_id', projectId);
+      }
+      const submission = await q.first();
+      if (!submission) return { notFound: true };
+      if (submission.status !== 'draft') return { readOnly: true };
+
+      await t('submission_addressed_risk')
+        .where({ submission_id: submissionId, risk_id: riskId })
+        .del();
+
+      return { success: true };
+    };
+
+    return trx ? execute(trx) : db.transaction(execute);
+  }
+}
+
 
 
 
