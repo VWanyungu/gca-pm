@@ -140,7 +140,7 @@ router.get('/', canListProjects, async (req, res) => {
 
     res.status(200).json({
       status: 'success',
-      data: result,
+      data: { projects: result.projects, ...result.pagination },
       message: 'Projects retrieved',
     });
   } catch (err) {

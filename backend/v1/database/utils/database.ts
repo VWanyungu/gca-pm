@@ -1088,6 +1088,14 @@ export interface ProjectRow {
   updated_at: Date;
 }
 
+export interface ProjectListRow extends ProjectRow {
+  current_stage_name: string | null;
+  spi: number | null;
+  completed_pct: number | null;
+  planned_pct: number | null;
+  next_milestone: string | null;
+}
+
 export interface CreateProjectInput {
   project_id?: string;
   project_code: string;
@@ -1391,7 +1399,7 @@ export class Projects {
     page?: number;
     limit?: number;
   }): Promise<{
-    projects: ProjectRow[];
+    projects: ProjectListRow[];
     pagination: { page: number; limit: number; total: number; totalPages: number };
   }> {
     const query = db('projects');
@@ -1421,10 +1429,85 @@ export class Projects {
       .offset((page - 1) * limit)
       .limit(limit);
 
+    const projectIds = projects.map((p) => p.project_id);
+    const [stageByProject, metricsByProject, milestoneByProject] = await Promise.all([
+      Projects.currentStageByProjectId(projectIds),
+      Projects.latestMetricsByProjectId(projectIds),
+      Projects.nextMilestoneByProjectId(projectIds),
+    ]);
+
     return {
-      projects,
+      projects: projects.map((p) => ({
+        ...p,
+        current_stage_name: stageByProject.get(p.project_id)?.stage_name ?? null,
+        spi: metricsByProject.get(p.project_id)?.spi ?? null,
+        completed_pct: metricsByProject.get(p.project_id)?.actual_pct ?? null,
+        planned_pct: metricsByProject.get(p.project_id)?.planned_pct ?? null,
+        next_milestone: milestoneByProject.get(p.project_id)?.title ?? null,
+      })),
       pagination: { page, limit, total, totalPages },
     };
+  }
+
+  static async currentStageByProjectId(
+    projectIds: string[],
+  ): Promise<Map<string, { stage_no: number; stage_name: string }>> {
+    const map = new Map<string, { stage_no: number; stage_name: string }>();
+    if (projectIds.length === 0) return map;
+
+    const rows = await db('project_stage')
+      .join('pdm_stage', 'project_stage.stage_no', 'pdm_stage.stage_no')
+      .whereIn('project_stage.project_id', projectIds)
+      .where('project_stage.state', 'active')
+      .select('project_stage.project_id', 'project_stage.stage_no', 'pdm_stage.name as stage_name');
+
+    for (const row of rows) map.set(row.project_id, row);
+    return map;
+  }
+
+  static async latestMetricsByProjectId(
+    projectIds: string[],
+  ): Promise<Map<string, { planned_pct: number; actual_pct: number; spi: number | null }>> {
+    const map = new Map<string, { planned_pct: number; actual_pct: number; spi: number | null }>();
+    if (projectIds.length === 0) return map;
+
+    const rows = await db('project_metrics_snapshot')
+      .distinctOn('project_id')
+      .whereIn('project_id', projectIds)
+      .select('project_id', 'planned_pct', 'actual_pct', 'spi')
+      .orderBy('project_id', 'asc')
+      .orderBy('as_of_date', 'desc');
+
+    for (const row of rows) {
+      map.set(row.project_id, {
+        planned_pct: Number(row.planned_pct),
+        actual_pct: Number(row.actual_pct),
+        spi: row.spi === null ? null : Number(row.spi),
+      });
+    }
+    return map;
+  }
+
+  static async nextMilestoneByProjectId(
+    projectIds: string[],
+  ): Promise<Map<string, { title: string; due_date: string | null }>> {
+    const map = new Map<string, { title: string; due_date: string | null }>();
+    if (projectIds.length === 0) return map;
+
+    const rows = await db('project_milestone_v')
+      .distinctOn('project_id')
+      .whereIn('project_id', projectIds)
+      .whereNull('actual_date')
+      .select(
+        'project_id',
+        'title',
+        db.raw('COALESCE(forecast_date, planned_date) as due_date'),
+      )
+      .orderBy('project_id', 'asc')
+      .orderBy(db.raw('COALESCE(forecast_date, planned_date)'), 'asc');
+
+    for (const row of rows) map.set(row.project_id, row);
+    return map;
   }
 
   static async update(
