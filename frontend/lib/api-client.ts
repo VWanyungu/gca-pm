@@ -79,8 +79,8 @@ async function request<T = unknown>(
           body: body ? JSON.stringify(body) : undefined,
         });
       } else {
-        // clearTokens();
-        // window.location.href = "/login";
+        clearTokens();
+        window.location.href = "/login";
         return { status: "error", data: null, message: "Session expired" };
       }
     }

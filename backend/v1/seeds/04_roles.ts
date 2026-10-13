@@ -125,6 +125,15 @@ export const SEEDED_ROLES: RoleSeedEntry[] = [
     project_id: PROJECT_IDS.PROJECT_3,
     granted_by: USER_IDS.ADMIN,
   },
+   {
+    attribute_id: '30000000-0000-0000-0000-000000000013',
+    user_id: USER_IDS.PM_2,
+    role: 'PM',
+    scope_type: 'global',
+    program_id: null,
+    project_id: null,
+    granted_by: USER_IDS.ADMIN,
+  },
   {
     attribute_id: '30000000-0000-0000-0000-000000000011',
     user_id: USER_IDS.PLANNER,

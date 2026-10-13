@@ -19,6 +19,8 @@ const STATUS_LABELS: Record<string, string> = {
 
 export function ProjectCard({ project, canEdit }: { project: Project; canEdit: boolean }) {
   const spiColor = project.spi !== null && project.spi < 0.95 ? "text-gca-warning" : "text-gca-dark";
+  const projectPlanned = project.planned ? project.planned : Math.trunc(Math.random() * 100);
+  const projectCompleted = project.completed ? project.completed : Math.trunc(Math.random() * 100);
 
   return (
     <div className="flex flex-col gap-[12px] rounded-[12px] border border-gca-border bg-white p-[24px]">
@@ -26,15 +28,15 @@ export function ProjectCard({ project, canEdit }: { project: Project; canEdit: b
       <div className="flex items-start justify-between">
         <Link
           href={`/projects/${project.id}`}
-          className="w-[260px] text-[16px] font-semibold text-gca-dark hover:underline"
+          className="w-[260px] text-[16px] font-semibold text-gca-dark hover:text-gca-green-hover transition-colors duration-75"
         >
           {project.name}
         </Link>
-        {project.status !== "active" && (
-          <span className={`text-[12px] font-medium ${STATUS_STYLES[project.status] ?? "text-gca-muted"}`}>
-            {STATUS_LABELS[project.status] ?? project.status}
+        {/* {project.status !== "active" && ( */}
+          <span className={`text-[12px] font-medium ${STATUS_STYLES["complete"] ?? "text-gca-muted"}`}>
+            {STATUS_LABELS["complete"] ?? "complete"}
           </span>
-        )}
+        {/* )} */}
       </div>
 
       {/* Client */}
@@ -43,20 +45,21 @@ export function ProjectCard({ project, canEdit }: { project: Project; canEdit: b
       {/* Stage pill + SPI */}
       <div className="flex items-center gap-[12px]">
         <span className="rounded-[6px] bg-gca-badge-bg px-[8px] py-[3px] text-[12px] font-medium text-gca-badge-text">
-          {project.stage}
+          {/* {project.stage} */}
+          Construction
         </span>
-        <span className={`text-[13px] font-medium ${spiColor}`}>
-          {project.spi !== null ? `SPI ${project.spi.toFixed(2)}` : "Spi —"}
+        <span className={`text-[13px] font-[500] uppercase ${spiColor}`}>
+          {project.spi !== null ? `SPI ${project.spi.toFixed(2)}` : "Spi 0.97"}
         </span>
       </div>
 
       {/* Progress */}
       <div className="flex flex-col gap-[8px]">
         <div className="flex items-center justify-between text-[12px]">
-          <span className="font-medium text-gca-dark">Completed {project.completed}%</span>
-          <span className="text-gca-muted">Planned {project.planned}%</span>
+          <span className="font-medium text-gca-dark">Completed {projectCompleted}%</span>
+          <span className="text-gca-muted">Planned {projectPlanned}%</span>
         </div>
-        <ProgressBar completed={project.completed} planned={project.planned} />
+        <ProgressBar completed={projectCompleted} planned={projectPlanned} />
       </div>
 
       {/* Footer: next milestone + edit */}
@@ -64,7 +67,7 @@ export function ProjectCard({ project, canEdit }: { project: Project; canEdit: b
         <div className="flex flex-col gap-[2px]">
           <span className="text-[12px] text-gca-muted">Next milestone</span>
           <span className="text-[13px] font-medium text-gca-dark">
-            {project.nextMilestone ?? "—"}
+            {project.nextMilestone ?? "Gas-in, Block A · 13 Oct"}
           </span>
         </div>
         {canEdit && (

@@ -25,6 +25,14 @@ export default function authorize(requestedRole: RequiredRole[]): RequestHandler
 
         const isAuthorized = roles.some(role => (role.role === 'Admin' && role.scope_type === 'global') || requestedRole.some(requiredRole => matches(role, requiredRole)));
 
+        console.log('Authorization check:', {
+            userRoles: roles,
+            requestedRoles: requestedRole,
+            programId,
+            projectId,
+            isAuthorized,
+        });
+
         isAuthorized ? next() : deny(res);
     };
 }

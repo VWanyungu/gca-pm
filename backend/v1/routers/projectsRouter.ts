@@ -30,6 +30,7 @@ const canListProjects = authorize([
   { role: 'ExCo', scopeType: 'global' },
   { role: 'ProjectCreator', scopeType: 'global' },
   { role: 'PM', scopeType: 'global' },
+  { role: 'PM', scopeType: 'project' },
   { role: 'Planner', scopeType: 'global' },
   { role: 'SiteEngineer', scopeType: 'global' },
 ]);
@@ -120,6 +121,7 @@ router.post('/', canCreate, async (req, res) => {
 // GET /projects
 router.get('/', canListProjects, async (req, res) => {
   const query = listProjectsQuerySchema.validate(req.query, { abortEarly: false });
+  
   if (query.error) {
     res.status(400).json({ status: 'error', data: null, message: query.error.message });
     return;

@@ -25,9 +25,9 @@ export interface Project {
 }
 
 interface ProjectsResponse {
-  rows: Array<{
+  projects: Array<{
     project_id: string;
-    project_name: string;
+    name: string;
     client_name: string | null;
     current_stage_name: string | null;
     status: string;
@@ -42,14 +42,14 @@ interface ProjectsResponse {
   totalPages: number;
 }
 
-function mapProject(row: ProjectsResponse["rows"][number]): Project {
+function mapProject(row: ProjectsResponse["projects"][number]): Project {
   return {
     id: row.project_id,
-    name: row.project_name,
+    name: row.name,
     client: row.client_name ?? "—",
     stage: row.current_stage_name ?? "—",
     status: row.status,
-    spi: row.spi,
+    spi: row.spi ?? null,
     completed: row.completed_pct ?? 0,
     planned: row.planned_pct ?? 0,
     nextMilestone: row.next_milestone,
@@ -79,6 +79,32 @@ export default function Home() {
     { role: "PM", scopeType: "global" },
   ]);
 
+  const programs = [{
+    id: 1,
+    name: "Bulk import and wholesale"
+  }, {
+    id: 2,
+    name: "Open Access bottling plant"
+  }, {
+    id: 3,
+    name: "Autogas"
+  }, {
+    id: 4,
+    name: "Reticulation"
+  }, {
+    id: 5,
+    name: "Industry and construction"
+  }, {
+    id: 6,
+    name: "LPG Marketplace"
+  }, {
+    id: 7,
+    name: "Vulcan"
+  }, {
+    id: 8,
+    name: "Smart metering"
+  }];
+
   const fetchProjects = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -88,7 +114,7 @@ export default function Home() {
 
     const res = await api.get<ProjectsResponse>(`/projects?${params}`);
     if (res.status === "success" && res.data) {
-      setProjects(res.data.rows.map(mapProject));
+      setProjects(res.data.projects.map(mapProject));
       setTotal(res.data.total);
       setTotalPages(res.data.totalPages);
     } else {
@@ -98,6 +124,7 @@ export default function Home() {
   }, [page, perPage, search, statusFilter]);
 
   useEffect(() => {
+    console.log(user)
     if (!authLoading && !isAuthenticated) {
       console.log(user)
       // router.replace("/login")
@@ -207,12 +234,31 @@ export default function Home() {
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-[12px] top-1/2 size-[10px] -translate-y-1/2 text-gca-dark" />
                 </div>
+
+                 {/* Program filter */}
+                <div className="relative">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => {
+                      setStatusFilter(e.target.value);
+                      setPage(1);
+                    }}
+                    className="h-[44px] w-[170px] appearance-none rounded-[8px] border border-gca-border bg-white px-[12px] pr-[32px] text-[14px] text-gca-dark outline-none"
+                  >
+                    <option value="">All programs</option>
+                    {programs.map((program) => (
+                      <option key={program.id} value={program.id}>{program.name}</option>
+                    ))}
+                   
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-[12px] top-1/2 size-[10px] -translate-y-1/2 text-gca-dark" />
+                </div>
               </div>
             </div>
 
             {/* Card or table view */}
             {view === "card" ? (
-              <div className="grid grid-cols-3 gap-[20px]">
+              <div className="grid grid-cols-4 gap-[20px]">
                 {projects.map((p) => (
                   <ProjectCard key={p.id} project={p} canEdit={canEdit} />
                 ))}
@@ -222,7 +268,7 @@ export default function Home() {
             )}
 
             {/* Pagination */}
-            {totalPages > 0 && (
+            {/* {totalPages > 0 && ( */}
               <Pagination
                 page={page}
                 totalPages={totalPages}
@@ -230,7 +276,7 @@ export default function Home() {
                 total={total}
                 onPageChange={setPage}
               />
-            )}
+            {/* )} */}
           </>
         )}
 

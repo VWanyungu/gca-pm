@@ -14,9 +14,19 @@ export function Pagination({ page, totalPages, perPage, total, onPageChange }: P
       {/* Left: showing count */}
       <div className="flex items-center gap-[10px] text-[14px] text-gca-show">
         <span>Showing</span>
-        <span className="rounded-[8px] border border-gca-border bg-white px-[10px] py-[7px] font-mono font-medium text-gca-dark">
-          {perPage}
-        </span>
+        <input
+          type="number"
+          min="1"
+          max={total}
+          value={perPage}
+          onChange={(e) => {
+            const value = parseInt(e.target.value);
+            if (!isNaN(value) && value > 0 && value <= total) {
+              // Handle perPage change if needed
+            }
+          }}
+          className="rounded-[8px] border border-gca-border bg-white px-[10px] py-[7px] w-12 font-mono font-medium text-gca-dark"
+        />
         <span>of {total} projects</span>
       </div>
 
