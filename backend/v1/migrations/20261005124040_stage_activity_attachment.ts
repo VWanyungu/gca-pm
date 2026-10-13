@@ -6,6 +6,7 @@ export async function up(knex: Knex): Promise<void> {
     table.uuid('activity_id').notNullable().references('activity_id').inTable('stage_activity');
     table.uuid('file_id').notNullable().unique();
     table.string('caption', 1000);
+    table.string('access_url', 1000).notNullable();
     table.smallint('sort_order').notNullable().defaultTo(0);
     table.uuid('uploaded_by').notNullable().references('id').inTable('users');
     table.timestamp('uploaded_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
