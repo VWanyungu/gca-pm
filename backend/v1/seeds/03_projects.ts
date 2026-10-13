@@ -95,6 +95,7 @@ export async function seed(knex: Knex): Promise<void> {
   if (await knex.schema.hasTable('holiday_calendar')) {
     const calendarRow = await knex('holiday_calendar')
       .select('calendar_id')
+      .where({ name: 'Kenya public holidays' })
       .first();
     if (calendarRow) {
       holidayCalendarId = calendarRow.calendar_id;
