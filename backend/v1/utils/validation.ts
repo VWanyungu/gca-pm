@@ -36,6 +36,7 @@ export interface RevokeRoleBody {
 
 export interface ListRolesQuery {
   userId?: string;
+  projectId?: string;
   page?: number;
   limit?: number;
 }
@@ -69,6 +70,7 @@ export const revokeRoleBodySchema = Joi.object<RevokeRoleBody>({
 
 export const listRolesQuerySchema = Joi.object<ListRolesQuery>({
   userId: Joi.string().uuid().optional(),
+  projectId: Joi.string().uuid().optional(),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(10),
 });
@@ -565,6 +567,7 @@ export interface CreateProjectBody {
   planner_user_id?: string | null;
   scope_stages?: number[];
   initial_active_stages?: number[];
+  site_engineer_user_ids?: string[];
 }
 
 export interface UpdateProjectBody {
@@ -640,6 +643,7 @@ export const createProjectSchema = Joi.object<CreateProjectBody>({
   planner_user_id: Joi.string().uuid().allow(null).optional(),
   scope_stages: Joi.array().items(Joi.number().integer().min(1).max(10)).min(1).optional(),
   initial_active_stages: Joi.array().items(Joi.number().integer().min(1).max(10)).min(1).optional(),
+  site_engineer_user_ids: Joi.array().items(Joi.string().uuid()).optional(),
 });
 
 export const updateProjectSchema = Joi.object<UpdateProjectBody>({
@@ -768,6 +772,25 @@ export const updateProjectContractorSchema = Joi.object<UpdateProjectContractorB
 
 export const listProjectContractorsQuerySchema = Joi.object<ListProjectContractorsQuery>({
   includeInactive: Joi.boolean().default(false),
+});
+
+export interface CreateClientContactBody {
+  name: string;
+  email: string;
+  title?: string | null;
+  receives_reports?: boolean;
+}
+
+export const createClientContactSchema = Joi.object<CreateClientContactBody>({
+  name: Joi.string().trim().min(1).max(500).required(),
+  email: Joi.string().email().required(),
+  title: Joi.string().trim().max(500).allow(null, '').optional(),
+  receives_reports: Joi.boolean().default(true),
+});
+
+export const clientContactParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+  contactId: Joi.string().uuid().required(),
 });
 
 export interface CreateCustomMilestoneBody {

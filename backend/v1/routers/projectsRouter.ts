@@ -4,6 +4,7 @@ import {
   Programs,
   ProjectStages,
   ProjectStatusHistory,
+  ProjectMetrics,
 } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
 import {
@@ -167,6 +168,7 @@ router.get('/:projectId', canViewProject, async (req, res) => {
 
     const stages = await ProjectStages.list({ projectId });
     const statusHistory = await ProjectStatusHistory.listByProjectId(projectId);
+    const metrics = await ProjectMetrics.listByProjectId(projectId);
 
     res.status(200).json({
       status: 'success',
@@ -174,6 +176,7 @@ router.get('/:projectId', canViewProject, async (req, res) => {
         project,
         stages,
         statusHistory,
+        metrics,
       },
       message: 'Project retrieved',
     });

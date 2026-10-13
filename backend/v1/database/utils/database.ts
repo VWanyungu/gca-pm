@@ -21,6 +21,7 @@ export interface UserAuthView {
   userId: string | null;
   email: string | null;
   passwordHash: string | null;
+  firstName: string | null;
 }
 
 export interface CreateUserInput {
@@ -61,16 +62,17 @@ export class Users {
 
   static async getSingleUserByEmail(email: string): Promise<UserAuthView> {
     const [user] = await db('users')
-      .select<{ id: string; email: string; password_hash: string }[]>(
+      .select<{ id: string; email: string; password_hash: string; first_name: string }[]>(
         'id',
         'email',
         'password_hash',
+        'first_name'
       )
       .where('email', email);
 
-    if (!user) return { userId: null, email: null, passwordHash: null };
+    if (!user) return { userId: null, email: null, passwordHash: null, firstName: null };
 
-    return { userId: user.id, email: user.email, passwordHash: user.password_hash };
+    return { userId: user.id, email: user.email, passwordHash: user.password_hash, firstName: user.first_name };
   }
 
   static async createUser(input: CreateUserInput): Promise<{ userId: string; email: string }> {
@@ -185,22 +187,37 @@ export class Roles {
 
   static async list({
     userId,
+    projectId,
     page = 1,
     limit = 10,
-  }: { userId?: string; page?: number; limit?: number }): Promise<{
-    roles: RoleGrantRow[];
+  }: { userId?: string; projectId?: string; page?: number; limit?: number }): Promise<{
+    roles: (RoleGrantRow & { first_name: string; last_name: string; email: string })[];
     pagination: { page: number; limit: number; total: number; pages: number };
   }> {
     const base = db('roles').whereNull('revoked_at');
     if (userId) base.where({ user_id: userId });
+    if (projectId) base.where({ project_id: projectId });
 
     const countRows = await base.clone().count<{ count: string }[]>('attribute_id as count');
     const total = Number(countRows[0]?.count ?? 0);
 
     const roles = await base
       .clone()
-      .select('attribute_id', 'user_id', 'role', 'scope_type', 'program_id', 'project_id', 'granted_by', 'granted_at')
-      .orderBy('granted_at', 'desc')
+      .join('users', 'users.id', 'roles.user_id')
+      .select(
+        'roles.attribute_id',
+        'roles.user_id',
+        'roles.role',
+        'roles.scope_type',
+        'roles.program_id',
+        'roles.project_id',
+        'roles.granted_by',
+        'roles.granted_at',
+        'users.first_name',
+        'users.last_name',
+        'users.email',
+      )
+      .orderBy('roles.granted_at', 'desc')
       .limit(limit)
       .offset((page - 1) * limit);
 
@@ -296,6 +313,29 @@ export class RiskCategories {
       .update({ is_active: false })
       .returning(['risk_category_id', 'code', 'name', 'is_system', 'sort_order', 'is_active']);
     return row ?? null;
+  }
+}
+
+export interface PdmStageRow {
+  stage_no: number;
+  name: string;
+  phase_id: number;
+  phase_code: string;
+  phase_name: string;
+}
+
+export class PdmStages {
+  static async list(): Promise<PdmStageRow[]> {
+    return db('pdm_stage')
+      .join('pdm_phase', 'pdm_stage.phase_id', 'pdm_phase.phase_id')
+      .select(
+        'pdm_stage.stage_no',
+        'pdm_stage.name',
+        'pdm_stage.phase_id',
+        'pdm_phase.code as phase_code',
+        'pdm_phase.name as phase_name',
+      )
+      .orderBy('pdm_stage.stage_no', 'asc');
   }
 }
 
@@ -1123,6 +1163,7 @@ export interface CreateProjectInput {
   planner_user_id?: string | null;
   scope_stages?: number[];
   initial_active_stages?: number[];
+  site_engineer_user_ids?: string[];
 }
 
 export interface UpdateProjectFields {
@@ -1219,6 +1260,86 @@ export class ProjectStatusHistory {
   }
 }
 
+export interface ProjectMetricsSnapshotRow {
+  project_id: string;
+  as_of_date: string;
+  planned_pct: number;
+  actual_pct: number;
+  spi: number | null;
+  rag: 'green' | 'amber' | 'red' | null;
+  baseline_finish: string | null;
+  forecast_finish: string | null;
+}
+
+export class ProjectMetrics {
+  static async listByProjectId(projectId: string): Promise<ProjectMetricsSnapshotRow[]> {
+    const rows = await db('project_metrics_snapshot')
+      .where({ project_id: projectId })
+      .select(
+        'project_id',
+        'as_of_date',
+        'planned_pct',
+        'actual_pct',
+        'spi',
+        'rag',
+        'baseline_finish',
+        'forecast_finish',
+      )
+      .orderBy('as_of_date', 'asc');
+
+    return rows.map((row) => ({
+      ...row,
+      planned_pct: Number(row.planned_pct),
+      actual_pct: Number(row.actual_pct),
+      spi: row.spi === null ? null : Number(row.spi),
+    }));
+  }
+}
+
+export interface ClientContactRow {
+  contact_id: string;
+  project_id: string;
+  name: string;
+  email: string;
+  title: string | null;
+  receives_reports: boolean;
+}
+
+export class ClientContacts {
+  static async listByProjectId(projectId: string): Promise<ClientContactRow[]> {
+    return db('client_contacts').where({ project_id: projectId }).orderBy('name', 'asc');
+  }
+
+  static async create(input: {
+    project_id: string;
+    name: string;
+    email: string;
+    title?: string | null;
+    receives_reports?: boolean;
+  }): Promise<ClientContactRow> {
+    const [row] = await db('client_contacts')
+      .insert({
+        contact_id: randomUUID(),
+        project_id: input.project_id,
+        name: input.name,
+        email: input.email,
+        title: input.title ?? null,
+        receives_reports: input.receives_reports ?? true,
+      })
+      .returning('*');
+    return row;
+  }
+
+  static async getById(contactId: string): Promise<ClientContactRow | null> {
+    const row = await db('client_contacts').where({ contact_id: contactId }).first();
+    return row ?? null;
+  }
+
+  static async delete(contactId: string): Promise<void> {
+    await db('client_contacts').where({ contact_id: contactId }).del();
+  }
+}
+
 export class Projects {
   static async create(
     input: CreateProjectInput,
@@ -1273,6 +1394,20 @@ export class Projects {
           attribute_id: randomUUID(),
           user_id: input.planner_user_id,
           role: 'Planner',
+          scope_type: 'project',
+          program_id: null,
+          project_id: projectId,
+          granted_by: input.created_by,
+          granted_at: t.fn.now(),
+        });
+      }
+
+      // Grant SiteEngineer@project to each assigned engineer
+      for (const userId of input.site_engineer_user_ids ?? []) {
+        await t('roles').insert({
+          attribute_id: randomUUID(),
+          user_id: userId,
+          role: 'SiteEngineer',
           scope_type: 'project',
           program_id: null,
           project_id: projectId,

@@ -12,6 +12,7 @@ import rolesRouter from './routers/rolesRouter.js';
 import riskCategoriesRouter from './routers/riskCategoriesRouter.js';
 import riskRouter from './routers/riskRouter.js';
 import programsRouter from './routers/programsRouter.js';
+import pdmStagesRouter from './routers/pdmStagesRouter.js';
 import weatherCategoriesRouter from './routers/weatherCategoriesRouter.js';
 import stageStateHistoryRouter from './routers/stageStateHistoryRouter.js';
 import projectStagesRouter from './routers/projectStagesRouter.js';
@@ -20,6 +21,7 @@ import stageActivityAttachmentsRouter from './routers/stageActivityAttachmentsRo
 import projectsRouter from './routers/projectsRouter.js';
 import contractorsRouter from './routers/contractorsRouter.js';
 import projectContractorsRouter from './routers/projectContractorsRouter.js';
+import clientContactsRouter from './routers/clientContactsRouter.js';
 import customMilestonesRouter from './routers/customMilestonesRouter.js';
 import dprRouter from './routers/dprRouter.js';
 import escalationRouter from './routers/escalationRouter.js';
@@ -34,15 +36,17 @@ router.use('/reset-password', resetUserPasswordRouter);
 
 router.use(authenticateToken());
 
-router.use('/users', authorize([{ role: 'Admin', scopeType: 'global' }]), usersRouter);
+router.use('/users', usersRouter);
 router.use('/roles', rolesRouter);
 
 router.use('/programs', programsRouter);
+router.use('/pdm-stages', pdmStagesRouter);
 router.use('/risk-categories', riskCategoriesRouter);
 router.use('/weather-categories', weatherCategoriesRouter);
 router.use('/contractors', contractorsRouter);
 router.use('/projects', projectsRouter);
 router.use('/projects/:projectId/contractors', projectContractorsRouter);
+router.use('/projects/:projectId/client-contacts', clientContactsRouter);
 router.use('/projects/:projectId/custom-milestones', customMilestonesRouter);
 router.use('/projects/:projectId/milestones', customMilestonesRouter);
 router.use('/projects/:projectId/risk', riskRouter);

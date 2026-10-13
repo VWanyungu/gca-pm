@@ -6,13 +6,21 @@ interface PaginationProps {
   perPage: number;
   total: number;
   onPageChange: (page: number) => void;
+  onPerPageChange: (perPage: number) => void;
 }
 
-export function Pagination({ page, totalPages, perPage, total, onPageChange }: PaginationProps) {
+export function Pagination({
+  page,
+  totalPages,
+  perPage,
+  total,
+  onPageChange,
+  onPerPageChange,
+}: PaginationProps) {
   return (
     <div className="flex items-center justify-between rounded-[12px] border border-gca-border px-[16px] py-[12px]">
       {/* Left: showing count */}
-      <div className="flex items-center gap-[10px] text-[14px] text-gca-show">
+      <div className="flex items-center gap-[10px] text-[14px] text-gca-show font-light">
         <span>Showing</span>
         <input
           type="number"
@@ -22,7 +30,7 @@ export function Pagination({ page, totalPages, perPage, total, onPageChange }: P
           onChange={(e) => {
             const value = parseInt(e.target.value);
             if (!isNaN(value) && value > 0 && value <= total) {
-              // Handle perPage change if needed
+              onPerPageChange(value);
             }
           }}
           className="rounded-[8px] border border-gca-border bg-white px-[10px] py-[7px] w-12 font-mono font-medium text-gca-dark"

@@ -48,7 +48,7 @@ export default function LoginPage() {
 
         <div className="flex flex-col gap-[16px]">
           <div className="flex flex-col gap-[6px]">
-            <label htmlFor="email" className="font-semibold text-[13px] text-gca-dark">
+            <label htmlFor="email" className="font-medium text-[13px] text-gca-dark">
               Email
             </label>
             <input
@@ -64,12 +64,12 @@ export default function LoginPage() {
 
           <div className="flex flex-col gap-[6px]">
             <div className="flex items-center justify-between">
-              <label htmlFor="password" className="font-semibold text-[13px] text-gca-dark">
+              <label htmlFor="password" className="font-medium text-[13px] text-gca-dark">
                 Password
               </label>
               <Link
                 href="/forgot-password"
-                className="text-[13px] font-semibold text-gca-green hover:underline"
+                className="text-[13px] font-medium text-gca-green hover:underline"
               >
                 Forgot password?
               </Link>

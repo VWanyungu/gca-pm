@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:ital,wght@0,100..900;1,100..900&family=Geist+Mono:wght@100..900&display=swap');
+/* @import url('https://fonts.googleapis.com/css2?family=Geist:ital,wght@0,100..900;1,100..900&family=Geist+Mono:wght@100..900&display=swap'); */
 @import "tailwindcss";
 
 :root {
@@ -43,4 +43,29 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: "Geist", sans-serif;
+}
+
+.dropdown-scrollbar {
+  scrollbar-width: none;
+  scrollbar-color: var(--gca-green) transparent;
+}
+
+.dropdown-scrollbar::-webkit-scrollbar {
+  display: none;
+  /* width: 8px; */
+}
+
+.dropdown-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dropdown-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--gca-green);
+  border-radius: 9999px;
+}
+
+.dropdown-scrollbar::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
 }

@@ -1,19 +1,22 @@
 import express from 'express';
-import { Users, Roles } from '../database/utils/database.js';
+import { Users } from '../database/utils/database.js';
+import authorize from '../middlewares/authorize.js';
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
-  // if (!req.user?.userId || !(await Roles.hasGlobalRole(req.user.userId, 'Admin'))) {
-  //   res.status(401).json({
-  //     status: 'error',
-  //     data: null,
-  //     message: 'You are not authorized to access this resource',
-  //   });
-  //   return;
-  // }
+const canRead = authorize([
+  { role: 'Admin', scopeType: 'global' },
+  { role: 'ExCo', scopeType: 'global' },
+  { role: 'ProjectCreator', scopeType: 'global' },
+  { role: 'PM', scopeType: 'global' },
+]);
 
-  const { type, inputEmail } = req.body as { type?: string; inputEmail?: string };
+const canWrite = authorize([{ role: 'Admin', scopeType: 'global' }]);
+
+router.get('/', canRead, async (req, res) => {
+  const type = (req.query.type as string | undefined) ?? (req.body as { type?: string })?.type;
+  const inputEmail =
+    (req.query.inputEmail as string | undefined) ?? (req.body as { inputEmail?: string })?.inputEmail;
 
   switch (type) {
     case 'multiple': {
@@ -65,11 +68,11 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.put('/', (_req, res) => {
+router.put('/', canWrite, (_req, res) => {
   res.status(501).json({ status: 'error', data: null, message: 'Not implemented' });
 });
 
-router.delete('/', (_req, res) => {
+router.delete('/', canWrite, (_req, res) => {
   res.status(501).json({ status: 'error', data: null, message: 'Not implemented' });
 });
 

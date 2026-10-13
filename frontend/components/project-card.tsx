@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Pencil } from "lucide-react";
 import { ProgressBar } from "./progress-bar";
-import type { Project } from "@/app/page";
+import type { Project } from "@/app/(app)/page";
 
 const STATUS_STYLES: Record<string, string> = {
   active: "text-gca-green",
@@ -19,8 +19,6 @@ const STATUS_LABELS: Record<string, string> = {
 
 export function ProjectCard({ project, canEdit }: { project: Project; canEdit: boolean }) {
   const spiColor = project.spi !== null && project.spi < 0.95 ? "text-gca-warning" : "text-gca-dark";
-  const projectPlanned = project.planned ? project.planned : Math.trunc(Math.random() * 100);
-  const projectCompleted = project.completed ? project.completed : Math.trunc(Math.random() * 100);
 
   return (
     <div className="flex flex-col gap-[12px] rounded-[12px] border border-gca-border bg-white p-[24px]">
@@ -28,15 +26,13 @@ export function ProjectCard({ project, canEdit }: { project: Project; canEdit: b
       <div className="flex items-start justify-between">
         <Link
           href={`/projects/${project.id}`}
-          className="w-[260px] text-[16px] font-semibold text-gca-dark hover:text-gca-green-hover transition-colors duration-75"
+          className="leading-6 min-h-12 w-[260px] text-[16px] font-semibold text-gca-dark hover:text-gca-green-hover transition-colors duration-75"
         >
           {project.name}
         </Link>
-        {/* {project.status !== "active" && ( */}
-          <span className={`text-[12px] font-medium ${STATUS_STYLES["complete"] ?? "text-gca-muted"}`}>
-            {STATUS_LABELS["complete"] ?? "complete"}
-          </span>
-        {/* )} */}
+       {project.status != "active" && <span className={`text-[12px] ${STATUS_STYLES[project.status] ?? "text-gca-muted"}`}>
+          {STATUS_LABELS[project.status] ?? project.status}
+        </span>}
       </div>
 
       {/* Client */}
@@ -45,21 +41,20 @@ export function ProjectCard({ project, canEdit }: { project: Project; canEdit: b
       {/* Stage pill + SPI */}
       <div className="flex items-center gap-[12px]">
         <span className="rounded-[6px] bg-gca-badge-bg px-[8px] py-[3px] text-[12px] font-medium text-gca-badge-text">
-          {/* {project.stage} */}
-          Construction
+          {project.stage}
         </span>
         <span className={`text-[13px] font-[500] uppercase ${spiColor}`}>
-          {project.spi !== null ? `SPI ${project.spi.toFixed(2)}` : "Spi 0.97"}
+          {project.spi !== null ? `SPI ${(project.completed / project.planned ).toFixed(2)}` : "SPI —"}
         </span>
       </div>
 
       {/* Progress */}
       <div className="flex flex-col gap-[8px]">
         <div className="flex items-center justify-between text-[12px]">
-          <span className="font-medium text-gca-dark">Completed {projectCompleted}%</span>
-          <span className="text-gca-muted">Planned {projectPlanned}%</span>
+          <span className="font-medium text-gca-dark">Completed {project.completed}%</span>
+          <span className="text-gca-muted">Planned {project.planned}%</span>
         </div>
-        <ProgressBar completed={projectCompleted} planned={projectPlanned} />
+        <ProgressBar completed={project.completed} planned={project.planned} />
       </div>
 
       {/* Footer: next milestone + edit */}
@@ -67,7 +62,7 @@ export function ProjectCard({ project, canEdit }: { project: Project; canEdit: b
         <div className="flex flex-col gap-[2px]">
           <span className="text-[12px] text-gca-muted">Next milestone</span>
           <span className="text-[13px] font-medium text-gca-dark">
-            {project.nextMilestone ?? "Gas-in, Block A · 13 Oct"}
+            {project.nextMilestone ?? "—"}
           </span>
         </div>
         {canEdit && (

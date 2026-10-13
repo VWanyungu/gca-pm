@@ -1,0 +1,115 @@
+"use client";
+
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api-client";
+import type {
+  ProjectDetailResponse,
+  TeamMember,
+  ClientContact,
+  StageActivity,
+  Milestone,
+  EscalationRow,
+} from "./types";
+
+function unwrap<T>(res: { status: string; data: T | null; message: string }): T {
+  if (res.status !== "success" || !res.data) throw new Error(res.message);
+  return res.data;
+}
+
+export function useProjectDetail(projectId: string) {
+  return useQuery({
+    queryKey: ["project", projectId],
+    queryFn: async () => unwrap(await api.get<ProjectDetailResponse>(`/projects/${projectId}`)),
+  });
+}
+
+export function useProjectDetailInvalidate(projectId: string) {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+}
+
+export function useProjectTeam(projectId: string) {
+  return useQuery({
+    queryKey: ["project", projectId, "team"],
+    queryFn: async () =>
+      unwrap(
+        await api.get<{ roles: TeamMember[] }>(`/roles?projectId=${projectId}&limit=100`),
+      ).roles,
+  });
+}
+
+export function useClientContacts(projectId: string) {
+  return useQuery({
+    queryKey: ["project", projectId, "client-contacts"],
+    queryFn: async () =>
+      unwrap(await api.get<{ contacts: ClientContact[] }>(`/projects/${projectId}/client-contacts`)).contacts,
+  });
+}
+
+interface Pagination {
+  pagination: { total: number };
+}
+
+export function useStageActivities(projectId: string) {
+  return useQuery({
+    queryKey: ["project", projectId, "stage-activities"],
+    queryFn: async () =>
+      unwrap(
+        await api.get<{ stageActivities: StageActivity[] } & Pagination>(
+          `/projects/${projectId}/stage-activities?limit=100`,
+        ),
+      ).stageActivities,
+  });
+}
+
+export function useMilestones(projectId: string) {
+  return useQuery({
+    queryKey: ["project", projectId, "milestones"],
+    queryFn: async () =>
+      unwrap(
+        await api.get<{ milestones: Milestone[] } & Pagination>(`/projects/${projectId}/milestones?limit=50`),
+      ).milestones,
+  });
+}
+
+export function useOpenEscalations(projectId: string) {
+  return useQuery({
+    queryKey: ["project", projectId, "escalations", "open"],
+    queryFn: async () =>
+      unwrap(
+        await api.get<{ escalations: EscalationRow[] } & Pagination>(
+          `/projects/${projectId}/escalations?status=open&limit=25`,
+        ),
+      ).escalations,
+  });
+}
+
+export function useDraftSubmission(projectId: string) {
+  return useQuery({
+    queryKey: ["project", projectId, "weekly-submission", "draft"],
+    queryFn: async () =>
+      unwrap(
+        await api.get<{ submissions: { week_start: string }[] } & Pagination>(
+          `/projects/${projectId}/weekly-submission?status=draft&limit=1`,
+        ),
+      ).submissions[0] ?? null,
+  });
+}
+
+export function useSidebarCounts(projectId: string) {
+  return useQuery({
+    queryKey: ["project", projectId, "sidebar-counts"],
+    queryFn: async () => {
+      const [submissions, risks, escalations] = await Promise.all([
+        api.get<Pagination>(`/projects/${projectId}/weekly-submission?status=draft&limit=1`),
+        api.get<Pagination>(`/projects/${projectId}/risks?status=open&limit=1`),
+        api.get<Pagination>(`/projects/${projectId}/escalations?status=open&limit=1`),
+      ]);
+      return {
+        submit: unwrap(submissions).pagination.total,
+        risks: unwrap(risks).pagination.total,
+        changeRequests: unwrap(escalations).pagination.total,
+      };
+    },
+  });
+}

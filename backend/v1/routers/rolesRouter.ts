@@ -76,16 +76,35 @@ router.post('/', canCreateOrRevoke, async (req, res) => {
     }
 });
 
-router.get('/', canCreateOrRevoke, async (req, res) => {
+const PROJECT_TEAM_VIEWERS: RoleName[] = ['PM', 'Planner', 'SiteEngineer'];
+
+router.get('/', async (req, res) => {
     const { error, value } = listRolesQuerySchema.validate(req.query, { abortEarly: false });
     if (error) {
         res.status(400).json({ status: 'error', data: null, message: error.message });
         return;
     }
-    const { userId, page, limit } = value as ListRolesQuery;
+    const { userId, projectId, page, limit } = value as ListRolesQuery;
+
+    const actorRoles = req.user!.role;
+    const canViewProjectTeam =
+        !!projectId &&
+        actorRoles.some(
+            (role) =>
+                (role.scope_type === 'project' && role.project_id === projectId && PROJECT_TEAM_VIEWERS.includes(role.role)) ||
+                (role.scope_type === 'global' && ['ExCo', 'Admin', 'ProjectCreator'].includes(role.role)),
+        );
+    const canSearchUsers = actorRoles.some(
+        (role) => role.role === 'PM' || (role.scope_type === 'global' && ['ExCo', 'Admin', 'ProjectCreator'].includes(role.role)),
+    );
+
+    if (!canViewProjectTeam && !canSearchUsers) {
+        res.status(403).json({ status: 'error', data: null, message: 'Not authorized' });
+        return;
+    }
 
     try {
-        const result = await Roles.list({ userId, page, limit });
+        const result = await Roles.list({ userId, projectId, page, limit });
         res.status(200).json({ status: 'success', data: result, message: 'Roles retrieved' });
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';

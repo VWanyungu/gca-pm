@@ -39,3 +39,18 @@ export const CAN_LIST_PROJECTS: Permission[] = [
   { role: "Planner", scopeType: "global" },
   { role: "SiteEngineer", scopeType: "global" },
 ];
+
+export const CAN_MANAGE_PROJECT: Permission[] = [
+  { role: "Admin", scopeType: "global" },
+  { role: "ExCo", scopeType: "global" },
+  { role: "PM", scopeType: "project" },
+];
+
+export const CAN_VIEW_PROJECT: Permission[] = [
+  { role: "Admin", scopeType: "global" },
+  { role: "ExCo", scopeType: "global" },
+  { role: "ProjectCreator", scopeType: "global" },
+  { role: "PM", scopeType: "project" },
+  { role: "Planner", scopeType: "project" },
+  { role: "SiteEngineer", scopeType: "project" },
+];

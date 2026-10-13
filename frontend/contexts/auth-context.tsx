@@ -16,6 +16,7 @@ export interface RoleGrant {
 
 export interface User {
   userId: string;
+  firstName?: string | null;
   email: string;
   role: RoleGrant[];
 }
@@ -51,22 +52,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token) setUser(decodeJwtPayload(token));
+    if (token) 
+      setUser({
+        userId: localStorage.getItem("userId") ? localStorage.getItem("userId")! : "",
+        firstName: localStorage.getItem("firstName") ? localStorage.getItem("firstName")! : null,
+        email: localStorage.getItem("email") ? localStorage.getItem("email")! : "",
+        role: JSON.parse(localStorage.getItem("role") ? localStorage.getItem("role")! : "[]"),
+      });
+    
     setIsLoading(false);
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     try {
-      const res = await api.post<{ token: string; refreshToken: string }>(
+      const res = await api.post<{ token: string; refreshToken: string; firstName: string | null; userId: string; role: RoleGrant[]; email: string }>(
         "/login",
         { email, password },
       );
       if (res.status === "success" && res.data) {
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("refreshToken", res.data.refreshToken);
-        setUser(decodeJwtPayload(res.data.token));
-        return null;
+        localStorage.setItem("userId", res.data.userId);
+        localStorage.setItem("email", res.data.email);
+        localStorage.setItem("firstName", res.data.firstName || "");
+        localStorage.setItem("role", JSON.stringify(res.data.role));
+        setUser({
+          userId: res.data.userId,
+          firstName: res.data.firstName,
+          email: res.data.email,
+          role: res.data.role,
+        });
       }
+     
       return res.message;
     } catch (error) {
       console.error("Login error:", error);

@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Search, LayoutGrid, List, Plus, FolderOpen, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
 import { canAccess, CAN_CREATE_PROJECT } from "@/lib/access-control";
-import { TopBar } from "@/components/top-bar";
 import { ProjectCard } from "@/components/project-card";
 import { ProjectTable } from "@/components/project-table";
 import { Pagination } from "@/components/pagination";
+import Dropdown from "@/components/Dropdown";
 
 export interface Project {
   id: string;
@@ -42,6 +43,10 @@ interface ProjectsResponse {
   totalPages: number;
 }
 
+interface ProgramsResponse {
+  programs: Array<{ program_id: number; name: string; is_active: boolean }>;
+}
+
 function mapProject(row: ProjectsResponse["projects"][number]): Project {
   return {
     id: row.project_id,
@@ -64,10 +69,11 @@ export default function Home() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
-  const [perPage] = useState(6);
+  const [perPage, setPerPage] = useState(6);
   const [view, setView] = useState<"card" | "table">("card");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [programFilter, setProgramFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,31 +85,28 @@ export default function Home() {
     { role: "PM", scopeType: "global" },
   ]);
 
-  const programs = [{
-    id: 1,
-    name: "Bulk import and wholesale"
-  }, {
-    id: 2,
-    name: "Open Access bottling plant"
-  }, {
-    id: 3,
-    name: "Autogas"
-  }, {
-    id: 4,
-    name: "Reticulation"
-  }, {
-    id: 5,
-    name: "Industry and construction"
-  }, {
-    id: 6,
-    name: "LPG Marketplace"
-  }, {
-    id: 7,
-    name: "Vulcan"
-  }, {
-    id: 8,
-    name: "Smart metering"
-  }];
+  const { data: programs = [] } = useQuery({
+    queryKey: ["programs"],
+    queryFn: async () => {
+      const res = await api.get<ProgramsResponse>("/programs?limit=100");
+      if (res.status !== "success" || !res.data) throw new Error(res.message);
+      return res.data.programs;
+    },
+    enabled: isAuthenticated,
+  });
+
+  const projectProgramOptions = [
+    { id: "all", name: "All programs" },
+    ...programs.map((program) => ({ id: String(program.program_id), name: program.name })),
+  ];
+
+  const projectStatusOptions = [
+    { id: "all", name: "All status", value: "" },
+    { id: "active", name: "Active", value: "active" },
+    { id: "on_hold", name: "On hold", value: "on_hold" },
+    { id: "complete", name: "Complete", value: "complete" },
+    { id: "cancelled", name: "Cancelled", value: "cancelled" },
+  ];
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
@@ -111,6 +114,7 @@ export default function Home() {
     const params = new URLSearchParams({ page: String(page), limit: String(perPage) });
     if (search) params.set("search", search);
     if (statusFilter) params.set("status", statusFilter);
+    if (programFilter && programFilter !== "all") params.set("program_id", programFilter);
 
     const res = await api.get<ProjectsResponse>(`/projects?${params}`);
     if (res.status === "success" && res.data) {
@@ -121,14 +125,12 @@ export default function Home() {
       setError(res.message);
     }
     setLoading(false);
-  }, [page, perPage, search, statusFilter]);
+  }, [page, perPage, search, statusFilter, programFilter]);
 
   useEffect(() => {
-    console.log(user)
     if (!authLoading && !isAuthenticated) {
-      console.log(user)
-      // router.replace("/login")
-    };
+      router.replace("/login")
+    }
   }, [authLoading, isAuthenticated, router]);
 
   useEffect(() => {
@@ -137,21 +139,15 @@ export default function Home() {
 
   if (authLoading || !isAuthenticated) return null;
 
-  const greeting = getGreeting(user?.email);
+  const greeting = getGreeting(user?.email, user?.firstName);
 
   return (
-    <div className="flex min-h-screen flex-col bg-white">
-      <TopBar />
+    <>
       <main className="flex flex-col gap-[32px] px-[120px] pb-[48px] pt-[40px]">
         {/* Header */}
         <div className="flex items-end justify-between">
           <div>
             <h1 className="text-[28px] font-semibold tracking-[-0.7px] text-gca-dark">{greeting}</h1>
-            {!loading && total > 0 && (
-              <p className="mt-[4px] text-[14px] text-gca-muted">
-                {total} project{total !== 1 ? "s" : ""}
-              </p>
-            )}
           </div>
           {showCreate && (
             <Link
@@ -166,13 +162,8 @@ export default function Home() {
         {/* Loading state */}
         {loading && <LoadingSkeleton />}
 
-        {/* Empty state */}
-        {!loading && !error && projects.length === 0 && !search && !statusFilter && (
-          <EmptyState showCreate={showCreate} />
-        )}
-
         {/* Content */}
-        {!loading && !error && projects.length > 0 && (
+        {!loading && !error && (
           <>
             {/* Toolbar */}
             <div className="flex items-center justify-between">
@@ -193,10 +184,10 @@ export default function Home() {
 
               <div className="flex items-center gap-[8px]">
                 {/* View switch */}
-                <div className="flex gap-[4px] rounded-[10px] bg-gca-page-bg p-[4px]">
+                <div className="cursor-pointer flex gap-[4px] rounded-[10px] bg-gca-page-bg p-[4px]">
                   <button
                     onClick={() => setView("card")}
-                    className={`flex h-[32px] w-[36px] items-center justify-center rounded-[6px] ${
+                    className={`flex h-[32px] w-[36px] items-center justify-center rounded-[6px] cursor-pointer ${
                       view === "card"
                         ? "bg-white shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]"
                         : ""
@@ -206,7 +197,7 @@ export default function Home() {
                   </button>
                   <button
                     onClick={() => setView("table")}
-                    className={`flex h-[32px] w-[36px] items-center justify-center rounded-[6px] ${
+                    className={`flex h-[32px] w-[36px] items-center justify-center rounded-[6px] cursor-pointer ${
                       view === "table"
                         ? "bg-white shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]"
                         : ""
@@ -218,40 +209,30 @@ export default function Home() {
 
                 {/* Status filter */}
                 <div className="relative">
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => {
-                      setStatusFilter(e.target.value);
-                      setPage(1);
-                    }}
-                    className="h-[44px] w-[170px] appearance-none rounded-[8px] border border-gca-border bg-white px-[12px] pr-[32px] text-[14px] text-gca-dark outline-none"
-                  >
-                    <option value="">All statuses</option>
-                    <option value="active">Active</option>
-                    <option value="on_hold">On hold</option>
-                    <option value="complete">Complete</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-[12px] top-1/2 size-[10px] -translate-y-1/2 text-gca-dark" />
+                  <Dropdown
+                    id='status-filter'
+                    title='Status'
+                    data={projectStatusOptions.map(status => ({ id: status.id, name: status.name, value: status.value }))}
+                    style='h-[44px] w-[170px] appearance-none rounded-[8px] border border-gca-border bg-white px-[12px] text-[14px] text-gca-dark outline-none'
+                    selectedId={projectStatusOptions.find((s) => s.value === statusFilter)?.id ?? "all"}
+                    onSelect={(id, name, value) => {
+                      setStatusFilter(value);
+                      setPage(1);}}
+                  />
                 </div>
 
-                 {/* Program filter */}
+                {/* Program filter */}
                 <div className="relative">
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => {
-                      setStatusFilter(e.target.value);
-                      setPage(1);
-                    }}
-                    className="h-[44px] w-[170px] appearance-none rounded-[8px] border border-gca-border bg-white px-[12px] pr-[32px] text-[14px] text-gca-dark outline-none"
-                  >
-                    <option value="">All programs</option>
-                    {programs.map((program) => (
-                      <option key={program.id} value={program.id}>{program.name}</option>
-                    ))}
-                   
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-[12px] top-1/2 size-[10px] -translate-y-1/2 text-gca-dark" />
+                  <Dropdown
+                    id='program-filter'
+                    title='Program'
+                    data={projectProgramOptions.map(program => ({ id: program.id.toString(), name: program.name }))}
+                    style='h-[44px] w-[170px] appearance-none rounded-[8px] border border-gca-border bg-white px-[12px] text-[14px] text-gca-dark outline-none'
+                    selectedId={projectProgramOptions.find((p) => p.id.toString() === programFilter)?.id ?? "all"}
+                    onSelect={(id) => {
+                      setProgramFilter(id);
+                      setPage(1);}}
+                  />
                 </div>
               </div>
             </div>
@@ -267,48 +248,59 @@ export default function Home() {
               <ProjectTable projects={projects} canEdit={canEdit} />
             )}
 
+            {/* No results from search */}
+            {!loading && !error && projects.length === 0 && (search || statusFilter || programFilter) && (
+              <div className="flex flex-col items-center gap-[12px] py-[64px]">
+                <Search className="size-[40px] text-gca-muted" />
+                <p className="text-[18px] font-semibold tracking-[-0.27px] text-gca-dark">
+                  No projects found
+                </p>
+                <p className="text-center text-[14px] text-gca-show">
+                  Try adjusting your search or filters.
+                </p>
+              </div>
+            )}
+    
+             {/* Empty state */}
+            {!loading && !error && projects.length === 0 && search != "" && statusFilter != "" && (
+              <EmptyState showCreate={showCreate} />
+            )}
+    
+            {/* Error */}
+            {error && (
+              <div className="rounded-[8px] bg-error-bg px-[14px] py-[12px] text-[14px] font-medium text-error-text">
+                {error}
+              </div>
+            )}
+
             {/* Pagination */}
-            {/* {totalPages > 0 && ( */}
+           {totalPages > 1 && 
               <Pagination
                 page={page}
                 totalPages={totalPages}
                 perPage={perPage}
                 total={total}
                 onPageChange={setPage}
+                onPerPageChange={(value) => {
+                  setPerPage(value);
+                  setPage(1);
+                }}
               />
-            {/* )} */}
+            }
           </>
         )}
 
-        {/* No results from search */}
-        {!loading && !error && projects.length === 0 && (search || statusFilter) && (
-          <div className="flex flex-col items-center gap-[12px] py-[64px]">
-            <Search className="size-[40px] text-gca-muted" />
-            <p className="text-[18px] font-semibold tracking-[-0.27px] text-gca-dark">
-              No projects found
-            </p>
-            <p className="text-center text-[14px] text-gca-show">
-              Try adjusting your search or filters.
-            </p>
-          </div>
-        )}
-
-        {/* Error */}
-        {error && (
-          <div className="rounded-[8px] bg-error-bg px-[14px] py-[12px] text-[14px] font-medium text-error-text">
-            {error}
-          </div>
-        )}
+       
       </main>
-    </div>
+    </>
   );
 }
 
-function getGreeting(email: string | undefined): string {
+function getGreeting(email: string | undefined, name: string | undefined | null): string {
   const hour = new Date().getHours();
-  const name = email?.split("@")[0]?.split(".").map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join(" ") ?? "";
+  // const name = email?.split("@")[0]?.split(".").map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join(" ") ?? "";
   const timeOfDay = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
-  return `Good ${timeOfDay}${name ? `, ${name.split(" ")[0]}` : ""}`;
+  return `Good ${timeOfDay}, ${name ? name : ""}`;
 }
 
 function EmptyState({ showCreate }: { showCreate: boolean }) {
