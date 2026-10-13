@@ -53,35 +53,45 @@ async function request<T = unknown>(
   body?: unknown,
 ): Promise<ApiResponse<T>> {
   const { token } = getTokens();
+
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     "api-v": "v1",
   };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  let res = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  if (token) 
+    headers["Authorization"] = `Bearer ${token}`;
 
-  if (res.status === 403 && token) {
-    const newToken = await refreshAccessToken();
-    if (newToken) {
-      headers["Authorization"] = `Bearer ${newToken}`;
-      res = await fetch(`${API_BASE}${path}`, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined,
-      });
-    } else {
-      clearTokens();
-      window.location.href = "/login";
-      return { status: "error", data: null, message: "Session expired" };
+  try{
+    let res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    if (res.status === 403 && token) {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        headers["Authorization"] = `Bearer ${newToken}`;
+        res = await fetch(`${API_BASE}${path}`, {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : undefined,
+        });
+      } else {
+        clearTokens();
+        window.location.href = "/login";
+        return { status: "error", data: null, message: "Session expired" };
+      }
     }
+
+    return res.json();
+  }catch (error) {
+    console.error("Error during API request:", error);
+    return { status: "error", data: null, message: "An unexpected error occurred" };
   }
 
-  return res.json();
+  
 }
 
 export const api = {

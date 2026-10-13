@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, ArrowLeft, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, CheckCircle, LoaderCircle } from "lucide-react";
 import { AuthLayout } from "@/components/auth-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
@@ -78,6 +78,14 @@ export default function ResetPasswordPage({ token }: { token: string }) {
   return (
     <AuthLayout>
       <div className="flex flex-col gap-[24px]">
+        <Link
+          href="/login"
+          className="flex items-center gap-[6px] text-[13px] font-medium text-gca-green hover:underline"
+        >
+          <ArrowLeft className="size-[14px]" />
+          Back to sign in
+        </Link>
+        
         <div>
           <h1 className="text-[32px] font-semibold leading-normal tracking-[-0.8px] text-gca-dark">
             Reset password
@@ -157,18 +165,15 @@ export default function ResetPasswordPage({ token }: { token: string }) {
           type="submit"
           disabled={submitting}
           onClick={handleSubmit}
-          className="w-full rounded-[8px] bg-gca-green px-[16px] py-[14px] text-[15px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-60"
+          className="w-full flex items-center justify-center rounded-[8px] bg-gca-green px-[16px] py-[14px] text-[15px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-60"
         >
-          {submitting ? "Resetting..." : "Reset password"}
+          {submitting ? (
+            <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />
+          ) : (
+            "Reset password"
+          )}
         </button>
 
-        <Link
-          href="/login"
-          className="flex items-center gap-[6px] text-[13px] font-medium text-gca-green hover:underline"
-        >
-          <ArrowLeft className="size-[14px]" />
-          Back to sign in
-        </Link>
       </div>
     </AuthLayout>
   );

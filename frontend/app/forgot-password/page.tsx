@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Mail } from "lucide-react";
+import { ArrowLeft, Mail, LoaderCircle } from "lucide-react";
 import { AuthLayout } from "@/components/auth-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
@@ -111,9 +111,13 @@ export default function ForgotPasswordPage() {
           type="submit"
           disabled={submitting}
           onClick={handleSubmit}
-          className="cursor-pointer w-full rounded-[8px] bg-gca-green px-[16px] py-[14px] text-[15px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-60"
+          className="cursor-pointer w-full flex items-center justify-center rounded-[8px] bg-gca-green px-[16px] py-[14px] text-[15px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-60"
         >
-          {submitting ? "Sending..." : "Send reset link"}
+          {submitting ? (
+            <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />
+          ) : (
+            "Send reset link"
+          )}
         </button>
       </div>
     </AuthLayout>
