@@ -4,27 +4,54 @@ import { createContext, useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { api } from "@/lib/api-client";
 
+export type RoleName = "PM" | "Planner" | "SiteEngineer" | "ExCo" | "Admin" | "ProjectCreator";
+export type ScopeType = "global" | "program" | "project";
+
+export interface RoleGrant {
+  role: RoleName;
+  scope_type: ScopeType;
+  program_id: string | null;
+  project_id: string | null;
+}
+
+export interface User {
+  userId: string;
+  email: string;
+  role: RoleGrant[];
+}
+
 interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
+  user: User | null;
   login: (email: string, password: string) => Promise<string | null>;
   logout: () => Promise<void>;
+}
+
+function decodeJwtPayload(token: string): User | null {
+  try {
+    const base64 = token.split(".")[1];
+    return JSON.parse(atob(base64));
+  } catch {
+    return null;
+  }
 }
 
 export const AuthContext = createContext<AuthState>({
   isAuthenticated: false,
   isLoading: true,
+  user: null,
   login: async () => null,
   logout: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    setIsAuthenticated(!!token);
+    if (token) setUser(decodeJwtPayload(token));
     setIsLoading(false);
   }, []);
 
@@ -37,15 +64,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (res.status === "success" && res.data) {
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("refreshToken", res.data.refreshToken);
-        setIsAuthenticated(true);
+        setUser(decodeJwtPayload(res.data.token));
         return null;
       }
       return res.message;
-    }catch (error) {
+    } catch (error) {
       console.error("Login error:", error);
       return "An unexpected error occurred. Please try again.";
     }
-    
   }, []);
 
   const logout = useCallback(async () => {
@@ -56,11 +82,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     localStorage.removeItem("token");
     localStorage.removeItem("refreshToken");
-    setIsAuthenticated(false);
+    setUser(null);
   }, []);
 
   return (
-    <AuthContext value={{ isAuthenticated, isLoading, login, logout }}>
+    <AuthContext value={{ isAuthenticated: !!user, isLoading, user, login, logout }}>
       {children}
     </AuthContext>
   );

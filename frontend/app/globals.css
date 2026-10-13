@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:ital,wght@0,100..900;1,100..900&family=Geist+Mono:wght@100..900&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -14,6 +14,9 @@
   --error-bg: #fef3f2;
   --error-border: #b42318;
   --error-text: #b42318;
+  --gca-warning: #b54708;
+  --gca-badge-bg: #e8f1ea;
+  --gca-badge-text: #1f5530;
 }
 
 @theme inline {
@@ -29,7 +32,11 @@
   --color-error-bg: var(--error-bg);
   --color-error-border: var(--error-border);
   --color-error-text: var(--error-text);
+  --color-gca-warning: var(--gca-warning);
+  --color-gca-badge-bg: var(--gca-badge-bg);
+  --color-gca-badge-text: var(--gca-badge-text);
   --font-sans: var(--font-geist);
+  --font-mono: "Geist Mono", monospace;
 }
 
 body {
