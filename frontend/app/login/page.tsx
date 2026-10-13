@@ -109,9 +109,13 @@ export default function LoginPage() {
             type="submit"
             disabled={submitting}
             onClick={handleSubmit}
-            className="cursor-pointer w-full rounded-[8px] bg-gca-green px-[16px] py-[14px] text-[15px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-60"
+            className="cursor-pointer flex w-full items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[14px] text-[15px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-60"
           >
-            {submitting ? "Signing in..." : "Sign in"}
+            {submitting ? (
+              <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />
+            ) : (
+              "Sign in"
+            )}
           </button>
 
           <div className="flex items-center gap-[12px]">
