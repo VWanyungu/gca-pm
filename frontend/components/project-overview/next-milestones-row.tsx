@@ -12,7 +12,7 @@ export function NextMilestonesRow({ projectId, milestones }: { projectId: string
     .slice(0, 4);
 
   return (
-    <section className="flex w-full flex-col gap-[16px] pb-[20px]">
+    <section className="flex w-full flex-col gap-[16px] pb-[28px]">
       <div className="flex w-full items-center justify-between">
         <h3 className="text-[16px] font-semibold text-gca-dark">Next milestones</h3>
         <Link href={`/projects/${projectId}/milestones`} className="flex items-center gap-[6px] text-[13px] font-medium text-gca-green">

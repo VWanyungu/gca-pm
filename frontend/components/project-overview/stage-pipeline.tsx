@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Check, Lock, ChevronsUpDown } from "lucide-react";
 import { api } from "@/lib/api-client";
 import useOutsideClick from "@/hooks/use-outside-click";
@@ -16,20 +16,32 @@ const STATE_LABEL: Record<StageRow["state"], string> = {
 interface StagePipelineProps {
   projectId: string;
   stages: StageRow[];
+  currentStage?: StageRow;
   percentByStage: Record<number, number>;
   canManage: boolean;
   onChanged: () => void;
 }
 
-export function StagePipeline({ projectId, stages, percentByStage, canManage, onChanged }: StagePipelineProps) {
+export function StagePipeline({
+  projectId,
+  stages,
+  currentStage,
+  percentByStage,
+  canManage,
+  onChanged,
+}: StagePipelineProps) {
   const [editMode, setEditMode] = useState(false);
   const [pendingScope, setPendingScope] = useState<Set<number>>(new Set());
   const [saving, setSaving] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [selectedStageNo, setSelectedStageNo] = useState<number>(0)
+  const [selectedStageNo, setSelectedStageNo] = useState<number>(currentStage?.stage_no ?? 0);
   const menuRef = useRef<HTMLDivElement>(null);
   useOutsideClick({ ref: menuRef, handler: () => setMenuOpen(false) });
+
+  useEffect(() => {
+    if (currentStage) setSelectedStageNo(currentStage.stage_no);
+  }, [currentStage]);
 
   const sorted = [...stages].sort((a, b) => a.stage_no - b.stage_no);
   const current = sorted.find((s) => s.stage_no === selectedStageNo);
@@ -161,7 +173,7 @@ export function StagePipeline({ projectId, stages, percentByStage, canManage, on
           ) : (
             <button onClick={startEdit} className="flex items-center gap-[6px] text-[13px] font-medium text-gca-green">
               Edit scope
-              <ChevronDown className="size-[10px] -rotate-90" />
+              <ChevronDown className="size-[18] -rotate-90" />
             </button>
           ))}
       </div>

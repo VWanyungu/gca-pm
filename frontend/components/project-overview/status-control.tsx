@@ -30,8 +30,8 @@ const ACTION_LABELS: Record<ProjectStatus, string> = {
 const REASON_REQUIRED: ProjectStatus[] = ["on_hold", "cancelled"];
 
 const WARNINGS: Partial<Record<ProjectStatus, string>> = {
-  cancelled: "Open escalations will be closed. An Admin can reverse this.",
-  on_hold: "Work pauses until the project is reactivated.",
+  // cancelled: "Open escalations will be closed. An Admin can reverse this.",
+  // on_hold: "Work pauses until the project is reactivated.",
   active: "This reopens the project for active work.",
 };
 

@@ -41,7 +41,7 @@ export function ProgressCard({ metrics }: { metrics: MetricRow[] }) {
   );
 
   return (
-    <div className="flex h-[415px] w-[700px] shrink-0 flex-col gap-[16px] rounded-[12px] border border-gca-border bg-white p-[24px]">
+    <div className="flex h-[415px] w-[700px] shrink-0 flex-col gap-[16px] rounded-[12px] border border-gca-border bg-white p-[24px] pb-[28px]">
       <div className="flex w-full items-center justify-between">
         <h3 className="text-[16px] font-semibold text-gca-dark">Progress</h3>
         <div className="flex items-center gap-[6px] text-[12px] text-gca-show">

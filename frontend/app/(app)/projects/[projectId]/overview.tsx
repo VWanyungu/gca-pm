@@ -46,6 +46,8 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
     return result;
   }, [data?.stages, activities]);
 
+  const currentStage = useMemo(() => data?.stages.find((s) => s.state === "active"), [data?.stages]);
+
   const overdueActivities = useMemo(() => {
     const today = new Date();
     return activities.filter((a) => a.status === "open" && a.due_date && new Date(a.due_date) < today);
@@ -116,6 +118,7 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
         <StagePipeline
           projectId={projectId}
           stages={data.stages}
+          currentStage={currentStage}
           percentByStage={percentByStage}
           canManage={canManage}
           onChanged={invalidate}

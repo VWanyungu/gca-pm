@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { X, Plus } from "lucide-react";
+import { X, Plus, ArrowLeft } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_MANAGE_PROJECT } from "@/lib/access-control";
@@ -119,21 +119,22 @@ export default function TeamView({ projectId }: { projectId: string }) {
     <div className="flex min-h-[calc(100vh-64px)] w-full">
       <ProjectSidebar projectId={projectId} stages={project.stages} active="team" />
 
-      <main className="flex w-full flex-col gap-[20px] p-[40px]">
+      <div className="flex w-full justify-center">
+        <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[40px]">
         <Link href={`/projects/${projectId}`} className="flex items-center gap-[6px] text-[14px] font-medium text-gca-show">
-          ← Overview
+          <ArrowLeft className="size-[18]" /> Overview
         </Link>
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[28px] font-semibold tracking-[-0.7px] text-gca-dark">Team</h1>
+            <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">Team</h1>
             <p className="text-[14px] text-gca-show">
               {total} people{clientContacts.length > 0 ? ` · ${clientContacts.length} from the client` : ""}
             </p>
           </div>
           {canManage &&
             (editMode ? (
-              <div className="flex items-center gap-[8px]">
+              <div className="flex items-center gap-[16px]">
                 <button onClick={() => setEditMode(false)} className="text-[14px] font-medium text-gca-show">
                   Cancel
                 </button>
@@ -154,11 +155,12 @@ export default function TeamView({ projectId }: { projectId: string }) {
             ))}
         </div>
 
-        <div className="grid w-full grid-cols-[1fr_1fr_1fr_120px] gap-x-[16px] border-b border-gca-border pb-[8px] text-[12px] font-medium text-gca-muted">
+        <div className="grid w-full grid-cols-[380px_250px_230px_124px_50px] pb-[12px] text-[12px] font-medium text-gca-muted">
           <span>Person</span>
           <span>Role</span>
           <span>Site / organisation</span>
           <span>Added</span>
+          <span />
         </div>
 
         <TeamGroup
@@ -244,20 +246,27 @@ export default function TeamView({ projectId }: { projectId: string }) {
 
         <TeamGroup title="Client" count={clientContacts.length} editMode={editMode}>
           {clientContacts.map((c) => (
-            <div key={c.contact_id} className="grid w-full grid-cols-[1fr_1fr_1fr_120px] items-center gap-x-[16px] py-[13px]">
-              <div className="flex items-center gap-[10px]">
-                <span className="flex size-[32px] items-center justify-center rounded-full bg-[#fff4e5] text-[12px] font-semibold text-gca-warning">
+            <div
+              key={c.contact_id}
+              className="grid w-full grid-cols-[380px_250px_230px_124px_50px] items-center border-t border-gca-border py-[12px]"
+            >
+              <div className="flex items-center gap-[12px]">
+                <span className="flex size-[36px] shrink-0 items-center justify-center rounded-[10px] bg-[#fff4e5] text-[13px] font-semibold text-gca-warning">
                   {initials(c.name.split(" ")[0] ?? "", c.name.split(" ")[1] ?? "")}
                 </span>
-                <div>
+                <div className="flex flex-col gap-[2px]">
                   <p className="text-[14px] font-medium text-gca-dark">{c.name}</p>
                   <p className="text-[12px] text-gca-muted">{c.email}</p>
                 </div>
               </div>
-              <span className="text-[14px] text-gca-show">{c.title ?? "—"}</span>
-              <span className="text-[14px] text-gca-show">{project.project.client_name ?? "—"}</span>
+              <span className="text-[13px] text-gca-dark">{c.title ?? "—"}</span>
+              <span className="text-[13px] text-gca-show">{project.project.client_name ?? "—"}</span>
+              <span />
               {editMode ? (
-                <button onClick={() => removeContact(c.contact_id)} className="justify-self-start">
+                <button
+                  onClick={() => removeContact(c.contact_id)}
+                  className="flex size-[32px] items-center justify-center justify-self-end rounded-[8px] border border-gca-border bg-white"
+                >
                   <X className="size-[14px] text-gca-muted" />
                 </button>
               ) : (
@@ -267,26 +276,26 @@ export default function TeamView({ projectId }: { projectId: string }) {
           ))}
           {editMode &&
             (addingContact ? (
-              <div className="flex items-center gap-[8px] rounded-[8px] bg-gca-page-bg p-[10px]">
+              <div className="flex items-center gap-[12px] rounded-[10px] bg-gca-page-bg p-[12px]">
                 <input
                   value={contactDraft.name}
                   onChange={(e) => setContactDraft({ ...contactDraft, name: e.target.value })}
                   placeholder="Full name"
-                  className="h-[36px] w-[160px] rounded-[6px] border border-gca-border px-[10px] text-[13px] outline-none"
+                  className="h-[38px] w-[160px] rounded-[8px] border border-gca-border px-[12px] text-[13px] outline-none"
                 />
                 <input
                   value={contactDraft.title}
                   onChange={(e) => setContactDraft({ ...contactDraft, title: e.target.value })}
                   placeholder="Role"
-                  className="h-[36px] w-[120px] rounded-[6px] border border-gca-border px-[10px] text-[13px] outline-none"
+                  className="h-[38px] w-[120px] rounded-[8px] border border-gca-border px-[12px] text-[13px] outline-none"
                 />
                 <input
                   value={contactDraft.email}
                   onChange={(e) => setContactDraft({ ...contactDraft, email: e.target.value })}
                   placeholder="Email"
-                  className="h-[36px] flex-1 rounded-[6px] border border-gca-border px-[10px] text-[13px] outline-none"
+                  className="h-[38px] flex-1 rounded-[8px] border border-gca-border px-[12px] text-[13px] outline-none"
                 />
-                <button onClick={addContact} className="rounded-[6px] bg-gca-green px-[12px] py-[8px] text-[13px] font-semibold text-white">
+                <button onClick={addContact} className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[13px] font-semibold text-white">
                   Add
                 </button>
                 <button onClick={() => setAddingContact(false)} className="text-[13px] font-medium text-gca-show">
@@ -299,11 +308,12 @@ export default function TeamView({ projectId }: { projectId: string }) {
         </TeamGroup>
 
         {editMode && (
-          <p className="text-[12px] text-gca-muted">
+          <p className="text-[12px] text-gca-show">
             Changing the main PM or main Planner moves their access. The change is logged.
           </p>
         )}
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
@@ -330,24 +340,24 @@ function TeamGroup({
   if (count === 0 && !editMode) return null;
   return (
     <div className="flex flex-col gap-[4px]">
-      <div className="flex items-center justify-between">
-        <p className="flex items-center gap-[6px] text-[13px] font-semibold text-gca-dark">
-          {title} <span className="text-gca-muted">{count}</span>
+      <div className="flex items-center justify-between pb-[4px]">
+        <p className="flex items-center gap-[8px] text-[15px] font-semibold text-gca-dark">
+          {title} <span className="text-[13px] font-medium text-gca-muted">{count}</span>
         </p>
         {editMode && mainLabel && onReassignMain && userOptions && (
-          <div className="flex items-center gap-[8px]">
-            <span className="text-[12px] text-gca-muted">{mainLabel}</span>
+          <div className="flex items-center gap-[10px]">
+            <span className="text-[13px] font-medium text-gca-show">{mainLabel}</span>
             <Dropdown
               id={`main-${mainLabel}`}
               data={userOptions}
               selectedId={mainValue}
-              style="h-[32px] w-[180px] rounded-[6px] border border-gca-border px-[10px] text-[13px]"
+              style="h-[38px] w-[220px] rounded-[8px] border border-gca-border px-[12px] text-[14px]"
               onSelect={(id) => onReassignMain(id)}
             />
           </div>
         )}
       </div>
-      <div className="flex flex-col divide-y divide-gca-border">{children}</div>
+      <div className="flex flex-col">{children}</div>
     </div>
   );
 }
@@ -368,29 +378,35 @@ function PersonRow({
   onRemove: () => void;
 }) {
   return (
-    <div className="grid w-full grid-cols-[1fr_1fr_1fr_120px] items-center gap-x-[16px] py-[13px]">
-      <div className="flex items-center gap-[10px]">
-        <span className="flex size-[32px] items-center justify-center rounded-full bg-gca-badge-bg text-[12px] font-semibold text-gca-badge-text">
+    <div className="grid w-full grid-cols-[380px_250px_230px_124px_50px] items-center border-t border-gca-border py-[12px]">
+      <div className="flex items-center gap-[12px]">
+        <span className="flex size-[36px] shrink-0 items-center justify-center rounded-[10px] bg-gca-badge-bg text-[13px] font-semibold text-gca-badge-text">
           {initials(member.first_name, member.last_name)}
         </span>
-        <div>
+        <div className="flex flex-col gap-[2px]">
           <p className="text-[14px] font-medium text-gca-dark">
             {member.first_name} {member.last_name}
           </p>
           <p className="text-[12px] text-gca-muted">{member.email}</p>
         </div>
       </div>
-      <span className="flex items-center gap-[6px] text-[14px] text-gca-show">
+      <span className="flex items-center gap-[8px] text-[13px] text-gca-dark">
         {roleLabel}
         {isMain && <span className="text-[12px] font-semibold text-gca-green">Main</span>}
       </span>
-      <span className="text-[14px] text-gca-show">{site}</span>
+      <span className="text-[13px] text-gca-show">{site}</span>
+      <span className="text-[13px] text-gca-show">
+        {new Date(member.granted_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+      </span>
       {editMode && !isMain ? (
-        <button onClick={onRemove} className="justify-self-start">
+        <button
+          onClick={onRemove}
+          className="flex size-[32px] items-center justify-center justify-self-end rounded-[8px] border border-gca-border bg-white"
+        >
           <X className="size-[14px] text-gca-muted" />
         </button>
       ) : (
-        <span className="text-[12px] text-gca-muted">{new Date(member.granted_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
+        <span />
       )}
     </div>
   );
@@ -398,8 +414,8 @@ function PersonRow({
 
 function AddLink({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="flex items-center gap-[6px] py-[10px] text-[13px] font-medium text-gca-green">
-      <Plus className="size-[12px]" />
+    <button onClick={onClick} className="flex items-center gap-[8px] pt-[12px] text-[13px] font-medium text-gca-green">
+      <Plus className="size-[10px]" />
       {label}
     </button>
   );
@@ -419,16 +435,16 @@ function AddRow({
   onCancel: () => void;
 }) {
   return (
-    <div className="flex items-center gap-[8px] rounded-[8px] bg-gca-page-bg p-[10px]">
+    <div className="flex items-center gap-[12px] rounded-[10px] bg-gca-page-bg p-[12px]">
       <Dropdown
         id="add-member"
         title="Choose a person"
         data={options}
         selectedId={value}
-        style="h-[36px] w-[220px] rounded-[6px] border border-gca-border px-[10px] text-[13px]"
+        style="h-[38px] w-[220px] rounded-[8px] border border-gca-border px-[12px] text-[14px]"
         onSelect={(id) => onChange(id)}
       />
-      <button onClick={onAdd} className="rounded-[6px] bg-gca-green px-[12px] py-[8px] text-[13px] font-semibold text-white">
+      <button onClick={onAdd} className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[13px] font-semibold text-white">
         Add
       </button>
       <button onClick={onCancel} className="text-[13px] font-medium text-gca-show">
