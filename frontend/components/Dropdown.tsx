@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import classNames from 'classnames';
-import { ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check, Search } from 'lucide-react';
 import useOutsideClick from '../hooks/use-outside-click';
 
 interface DropdownItem {
@@ -29,15 +29,25 @@ const Dropdown = ({
   onSelect,
 }: DropdownProps) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [query, setQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<DropdownItem | undefined>(
     selectedId ? data?.find((item) => item.id === selectedId) : undefined
   );
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (item: DropdownItem) => {
     setSelectedItem(item);
     onSelect && onSelect(item.id, item.name, item.value?.toString() || '');
     setIsOpen(false);
+    setQuery('');
   };
+
+  useEffect(() => {
+    if (isOpen) searchRef.current?.focus();
+    else setQuery('');
+  }, [isOpen]);
+
+  const filteredData = data?.filter((item) => item.name.toLowerCase().includes(query.toLowerCase()));
 
   useEffect(() => {
     if (selectedId && data) {
@@ -91,13 +101,23 @@ const Dropdown = ({
       {/* Open */}
       {isOpen && (
         <div aria-label='Dropdown menu' className={dropdownClass}>
+          <div className='sticky top-0 flex items-center gap-2 bg-white px-3 pb-2'>
+            <Search size={14} className='shrink-0 text-gca-muted' />
+            <input
+              ref={searchRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder='Search...'
+              className='w-full border-b border-gca-border py-1 text-[13px] text-gca-dark outline-none placeholder:text-gca-muted'
+            />
+          </div>
           <ul
             role='menu'
             aria-labelledby={id}
             aria-orientation='vertical'
             className='leading-10 px-2'
           >
-            {data?.map((item) => (
+            {filteredData?.map((item) => (
               <li
                 key={item.id}
                 onClick={() => handleChange(item)}
@@ -112,6 +132,9 @@ const Dropdown = ({
                 )}
               </li>
             ))}
+            {filteredData?.length === 0 && (
+              <li className='px-3 text-[13px] leading-8 text-gca-muted'>No results</li>
+            )}
           </ul>
         </div>
       )}

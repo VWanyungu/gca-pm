@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, X } from "lucide-react";
 import { usePdmStages } from "@/hooks/use-pdm-stages";
 
 type Preset = "full" | "deliver" | "develop" | "custom";
@@ -41,22 +41,24 @@ export function ScopeStep({ value, onChange, onBack, onNext, nextLabel }: ScopeS
   const notInScope = stages.filter((s) => !value.includes(s.stage_no));
 
   return (
-    <div className="flex w-[849px] flex-col gap-[32px]">
+    <div className="flex w-full flex-col gap-[32px]">
       <div>
-        <h2 className="text-[22px] font-semibold tracking-[-0.4px] text-gca-dark">Choose the stages</h2>
-        <p className="pt-[8px] text-[14px] text-gca-show">Start from a preset, then add or remove stages.</p>
+        <h2 className="text-[26px] font-semibold tracking-[-0.39px] text-gca-dark">Choose the stages</h2>
+        <p className="pt-[8px] text-[15px] text-gca-show">Start from a preset, then add or remove stages.</p>
       </div>
 
-      <div className="flex items-center gap-[4px]">
+      <div className="flex flex-wrap items-center gap-[16px]">
         {PRESETS.map((p) => (
           <button
             key={p.id}
             type="button"
             onClick={() => applyPreset(p.id)}
-            className="flex items-center gap-[10px] rounded-[8px] px-[11px] py-[13px]"
+            className={`cursor-pointer flex w-[180px] items-center gap-[12px] rounded-[8px] border px-[14px] py-[12px] ${
+              preset === p.id ? "border-gca-green bg-gca-badge-bg" : "border-gca-border"
+            }`}
           >
             <span
-              className={`flex size-[18px] items-center justify-center rounded-full border-2 ${
+              className={`flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 ${
                 preset === p.id ? "border-gca-green" : "border-gca-border"
               }`}
             >
@@ -71,35 +73,35 @@ export function ScopeStep({ value, onChange, onBack, onNext, nextLabel }: ScopeS
         <div className="h-[100px] animate-pulse rounded-[8px] bg-gca-page-bg" />
       ) : (
         <>
-          <div className="flex flex-col gap-[12px]">
-            <p className="text-[14px] font-medium text-gca-dark">In scope</p>
-            <div className="flex flex-wrap gap-[10px]">
+          <div className="flex flex-col gap-[10px]">
+            <p className="text-[13px] font-medium text-gca-show">In scope</p>
+            <div className="flex flex-wrap gap-[8px]">
               {inScope.map((s) => (
                 <button
                   key={s.stage_no}
                   type="button"
                   onClick={() => toggleStage(s.stage_no)}
-                  className="flex items-center gap-[8px] rounded-[8px] bg-gca-badge-bg px-[11px] py-[8px] text-[14px] font-medium text-gca-badge-text"
+                  className="flex items-center gap-[8px] rounded-[6px] border border-gca-border bg-gca-page-bg px-[10px] py-[7px] text-[13px] font-medium text-gca-dark"
                 >
                   {s.stage_no} · {s.name.split(" ")[0]}
-                  <X className="size-[8px]" />
+                  <X className="size-[12] cursor-pointer" />
                 </button>
               ))}
               {inScope.length === 0 && <p className="text-[13px] text-gca-muted">No stages selected yet.</p>}
             </div>
           </div>
 
-          <div className="flex flex-col gap-[12px]">
-            <p className="text-[14px] font-medium text-gca-dark">Add a stage</p>
-            <div className="flex flex-wrap gap-[10px]">
+          <div className="flex flex-col gap-[10px]">
+            <p className="text-[13px] font-medium text-gca-show">Add a stage</p>
+            <div className="flex flex-wrap gap-[8px]">
               {notInScope.map((s) => (
                 <button
                   key={s.stage_no}
                   type="button"
                   onClick={() => toggleStage(s.stage_no)}
-                  className="flex items-center gap-[8px] rounded-[8px] border border-gca-border px-[11px] py-[8px] text-[14px] font-medium text-gca-dark hover:bg-gca-page-bg"
+                  className="flex items-center gap-[8px] rounded-[6px] border border-gca-border bg-white px-[10px] py-[7px] text-[13px] font-medium text-gca-dark hover:bg-gca-page-bg"
                 >
-                  <Plus className="size-[10px]" />
+                  <Plus className="size-[12] cursor-pointer" />
                   {s.stage_no} · {s.name.split(" ")[0]}
                 </button>
               ))}
@@ -108,17 +110,19 @@ export function ScopeStep({ value, onChange, onBack, onNext, nextLabel }: ScopeS
         </>
       )}
 
-      <div className="flex items-center justify-between pt-[10px]">
-        <button type="button" onClick={onBack} className="text-[14px] font-medium text-gca-show">
-          ← Back
+      <div className="flex items-center justify-between pt-[24px]">
+        <button type="button" onClick={onBack} className="cursor-pointer flex items-center gap-[8px] px-[4px] py-[11px] text-[14px] font-semibold text-gca-dark">
+          <ArrowLeft className="size-[13px]" />
+          Back
         </button>
         <button
           type="button"
           disabled={value.length === 0}
           onClick={onNext}
-          className="rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
+          className="cursor-pointer flex items-center gap-[10px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
         >
           {nextLabel}
+          <ArrowRight className="size-[13px]" />
         </button>
       </div>
     </div>

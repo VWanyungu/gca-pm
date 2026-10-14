@@ -113,7 +113,15 @@ router.post('/', canCreate, async (req, res) => {
       data: result,
       message: 'Project created successfully',
     });
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.code === '23505' && err?.constraint?.includes('project_code')) {
+      res.status(409).json({
+        status: 'error',
+        data: null,
+        message: `Project code '${input.project_code}' was just taken by another request, please retry`,
+      });
+      return;
+    }
     const message = err instanceof Error ? err.message : 'Unknown error';
     res.status(500).json({ status: 'error', data: null, message });
   }

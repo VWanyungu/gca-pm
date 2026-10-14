@@ -7,6 +7,7 @@ import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import Dropdown from "@/components/Dropdown";
+import { ArrowRight } from "lucide-react";
 
 export const detailsSchema = z.object({
   name: z.string().trim().min(1, "Project name is required").max(500),
@@ -62,15 +63,15 @@ export function DetailsStep({ defaultValues, onCancel, onNext, onSave, saving, n
   return (
     <form
       onSubmit={handleSubmit(onNext)}
-      className="flex w-[640px] flex-col gap-[32px]"
+      className="flex w-full flex-col gap-[24px]"
     >
-      <h2 className="text-[22px] font-semibold tracking-[-0.4px] text-gca-dark">Project details</h2>
+      <h2 className="text-[26px] font-semibold tracking-[-0.39px] text-gca-dark">Project details</h2>
 
       <Field label="Project name" required error={errors.name?.message}>
         <input
           {...register("name")}
           placeholder="e.g. Gitanga Mall Reticulation"
-          className="h-[42px] rounded-[8px] border border-gca-border px-[13px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
+          className="h-[42px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
         />
       </Field>
 
@@ -79,7 +80,7 @@ export function DetailsStep({ defaultValues, onCancel, onNext, onSave, saving, n
           <input
             {...register("client_name")}
             placeholder="Client name"
-            className="h-[42px] rounded-[8px] border border-gca-border px-[13px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
+            className="h-[42px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
           />
         </Field>
         <Field label="Program" required error={errors.program_id?.message} className="w-1/2">
@@ -87,7 +88,7 @@ export function DetailsStep({ defaultValues, onCancel, onNext, onSave, saving, n
             id="program_id"
             title="Choose program"
             data={programs.map((p) => ({ id: String(p.program_id), name: p.name }))}
-            style="h-[42px] w-full rounded-[8px] border border-gca-border px-[13px] text-[14px] text-gca-dark"
+            style="h-[42px] w-full rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
             selectedId={programId}
             onSelect={(id) => setValue("program_id", id, { shouldValidate: true })}
           />
@@ -99,14 +100,14 @@ export function DetailsStep({ defaultValues, onCancel, onNext, onSave, saving, n
           <input
             type="date"
             {...register("expected_start_date")}
-            className="h-[42px] rounded-[8px] border border-gca-border px-[13px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
+            className="h-[42px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
           />
         </Field>
         <Field label="Planned finish" className="w-1/2">
           <input
             type="date"
             {...register("expected_end_date")}
-            className="h-[42px] rounded-[8px] border border-gca-border px-[13px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
+            className="h-[42px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
           />
         </Field>
       </div>
@@ -115,12 +116,12 @@ export function DetailsStep({ defaultValues, onCancel, onNext, onSave, saving, n
         <input
           {...register("site_location")}
           placeholder="Site address or area"
-          className="h-[42px] rounded-[8px] border border-gca-border px-[13px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
+          className="h-[42px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
         />
       </Field>
 
-      <div className="flex items-center justify-between pt-[10px]">
-        <button type="button" onClick={onCancel} className="text-[14px] font-medium text-gca-show">
+      <div className="flex items-center justify-between pt-[24px]">
+        <button type="button" onClick={onCancel} className="px-[4px] py-[11px] text-[14px] font-semibold text-gca-show hover:text-red-500 cursor-pointer">
           Cancel
         </button>
         <div className="flex items-center gap-[12px]">
@@ -136,9 +137,10 @@ export function DetailsStep({ defaultValues, onCancel, onNext, onSave, saving, n
           )}
           <button
             type="submit"
-            className="rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
+            className="cursor-pointer flex items-center gap-[10px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
           >
             {nextLabel}
+            <ArrowRight className="size-[13px]" />
           </button>
         </div>
       </div>
@@ -160,8 +162,8 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`flex flex-col gap-[8px] ${className ?? ""}`}>
-      <label className="text-[13px] font-medium text-gca-show">
+    <div className={`flex flex-col gap-[6px] ${className ?? ""}`}>
+      <label className="flex items-center gap-[2px] text-[13px] font-medium text-gca-dark">
         {label} {required && <span className="text-error-text">*</span>}
       </label>
       {children}
