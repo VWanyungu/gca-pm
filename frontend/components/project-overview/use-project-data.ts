@@ -20,6 +20,7 @@ export function useProjectDetail(projectId: string) {
   return useQuery({
     queryKey: ["project", projectId],
     queryFn: async () => unwrap(await api.get<ProjectDetailResponse>(`/projects/${projectId}`)),
+    staleTime: 30_000,
   });
 }
 
@@ -35,6 +36,7 @@ export function useProjectTeam(projectId: string) {
       unwrap(
         await api.get<{ roles: TeamMember[] }>(`/roles?projectId=${projectId}&limit=100`),
       ).roles,
+    staleTime: 30_000,
   });
 }
 
@@ -43,6 +45,7 @@ export function useClientContacts(projectId: string) {
     queryKey: ["project", projectId, "client-contacts"],
     queryFn: async () =>
       unwrap(await api.get<{ contacts: ClientContact[] }>(`/projects/${projectId}/client-contacts`)).contacts,
+    staleTime: 30_000,
   });
 }
 
@@ -59,6 +62,7 @@ export function useStageActivities(projectId: string) {
           `/projects/${projectId}/stage-activities?limit=100`,
         ),
       ).stageActivities,
+    staleTime: 30_000,
   });
 }
 
@@ -69,6 +73,7 @@ export function useMilestones(projectId: string) {
       unwrap(
         await api.get<{ milestones: Milestone[] } & Pagination>(`/projects/${projectId}/milestones?limit=50`),
       ).milestones,
+    staleTime: 30_000,
   });
 }
 
@@ -81,6 +86,7 @@ export function useOpenEscalations(projectId: string) {
           `/projects/${projectId}/escalations?status=open&limit=25`,
         ),
       ).escalations,
+    staleTime: 30_000,
   });
 }
 
@@ -93,6 +99,7 @@ export function useDraftSubmission(projectId: string) {
           `/projects/${projectId}/weekly-submission?status=draft&limit=1`,
         ),
       ).submissions[0] ?? null,
+    staleTime: 30_000,
   });
 }
 
@@ -111,5 +118,6 @@ export function useSidebarCounts(projectId: string) {
         changeRequests: unwrap(escalations).pagination.total,
       };
     },
+    staleTime: 30_000,
   });
 }

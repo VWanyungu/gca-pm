@@ -47,7 +47,7 @@ export function NeedsAttentionCard({
   }
 
   return (
-    <div className="flex w-[391px] shrink-0 flex-col gap-[6px] rounded-[12px] border border-gca-border bg-white p-[24px]">
+    <div className="min-h-[415px] flex min-w-0 flex-1 flex-col gap-[6px] rounded-[12px] border border-gca-border bg-white p-[24px]">
       <div className="flex items-center gap-[8px]">
         <h3 className="text-[16px] font-semibold text-gca-dark">Needs attention</h3>
         {rows.length > 0 && (

@@ -36,8 +36,8 @@ export function NextMilestonesRow({ projectId, milestones }: { projectId: string
                 <p className="font-mono text-[13px] text-gca-show">
                   {new Date(date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
                 </p>
-                <p className="w-[230px] text-[15px] font-semibold text-gca-dark">{m.title}</p>
-                <p className={`text-[12px] font-semibold ${atRisk ? "text-gca-warning" : "text-gca-green"}`}>
+                <p className="w-[230px] text-[15px] font-semibold text-gca-dark min-h-12 ">{m.title}</p>
+                <p className={`text-[12px] font-medium ${atRisk ? "text-gca-warning" : "text-gca-green"}`}>
                   {atRisk ? `At risk · +${m.slippage_days} days` : "On track"}
                 </p>
               </div>

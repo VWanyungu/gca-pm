@@ -57,11 +57,11 @@ export function ProgressCard({ metrics }: { metrics: MetricRow[] }) {
       <div className="flex items-center gap-[24px]">
         <Tile label="SPI" value={latest.spi?.toFixed(2) ?? "—"} note={spiOk ? "On track" : "Behind"} noteColor={spiOk ? "text-gca-green" : "text-gca-warning"} />
         <Divider />
-        <Tile label="Planned" value={`${latest.planned_pct.toFixed(1)}%`} note="Cumulative" noteColor="text-gca-show" />
+        <Tile label="Planned" value={`${Math.trunc(latest.planned_pct)}%`} note="Cumulative" noteColor="text-gca-show" />
         <Divider />
         <Tile
           label="Actual"
-          value={`${latest.actual_pct.toFixed(1)}%`}
+          value={`${Math.trunc(latest.actual_pct)}%`}
           note={delta >= 0 ? `${delta} pts ahead` : `${Math.abs(delta)} pts behind`}
           noteColor={delta >= 0 ? "text-gca-green" : "text-gca-warning"}
         />
@@ -117,7 +117,7 @@ function Tile({
     <div className="flex flex-col gap-[2px]">
       <p className="text-[12px] font-medium text-gca-muted">{label}</p>
       <p className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">{value}</p>
-      <p className={`text-[12px] font-medium ${noteColor}`}>{note}</p>
+      <p className={`text-[12px] ${noteColor}`}>{note}</p>
     </div>
   );
 }

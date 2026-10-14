@@ -32,10 +32,11 @@ interface ProjectSidebarProps {
   projectId: string;
   stages: StageRow[];
   counts?: { submit: number; risks: number; changeRequests: number };
+  percentByStage?: Record<number, number>;
   active: "overview" | "team";
 }
 
-export function ProjectSidebar({ projectId, stages, counts, active }: ProjectSidebarProps) {
+export function ProjectSidebar({ projectId, stages, counts, percentByStage, active }: ProjectSidebarProps) {
   const { user } = useAuth();
   const [stagesOpen, setStagesOpen] = useState(true);
 
@@ -62,7 +63,7 @@ export function ProjectSidebar({ projectId, stages, counts, active }: ProjectSid
   const topStages = inScopeStages.filter((s) => s.state !== "complete").slice(0, 3);
 
   return (
-    <aside className="flex w-[240px] shrink-0 flex-col justify-between border-r border-gca-border bg-gca-page-bg">
+    <aside className="sticky top-[64px] flex h-[calc(100vh-64px)] w-[240px] shrink-0 flex-col justify-between overflow-y-auto border-r border-gca-border bg-gca-page-bg">
       <div className="flex flex-col gap-[2px] px-[12px] pt-[40px]">
         {myRole && (
           <div className="mb-[8px] flex flex-col gap-[2px] rounded-[10px] px-[12px] py-[10px]">
@@ -113,18 +114,39 @@ export function ProjectSidebar({ projectId, stages, counts, active }: ProjectSid
         </button>
 
         {stagesOpen && (
-          <div className="flex flex-col gap-[2px] py-[4px] pl-[20px]">
-            {topStages.map((s) => (
-              <div key={s.stage_no} className="flex h-[32px] items-center justify-between pr-[12px] text-[13px]">
-                <span className="font-medium text-gca-dark">{STAGE_SHORT_NAME[s.stage_no]}</span>
-                <span className="font-mono text-[12px] text-gca-muted">
-                  {s.state === "complete" ? "Done" : s.state === "not_started" ? "—" : "In progress"}
-                </span>
-              </div>
-            ))}
+          <div className="relative flex flex-col gap-[2px] py-[4px] pl-[20px]">
+            <svg
+              className="pointer-events-none absolute left-[20px] top-0"
+              width={9}
+              height={113}
+              viewBox="0 0 10.4 113.4"
+              fill="none"
+            >
+              <path d="M0.7 0.7 V105.7 C0.7 110.7 3.7 112.7 9.7 112.7" stroke="#C9D3CB" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M0.7 9.7 C0.7 14.7 3.7 16.7 9.7 16.7" stroke="#C9D3CB" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M0.7 41.7 C0.7 46.7 3.7 48.7 9.7 48.7" stroke="#C9D3CB" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M0.7 73.7 C0.7 78.7 3.7 80.7 9.7 80.7" stroke="#C9D3CB" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {topStages.map((s) => {
+              const current = s.state === "active";
+              return (
+                <div key={s.stage_no} className="flex h-[32px] items-center justify-between pl-[26px] pr-[12px] text-[13px]">
+                  <span className={current ? "font-medium text-gca-dark" : "font-normal text-gca-show"}>
+                    {STAGE_SHORT_NAME[s.stage_no]}
+                  </span>
+                  <span className="font-mono text-[12px] text-gca-muted">
+                    {s.state === "complete"
+                      ? "Done"
+                      : s.state === "active"
+                        ? `${percentByStage?.[s.stage_no] ?? 0}%`
+                        : "Not started"}
+                  </span>
+                </div>
+              );
+            })}
             <Link
               href={`${base}/stages`}
-              className="flex h-[32px] items-center gap-[8px] text-[13px] font-medium text-gca-green"
+              className="flex h-[32px] items-center gap-[8px] pl-[26px] text-[13px] font-medium text-gca-green"
             >
               All 10 stages
               <ChevronRight className="size-[10px]" />

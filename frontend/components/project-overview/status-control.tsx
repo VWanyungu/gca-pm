@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { api } from "@/lib/api-client";
 import useOutsideClick from "@/hooks/use-outside-click";
 import type { ProjectStatus } from "./types";
@@ -108,77 +108,84 @@ export function StatusControl({ projectId, status, canManage, onChanged }: Statu
         <ChevronDown className="size-[16px] text-gca-muted" />
       </button>
 
-      {menuOpen && !target && (
-        <div className="absolute right-0 top-[48px] z-50 w-[220px] rounded-[10px] border border-gca-border bg-white py-[8px] shadow-[0px_4px_12px_rgba(0,0,0,0.08)]">
-          <button
-            onClick={() => setMenuOpen(false)}
-            className="flex w-full items-center justify-between px-[14px] py-[8px] text-left"
-          >
-            <span className="text-[14px] font-medium text-gca-dark">{LABELS[status]}</span>
-            <Check className="size-[14px] text-gca-green" />
-          </button>
-          {options.map((opt) => (
-            <button
-              key={opt}
-              onClick={() => setTarget(opt)}
-              className="flex w-full flex-col items-start px-[14px] py-[8px] text-left hover:bg-gca-page-bg"
-            >
-              <span className="text-[14px] font-medium text-gca-dark">{ACTION_LABELS[opt]}</span>
-              {REASON_REQUIRED.includes(opt) && (
-                <span className="text-[12px] text-gca-muted">Reason required</span>
+      {menuOpen && (
+        <div className="absolute right-0 top-[48px] z-50 flex w-[382px] flex-col gap-[14px] rounded-[12px] border border-gca-border bg-white px-[24px] py-[20px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
+          <p className="text-[16px] font-semibold text-gca-dark">Change status</p>
+
+          <div className="flex flex-col gap-[2px]">
+            {options.map((opt) => {
+              const selected = target === opt;
+              const danger = opt === "cancelled";
+              return (
+                <button
+                  key={opt}
+                  onClick={() => setTarget(selected ? null : opt)}
+                  className={`flex w-full items-center gap-[10px] rounded-[8px] px-[12px] py-[9px] text-left ${
+                    selected ? (danger ? "bg-error-bg" : "bg-gca-badge-bg") : "hover:bg-gca-page-bg"
+                  }`}
+                >
+                  <span
+                    className={`size-[18px] shrink-0 rounded-full border-2 ${
+                      danger
+                        ? selected
+                          ? "border-error-text bg-error-text"
+                          : "border-error-text"
+                        : opt === "on_hold"
+                          ? "border-gca-warning"
+                          : "border-gca-green"
+                    }`}
+                  />
+                  <span
+                    className={`text-[14px] ${
+                      selected ? `font-medium ${danger ? "text-error-text" : "text-gca-dark"}` : "font-normal text-gca-dark"
+                    }`}
+                  >
+                    {ACTION_LABELS[opt]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {target && (
+            <>
+              {WARNINGS[target] && <p className="text-[12px] text-gca-show">{WARNINGS[target]}</p>}
+
+              {REASON_REQUIRED.includes(target) && (
+                <div className="flex flex-col gap-[6px]">
+                  <label className="text-[13px] font-medium text-gca-dark">
+                    Reason <span className="text-error-text">*</span>
+                  </label>
+                  <textarea
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder={target === "cancelled" ? "Why is it being cancelled?" : "Why is it on hold?"}
+                    className="h-[80px] resize-none rounded-[8px] border border-gca-border px-[12px] py-[11px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
+                  />
+                </div>
               )}
-            </button>
-          ))}
-        </div>
-      )}
 
-      {target && (
-        <div className="absolute right-0 top-[48px] z-50 w-[300px] rounded-[12px] border border-gca-border bg-white p-[16px] shadow-[0px_4px_12px_rgba(0,0,0,0.08)]">
-          <p className="text-[15px] font-semibold text-gca-dark">Change status</p>
-          <div className="mt-[12px] flex flex-col gap-[6px]">
-            <p
-              className={`rounded-[8px] px-[12px] py-[8px] text-[14px] font-medium ${
-                target === "cancelled" ? "bg-error-bg text-error-text" : "bg-gca-page-bg text-gca-dark"
-              }`}
-            >
-              {ACTION_LABELS[target]}
-            </p>
-            {WARNINGS[target] && <p className="text-[12px] text-gca-muted">{WARNINGS[target]}</p>}
-          </div>
+              {error && <p className="text-[12px] text-error-text">{error}</p>}
 
-          {REASON_REQUIRED.includes(target) && (
-            <div className="mt-[12px] flex flex-col gap-[6px]">
-              <label className="text-[13px] font-medium text-gca-show">
-                Reason <span className="text-error-text">*</span>
-              </label>
-              <textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder={target === "cancelled" ? "Why is it being cancelled?" : "Why is it on hold?"}
-                className="h-[72px] resize-none rounded-[8px] border border-gca-border p-[10px] text-[13px] text-gca-dark outline-none focus:border-gca-green"
-              />
-            </div>
+              <div className="flex justify-end gap-[8px]">
+                <button
+                  onClick={() => setTarget(null)}
+                  className="rounded-[8px] border border-gca-border px-[12px] py-[7px] text-[13px] font-semibold text-gca-dark"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={confirmChange}
+                  disabled={submitting}
+                  className={`rounded-[8px] px-[12px] py-[7px] text-[13px] font-semibold text-white disabled:opacity-50 ${
+                    target === "cancelled" ? "bg-error-text" : "bg-gca-green hover:bg-gca-green-hover"
+                  }`}
+                >
+                  {ACTION_LABELS[target]}
+                </button>
+              </div>
+            </>
           )}
-
-          {error && <p className="mt-[8px] text-[12px] text-error-text">{error}</p>}
-
-          <div className="mt-[14px] flex justify-end gap-[8px]">
-            <button
-              onClick={() => setTarget(null)}
-              className="rounded-[8px] border border-gca-border px-[14px] py-[8px] text-[13px] font-semibold text-gca-dark"
-            >
-              Back
-            </button>
-            <button
-              onClick={confirmChange}
-              disabled={submitting}
-              className={`rounded-[8px] px-[14px] py-[8px] text-[13px] font-semibold text-white disabled:opacity-50 ${
-                target === "cancelled" ? "bg-error-text" : "bg-gca-green hover:bg-gca-green-hover"
-              }`}
-            >
-              {ACTION_LABELS[target]}
-            </button>
-          </div>
         </div>
       )}
     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_MANAGE_PROJECT } from "@/lib/access-control";
 import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
@@ -25,34 +26,54 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
   const { user } = useAuth();
   const { data, isLoading, error } = useProjectDetail(projectId);
   const invalidate = useProjectDetailInvalidate(projectId);
-  const { data: team = [] } = useProjectTeam(projectId);
-  const { data: clientContacts = [] } = useClientContacts(projectId);
-  const { data: activities = [] } = useStageActivities(projectId);
-  const { data: milestones = [] } = useMilestones(projectId);
-  const { data: escalations = [] } = useOpenEscalations(projectId);
-  const { data: draftSubmission } = useDraftSubmission(projectId);
-  const { data: counts } = useSidebarCounts(projectId);
+  const { data: team = [], error: teamError } = useProjectTeam(projectId);
+  const { data: clientContacts = [], error: clientContactsError } = useClientContacts(projectId);
+  const { data: activities = [], error: activitiesError } = useStageActivities(projectId);
+  const { data: milestones = [], error: milestonesError } = useMilestones(projectId);
+  const { data: escalations = [], error: escalationsError } = useOpenEscalations(projectId);
+  const { data: draftSubmission, error: draftSubmissionError } = useDraftSubmission(projectId);
+  const { data: counts, error: countsError } = useSidebarCounts(projectId);
 
-  if (isLoading) return null;
+  const percentByStage = useMemo(() => {
+    const result: Record<number, number> = {};
+    for (const stage of data?.stages ?? []) {
+      const stageActivities = activities.filter((a) => a.stage_no === stage.stage_no);
+      if (stageActivities.length > 0) {
+        const done = stageActivities.filter((a) => a.status === "done").length;
+        result[stage.stage_no] = Math.round((done / stageActivities.length) * 100);
+      }
+    }
+    return result;
+  }, [data?.stages, activities]);
+
+  const overdueActivities = useMemo(() => {
+    const today = new Date();
+    return activities.filter((a) => a.status === "open" && a.due_date && new Date(a.due_date) < today);
+  }, [activities]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[calc(100vh-64px)] w-full items-center justify-center text-[14px] text-gca-muted">
+        Loading project…
+      </div>
+    );
+  }
   if (error || !data) {
     return <p className="p-[40px] text-[14px] text-error-text">{error?.message ?? "Project not found"}</p>;
   }
 
   const canManage = canAccess(user?.role, CAN_MANAGE_PROJECT, { projectId });
 
-  const percentByStage: Record<number, number> = {};
-  for (const stage of data.stages) {
-    const stageActivities = activities.filter((a) => a.stage_no === stage.stage_no);
-    if (stageActivities.length > 0) {
-      const done = stageActivities.filter((a) => a.status === "done").length;
-      percentByStage[stage.stage_no] = Math.round((done / stageActivities.length) * 100);
-    }
-  }
+  const sectionError =
+    teamError ||
+    clientContactsError ||
+    activitiesError ||
+    milestonesError ||
+    escalationsError ||
+    draftSubmissionError ||
+    countsError;
 
   const today = new Date();
-  const overdueActivities = activities.filter(
-    (a) => a.status === "open" && a.due_date && new Date(a.due_date) < today,
-  );
 
   const weekNumber = Math.ceil(
     (today.getTime() - new Date(data.project.created_at).getTime()) / (7 * 24 * 60 * 60 * 1000),
@@ -60,9 +81,23 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex min-h-[calc(100vh-64px)] w-full">
-      <ProjectSidebar projectId={projectId} stages={data.stages} counts={counts} active="overview" />
+      
+      <ProjectSidebar
+        projectId={projectId}
+        stages={data.stages}
+        counts={counts}
+        percentByStage={percentByStage}
+        active="overview"
+      />
 
-      <main className="flex w-full flex-col gap-[28px] p-[40px]">
+      <div className=" w-full flex justify-center">
+          <main className="flex w-full flex-col gap-[28px] p-[40px] max-w-[1200px]">
+        {sectionError && (
+          <p className="rounded-[8px] bg-error-bg px-[14px] py-[10px] text-[13px] text-error-text">
+            Some sections of this page failed to load. Try refreshing.
+          </p>
+        )}
+
         <header className="flex w-full items-center justify-between">
           <div className="flex flex-col gap-[8px]">
             <h1 className="text-[30px] font-semibold tracking-[-0.75px] text-gca-dark">{data.project.name}</h1>
@@ -100,6 +135,8 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
 
         <TeamSection projectId={projectId} team={team} clientContacts={clientContacts} />
       </main>
+      </div>
+    
     </div>
   );
 }

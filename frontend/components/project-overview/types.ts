@@ -98,7 +98,7 @@ export const STAGE_SHORT_NAME: Record<number, string> = {
   5: "Design",
   6: "Procurement",
   7: "Construction",
-  8: "Commissioning",
+  8: "Comm...",
   9: "O&M",
-  10: "Decommissioning",
+  10: "Decomm...",
 };

@@ -64,7 +64,7 @@ export function Navbar() {
   }
 
   return (
-    <header className="flex h-[64px] shrink-0 items-center justify-between border-b border-gca-border bg-white px-[120px]">
+    <header className="sticky top-0 z-40 flex h-[64px] shrink-0 items-center justify-between border-b border-gca-border bg-white px-[24px]">
       {/* Left: logo + nav */}
       <div className="flex items-center gap-[20px]">
         <Link href="/">
