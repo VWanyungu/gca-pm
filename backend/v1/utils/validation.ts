@@ -131,6 +131,7 @@ export interface CreateRiskIssueBody {
   impact: number;
   owner_id?: string;
   mitigation?: string | null;
+  review_by?: string | null;
   kind: RiskKindLiteral;
 }
 
@@ -143,6 +144,7 @@ export interface UpdateRiskIssueBody {
   impact?: number;
   owner_id?: string;
   mitigation?: string | null;
+  review_by?: string | null;
   status?: RiskStatusLiteral;
   dismissal_reason?: string | null;
   kind?: 'issue';
@@ -152,6 +154,7 @@ export interface ListRiskIssuesQuery {
   status?: RiskStatusLiteral | 'auto_resolved';
   kind?: RiskKindLiteral;
   stage_no?: number;
+  source?: 'manual' | 'auto_overdue_task';
   page?: number;
   limit?: number;
 }
@@ -179,6 +182,7 @@ export const createRiskIssueSchema = Joi.object<CreateRiskIssueBody>({
   impact: Joi.number().integer().min(1).max(5).required(),
   owner_id: Joi.string().uuid().optional(),
   mitigation: Joi.string().trim().max(10000).allow(null, '').optional(),
+  review_by: Joi.string().isoDate().allow(null).optional(),
   kind: Joi.string().valid('risk', 'issue').required(),
 });
 
@@ -191,6 +195,7 @@ export const updateRiskIssueSchema = Joi.object<UpdateRiskIssueBody>({
   impact: Joi.number().integer().min(1).max(5).optional(),
   owner_id: Joi.string().uuid().optional(),
   mitigation: Joi.string().trim().max(10000).allow(null, '').optional(),
+  review_by: Joi.string().isoDate().allow(null).optional(),
   status: Joi.string().valid('open', 'mitigated', 'closed', 'dismissed').optional(),
   // Required when transitioning to dismissed (AC-RSK-02).
   dismissal_reason: Joi.when('status', {
@@ -206,6 +211,7 @@ export const listRiskIssuesQuerySchema = Joi.object<ListRiskIssuesQuery>({
   status: Joi.string().valid('open', 'mitigated', 'closed', 'dismissed', 'auto_resolved').optional(),
   kind: Joi.string().valid('risk', 'issue').optional(),
   stage_no: Joi.number().integer().min(1).max(10).optional(),
+  source: Joi.string().valid('manual', 'auto_overdue_task').optional(),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(25),
 });

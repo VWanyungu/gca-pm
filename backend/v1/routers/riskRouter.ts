@@ -75,6 +75,7 @@ router.post('/', canManage, async (req, res) => {
             impact: input.impact,
             owner_id: input.owner_id ?? req.user!.userId,
             mitigation: input.mitigation ?? null,
+            review_by: input.review_by ?? null,
             status: 'open',
             source: 'manual',
             kind,
@@ -102,11 +103,30 @@ router.get('/', canView, async (req, res) => {
         return;
     }
     const { projectId } = params.value as { projectId: string };
-    const { status, kind, stage_no, page, limit } = query.value as ListRiskIssuesQuery;
+    const { status, kind, stage_no, source, page, limit } = query.value as ListRiskIssuesQuery;
 
     try {
-        const result = await RiskIssues.list({ projectId, status, kind, stageNo: stage_no, page, limit });
+        const result = await RiskIssues.list({ projectId, status, kind, stageNo: stage_no, source, page, limit });
         res.status(200).json({ status: 'success', data: result, message: 'Risk/issues retrieved' });
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        res.status(500).json({ status: 'error', data: null, message });
+    }
+});
+
+// Mounted here (rather than the global risk-categories router) so project-scoped
+// PM/Planner/SiteEngineer roles — who can't match a scope-less global route — can
+// list categories to populate the risk form.
+router.get('/categories', canView, async (req, res) => {
+    const params = riskIssueProjectParamsSchema.validate(req.params);
+    if (params.error) {
+        res.status(400).json({ status: 'error', data: null, message: params.error.message });
+        return;
+    }
+
+    try {
+        const result = await RiskCategories.list({ includeInactive: false, page: 1, limit: 100 });
+        res.status(200).json({ status: 'success', data: result, message: 'Risk categories retrieved' });
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
         res.status(500).json({ status: 'error', data: null, message });

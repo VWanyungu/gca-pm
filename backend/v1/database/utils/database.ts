@@ -486,6 +486,7 @@ export interface RiskIssueRow {
   score: number;
   owner_id: string;
   mitigation: string | null;
+  review_by: string | null;
   status: RiskStatus;
   addressed_at: Date | null;
   addressed_submission_id: string | null;
@@ -514,6 +515,7 @@ export interface RiskIssueCreateInput {
   impact: number;
   owner_id: string;
   mitigation: string | null;
+  review_by: string | null;
   status: RiskStatus;
   source: RiskSource;
   kind: RiskKind;
@@ -531,6 +533,7 @@ export interface RiskIssueUpdateFields {
   impact?: number;
   owner_id?: string;
   mitigation?: string | null;
+  review_by?: string | null;
   status?: RiskStatus;
   dismissal_reason?: string | null;
   closed_at?: Date | null;
@@ -541,7 +544,7 @@ export interface RiskIssueUpdateFields {
 
 const RISK_COLS = [
   'risk_id', 'project_id', 'stage_no', 'title', 'description', 'category_id',
-  'likelihood', 'impact', 'score', 'owner_id', 'mitigation', 'status',
+  'likelihood', 'impact', 'score', 'owner_id', 'mitigation', 'review_by', 'status',
   'addressed_at', 'addressed_submission_id', 'dismissal_reason', 'auto_resolution_reason',
   'source', 'source_task_id', 'source_schedule_version_id',
   'kind', 'realised_at', 'realised_by',
@@ -559,6 +562,7 @@ export class RiskIssues {
     status,
     kind,
     stageNo,
+    source,
     page = 1,
     limit = 25,
   }: {
@@ -566,6 +570,7 @@ export class RiskIssues {
     status?: RiskStatus;
     kind?: RiskKind;
     stageNo?: number;
+    source?: RiskSource;
     page?: number;
     limit?: number;
   }): Promise<{
@@ -576,6 +581,7 @@ export class RiskIssues {
     if (status) base.andWhere({ status });
     if (kind) base.andWhere({ kind });
     if (stageNo !== undefined) base.andWhere({ stage_no: stageNo });
+    if (source) base.andWhere({ source });
 
     const countRows = await base.clone().count<{ count: string }[]>('risk_id as count');
     const total = Number(countRows[0]?.count ?? 0);

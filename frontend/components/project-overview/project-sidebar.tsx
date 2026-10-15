@@ -33,7 +33,7 @@ interface ProjectSidebarProps {
   stages: StageRow[];
   counts?: { submit: number; risks: number; changeRequests: number };
   percentByStage?: Record<number, number>;
-  active: "overview" | "team" | "stages";
+  active: "overview" | "team" | "stages" | "risks";
   activeStageNo?: number;
 }
 
