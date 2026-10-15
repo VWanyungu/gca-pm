@@ -40,6 +40,7 @@ const canViewProject = authorize([
   { role: 'Admin', scopeType: 'global' },
   { role: 'ExCo', scopeType: 'global' },
   { role: 'ProjectCreator', scopeType: 'global' },
+  { role: 'PM', scopeType: 'global' },
   { role: 'PM', scopeType: 'project' },
   { role: 'Planner', scopeType: 'project' },
   { role: 'SiteEngineer', scopeType: 'project' },

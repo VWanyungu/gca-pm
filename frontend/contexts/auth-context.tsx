@@ -82,8 +82,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: res.data.email,
           role: res.data.role,
         });
+        return null;
       }
-     
+
       return res.message;
     } catch (error) {
       console.error("Login error:", error);

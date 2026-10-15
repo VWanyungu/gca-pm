@@ -7,6 +7,7 @@ interface PaginationProps {
   total: number;
   onPageChange: (page: number) => void;
   onPerPageChange: (perPage: number) => void;
+  label?: string;
 }
 
 export function Pagination({
@@ -16,6 +17,7 @@ export function Pagination({
   total,
   onPageChange,
   onPerPageChange,
+  label = "projects",
 }: PaginationProps) {
   return (
     <div className="flex items-center justify-between rounded-[12px] border border-gca-border px-[16px] py-[12px]">
@@ -35,7 +37,7 @@ export function Pagination({
           }}
           className="rounded-[8px] border border-gca-border bg-white px-[10px] py-[7px] w-12 font-mono font-medium text-gca-dark"
         />
-        <span>of {total} projects</span>
+        <span>of {total} {label}</span>
       </div>
 
       {/* Right: page buttons */}

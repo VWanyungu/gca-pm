@@ -18,6 +18,7 @@ import stageStateHistoryRouter from './routers/stageStateHistoryRouter.js';
 import projectStagesRouter from './routers/projectStagesRouter.js';
 import stageActivitiesRouter from './routers/stageActivitiesRouter.js';
 import stageActivityAttachmentsRouter from './routers/stageActivityAttachmentsRouter.js';
+import stageChecklistRouter from './routers/stageChecklistRouter.js';
 import projectsRouter from './routers/projectsRouter.js';
 import contractorsRouter from './routers/contractorsRouter.js';
 import projectContractorsRouter from './routers/projectContractorsRouter.js';
@@ -58,6 +59,7 @@ router.use(
   '/projects/:projectId/stage-activities/:activityId/attachments',
   stageActivityAttachmentsRouter,
 );
+router.use('/projects/:projectId/stages/:stageNo/checklist', stageChecklistRouter);
 router.use('/projects/:projectId/dpr', dprRouter);
 router.use('/projects/:projectId/dprs', dprRouter);
 router.use('/projects/:projectId/weekly-submission', weeklySubmissionRouter);

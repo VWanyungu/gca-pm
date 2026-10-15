@@ -63,9 +63,50 @@ export interface StageActivity {
   activity_id: string;
   stage_no: number;
   title: string;
+  description?: string | null;
   status: "open" | "in_progress" | "done" | "cancelled";
   due_date: string | null;
   owner_id: string | null;
+  completed_at?: string | null;
+  created_by?: string;
+  created_at?: string;
+}
+
+export interface StageActivityAttachment {
+  attachment_id: string;
+  activity_id: string;
+  caption: string | null;
+  sort_order: number;
+  uploaded_at: string;
+}
+
+export interface StageDetail {
+  project_id: string;
+  stage_no: number;
+  stage_name: string;
+  phase_id: number;
+  in_scope: boolean;
+  state: "not_started" | "active" | "inactive" | "complete";
+  added_to_scope_at: string;
+  last_changed_at: string;
+}
+
+export interface ChecklistItem {
+  item_id: string;
+  project_id: string;
+  stage_no: number;
+  text: string;
+  sort_order: number;
+  is_checked: boolean;
+}
+
+export interface StageRisk {
+  risk_id: string;
+  title: string;
+  status: "open" | "mitigated" | "closed" | "dismissed" | "auto_resolved";
+  kind: "risk" | "issue";
+  impact: number;
+  source: "manual" | "auto_overdue_task";
 }
 
 export interface Milestone {

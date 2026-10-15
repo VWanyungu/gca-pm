@@ -12,6 +12,7 @@ import {
 const router = express.Router({ mergeParams: true });
 
 const canView = authorize([
+  { role: 'PM', scopeType: 'global' },
   { role: 'PM', scopeType: 'project' },
   { role: 'Planner', scopeType: 'project' },
   { role: 'SiteEngineer', scopeType: 'project' },
