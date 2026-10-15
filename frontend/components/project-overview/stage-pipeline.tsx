@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { ChevronDown, Check, Lock, ChevronsUpDown } from "lucide-react";
 import { api } from "@/lib/api-client";
 import useOutsideClick from "@/hooks/use-outside-click";
@@ -184,8 +185,9 @@ export function StagePipeline({
           const checked = editMode ? pendingScope.has(s.stage_no) : s.in_scope;
           const pct = s.state === "complete" ? 100 : s.state === "active" ? (percentByStage[s.stage_no] ?? 0) : 0;
 
-          return (
-            <div key={s.stage_no} className="flex w-[98px] flex-col gap-[6px]">
+          const columnClassName = "flex w-[98px] flex-col gap-[6px]";
+          const columnContent = (
+            <>
               {s.in_scope ? (
                 <div className="h-[6px] w-[98px] overflow-hidden rounded-[3px] bg-gca-border">
                   <div
@@ -232,7 +234,17 @@ export function StagePipeline({
               <p className={`text-[12px] w-[98px] ${s.state === "active" ? "text-gca-green" : "text-gca-muted"}`}>
                 {!checked ? "Out of scope" : s.state === "active" ? `${pct}%` : STATE_LABEL[s.state]}
               </p>
+            </>
+          );
+
+          return editMode ? (
+            <div key={s.stage_no} className={columnClassName}>
+              {columnContent}
             </div>
+          ) : (
+            <Link key={s.stage_no} href={`/projects/${projectId}/stages/${s.stage_no}`} className={columnClassName}>
+              {columnContent}
+            </Link>
           );
         })}
       </div>

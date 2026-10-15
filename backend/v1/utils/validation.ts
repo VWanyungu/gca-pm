@@ -151,6 +151,7 @@ export interface UpdateRiskIssueBody {
 export interface ListRiskIssuesQuery {
   status?: RiskStatusLiteral | 'auto_resolved';
   kind?: RiskKindLiteral;
+  stage_no?: number;
   page?: number;
   limit?: number;
 }
@@ -204,6 +205,7 @@ export const updateRiskIssueSchema = Joi.object<UpdateRiskIssueBody>({
 export const listRiskIssuesQuerySchema = Joi.object<ListRiskIssuesQuery>({
   status: Joi.string().valid('open', 'mitigated', 'closed', 'dismissed', 'auto_resolved').optional(),
   kind: Joi.string().valid('risk', 'issue').optional(),
+  stage_no: Joi.number().integer().min(1).max(10).optional(),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(25),
 });
@@ -539,6 +541,35 @@ export const updateStageActivityAttachmentSchema = Joi.object<UpdateStageActivit
 export const listStageActivityAttachmentsQuerySchema = Joi.object<ListStageActivityAttachmentsQuery>({
   includeRemoved: Joi.boolean().default(false),
 });
+
+export interface CreateStageChecklistItemBody {
+  text: string;
+}
+
+export interface UpdateStageChecklistItemBody {
+  is_checked?: boolean;
+  text?: string;
+}
+
+export const stageChecklistProjectParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+  stageNo: Joi.number().integer().min(1).max(10).required(),
+});
+
+export const stageChecklistItemParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+  stageNo: Joi.number().integer().min(1).max(10).required(),
+  itemId: Joi.string().uuid().required(),
+});
+
+export const createStageChecklistItemSchema = Joi.object<CreateStageChecklistItemBody>({
+  text: Joi.string().trim().min(1).max(10000).required(),
+});
+
+export const updateStageChecklistItemSchema = Joi.object<UpdateStageChecklistItemBody>({
+  is_checked: Joi.boolean().optional(),
+  text: Joi.string().trim().min(1).max(10000).optional(),
+}).min(1);
 
 const PROJECT_STATUSES: ProjectStatus[] = ['active', 'on_hold', 'complete', 'cancelled'];
 

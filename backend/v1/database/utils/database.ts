@@ -558,15 +558,24 @@ export class RiskIssues {
     projectId,
     status,
     kind,
+    stageNo,
     page = 1,
     limit = 25,
-  }: { projectId: string; status?: RiskStatus; kind?: RiskKind; page?: number; limit?: number }): Promise<{
+  }: {
+    projectId: string;
+    status?: RiskStatus;
+    kind?: RiskKind;
+    stageNo?: number;
+    page?: number;
+    limit?: number;
+  }): Promise<{
     riskIssues: RiskIssueRow[];
     pagination: { page: number; limit: number; total: number; pages: number };
   }> {
     const base = db('risk').where({ project_id: projectId });
     if (status) base.andWhere({ status });
     if (kind) base.andWhere({ kind });
+    if (stageNo !== undefined) base.andWhere({ stage_no: stageNo });
 
     const countRows = await base.clone().count<{ count: string }[]>('risk_id as count');
     const total = Number(countRows[0]?.count ?? 0);
@@ -1098,6 +1107,102 @@ export class ProjectStages {
   }
 }
 
+export interface ProjectStageChecklistItemRow {
+  item_id: string;
+  project_id: string;
+  stage_no: number;
+  text: string;
+  sort_order: number;
+  is_checked: boolean;
+  created_by: string;
+  created_at: Date;
+  updated_by: string;
+  updated_at: Date;
+}
+
+const PROJECT_STAGE_CHECKLIST_ITEM_COLS = [
+  'item_id',
+  'project_id',
+  'stage_no',
+  'text',
+  'sort_order',
+  'is_checked',
+  'created_by',
+  'created_at',
+  'updated_by',
+  'updated_at',
+];
+
+export class ProjectStageChecklistItems {
+  static async list(projectId: string, stageNo: number): Promise<ProjectStageChecklistItemRow[]> {
+    return await db('project_stage_checklist_item')
+      .where({ project_id: projectId, stage_no: stageNo })
+      .orderBy('sort_order', 'asc')
+      .select(PROJECT_STAGE_CHECKLIST_ITEM_COLS);
+  }
+
+  static async getById(itemId: string, projectId: string, stageNo: number): Promise<ProjectStageChecklistItemRow | null> {
+    const row = await db('project_stage_checklist_item')
+      .where({ item_id: itemId, project_id: projectId, stage_no: stageNo })
+      .first();
+    return row ?? null;
+  }
+
+  static async create({
+    projectId,
+    stageNo,
+    text,
+    actorId,
+  }: {
+    projectId: string;
+    stageNo: number;
+    text: string;
+    actorId: string;
+  }): Promise<ProjectStageChecklistItemRow> {
+    const maxRows = await db('project_stage_checklist_item')
+      .where({ project_id: projectId, stage_no: stageNo })
+      .max<{ max: number | null }[]>('sort_order as max');
+    const max = maxRows[0]?.max ?? null;
+    const [row] = await db('project_stage_checklist_item')
+      .insert({
+        item_id: randomUUID(),
+        project_id: projectId,
+        stage_no: stageNo,
+        text,
+        sort_order: (max ?? -1) + 1,
+        created_by: actorId,
+        updated_by: actorId,
+      })
+      .returning(PROJECT_STAGE_CHECKLIST_ITEM_COLS);
+    return row;
+  }
+
+  static async update(
+    itemId: string,
+    projectId: string,
+    stageNo: number,
+    patch: { is_checked?: boolean; text?: string },
+    actorId: string,
+  ): Promise<ProjectStageChecklistItemRow | null> {
+    const [row] = await db('project_stage_checklist_item')
+      .where({ item_id: itemId, project_id: projectId, stage_no: stageNo })
+      .update({ ...patch, updated_by: actorId, updated_at: db.fn.now() })
+      .returning(PROJECT_STAGE_CHECKLIST_ITEM_COLS);
+    return row ?? null;
+  }
+
+  static async delete(itemId: string, projectId: string, stageNo: number): Promise<ProjectStageChecklistItemRow | null> {
+    const [row] = await db('project_stage_checklist_item')
+      .where({ item_id: itemId, project_id: projectId, stage_no: stageNo })
+      .del()
+      .returning(PROJECT_STAGE_CHECKLIST_ITEM_COLS);
+    return row ?? null;
+  }
+
+  static async deleteAll(projectId: string, stageNo: number): Promise<number> {
+    return await db('project_stage_checklist_item').where({ project_id: projectId, stage_no: stageNo }).del();
+  }
+}
 
 export type ProjectStatus = 'active' | 'on_hold' | 'complete' | 'cancelled';
 

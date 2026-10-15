@@ -29,6 +29,7 @@ const canCreateOrEdit = authorize([
 // AC-DPR-01: Read allowed for SiteEngineer, PM, Planner, ExCo, Admin
 const canView = authorize([
   { role: 'SiteEngineer', scopeType: 'project' },
+  { role: 'PM', scopeType: 'global' },
   { role: 'PM', scopeType: 'project' },
   { role: 'Planner', scopeType: 'project' },
   { role: 'ExCo', scopeType: 'global' },

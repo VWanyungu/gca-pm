@@ -33,10 +33,11 @@ interface ProjectSidebarProps {
   stages: StageRow[];
   counts?: { submit: number; risks: number; changeRequests: number };
   percentByStage?: Record<number, number>;
-  active: "overview" | "team";
+  active: "overview" | "team" | "stages";
+  activeStageNo?: number;
 }
 
-export function ProjectSidebar({ projectId, stages, counts, percentByStage, active }: ProjectSidebarProps) {
+export function ProjectSidebar({ projectId, stages, counts, percentByStage, active, activeStageNo }: ProjectSidebarProps) {
   const { user } = useAuth();
   const [stagesOpen, setStagesOpen] = useState(true);
 
@@ -128,10 +129,16 @@ export function ProjectSidebar({ projectId, stages, counts, percentByStage, acti
               <path d="M0.7 73.7 C0.7 78.7 3.7 80.7 9.7 80.7" stroke="#C9D3CB" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             {topStages.map((s) => {
-              const current = s.state === "active";
+              const viewing = s.stage_no === activeStageNo;
               return (
-                <div key={s.stage_no} className="flex h-[32px] items-center justify-between pl-[26px] pr-[12px] text-[13px]">
-                  <span className={current ? "font-medium text-gca-dark" : "font-normal text-gca-show"}>
+                <Link
+                  key={s.stage_no}
+                  href={`${base}/stages/${s.stage_no}`}
+                  className={`flex h-[32px] items-center justify-between rounded-[6px] pl-[26px] pr-[12px] text-[13px] ${
+                    viewing ? "bg-gca-badge-bg" : "hover:bg-white"
+                  }`}
+                >
+                  <span className={viewing ? "font-semibold text-gca-badge-text" : "font-normal text-gca-show"}>
                     {STAGE_SHORT_NAME[s.stage_no]}
                   </span>
                   <span className="font-mono text-[12px] text-gca-muted">
@@ -141,7 +148,7 @@ export function ProjectSidebar({ projectId, stages, counts, percentByStage, acti
                         ? `${percentByStage?.[s.stage_no] ?? 0}%`
                         : "Not started"}
                   </span>
-                </div>
+                </Link>
               );
             })}
             <Link
