@@ -11,6 +11,9 @@ import type {
   DprStatus,
   DprEffectsSeverity,
   DprProgressSource,
+  ChangeRequestType,
+  ChangeRequestStatus,
+  ChangeDecision,
 } from '../database/utils/database.js';
 
 export const createUserSchema = Joi.object<CreateUserInput>({
@@ -216,6 +219,102 @@ export const listRiskIssuesQuerySchema = Joi.object<ListRiskIssuesQuery>({
   limit: Joi.number().integer().min(1).max(100).default(25),
 });
 
+
+export interface CreateChangeRequestBody {
+  stage_no?: number | null;
+  type: ChangeRequestType;
+  title: string;
+  scope_description: string;
+  reason: string;
+  supporting_notes?: string | null;
+  cost_impact?: number | null;
+  cost_currency?: string | null;
+  schedule_impact_days?: number | null;
+}
+
+export interface UpdateChangeRequestBody {
+  stage_no?: number | null;
+  type?: ChangeRequestType;
+  title?: string;
+  scope_description?: string;
+  reason?: string;
+  supporting_notes?: string | null;
+  cost_impact?: number | null;
+  cost_currency?: string | null;
+  schedule_impact_days?: number | null;
+}
+
+export interface DecideChangeRequestBody {
+  decision: ChangeDecision;
+  comment?: string | null;
+}
+
+export interface ListChangeRequestsQuery {
+  stage_no?: number;
+  type?: ChangeRequestType;
+  status?: ChangeRequestStatus;
+  page?: number;
+  limit?: number;
+}
+
+export const changeRequestProjectParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+});
+
+export const changeRequestParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+  changeId: Joi.string().uuid().required(),
+});
+
+// AC-GEN-10: cost_currency pairs with cost_impact (ck_cr_cost_currency_pair).
+const costImpactField = Joi.number().precision(2).allow(null).optional();
+const costCurrencyField = Joi.when('cost_impact', {
+  is: Joi.number().required(),
+  then: Joi.string().length(3).uppercase().required(),
+  otherwise: Joi.string().length(3).uppercase().allow(null).optional(),
+});
+
+export const createChangeRequestSchema = Joi.object<CreateChangeRequestBody>({
+  stage_no: Joi.number().integer().min(1).max(10).allow(null).optional(),
+  type: Joi.string().valid('scope', 'schedule', 'cost').required(),
+  title: Joi.string().trim().min(1).max(500).required(),
+  scope_description: Joi.string().trim().min(1).max(10000).required(),
+  reason: Joi.string().trim().min(1).max(10000).required(),
+  supporting_notes: Joi.string().trim().max(10000).allow(null, '').optional(),
+  cost_impact: costImpactField,
+  cost_currency: costCurrencyField,
+  schedule_impact_days: Joi.number().integer().allow(null).optional(),
+});
+
+export const updateChangeRequestSchema = Joi.object<UpdateChangeRequestBody>({
+  stage_no: Joi.number().integer().min(1).max(10).allow(null).optional(),
+  type: Joi.string().valid('scope', 'schedule', 'cost').optional(),
+  title: Joi.string().trim().min(1).max(500).optional(),
+  scope_description: Joi.string().trim().min(1).max(10000).optional(),
+  reason: Joi.string().trim().min(1).max(10000).optional(),
+  supporting_notes: Joi.string().trim().max(10000).allow(null, '').optional(),
+  cost_impact: costImpactField,
+  cost_currency: costCurrencyField,
+  schedule_impact_days: Joi.number().integer().allow(null).optional(),
+}).min(1);
+
+export const decideChangeRequestSchema = Joi.object<DecideChangeRequestBody>({
+  decision: Joi.string().valid('approve', 'reject').required(),
+  // ck_ca_reject_comment_required
+  comment: Joi.when('decision', {
+    is: 'reject',
+    then: Joi.string().trim().min(1).max(10000).required(),
+    otherwise: Joi.string().trim().max(10000).allow(null, '').optional(),
+  }),
+});
+
+export const listChangeRequestsQuerySchema = Joi.object<ListChangeRequestsQuery>({
+  stage_no: Joi.number().integer().min(1).max(10).optional(),
+  type: Joi.string().valid('scope', 'schedule', 'cost').optional(),
+  status: Joi.string().valid('pending', 'approved', 'rejected', 'withdrawn').optional(),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(25),
+});
 
 export interface CreateProgramBody {
   name: string;

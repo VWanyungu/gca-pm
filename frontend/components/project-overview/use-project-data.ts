@@ -107,15 +107,15 @@ export function useSidebarCounts(projectId: string) {
   return useQuery({
     queryKey: ["project", projectId, "sidebar-counts"],
     queryFn: async () => {
-      const [submissions, risks, escalations] = await Promise.all([
+      const [submissions, risks, changeRequests] = await Promise.all([
         api.get<Pagination>(`/projects/${projectId}/weekly-submission?status=draft&limit=1`),
         api.get<Pagination>(`/projects/${projectId}/risks?status=open&limit=1`),
-        api.get<Pagination>(`/projects/${projectId}/escalations?status=open&limit=1`),
+        api.get<Pagination>(`/projects/${projectId}/change-requests?status=pending&limit=1`),
       ]);
       return {
         submit: unwrap(submissions).pagination.total,
         risks: unwrap(risks).pagination.total,
-        changeRequests: unwrap(escalations).pagination.total,
+        changeRequests: unwrap(changeRequests).pagination.total,
       };
     },
     staleTime: 30_000,

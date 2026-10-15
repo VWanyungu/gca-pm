@@ -54,3 +54,10 @@ export const CAN_VIEW_PROJECT: Permission[] = [
   { role: "Planner", scopeType: "project" },
   { role: "SiteEngineer", scopeType: "project" },
 ];
+
+export const CAN_RAISE_CHANGE_REQUEST: Permission[] = [
+  { role: "PM", scopeType: "project" },
+  { role: "SiteEngineer", scopeType: "project" },
+];
+
+export const CAN_DECIDE_CHANGE_REQUEST: Permission[] = [{ role: "ExCo", scopeType: "global" }];

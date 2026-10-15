@@ -33,7 +33,7 @@ interface ProjectSidebarProps {
   stages: StageRow[];
   counts?: { submit: number; risks: number; changeRequests: number };
   percentByStage?: Record<number, number>;
-  active: "overview" | "team" | "stages" | "risks";
+  active: "overview" | "team" | "stages" | "risks" | "change-requests";
   activeStageNo?: number;
 }
 
@@ -74,7 +74,7 @@ export function ProjectSidebar({
       key: "change-requests",
       label: "Change requests",
       icon: GitPullRequest,
-      href: `${base}/escalations`,
+      href: `${base}/change-requests`,
       count: counts?.changeRequests,
     },
     { key: "milestones", label: "Milestones", icon: Flag, href: `${base}/milestones` },

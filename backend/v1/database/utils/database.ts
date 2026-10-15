@@ -4672,6 +4672,242 @@ export class WeeklySubmissions {
   }
 }
 
+export type ChangeRequestStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn';
+export type ChangeRequestType = 'scope' | 'schedule' | 'cost';
+export type ChangeApproverRole = 'exco' | 'finance';
+export type ChangeDecision = 'approve' | 'reject';
+
+export interface ChangeRequestRow {
+  change_id: string;
+  project_id: string;
+  change_no: number;
+  stage_no: number | null;
+  type: ChangeRequestType;
+  title: string;
+  scope_description: string;
+  reason: string;
+  supporting_notes: string | null;
+  cost_impact: string | null;
+  cost_currency: string | null;
+  schedule_impact_days: number | null;
+  status: ChangeRequestStatus;
+  raised_by: string;
+  raised_at: Date;
+  decided_at: Date | null;
+  withdrawn_at: Date | null;
+}
+
+export interface ChangeApprovalRow {
+  approval_id: string;
+  change_id: string;
+  approver_role: ChangeApproverRole;
+  approver_id: string;
+  decision: ChangeDecision;
+  comment: string | null;
+  decided_at: Date;
+}
+
+export interface CreateChangeRequestInput {
+  project_id: string;
+  stage_no: number | null;
+  type: ChangeRequestType;
+  title: string;
+  scope_description: string;
+  reason: string;
+  supporting_notes: string | null;
+  cost_impact: number | null;
+  cost_currency: string | null;
+  schedule_impact_days: number | null;
+  raised_by: string;
+}
+
+export interface UpdateChangeRequestFields {
+  stage_no?: number | null;
+  type?: ChangeRequestType;
+  title?: string;
+  scope_description?: string;
+  reason?: string;
+  supporting_notes?: string | null;
+  cost_impact?: number | null;
+  cost_currency?: string | null;
+  schedule_impact_days?: number | null;
+}
+
+const CHANGE_REQUEST_COLS = [
+  'change_id', 'project_id', 'change_no', 'stage_no', 'type', 'title',
+  'scope_description', 'reason', 'supporting_notes', 'cost_impact', 'cost_currency',
+  'schedule_impact_days', 'status', 'raised_by', 'raised_at', 'decided_at', 'withdrawn_at',
+];
+
+// Required approver roles per AC-CHG-03. Finance is listed for future rollout (R2)
+// but has no role grants yet, so only 'exco' is enforced today.
+const REQUIRED_APPROVER_ROLES: ChangeApproverRole[] = ['exco'];
+
+export class ChangeRequests {
+  static async create(input: CreateChangeRequestInput): Promise<ChangeRequestRow> {
+    return db.transaction(async (trx) => {
+      // AC-CHG-01: change_no = max for project + 1. Row-locks existing rows of the
+      // project to serialize concurrent raises; a project's first ever change request
+      // has nothing to lock, which is an accepted race for how rarely that collides.
+      // Postgres rejects FOR UPDATE on an aggregate query, so lock the latest row directly.
+      const latest = await trx('change_request')
+        .where({ project_id: input.project_id })
+        .orderBy('change_no', 'desc')
+        .select('change_no')
+        .first()
+        .forUpdate();
+      const change_no = Number(latest?.change_no ?? 0) + 1;
+
+      const [row] = await trx('change_request')
+        .insert({
+          change_id: randomUUID(),
+          project_id: input.project_id,
+          change_no,
+          stage_no: input.stage_no,
+          type: input.type,
+          title: input.title,
+          scope_description: input.scope_description,
+          reason: input.reason,
+          supporting_notes: input.supporting_notes,
+          cost_impact: input.cost_impact,
+          cost_currency: input.cost_currency,
+          schedule_impact_days: input.schedule_impact_days,
+          status: 'pending',
+          raised_by: input.raised_by,
+        })
+        .returning(CHANGE_REQUEST_COLS);
+      return row;
+    });
+  }
+
+  static async list({
+    projectId,
+    stageNo,
+    type,
+    status,
+    page = 1,
+    limit = 25,
+  }: {
+    projectId: string;
+    stageNo?: number;
+    type?: ChangeRequestType;
+    status?: ChangeRequestStatus;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    changeRequests: ChangeRequestRow[];
+    pagination: { page: number; limit: number; total: number; pages: number };
+  }> {
+    const base = db('change_request').where({ project_id: projectId });
+    if (stageNo !== undefined) base.andWhere({ stage_no: stageNo });
+    if (type) base.andWhere({ type });
+    if (status) base.andWhere({ status });
+
+    const countRows = await base.clone().count<{ count: string }[]>('change_id as count');
+    const total = Number(countRows[0]?.count ?? 0);
+
+    const changeRequests = await base
+      .clone()
+      .select(CHANGE_REQUEST_COLS)
+      .orderBy('raised_at', 'desc')
+      .limit(limit)
+      .offset((page - 1) * limit);
+
+    return { changeRequests, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
+  }
+
+  static async getById(projectId: string, changeId: string): Promise<ChangeRequestRow | null> {
+    const row = await db('change_request').where({ project_id: projectId, change_id: changeId }).first();
+    return row ?? null;
+  }
+
+  static async update(
+    projectId: string,
+    changeId: string,
+    patch: UpdateChangeRequestFields,
+  ): Promise<ChangeRequestRow | null> {
+    const [row] = await db('change_request')
+      .where({ project_id: projectId, change_id: changeId })
+      .update(patch)
+      .returning(CHANGE_REQUEST_COLS);
+    return row ?? null;
+  }
+
+  // AC-CHG-02: decide (ExCo only). Gated on status = 'pending' so a concurrent second
+  // decision loses the row-count race instead of double-deciding (first decision wins).
+  static async decide({
+    changeId,
+    projectId,
+    approverId,
+    decision,
+    comment,
+  }: {
+    changeId: string;
+    projectId?: string;
+    approverId: string;
+    decision: ChangeDecision;
+    comment?: string | null;
+  }): Promise<{ changeRequest: ChangeRequestRow | null; alreadyDecided: boolean; current?: ChangeRequestRow | null }> {
+    return db.transaction(async (trx) => {
+      let query = trx('change_request').where({ change_id: changeId, status: 'pending' });
+      if (projectId) query = query.andWhere({ project_id: projectId });
+
+      const rows = await query.forUpdate().select(CHANGE_REQUEST_COLS);
+      if (rows.length === 0) {
+        let current = trx('change_request').where({ change_id: changeId });
+        if (projectId) current = current.andWhere({ project_id: projectId });
+        return { changeRequest: null, alreadyDecided: true, current: (await current.first()) ?? null };
+      }
+
+      await trx('change_approval').insert({
+        approval_id: randomUUID(),
+        change_id: changeId,
+        approver_role: 'exco',
+        approver_id: approverId,
+        decision,
+        comment: comment ?? null,
+      });
+
+      // AC-CHG-03: status becomes approved only once every required role has
+      // approved, rejected as soon as any required role rejects. REQUIRED_APPROVER_ROLES
+      // is ['exco'] today, so a single approval already satisfies it.
+      let status: ChangeRequestStatus = 'pending';
+      if (decision === 'reject') {
+        status = 'rejected';
+      } else {
+        const approvals = await trx('change_approval')
+          .where({ change_id: changeId, decision: 'approve' })
+          .pluck('approver_role');
+        const satisfied = REQUIRED_APPROVER_ROLES.every((role) => approvals.includes(role));
+        status = satisfied ? 'approved' : 'pending';
+      }
+
+      const [changeRequest] =
+        status === 'pending'
+          ? [rows[0]]
+          : await trx('change_request')
+              .where({ change_id: changeId })
+              .update({ status, decided_at: new Date() })
+              .returning(CHANGE_REQUEST_COLS);
+
+      return { changeRequest, alreadyDecided: false };
+    });
+  }
+
+  // AC-CHG-04: withdraw — only the raiser, only while pending.
+  static async withdraw(
+    projectId: string,
+    changeId: string,
+    raisedBy: string,
+  ): Promise<ChangeRequestRow | null> {
+    const [row] = await db('change_request')
+      .where({ project_id: projectId, change_id: changeId, status: 'pending', raised_by: raisedBy })
+      .update({ status: 'withdrawn', withdrawn_at: new Date() })
+      .returning(CHANGE_REQUEST_COLS);
+    return row ?? null;
+  }
+}
+
 
 
 
