@@ -25,7 +25,15 @@ interface AddActivityFormProps {
   onCancel: () => void;
 }
 
-export function AddActivityForm({ projectId, stageNo, stageName, team, editing, onDone, onCancel }: AddActivityFormProps) {
+export function AddActivityForm({
+  projectId,
+  stageNo,
+  stageName,
+  team,
+  editing,
+  onDone,
+  onCancel,
+}: AddActivityFormProps) {
   const [title, setTitle] = useState(editing?.title ?? "");
   const [description, setDescription] = useState(editing?.description ?? "");
   const [ownerId, setOwnerId] = useState(editing?.owner_id ?? "");
@@ -52,7 +60,10 @@ export function AddActivityForm({ projectId, stageNo, stageName, team, editing, 
     };
 
     if (editing) {
-      const res = await api.patch(`/projects/${projectId}/stage-activities/${editing.activity_id}`, body);
+      const res = await api.patch(
+        `/projects/${projectId}/stage-activities/${editing.activity_id}`,
+        body,
+      );
       setSaving(false);
       if (res.status !== "success") {
         setError(res.message || "Couldn't save the activity");
@@ -65,7 +76,10 @@ export function AddActivityForm({ projectId, stageNo, stageName, team, editing, 
     if (file) {
       body.attachment = { file: await fileToDataUri(file), caption: file.name };
     }
-    const res = await api.post(`/projects/${projectId}/stage-activities`, { ...body, stage_no: stageNo });
+    const res = await api.post(`/projects/${projectId}/stage-activities`, {
+      ...body,
+      stage_no: stageNo,
+    });
     setSaving(false);
     if (res.status !== "success") {
       setError(res.message || "Couldn't add the activity");
@@ -76,22 +90,31 @@ export function AddActivityForm({ projectId, stageNo, stageName, team, editing, 
 
   return (
     <div className="flex w-full flex-col gap-[24px]">
-      <button onClick={onCancel} className="flex items-center gap-[6px] text-[14px] font-medium text-gca-green">
-        <ArrowLeft className="size-[13px]" />
+      <button
+        onClick={onCancel}
+        className="cursor-pointer flex items-center gap-[6px] text-[14px] font-medium text-gca-green"
+      >
+        <ArrowLeft className="size-[18]" />
         All activities
       </button>
 
       <div className="flex flex-col gap-[2px]">
-        <h2 className="text-[20px] font-semibold text-gca-dark">{editing ? "Edit activity" : "New activity"}</h2>
+        <h2 className="text-[20px] font-semibold text-gca-dark">
+          {editing ? "Edit activity" : "New activity"}
+        </h2>
         <p className="text-[14px] text-gca-show">{stageName}</p>
       </div>
 
-      {error && <p className="rounded-[8px] bg-error-bg px-[14px] py-[10px] text-[13px] text-error-text">{error}</p>}
+      {error && (
+        <p className="rounded-[8px] bg-error-bg px-[14px] py-[10px] text-[13px] text-error-text">
+          {error}
+        </p>
+      )}
 
       <div className="flex w-full items-start gap-[48px] border-t border-gca-border pt-[24px]">
         <div className="w-[280px] shrink-0">
           <p className="text-[14px] font-semibold text-gca-dark">Activity</p>
-          <p className="mt-[4px] text-[13px] text-gca-show">What needs doing in this stage.</p>
+          <p className="mt-[4px] text-[13px] text-gca-show">What should be done in this stage.</p>
         </div>
         <div className="flex w-full max-w-[792px] flex-col gap-[16px]">
           <div className="flex flex-col gap-[6px]">
@@ -121,7 +144,9 @@ export function AddActivityForm({ projectId, stageNo, stageName, team, editing, 
       <div className="flex w-full items-start gap-[48px] border-t border-gca-border pt-[24px]">
         <div className="w-[280px] shrink-0">
           <p className="text-[14px] font-semibold text-gca-dark">Owner and timing</p>
-          <p className="mt-[4px] text-[13px] text-gca-show">One owner, one date. Overdue activities show on the overview.</p>
+          <p className="mt-[4px] text-[13px] text-gca-show">
+            One owner, one date. Overdue activities show on the overview.
+          </p>
         </div>
         <div className="flex w-full max-w-[792px] gap-[16px]">
           <div className="flex w-full flex-col gap-[6px]">
@@ -157,27 +182,36 @@ export function AddActivityForm({ projectId, stageNo, stageName, team, editing, 
             <p className="text-[14px] font-semibold text-gca-dark">Attachment</p>
             <p className="mt-[4px] text-[13px] text-gca-show">Specs, quotes or photos.</p>
           </div>
-          <div className="w-full max-w-[792px]">
-            <label className="flex h-[55px] w-full cursor-pointer items-center justify-center rounded-[8px] border border-dashed border-gca-border text-[13px] text-gca-show">
-              {file ? file.name : (
+          <div className="w-full max-w-[792px] bg-gca-page-bg">
+            <label className="flex min-h-[100px] w-full cursor-pointer items-center justify-center rounded-[8px] border border-dashed border-gca-border text-[13px] text-gca-show">
+              {file ? (
+                file.name
+              ) : (
                 <>
                   Drop a file or <span className="pl-[4px] font-medium text-gca-green">browse</span>
                 </>
               )}
-              <input type="file" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+              <input
+                type="file"
+                className="hidden"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
             </label>
           </div>
         </div>
       )}
 
-      <div className="flex w-full items-center justify-end gap-[16px] border-t border-gca-border pt-[20px]">
-        <button onClick={onCancel} className="text-[14px] font-medium text-gca-show">
+      <div className="flex w-full items-center justify-between gap-[16px] border-t border-gca-border pt-[20px]">
+        <button
+          onClick={onCancel}
+          className="cursor-pointer hover:text-red-500 text-[14px] font-medium text-gca-show"
+        >
           Cancel
         </button>
         <button
           onClick={submit}
           disabled={saving}
-          className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
+          className={`cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50`}
         >
           {editing ? "Save changes" : "Add activity"}
         </button>

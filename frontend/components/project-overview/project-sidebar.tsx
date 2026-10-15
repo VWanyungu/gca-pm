@@ -37,18 +37,39 @@ interface ProjectSidebarProps {
   activeStageNo?: number;
 }
 
-export function ProjectSidebar({ projectId, stages, counts, percentByStage, active, activeStageNo }: ProjectSidebarProps) {
+export function ProjectSidebar({
+  projectId,
+  stages,
+  counts,
+  percentByStage,
+  active,
+  activeStageNo,
+}: ProjectSidebarProps) {
   const { user } = useAuth();
   const [stagesOpen, setStagesOpen] = useState(true);
 
-  const myRole = user?.role.find((r) => r.scope_type === "project" && r.project_id === projectId)?.role;
+  const myRole = user?.role.find(
+    (r) => r.scope_type === "project" && r.project_id === projectId,
+  )?.role;
 
   const base = `/projects/${projectId}`;
   const navItems = [
     { key: "overview", label: "Overview", icon: LayoutGrid, href: base },
     { key: "schedule", label: "Schedule", icon: CalendarRange, href: `${base}/schedule` },
-    { key: "submit", label: "Submit", icon: Send, href: `${base}/weekly-submission`, count: counts?.submit },
-    { key: "risks", label: "Risks", icon: AlertTriangle, href: `${base}/risks`, count: counts?.risks },
+    {
+      key: "submit",
+      label: "Submit",
+      icon: Send,
+      href: `${base}/weekly-submission`,
+      count: counts?.submit,
+    },
+    {
+      key: "risks",
+      label: "Risks",
+      icon: AlertTriangle,
+      href: `${base}/risks`,
+      count: counts?.risks,
+    },
     {
       key: "change-requests",
       label: "Change requests",
@@ -88,7 +109,9 @@ export function ProjectSidebar({ projectId, stages, counts, percentByStage, acti
             >
               <span className="flex items-center gap-[10px]">
                 <Icon className={`size-[16px] ${isActive ? "text-gca-green" : "text-gca-show"}`} />
-                <span className={`text-[14px] ${isActive ? "font-semibold text-gca-green-hover" : "font-medium text-gca-show"}`}>
+                <span
+                  className={`text-[14px] ${isActive ? "font-semibold text-gca-green-hover" : "font-medium text-gca-show"}`}
+                >
                   {item.label}
                 </span>
               </span>
@@ -99,7 +122,8 @@ export function ProjectSidebar({ projectId, stages, counts, percentByStage, acti
           );
         })}
 
-        <button
+        {/* Stages */}
+        {/* <button
           onClick={() => setStagesOpen((o) => !o)}
           className="flex items-center justify-between rounded-[8px] px-[12px] py-[8px] hover:bg-white"
         >
@@ -159,7 +183,7 @@ export function ProjectSidebar({ projectId, stages, counts, percentByStage, acti
               <ChevronRight className="size-[10px]" />
             </Link>
           </div>
-        )}
+        )} */}
       </div>
 
       <div className="flex flex-col gap-[2px] border-t border-gca-border px-[12px] py-[8px]">

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShieldCheck } from "lucide-react";
+import { ArrowRight, ShieldCheck } from "lucide-react";
 import { useStageRisks } from "./use-stage-view-data";
 import type { StageRisk } from "@/components/project-overview/types";
 
@@ -23,8 +23,11 @@ export function StageRisksCard({ projectId, stageNo }: { projectId: string; stag
     <div className="flex w-full flex-col gap-[16px] rounded-[12px] bg-gca-page-bg p-[24px]">
       <div className="flex items-center justify-between">
         <p className="text-[16px] font-semibold text-gca-dark">Stage risks & changes</p>
-        <Link href={`/projects/${projectId}/risks`} className="text-[13px] font-medium text-gca-green">
-          View all →
+        <Link
+          href={`/projects/${projectId}/risks`}
+          className="flex gap-[6px] items-center text-[13px] font-medium text-gca-green"
+        >
+          View all <ArrowRight className="size-[18]" />
         </Link>
       </div>
 
@@ -34,8 +37,13 @@ export function StageRisksCard({ projectId, stageNo }: { projectId: string; stag
             <ShieldCheck className="size-[18px] text-gca-green" />
           </span>
           <p className="text-[14px] font-semibold text-gca-dark">Nothing raised for this stage</p>
-          <p className="text-[13px] text-gca-show">Risks and issues tagged to this stage show here.</p>
-          <Link href={`/projects/${projectId}/risks`} className="text-[13px] font-medium text-gca-green">
+          <p className="text-[13px] text-gca-show">
+            Risks and issues tagged to this stage show here.
+          </p>
+          <Link
+            href={`/projects/${projectId}/risks`}
+            className="text-[13px] font-medium text-gca-green"
+          >
             Raise a risk
           </Link>
         </div>

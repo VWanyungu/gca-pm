@@ -11,11 +11,16 @@ const STATE_SUBTITLE: Record<StageDetail["state"], (pct: number, date: string) =
 };
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 interface StageHeaderProps {
   stage: StageDetail;
+  stageNo: number;
   percentComplete: number;
   canManage: boolean;
   hasChecklist: boolean;
@@ -25,6 +30,7 @@ interface StageHeaderProps {
 
 export function StageHeader({
   stage,
+  stageNo,
   percentComplete,
   canManage,
   hasChecklist,
@@ -39,7 +45,9 @@ export function StageHeader({
   return (
     <div className="flex w-full items-start justify-between">
       <div className="flex flex-col gap-[4px]">
-        <h1 className="text-[20px] font-semibold tracking-[-0.3px] text-gca-dark">{stage.stage_name}</h1>
+        <h1 className="text-[20px] font-semibold tracking-[-0.3px] text-gca-dark">
+          Stage {stageNo} : {stage.stage_name}
+        </h1>
         <p className="text-[13px] text-gca-show">{subtitle}</p>
       </div>
       {canManage && (
@@ -47,7 +55,7 @@ export function StageHeader({
           {!hasChecklist && (
             <button
               onClick={onAddChecklist}
-              className="flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+              className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
             >
               <Plus className="size-[10px]" />
               Add a checklist
@@ -56,7 +64,7 @@ export function StageHeader({
           <button
             onClick={onToggleComplete}
             disabled={stage.state === "not_started"}
-            className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
+            className={`${stage.state === "complete" ? "border border-gca-green text-gca-dark hover:text-gca-green" : "bg-gca-green hover:bg-gca-green-hover text-white"} cursor-pointer rounded-[8px] px-[16px] py-[10px] text-[14px] font-semibold disabled:opacity-50`}
           >
             {stage.state === "complete" ? "Reopen stage" : "Mark as complete"}
           </button>

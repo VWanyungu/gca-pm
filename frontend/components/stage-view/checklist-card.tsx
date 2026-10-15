@@ -13,7 +13,13 @@ interface ChecklistCardProps {
   onRemoved: () => void;
 }
 
-export function ChecklistCard({ projectId, stageNo, canManage, revealed, onRemoved }: ChecklistCardProps) {
+export function ChecklistCard({
+  projectId,
+  stageNo,
+  canManage,
+  revealed,
+  onRemoved,
+}: ChecklistCardProps) {
   const { data: items = [] } = useStageChecklist(projectId, stageNo);
   const invalidate = useStageViewInvalidate(projectId, stageNo);
   const [newItemText, setNewItemText] = useState("");
@@ -24,14 +30,18 @@ export function ChecklistCard({ projectId, stageNo, canManage, revealed, onRemov
   const doneCount = items.filter((item) => item.is_checked).length;
 
   async function toggle(itemId: string, checked: boolean) {
-    await api.patch(`/projects/${projectId}/stages/${stageNo}/checklist/${itemId}`, { is_checked: !checked });
+    await api.patch(`/projects/${projectId}/stages/${stageNo}/checklist/${itemId}`, {
+      is_checked: !checked,
+    });
     invalidate();
   }
 
   async function addItem() {
     if (!newItemText.trim()) return;
     setSaving(true);
-    await api.post(`/projects/${projectId}/stages/${stageNo}/checklist`, { text: newItemText.trim() });
+    await api.post(`/projects/${projectId}/stages/${stageNo}/checklist`, {
+      text: newItemText.trim(),
+    });
     setSaving(false);
     setNewItemText("");
     invalidate();
@@ -75,14 +85,27 @@ export function ChecklistCard({ projectId, stageNo, canManage, revealed, onRemov
               >
                 {item.is_checked && (
                   <svg viewBox="0 0 10 8" className="size-[10px]" fill="none">
-                    <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path
+                      d="M1 4L3.5 6.5L9 1"
+                      stroke="white"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 )}
               </span>
-              <span className={`text-[13px] ${item.is_checked ? "text-gca-show" : "text-gca-dark"}`}>{item.text}</span>
+              <span
+                className={`text-[13px] ${item.is_checked ? "text-gca-show" : "text-gca-dark"}`}
+              >
+                {item.text}
+              </span>
             </button>
             {canManage && (
-              <button onClick={() => removeItem(item.item_id)} className="shrink-0 text-gca-muted">
+              <button
+                onClick={() => removeItem(item.item_id)}
+                className="cursor-pointer shrink-0 text-gca-muted"
+              >
                 <X className="size-[18px]" />
               </button>
             )}
@@ -103,13 +126,16 @@ export function ChecklistCard({ projectId, stageNo, canManage, revealed, onRemov
             <button
               onClick={addItem}
               disabled={saving || !newItemText.trim()}
-              className="h-[39px] shrink-0 rounded-[8px] border border-gca-border bg-white px-[12px] text-[13px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
+              className="cursor-pointer h-[39px] shrink-0 rounded-[8px] border border-gca-border bg-white px-[12px] text-[13px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
             >
               Add
             </button>
           </div>
 
-          <button onClick={removeChecklist} className="text-left text-[13px] font-medium text-error-text">
+          <button
+            onClick={removeChecklist}
+            className="cursor-pointer text-left text-[13px] font-medium text-error-text"
+          >
             Remove checklist
           </button>
         </>

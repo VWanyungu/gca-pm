@@ -5,7 +5,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_MANAGE_PROJECT } from "@/lib/access-control";
 import { api } from "@/lib/api-client";
 import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
-import { useProjectDetail, useProjectTeam, useStageActivities } from "@/components/project-overview/use-project-data";
+import {
+  useProjectDetail,
+  useProjectTeam,
+  useStageActivities,
+} from "@/components/project-overview/use-project-data";
 import { useProjectStage, useStageChecklist, useStageViewInvalidate } from "./use-stage-view-data";
 import { StageHeader } from "./stage-header";
 import { ActivitiesTable } from "./activities-table";
@@ -15,7 +19,11 @@ import { ChecklistCard } from "./checklist-card";
 import { StageRisksCard } from "./stage-risks-card";
 import type { StageActivity } from "@/components/project-overview/types";
 
-type SubView = { mode: "list" } | { mode: "add" } | { mode: "edit"; activityId: string } | { mode: "detail"; activityId: string };
+type SubView =
+  | { mode: "list" }
+  | { mode: "add" }
+  | { mode: "edit"; activityId: string }
+  | { mode: "detail"; activityId: string };
 
 export function StageView({ projectId, stageNo }: { projectId: string; stageNo: number }) {
   const { user } = useAuth();
@@ -52,20 +60,30 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
     );
   }
   if (error || !stage || !project) {
-    return <p className="p-[40px] text-[14px] text-error-text">{error?.message ?? "Stage not found"}</p>;
+    return (
+      <p className="p-[40px] text-[14px] text-error-text">{error?.message ?? "Stage not found"}</p>
+    );
   }
 
   const editingActivity =
-    subView.mode === "edit" ? allActivities.find((a) => a.activity_id === subView.activityId) : undefined;
+    subView.mode === "edit"
+      ? allActivities.find((a) => a.activity_id === subView.activityId)
+      : undefined;
 
   return (
     <div className="flex min-h-[calc(100vh-64px)] w-full">
-      <ProjectSidebar projectId={projectId} stages={project.stages} active="stages" activeStageNo={stageNo} />
+      <ProjectSidebar
+        projectId={projectId}
+        stages={project.stages}
+        active="stages"
+        activeStageNo={stageNo}
+      />
 
       <div className="flex w-full justify-center">
         <main className="flex w-full max-w-[1200px] flex-col gap-[24px] p-[40px]">
           <StageHeader
             stage={stage}
+            stageNo={stageNo}
             percentComplete={percentComplete}
             canManage={canManage}
             hasChecklist={checklistItems.length > 0}
@@ -128,7 +146,9 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
               team={team}
               editing={editingActivity}
               onDone={() => setSubView({ mode: "detail", activityId: editingActivity.activity_id })}
-              onCancel={() => setSubView({ mode: "detail", activityId: editingActivity.activity_id })}
+              onCancel={() =>
+                setSubView({ mode: "detail", activityId: editingActivity.activity_id })
+              }
             />
           )}
         </main>

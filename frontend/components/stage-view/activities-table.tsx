@@ -15,7 +15,9 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 function isOverdue(activity: StageActivity) {
-  return activity.status === "open" && !!activity.due_date && new Date(activity.due_date) < new Date();
+  return (
+    activity.status === "open" && !!activity.due_date && new Date(activity.due_date) < new Date()
+  );
 }
 
 function statusLabel(activity: StageActivity) {
@@ -39,7 +41,13 @@ interface ActivitiesTableProps {
   onOpenActivity: (activityId: string) => void;
 }
 
-export function ActivitiesTable({ projectId, stageNo, team, onAddActivity, onOpenActivity }: ActivitiesTableProps) {
+export function ActivitiesTable({
+  projectId,
+  stageNo,
+  team,
+  onAddActivity,
+  onOpenActivity,
+}: ActivitiesTableProps) {
   const [tab, setTab] = useState<"all" | "open" | "done">("all");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(6);
@@ -84,7 +92,9 @@ export function ActivitiesTable({ projectId, stageNo, team, onAddActivity, onOpe
   async function markSelectedComplete() {
     setMarking(true);
     await Promise.all(
-      [...selected].map((id) => api.patch(`/projects/${projectId}/stage-activities/${id}`, { status: "done" })),
+      [...selected].map((id) =>
+        api.patch(`/projects/${projectId}/stage-activities/${id}`, { status: "done" }),
+      ),
     );
     setMarking(false);
     setSelected(new Set());
@@ -106,7 +116,7 @@ export function ActivitiesTable({ projectId, stageNo, team, onAddActivity, onOpe
               <button
                 key={t}
                 onClick={() => changeTab(t)}
-                className={`rounded-[6px] px-[10px] py-[5px] text-[13px] ${
+                className={`cursor-pointer rounded-[6px] px-[10px] py-[5px] text-[13px] ${
                   tab === t
                     ? "bg-white font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                     : "font-normal text-gca-show"
@@ -118,7 +128,7 @@ export function ActivitiesTable({ projectId, stageNo, team, onAddActivity, onOpe
           </div>
           <button
             onClick={onAddActivity}
-            className="flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+            className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
           >
             <Plus className="size-[10px]" />
             Add activity
@@ -127,37 +137,56 @@ export function ActivitiesTable({ projectId, stageNo, team, onAddActivity, onOpe
       </div>
 
       {activities.length === 0 ? (
-        <div className="flex flex-col items-center gap-[16px] py-[56px]">
-          <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-gca-page-bg">
-            <ClipboardList className="size-[18px] text-gca-green" />
-          </span>
-          <div className="flex flex-col items-center gap-[4px] text-center">
-            <p className="text-[14px] font-semibold text-gca-dark">Plan the work for this stage</p>
-            <p className="max-w-[420px] text-[13px] text-gca-show">
-              Add activities with an owner and due date. They show on the overview when overdue.
-            </p>
+        <>
+          <div className="flex flex-col items-center gap-[16px] py-[56px]">
+            <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-gca-page-bg">
+              <ClipboardList className="size-[18px] text-gca-green" />
+            </span>
+            <div className="flex flex-col items-center gap-[4px] text-center">
+              <p className="text-[14px] font-semibold text-gca-dark">
+                {tab === "all"
+                  ? "Plan the work for this stage"
+                  : tab === "open"
+                    ? "No open activities"
+                    : "No completed activities"}
+              </p>
+              <p className="max-w-[420px] text-[13px] text-gca-show">
+                {tab === "all"
+                  ? "Add activities with an owner and due date. They show on the overview when overdue."
+                  : tab === "open"
+                    ? "Open activities will show up here."
+                    : "Completed activities will show up here."}
+              </p>
+            </div>
+            {tab === "all" && (
+              <button
+                onClick={onAddActivity}
+                className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
+              >
+                Add activity
+              </button>
+            )}
           </div>
-          <button
-            onClick={onAddActivity}
-            className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
-          >
-            Add activity
-          </button>
-        </div>
+        </>
       ) : (
         <>
           {selected.size > 0 && (
             <div className="flex w-full items-center justify-between rounded-[10px] bg-gca-badge-bg px-[16px] py-[10px]">
-              <button onClick={toggleSelectAll} className="flex items-center gap-[10px]">
+              <button
+                onClick={toggleSelectAll}
+                className="cursor-pointer flex items-center gap-[10px]"
+              >
                 <span className="flex size-[16px] items-center justify-center rounded-[4px] border-2 border-gca-green bg-gca-green">
                   <Check className="size-[11px] text-white" />
                 </span>
-                <span className="text-[13px] font-medium text-gca-badge-text">{selected.size} selected</span>
+                <span className="text-[13px] font-medium text-gca-badge-text">
+                  {selected.size} selected
+                </span>
               </button>
               <button
                 onClick={markSelectedComplete}
                 disabled={marking}
-                className="rounded-[8px] bg-gca-green px-[16px] py-[8px] text-[13px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
+                className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[8px] text-[13px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
               >
                 Mark {selected.size} as complete
               </button>
@@ -165,63 +194,78 @@ export function ActivitiesTable({ projectId, stageNo, team, onAddActivity, onOpe
           )}
 
           <div className="flex w-full flex-col">
-            <div className="flex w-full items-center gap-[10px] py-[8px] text-[12px] font-medium text-gca-muted">
-              <span className="flex size-[16px] shrink-0 items-center justify-center">
-                {selectableIds.length > 0 && (
+            <div className="flex w-full items-center gap-[10px] py-[8px] text-[12px] font-medium text-gca-muted border-b border-gca-border">
+              {selectableIds.length > 0 && (
+                <span className="flex size-[16px] shrink-0 items-center justify-center">
                   <button
                     onClick={toggleSelectAll}
-                    className={`flex size-[16px] items-center justify-center rounded-[4px] border-2 ${
+                    className={`cursor-pointer flex size-[16px] items-center justify-center rounded-[4px] border-2 ${
                       allSelected ? "border-gca-green bg-gca-green" : "border-gca-border"
                     }`}
                   >
                     {allSelected && <Check className="size-[11px] text-white" />}
                   </button>
-                )}
-              </span>
+                </span>
+              )}
               <p className="w-[57%]">Activity</p>
-              <p className="w-[20%]">Due</p>
-              <p className="w-[20%]">Status</p>
+              <p className="w-[20%] text-center">Due</p>
+              <p className="w-[20%] text-center">Status</p>
             </div>
             {activities.map((activity, i) => (
               <div
                 key={activity.activity_id}
-                className={`flex w-full items-center gap-[10px] py-[12px] ${i > 0 ? "border-t border-gca-border" : ""}`}
+                className={`*:cursor-pointer flex w-full items-center gap-[10px] py-[12px] ${i > 0 ? "border-t border-gca-border" : ""}`}
               >
                 <span className="flex size-[16px] shrink-0 items-center justify-center">
-                  {activity.status !== "done" && (
-                    <button
-                      onClick={() => toggleSelected(activity.activity_id)}
-                      className={`flex size-[16px] items-center justify-center rounded-[4px] border-2 ${
-                        selected.has(activity.activity_id) ? "border-gca-green bg-gca-green" : "border-gca-border"
-                      }`}
-                    >
-                      {selected.has(activity.activity_id) && <Check className="size-[11px] text-white" />}
-                    </button>
-                  )}
+                  {/* {activity.status !== "done" && ( */}
+                  <button
+                    onClick={() => toggleSelected(activity.activity_id)}
+                    className={`cursor-pointer flex size-[16px] items-center justify-center rounded-[4px] border-2 ${
+                      selected.has(activity.activity_id)
+                        ? "border-gca-green bg-gca-green"
+                        : "border-gca-border"
+                    }`}
+                  >
+                    {selected.has(activity.activity_id) && (
+                      <Check className="size-[11px] text-white" />
+                    )}
+                  </button>
+                  {/* )} */}
                 </span>
                 <button
                   onClick={() => onOpenActivity(activity.activity_id)}
-                  className="flex flex-1 items-center text-left"
+                  className="cursor-pointer flex flex-1 items-center text-left"
                 >
                   <div className="flex w-[60%] items-center gap-[10px]">
-                    <span
+                    {/* <span
                       className={`flex size-[16px] shrink-0 items-center justify-center rounded-[4px] border-2 ${
-                        activity.status === "done" ? "border-gca-green bg-gca-green" : "border-gca-border"
+                        activity.status === "done"
+                          ? "border-gca-green bg-gca-green"
+                          : "border-gca-border"
                       }`}
-                    />
+                    /> */}
                     <div className="flex flex-col gap-[2px]">
                       <p className="text-[13px] font-medium text-gca-dark">{activity.title}</p>
-                      <p className="text-[12px] text-gca-muted">{ownerName(activity.owner_id, team)}</p>
+                      <p className="text-[12px] text-gca-muted">
+                        {ownerName(activity.owner_id, team)}
+                      </p>
                     </div>
                   </div>
-                  <p className="w-[25%] text-[13px] text-gca-dark">
+                  <p
+                    className={`${selectableIds.length > 0 ? "w-[21%]" : "w-[22.5%]"} text-[13px] text-center text-gca-dark`}
+                  >
                     {activity.due_date
-                      ? new Date(activity.due_date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+                      ? new Date(activity.due_date).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                        })
                       : "—"}
                   </p>
                   <p
-                    className={`w-[25%] text-[13px] font-semibold ${
-                      isOverdue(activity) ? "text-error-text" : STATUS_STYLE[activity.status] ?? "text-gca-show"
+                    className={`${selectableIds.length > 0 ? "w-[21%]" : "w-[22.5%]"} text-[13px] text-center font-semibold ${
+                      isOverdue(activity)
+                        ? "text-error-text"
+                        : (STATUS_STYLE[activity.status] ?? "text-gca-show")
                     }`}
                   >
                     {statusLabel(activity)}
@@ -231,18 +275,20 @@ export function ActivitiesTable({ projectId, stageNo, team, onAddActivity, onOpe
             ))}
           </div>
 
-          <Pagination
-            page={page}
-            totalPages={Math.max(pages, 1)}
-            perPage={perPage}
-            total={total}
-            onPageChange={setPage}
-            onPerPageChange={(n) => {
-              setPerPage(n);
-              setPage(1);
-            }}
-            label="activities"
-          />
+          {pages > 1 && (
+            <Pagination
+              page={page}
+              totalPages={Math.max(pages, 1)}
+              perPage={perPage}
+              total={total}
+              onPageChange={setPage}
+              onPerPageChange={(n) => {
+                setPerPage(n);
+                setPage(1);
+              }}
+              label="activities"
+            />
+          )}
         </>
       )}
     </div>

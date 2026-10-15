@@ -11,7 +11,11 @@ function personName(userId: string | null | undefined, team: TeamMember[]) {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 interface ActivityDetailProps {
@@ -24,7 +28,15 @@ interface ActivityDetailProps {
   onEdit: () => void;
 }
 
-export function ActivityDetail({ projectId, stageNo, activityId, team, canManage, onBack, onEdit }: ActivityDetailProps) {
+export function ActivityDetail({
+  projectId,
+  stageNo,
+  activityId,
+  team,
+  canManage,
+  onBack,
+  onEdit,
+}: ActivityDetailProps) {
   const { data: activity } = useActivity(projectId, activityId);
   const { data: attachments = [] } = useActivityAttachments(projectId, activityId);
   const invalidate = useStageViewInvalidate(projectId, stageNo);
@@ -41,24 +53,29 @@ export function ActivityDetail({ projectId, stageNo, activityId, team, canManage
 
   return (
     <div className="flex w-full flex-col gap-[16px] rounded-[12px] border border-gca-border bg-white p-[24px]">
-      <button onClick={onBack} className="flex items-center gap-[8px] text-[13px] font-medium text-gca-green">
-        <ArrowLeft className="size-[13px]" />
+      <button
+        onClick={onBack}
+        className=" cursor-pointer flex items-center gap-[8px] text-[13px] font-medium text-gca-green"
+      >
+        <ArrowLeft className="size-[18]" />
         All activities
       </button>
 
       <div className="flex items-start justify-between">
-        <p className="text-[20px] font-semibold tracking-[-0.3px] text-gca-dark">{activity.title}</p>
+        <p className="text-[20px] font-semibold tracking-[-0.3px] text-gca-dark">
+          {activity.title}
+        </p>
         {canManage && (
           <div className="flex items-center gap-[12px]">
             <button
               onClick={onEdit}
-              className="rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+              className="cursor-pointer rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
             >
               Edit
             </button>
             <button
               onClick={toggleDone}
-              className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
+              className={`${activity.status === "done" ? "border border-gca-green text-gca-dark hover:text-gca-green" : "bg-gca-green hover:bg-gca-green-hover text-white"} cursor-pointer rounded-[8px] px-[16px] py-[10px] text-[14px] font-semibold`}
             >
               {activity.status === "done" ? "Mark open" : "Mark done"}
             </button>
@@ -104,7 +121,9 @@ export function ActivityDetail({ projectId, stageNo, activityId, team, canManage
               rel="noreferrer"
               className="flex items-center justify-between rounded-[8px] border border-gca-border bg-white px-[12px] py-[10px]"
             >
-              <span className="text-[13px] font-medium text-gca-dark">{att.caption || "Attachment"}</span>
+              <span className="text-[13px] font-medium text-gca-dark">
+                {att.caption || "Attachment"}
+              </span>
             </a>
           ))}
         </div>

@@ -129,7 +129,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.replace("/login")
+      router.replace("/login");
     }
   }, [authLoading, isAuthenticated, router]);
 
@@ -147,7 +147,9 @@ export default function Home() {
         {/* Header */}
         <div className="flex items-end justify-between">
           <div>
-            <h1 className="text-[28px] font-semibold tracking-[-0.7px] text-gca-dark">{greeting}</h1>
+            <h1 className="text-[28px] font-semibold tracking-[-0.7px] text-gca-dark">
+              {greeting}
+            </h1>
           </div>
           {showCreate && (
             <Link
@@ -188,9 +190,7 @@ export default function Home() {
                   <button
                     onClick={() => setView("card")}
                     className={`flex h-[32px] w-[36px] items-center justify-center rounded-[6px] cursor-pointer ${
-                      view === "card"
-                        ? "bg-white shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]"
-                        : ""
+                      view === "card" ? "bg-white shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]" : ""
                     }`}
                   >
                     <LayoutGrid className="size-[16px] text-gca-dark" />
@@ -210,28 +210,42 @@ export default function Home() {
                 {/* Status filter */}
                 <div className="relative">
                   <Dropdown
-                    id='status-filter'
-                    title='Status'
-                    data={projectStatusOptions.map(status => ({ id: status.id, name: status.name, value: status.value }))}
-                    style='h-[44px] w-[170px] appearance-none rounded-[8px] border border-gca-border bg-white px-[12px] text-[14px] text-gca-dark outline-none'
-                    selectedId={projectStatusOptions.find((s) => s.value === statusFilter)?.id ?? "all"}
+                    id="status-filter"
+                    title="Status"
+                    data={projectStatusOptions.map((status) => ({
+                      id: status.id,
+                      name: status.name,
+                      value: status.value,
+                    }))}
+                    style="h-[44px] w-[170px] appearance-none rounded-[8px] border border-gca-border bg-white px-[12px] text-[14px] text-gca-dark outline-none"
+                    selectedId={
+                      projectStatusOptions.find((s) => s.value === statusFilter)?.id ?? "all"
+                    }
                     onSelect={(id, name, value) => {
                       setStatusFilter(value);
-                      setPage(1);}}
+                      setPage(1);
+                    }}
                   />
                 </div>
 
                 {/* Program filter */}
                 <div className="relative">
                   <Dropdown
-                    id='program-filter'
-                    title='Program'
-                    data={projectProgramOptions.map(program => ({ id: program.id.toString(), name: program.name }))}
-                    style='h-[44px] w-[170px] appearance-none rounded-[8px] border border-gca-border bg-white px-[12px] text-[14px] text-gca-dark outline-none'
-                    selectedId={projectProgramOptions.find((p) => p.id.toString() === programFilter)?.id ?? "all"}
+                    id="program-filter"
+                    title="Program"
+                    data={projectProgramOptions.map((program) => ({
+                      id: program.id.toString(),
+                      name: program.name,
+                    }))}
+                    style="h-[44px] w-[170px] appearance-none rounded-[8px] border border-gca-border bg-white px-[12px] text-[14px] text-gca-dark outline-none"
+                    selectedId={
+                      projectProgramOptions.find((p) => p.id.toString() === programFilter)?.id ??
+                      "all"
+                    }
                     onSelect={(id) => {
                       setProgramFilter(id);
-                      setPage(1);}}
+                      setPage(1);
+                    }}
                   />
                 </div>
               </div>
@@ -249,23 +263,26 @@ export default function Home() {
             )}
 
             {/* No results from search */}
-            {!loading && !error && projects.length === 0 && (search || statusFilter || programFilter) && (
-              <div className="flex flex-col items-center gap-[12px] py-[64px]">
-                <Search className="size-[40px] text-gca-muted" />
-                <p className="text-[18px] font-semibold tracking-[-0.27px] text-gca-dark">
-                  No projects found
-                </p>
-                <p className="text-center text-[14px] text-gca-show">
-                  Try adjusting your search or filters.
-                </p>
-              </div>
-            )}
-    
-             {/* Empty state */}
+            {!loading &&
+              !error &&
+              projects.length === 0 &&
+              (search || statusFilter || programFilter) && (
+                <div className="flex flex-col items-center gap-[12px] py-[64px]">
+                  <Search className="size-[40px] text-gca-muted" />
+                  <p className="text-[18px] font-semibold tracking-[-0.27px] text-gca-dark">
+                    No projects found
+                  </p>
+                  <p className="text-center text-[14px] text-gca-show">
+                    Try adjusting your search or filters.
+                  </p>
+                </div>
+              )}
+
+            {/* Empty state */}
             {!loading && !error && projects.length === 0 && search != "" && statusFilter != "" && (
               <EmptyState showCreate={showCreate} />
             )}
-    
+
             {/* Error */}
             {error && (
               <div className="rounded-[8px] bg-error-bg px-[14px] py-[12px] text-[14px] font-medium text-error-text">
@@ -274,7 +291,7 @@ export default function Home() {
             )}
 
             {/* Pagination */}
-           {totalPages > 1 && 
+            {totalPages > 1 && (
               <Pagination
                 page={page}
                 totalPages={totalPages}
@@ -286,11 +303,9 @@ export default function Home() {
                   setPage(1);
                 }}
               />
-            }
+            )}
           </>
         )}
-
-       
       </main>
     </>
   );
@@ -341,7 +356,10 @@ function LoadingSkeleton() {
       {/* Card skeletons */}
       <div className="grid grid-cols-3 gap-[20px]">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="flex flex-col gap-[16px] rounded-[12px] border border-gca-border p-[24px]">
+          <div
+            key={i}
+            className="flex flex-col gap-[16px] rounded-[12px] border border-gca-border p-[24px]"
+          >
             <div className="h-[20px] w-3/4 animate-pulse rounded bg-gca-page-bg" />
             <div className="h-[16px] w-1/2 animate-pulse rounded bg-gca-page-bg" />
             <div className="flex gap-[12px]">
