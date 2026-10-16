@@ -1,14 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { useSubmissionPhotos, setSubmissionPhotos, useWeeklySubmissionInvalidate } from "./use-weekly-submission-data";
+import {
+  useSubmissionPhotos,
+  setSubmissionPhotos,
+  useWeeklySubmissionInvalidate,
+} from "./use-weekly-submission-data";
+import { Camera, Shield } from "lucide-react";
 
 function formatTakenAt(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
-export function DprPhotosSection({ projectId, submissionId }: { projectId: string; submissionId: string }) {
+export function DprPhotosSection({
+  projectId,
+  submissionId,
+}: {
+  projectId: string;
+  submissionId: string;
+}) {
   const { data: photos = [] } = useSubmissionPhotos(projectId, submissionId);
   const invalidate = useWeeklySubmissionInvalidate(projectId);
   const [pending, setPending] = useState<string | null>(null);
@@ -22,24 +38,29 @@ export function DprPhotosSection({ projectId, submissionId }: { projectId: strin
 
   function toggle(photoId: string) {
     const current = photos.filter((p) => p.selected).map((p) => p.photo_id);
-    const next = current.includes(photoId) ? current.filter((id) => id !== photoId) : [...current, photoId];
+    const next = current.includes(photoId)
+      ? current.filter((id) => id !== photoId)
+      : [...current, photoId];
     setSelection(next);
   }
 
   const selectedCount = photos.filter((p) => p.selected).length;
 
   return (
-    <div className="flex w-full flex-col gap-[16px] rounded-[12px] border border-gca-border bg-white p-[24px]">
+    <div className="flex w-full flex-col gap-[16px] rounded-[12px] bg-white py-[24px]">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-[16px] font-semibold text-gca-dark">DPR photos</h3>
-          <p className="mt-[2px] text-[13px] text-gca-show">
+          {/* <p className="mt-[2px] text-[13px] text-gca-show">
             Pick which of this week&apos;s site photos go out as part of the report.
-          </p>
+          </p> */}
         </div>
         {photos.length > 0 && (
           <div className="flex gap-[12px] text-[13px] font-medium text-gca-green">
-            <button onClick={() => setSelection(photos.map((p) => p.photo_id))} className="cursor-pointer">
+            <button
+              onClick={() => setSelection(photos.map((p) => p.photo_id))}
+              className="cursor-pointer"
+            >
               Select all
             </button>
             <button onClick={() => setSelection([])} className="cursor-pointer">
@@ -50,7 +71,17 @@ export function DprPhotosSection({ projectId, submissionId }: { projectId: strin
       </div>
 
       {photos.length === 0 ? (
-        <p className="text-[13px] text-gca-muted">No photos on this week&apos;s DPRs yet.</p>
+        <div className="flex flex-col items-center gap-[8px] rounded-[12px] bg-[#f7f9f7] py-[64px]">
+          <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-white">
+            <Camera className="size-[18px] text-gca-green" />
+          </span>
+          <div className="flex flex-col items-center gap-[4px] text-center">
+            <p className="text-[15px] font-semibold text-gca-dark">
+              No photos on this week&apos;s DPRs yet.
+            </p>
+            <p className="text-[13px] text-gca-muted">DPR photos will appear here</p>
+          </div>
+        </div>
       ) : (
         <>
           <div className="grid grid-cols-3 gap-[16px]">
@@ -70,12 +101,16 @@ export function DprPhotosSection({ projectId, submissionId }: { projectId: strin
                     {photo.selected && <span className="size-[8px] rounded-[2px] bg-white" />}
                   </span>
                 </div>
-                <p className="text-[13px] font-medium text-gca-dark">{photo.caption || photo.site_location}</p>
+                <p className="text-[13px] font-medium text-gca-dark">
+                  {photo.caption || photo.site_location}
+                </p>
                 <p className="text-[12px] text-gca-muted">{formatTakenAt(photo.taken_at)}</p>
               </button>
             ))}
           </div>
-          <p className="text-[13px] text-gca-muted">{selectedCount} of {photos.length} photos selected</p>
+          <p className="text-[13px] text-gca-muted">
+            {selectedCount} of {photos.length} photos selected
+          </p>
         </>
       )}
     </div>

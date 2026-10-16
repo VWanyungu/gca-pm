@@ -15,12 +15,12 @@ export function WeeklyRegisterTable({ projectId }: { projectId: string }) {
   return (
     <div className="flex w-full flex-col gap-[20px]">
       <div>
-        <h1 className="text-[28px] font-semibold tracking-[-0.3px] text-gca-dark">Weekly register</h1>
-        <p className="mt-[2px] text-[14px] text-gca-show">Submitted weeks for this project</p>
+        <h1 className="text-[20px] font-semibold tracking-[-0.3px] text-gca-dark">Weekly register</h1>
+        <p className="mt-[2px] text-[13px] text-gca-show">Submitted weeks for this project</p>
       </div>
 
-      <div className="w-full rounded-[12px] border border-gca-border bg-white">
-        <div className="grid grid-cols-5 gap-[16px] border-b border-gca-border px-[20px] py-[12px] text-[12px] font-medium text-gca-muted">
+      <div className="w-full">
+        <div className="grid grid-cols-5 gap-[16px] py-[8px] text-[12px] font-medium text-gca-muted">
           <span>Week</span>
           <span>Period</span>
           <span>Submitted by</span>
@@ -28,14 +28,14 @@ export function WeeklyRegisterTable({ projectId }: { projectId: string }) {
           <span />
         </div>
         {submissions.length === 0 ? (
-          <p className="px-[20px] py-[24px] text-[13px] text-gca-muted">No approved weeks yet.</p>
+          <p className="py-[24px] text-[13px] text-gca-muted">No approved weeks yet.</p>
         ) : (
           submissions.map((s) => (
             <div
               key={s.submission_id}
-              className="grid grid-cols-5 items-center gap-[16px] border-b border-gca-border px-[20px] py-[14px] text-[14px] text-gca-dark last:border-b-0"
+              className="grid grid-cols-5 items-center gap-[16px] border-t border-gca-border py-[12px] text-[13px] text-gca-dark"
             >
-              <span className="font-mono">{weekNumber(s.week_start)}</span>
+              <span className="font-mono font-medium">{weekNumber(s.week_start)}</span>
               <span>{formatWeekPeriod(s.week_start)}</span>
               <span>{s.creator_name ?? "—"}</span>
               <span>{s.approved_at ? new Date(s.approved_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—"}</span>

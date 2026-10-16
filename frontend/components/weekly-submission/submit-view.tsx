@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
 import {
   useProjectDetail,
@@ -17,13 +16,14 @@ import {
 } from "./use-weekly-submission-data";
 import { SubmitMode } from "./submit-mode";
 import { WeeklyRegisterTable } from "./weekly-register-table";
-import { mondayOf, formatWeekPeriod, weekNumber } from "./types";
+import { mondayOf, addDays, formatWeekPeriod, weekNumber } from "./types";
 
 type Tab = "week" | "register";
 
 export function SubmitView({ projectId }: { projectId: string }) {
   const [tab, setTab] = useState<Tab>("week");
-  const weekStart = mondayOf(new Date());
+  const [weekOffset, setWeekOffset] = useState(0);
+  const weekStart = addDays(mondayOf(new Date()), weekOffset * 7);
 
   const { data: project } = useProjectDetail(projectId);
   const { data: team = [] } = useProjectTeam(projectId);
@@ -32,6 +32,10 @@ export function SubmitView({ projectId }: { projectId: string }) {
   const { data: weekSubmission, isLoading } = useWeekSubmission(projectId, weekStart);
   // The week lookup uses the list endpoint, which doesn't include addressed_risks — fetch full details by id.
   const { data: draft } = useWeeklySubmission(projectId, weekSubmission?.draft?.submission_id);
+  const { data: approved } = useWeeklySubmission(
+    projectId,
+    weekSubmission?.approved?.submission_id,
+  );
   const invalidate = useWeeklySubmissionInvalidate(projectId);
   const [creating, setCreating] = useState(false);
 
@@ -46,57 +50,50 @@ export function SubmitView({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex min-h-[calc(100vh-64px)] w-full">
-      <ProjectSidebar projectId={projectId} stages={project.stages} counts={counts} active="submit" />
+      <ProjectSidebar
+        projectId={projectId}
+        stages={project.stages}
+        counts={counts}
+        active="submit"
+      />
 
       <div className="flex w-full justify-center">
         <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[40px]">
-          <div className="flex w-fit gap-[4px] rounded-[8px] bg-gca-page-bg p-[3px]">
-            <button
-              onClick={() => setTab("week")}
-              className={`cursor-pointer rounded-[6px] px-[14px] py-[7px] text-[13px] font-medium ${
-                tab === "week" ? "bg-white text-gca-dark shadow-sm" : "text-gca-show"
-              }`}
-            >
-              Week {weekNumber(weekStart)}
-            </button>
-            <button
-              onClick={() => setTab("register")}
-              className={`cursor-pointer rounded-[6px] px-[14px] py-[7px] text-[13px] font-medium ${
-                tab === "register" ? "bg-white text-gca-dark shadow-sm" : "text-gca-show"
-              }`}
-            >
-              Register
-            </button>
-          </div>
-
           {tab === "register" && <WeeklyRegisterTable projectId={projectId} />}
 
           {tab === "week" && !isLoading && (
             <>
               {draft && (
                 <SubmitMode
+                  weekStart={weekStart}
+                  tab={tab}
+                  setTab={setTab}
                   projectId={projectId}
                   projectName={project.project.name}
                   submission={draft}
                   metrics={project.metrics}
                   milestones={milestones}
                   team={team}
+                  onPrevWeek={() => setWeekOffset((o) => o - 1)}
+                  onNextWeek={() => setWeekOffset((o) => o + 1)}
                 />
               )}
 
-              {!weekSubmission?.draft && weekSubmission?.approved && (
-                <div className="flex w-full flex-col items-start gap-[12px] rounded-[12px] border border-gca-border bg-white p-[32px]">
-                  <h2 className="text-[18px] font-semibold text-gca-dark">
-                    Week {weekNumber(weekStart)} is already submitted
-                  </h2>
-                  <p className="text-[14px] text-gca-show">{formatWeekPeriod(weekStart)}</p>
-                  <Link
-                    href={`/projects/${projectId}/weekly-submission/${weekSubmission.approved.submission_id}`}
-                    className="text-[13px] font-medium text-gca-green"
-                  >
-                    View submission →
-                  </Link>
-                </div>
+              {!weekSubmission?.draft && weekSubmission?.approved && approved && (
+                <SubmitMode
+                  weekStart={weekStart}
+                  tab={tab}
+                  setTab={setTab}
+                  projectId={projectId}
+                  projectName={project.project.name}
+                  submission={approved}
+                  metrics={project.metrics}
+                  milestones={milestones}
+                  team={team}
+                  viewSubmissionHref={`/projects/${projectId}/weekly-submission/${weekSubmission.approved.submission_id}`}
+                  onPrevWeek={() => setWeekOffset((o) => o - 1)}
+                  onNextWeek={() => setWeekOffset((o) => o + 1)}
+                />
               )}
 
               {!weekSubmission?.draft && !weekSubmission?.approved && (

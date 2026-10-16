@@ -6,6 +6,7 @@ import Link from "next/link";
 import { api } from "@/lib/api-client";
 import { ProjectStepper, type WizardStep } from "@/components/project-wizard/stepper";
 import { DetailsStep, type DetailsFormValues } from "@/components/project-wizard/details-step";
+import { ArrowLeft } from "lucide-react";
 
 const STEPS: WizardStep[] = [
   { key: "details", label: "Details", description: "Name, client, program and dates." },
@@ -73,8 +74,11 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
   return (
     <main className="flex flex-col gap-[40px] px-[120px] pb-[48px] pt-[40px]">
       <div className="flex flex-col gap-[8px]">
-        <Link href={`/projects/${projectId}`} className="text-[14px] font-medium text-gca-show">
-          ← {details.name}
+        <Link
+          href={`/projects/${projectId}`}
+          className="flex gap-[6px] items-center text-[14px] font-medium text-gca-show"
+        >
+          <ArrowLeft className="size-[14px]" /> {details.name}
         </Link>
         <h1 className="text-[28px] font-semibold tracking-[-0.7px] text-gca-dark">Edit project</h1>
       </div>
@@ -86,7 +90,13 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
       )}
 
       <div className="flex gap-[64px]">
-        <ProjectStepper steps={STEPS} currentKey={step} mode="edit" completedKeys={["details"]} onStepClick={setStep} />
+        <ProjectStepper
+          steps={STEPS}
+          currentKey={step}
+          mode="edit"
+          completedKeys={["details"]}
+          onStepClick={setStep}
+        />
 
         {step === "details" && (
           <DetailsStep
@@ -101,17 +111,16 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
 
         {step === "people" && (
           <div className="flex w-[640px] flex-col gap-[16px]">
-            <h2 className="text-[22px] font-semibold tracking-[-0.4px] text-gca-dark">Assign people</h2>
-            <p className="text-[14px] text-gca-show">
-              Editing the project team isn&apos;t available yet — reassign PM, Planner and site engineers from the
-              project overview page for now.
-            </p>
+            <h2 className="text-[22px] font-semibold tracking-[-0.4px] text-gca-dark">
+              Assign people
+            </h2>
+            <p className="text-[14px] text-gca-show">Contact Admin to manage project team</p>
             <button
               type="button"
               onClick={() => setStep("details")}
-              className="self-start text-[14px] font-medium text-gca-show"
+              className="flex gap-[6px] items-center cursor-pointer self-start text-[14px] font-medium text-gca-show"
             >
-              ← Back
+              <ArrowLeft className="size-[14px]" /> Back
             </button>
           </div>
         )}

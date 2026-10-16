@@ -34,7 +34,14 @@ interface DetailsStepProps {
   nextLabel: string;
 }
 
-export function DetailsStep({ defaultValues, onCancel, onNext, onSave, saving, nextLabel }: DetailsStepProps) {
+export function DetailsStep({
+  defaultValues,
+  onCancel,
+  onNext,
+  onSave,
+  saving,
+  nextLabel,
+}: DetailsStepProps) {
   const {
     register,
     handleSubmit,
@@ -45,7 +52,9 @@ export function DetailsStep({ defaultValues, onCancel, onNext, onSave, saving, n
 
   useEffect(() => {
     // shortcut: re-syncs only when the prefilled name changes (edit mode's async load), not on every keystroke
-    Object.entries(defaultValues).forEach(([key, value]) => setValue(key as keyof DetailsFormValues, value ?? ""));
+    Object.entries(defaultValues).forEach(([key, value]) =>
+      setValue(key as keyof DetailsFormValues, value ?? ""),
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultValues.name]);
 
@@ -61,11 +70,10 @@ export function DetailsStep({ defaultValues, onCancel, onNext, onSave, saving, n
   const programId = watch("program_id");
 
   return (
-    <form
-      onSubmit={handleSubmit(onNext)}
-      className="flex w-full flex-col gap-[24px]"
-    >
-      <h2 className="text-[26px] font-semibold tracking-[-0.39px] text-gca-dark">Project details</h2>
+    <form onSubmit={handleSubmit(onNext)} className="flex w-full flex-col gap-[24px]">
+      <h2 className="text-[26px] font-semibold tracking-[-0.39px] text-gca-dark">
+        Project details
+      </h2>
 
       <Field label="Project name" required error={errors.name?.message}>
         <input
@@ -96,7 +104,12 @@ export function DetailsStep({ defaultValues, onCancel, onNext, onSave, saving, n
       </div>
 
       <div className="flex gap-[16px]">
-        <Field label="Start date" required error={errors.expected_start_date?.message} className="w-1/2">
+        <Field
+          label="Start date"
+          required
+          error={errors.expected_start_date?.message}
+          className="w-1/2"
+        >
           <input
             type="date"
             {...register("expected_start_date")}
@@ -121,7 +134,11 @@ export function DetailsStep({ defaultValues, onCancel, onNext, onSave, saving, n
       </Field>
 
       <div className="flex items-center justify-between pt-[24px]">
-        <button type="button" onClick={onCancel} className="px-[4px] py-[11px] text-[14px] font-semibold text-gca-show hover:text-red-500 cursor-pointer">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-[4px] py-[11px] text-[14px] font-semibold text-gca-show hover:text-red-500 cursor-pointer"
+        >
           Cancel
         </button>
         <div className="flex items-center gap-[12px]">
@@ -130,7 +147,7 @@ export function DetailsStep({ defaultValues, onCancel, onNext, onSave, saving, n
               type="button"
               disabled={saving}
               onClick={handleSubmit(onSave)}
-              className="rounded-[8px] border border-gca-border px-[18px] py-[11px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
+              className="cursor-pointer rounded-[8px] border border-gca-border px-[18px] py-[11px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
             >
               Save changes
             </button>

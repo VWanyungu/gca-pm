@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Camera } from "lucide-react";
+import { ChevronLeft, ChevronRight, Camera, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
 import type { RoleGrant, RoleName, ScopeType } from "@/contexts/auth-context";
@@ -41,7 +41,9 @@ export default function ProfilePage() {
   const { data: projects = [] } = useQuery({
     queryKey: ["projects", "names-for-profile"],
     queryFn: async () => {
-      const res = await api.get<{ projects: { project_id: string; name: string }[] }>("/projects?limit=100");
+      const res = await api.get<{ projects: { project_id: string; name: string }[] }>(
+        "/projects?limit=100",
+      );
       if (res.status !== "success" || !res.data) throw new Error(res.message);
       return res.data.projects;
     },
@@ -51,7 +53,9 @@ export default function ProfilePage() {
   const { data: programs = [] } = useQuery({
     queryKey: ["programs", "names-for-profile"],
     queryFn: async () => {
-      const res = await api.get<{ programs: { program_id: number; name: string }[] }>("/programs?limit=100");
+      const res = await api.get<{ programs: { program_id: number; name: string }[] }>(
+        "/programs?limit=100",
+      );
       if (res.status !== "success" || !res.data) throw new Error(res.message);
       return res.data.programs;
     },
@@ -92,9 +96,7 @@ export default function ProfilePage() {
         <div className="rounded-[12px] bg-white p-[12px]">
           {/* Banner */}
           <div className="relative h-[200px] w-full rounded-[8px] bg-gradient-to-r from-[#dcebdf] via-[#a9d1b3] via-55% to-[#e8f1ea]">
-            <button
-              className="absolute right-[24px] top-[138px] flex items-center rounded-[8px] border-[1.5px] border-white bg-white/85 px-[18px] py-[9px] text-[14px] font-semibold text-gca-dark hover:bg-white cursor-pointer"
-            >
+            <button className="absolute right-[24px] top-[138px] flex items-center rounded-[8px] border-[1.5px] border-white bg-white/85 px-[18px] py-[9px] text-[14px] font-semibold text-gca-dark hover:bg-white cursor-pointer">
               Edit profile
             </button>
           </div>
@@ -103,11 +105,11 @@ export default function ProfilePage() {
             {/* Profile picture, overlapping the banner */}
             <div className="absolute left-[40px] top-[-64px] size-[128px]">
               <div className="flex size-[128px] items-center justify-center rounded-[38px] border-[5px] border-white bg-gca-badge-bg">
-                <span className="text-[40px] font-semibold tracking-[-1px] text-gca-green">{initials}</span>
+                <span className="text-[40px] font-semibold tracking-[-1px] text-gca-green">
+                  {initials}
+                </span>
               </div>
-              <button
-                className="absolute bottom-[-6px] right-[-6px] flex size-[34px] items-center justify-center rounded-full bg-gca-green text-white shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)] hover:bg-gca-green-hover cursor-pointer"
-              >
+              <button className="absolute bottom-[-6px] right-[-6px] flex size-[34px] items-center justify-center rounded-full bg-gca-green text-white shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)] hover:bg-gca-green-hover cursor-pointer">
                 <Camera className="size-[16px]" />
               </button>
             </div>
@@ -125,9 +127,9 @@ export default function ProfilePage() {
               <p className="text-[12px] text-gca-muted">Member since —</p>
               <Link
                 href="/notifications?tab=preferences"
-                className="text-left text-[13px] font-medium text-gca-green hover:underline"
+                className="text-left text-[13px] font-medium text-gca-green"
               >
-                Notification preferences →
+                Notification preferences
               </Link>
             </div>
 
@@ -137,14 +139,19 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-[12px]">
                   <MicrosoftLogo />
                   <p className="text-[14px] font-medium text-gca-dark">
-                    Your profile is linked to your Microsoft account. Name and email are managed there.
+                    Your profile is linked to your Microsoft account. Name and email are managed
+                    there.
                   </p>
                 </div>
-                <button className="text-[13px] font-medium text-gca-green cursor-pointer">Manage →</button>
+                <button className="flex gap-[6px] items-center text-[13px] font-medium text-gca-green cursor-pointer">
+                  Manage <ArrowRight className="size-[14px]" />
+                </button>
               </div>
 
               <div className="flex flex-col gap-[4px]">
-                <h2 className="text-[18px] font-semibold tracking-[-0.27px] text-gca-dark">My access</h2>
+                <h2 className="text-[18px] font-semibold tracking-[-0.27px] text-gca-dark">
+                  My access
+                </h2>
                 <p className="text-[13px] text-gca-show">Only an Admin can change this.</p>
               </div>
 
@@ -175,7 +182,9 @@ export default function ProfilePage() {
 
               <div className="flex items-center justify-between">
                 <p className="text-[13px] text-gca-show">
-                  {user.role.length === 0 ? "Showing 0 of 0" : `Showing ${rangeStart}–${rangeEnd} of ${user.role.length}`}
+                  {user.role.length === 0
+                    ? "Showing 0 of 0"
+                    : `Showing ${rangeStart}–${rangeEnd} of ${user.role.length}`}
                 </p>
                 <div className="flex items-center gap-[6px]">
                   <button
@@ -190,7 +199,9 @@ export default function ProfilePage() {
                       key={p}
                       onClick={() => setPage(p)}
                       className={`flex size-[32px] items-center justify-center rounded-[6px] font-mono text-[13px] font-medium cursor-pointer ${
-                        p === page ? "bg-gca-green text-white" : "border border-gca-border bg-white text-gca-dark"
+                        p === page
+                          ? "bg-gca-green text-white"
+                          : "border border-gca-border bg-white text-gca-dark"
                       }`}
                     >
                       {p}

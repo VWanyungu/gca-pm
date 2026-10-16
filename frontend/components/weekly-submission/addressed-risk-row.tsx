@@ -30,32 +30,32 @@ export function AddressedRiskRow({
   const rating = risk ? ratingFromScore(risk.score) : null;
 
   return (
-    <div className="flex w-full items-start justify-between gap-[16px] border-b border-gca-border py-[16px] last:border-b-0">
+    <div className="flex w-full items-start justify-between border-b border-gca-border py-[14px] last:border-b-0">
       <div className="flex gap-[12px]">
-        <span className="pt-[1px] text-[14px] text-gca-muted">{index}</span>
+        <span className="pt-[1px] w-[14px] font-mono text-[13px] font-semibold text-gca-muted">{index}</span>
         <div className="flex flex-col gap-[4px]">
-          <div className="flex items-center gap-[10px]">
-            <p className="text-[14px] font-medium text-gca-dark">
+          <div className="flex items-center gap-[8px]">
+            <p className="w-[330px] text-[14px] font-medium text-gca-dark">
               {addressedRisk.risk_title ?? risk?.title ?? "Risk"}
             </p>
             {isMainTopRisk && (
-              <span className="rounded-[6px] bg-gca-badge-bg px-[8px] py-[2px] text-[12px] font-medium text-gca-green">
+              <span className="rounded-[999px] bg-gca-badge-bg px-[8px] py-[3px] text-[11px] font-semibold text-gca-green">
                 Main top risk
               </span>
             )}
           </div>
-          {rating && <p className={`text-[13px] font-medium ${rating.className}`}>{rating.label}</p>}
-          <p className="text-[13px] text-gca-show">{risk?.mitigation || "—"}</p>
+          {rating && <p className={`text-[12px] font-semibold ${rating.className}`}>{rating.label}</p>}
+          <div className="flex items-center gap-[16px] text-[13px]">
+            <p className="w-[360px] text-gca-dark">{risk?.mitigation || "—"}</p>
+            <p className="whitespace-nowrap text-gca-show">{ownerName(risk?.owner_id, team)}</p>
+          </div>
         </div>
       </div>
-      <div className="flex items-center gap-[16px]">
-        <span className="text-[13px] text-gca-muted">{ownerName(risk?.owner_id, team)}</span>
-        {onRemove && (
-          <button onClick={onRemove} className="cursor-pointer text-gca-muted hover:text-error-text">
-            <X className="size-[16px]" />
-          </button>
-        )}
-      </div>
+      {onRemove && (
+        <button onClick={onRemove} className="cursor-pointer text-gca-muted hover:text-error-text">
+          <X className="size-[16px]" />
+        </button>
+      )}
     </div>
   );
 }
