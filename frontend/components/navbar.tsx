@@ -8,7 +8,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Search, Sun, Moon, HelpCircle, Bell, ChevronDown, FolderKanban, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
+import { canAccess, CAN_MANAGE_USERS } from "@/lib/access-control";
 import useOutsideClick from "@/hooks/use-outside-click";
+import { useUnreadCount } from "@/components/notifications/use-notifications";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/" },
@@ -59,6 +61,12 @@ export function Navbar() {
     enabled: isAuthenticated && openDropdown === "Projects",
   });
 
+  const { data: unreadCount = 0 } = useUnreadCount();
+
+  const navItems = canAccess(user?.role, CAN_MANAGE_USERS)
+    ? [...NAV_ITEMS, { label: "Admin", href: "/admin" }]
+    : NAV_ITEMS;
+
   const initials = user?.email
     ? user.email
         .split("@")[0]
@@ -82,7 +90,7 @@ export function Navbar() {
         </Link>
         <div className="h-[20px] w-px bg-gca-border" />
         <nav className="flex items-center gap-[4px]" ref={dropdownRef}>
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const active = isActive(item.href);
             return (
               <div key={item.label} className="relative">
@@ -193,12 +201,17 @@ export function Navbar() {
         </button>
 
         {/* Notifications */}
-        <button className="relative flex size-[36px] items-center justify-center rounded-[8px]">
+        <Link
+          href="/notifications"
+          className="relative flex size-[36px] items-center justify-center rounded-[8px] hover:bg-gca-page-bg"
+        >
           <Bell className="size-[18px] text-gca-show" />
-          <span className="absolute left-[30px] top-[-6px] flex items-center rounded-[6px] bg-gca-green px-[4px] py-px text-[11px] font-semibold text-white">
-            4
-          </span>
-        </button>
+          {unreadCount > 0 && (
+            <span className="absolute left-[30px] top-[-6px] flex items-center rounded-[6px] bg-gca-green px-[4px] py-px text-[11px] font-semibold text-white">
+              {unreadCount}
+            </span>
+          )}
+        </Link>
 
         {/* User menu */}
         <div className="relative" ref={accountMenuRef}>
@@ -229,7 +242,7 @@ export function Navbar() {
                 My profile
               </Link>
               <Link
-                href="/profile"
+                href="/notifications?tab=preferences"
                 onClick={() => setAccountMenuOpen(false)}
                 className="block rounded-[6px] px-[10px] py-[9px] text-[14px] text-gca-dark hover:bg-gca-page-bg"
               >

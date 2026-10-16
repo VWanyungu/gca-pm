@@ -11,15 +11,23 @@ import type {
   EscalationRow,
 } from "./types";
 
-function unwrap<T>(res: { status: string; data: T | null; message: string }): T {
-  if (res.status !== "success" || !res.data) throw new Error(res.message);
+export class ApiError extends Error {
+  constructor(message: string, public httpStatus: number) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+function unwrap<T>(res: { status: string; data: T | null; message: string; httpStatus?: number }): T {
+  if (res.status !== "success" || !res.data) throw new ApiError(res.message, res.httpStatus ?? 500);
   return res.data;
 }
 
 export function useProjectDetail(projectId: string) {
   return useQuery({
     queryKey: ["project", projectId],
-    queryFn: async () => unwrap(await api.get<ProjectDetailResponse>(`/projects/${projectId}`)),
+    queryFn: async () =>
+      unwrap(await api.get<ProjectDetailResponse>(`/projects/${projectId}`, { silent: true })),
     staleTime: 30_000,
   });
 }
@@ -34,7 +42,7 @@ export function useProjectTeam(projectId: string) {
     queryKey: ["project", projectId, "team"],
     queryFn: async () =>
       unwrap(
-        await api.get<{ roles: TeamMember[] }>(`/roles?projectId=${projectId}&limit=100`),
+        await api.get<{ roles: TeamMember[] }>(`/roles?projectId=${projectId}&limit=100`, { silent: true }),
       ).roles,
     staleTime: 30_000,
   });
@@ -44,7 +52,9 @@ export function useClientContacts(projectId: string) {
   return useQuery({
     queryKey: ["project", projectId, "client-contacts"],
     queryFn: async () =>
-      unwrap(await api.get<{ contacts: ClientContact[] }>(`/projects/${projectId}/client-contacts`)).contacts,
+      unwrap(
+        await api.get<{ contacts: ClientContact[] }>(`/projects/${projectId}/client-contacts`, { silent: true }),
+      ).contacts,
     staleTime: 30_000,
   });
 }
@@ -60,6 +70,7 @@ export function useStageActivities(projectId: string) {
       unwrap(
         await api.get<{ stageActivities: StageActivity[] } & Pagination>(
           `/projects/${projectId}/stage-activities?limit=100`,
+          { silent: true },
         ),
       ).stageActivities,
     staleTime: 30_000,
@@ -71,7 +82,10 @@ export function useMilestones(projectId: string) {
     queryKey: ["project", projectId, "milestones"],
     queryFn: async () =>
       unwrap(
-        await api.get<{ milestones: Milestone[] } & Pagination>(`/projects/${projectId}/milestones?limit=50`),
+        await api.get<{ milestones: Milestone[] } & Pagination>(
+          `/projects/${projectId}/milestones?limit=50`,
+          { silent: true },
+        ),
       ).milestones,
     staleTime: 30_000,
   });
@@ -84,6 +98,7 @@ export function useOpenEscalations(projectId: string) {
       unwrap(
         await api.get<{ escalations: EscalationRow[] } & Pagination>(
           `/projects/${projectId}/escalations?status=open&limit=25`,
+          { silent: true },
         ),
       ).escalations,
     staleTime: 30_000,
@@ -97,6 +112,7 @@ export function useDraftSubmission(projectId: string) {
       unwrap(
         await api.get<{ submissions: { week_start: string }[] } & Pagination>(
           `/projects/${projectId}/weekly-submission?status=draft&limit=1`,
+          { silent: true },
         ),
       ).submissions[0] ?? null,
     staleTime: 30_000,
@@ -108,9 +124,9 @@ export function useSidebarCounts(projectId: string) {
     queryKey: ["project", projectId, "sidebar-counts"],
     queryFn: async () => {
       const [submissions, risks, changeRequests] = await Promise.all([
-        api.get<Pagination>(`/projects/${projectId}/weekly-submission?status=draft&limit=1`),
-        api.get<Pagination>(`/projects/${projectId}/risks?status=open&limit=1`),
-        api.get<Pagination>(`/projects/${projectId}/change-requests?status=pending&limit=1`),
+        api.get<Pagination>(`/projects/${projectId}/weekly-submission?status=draft&limit=1`, { silent: true }),
+        api.get<Pagination>(`/projects/${projectId}/risks?status=open&limit=1`, { silent: true }),
+        api.get<Pagination>(`/projects/${projectId}/change-requests?status=pending&limit=1`, { silent: true }),
       ]);
       return {
         submit: unwrap(submissions).pagination.total,

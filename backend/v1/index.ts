@@ -29,6 +29,7 @@ import escalationRouter from './routers/escalationRouter.js';
 import changeRequestRouter from './routers/changeRequestRouter.js';
 import weeklySubmissionRouter from './routers/weeklySubmissionRouter.js';
 import scheduleRouter from './routers/scheduleRouter.js';
+import notificationsRouter from './routers/notificationsRouter.js';
 
 const router = express.Router();
 
@@ -72,6 +73,7 @@ router.use('/projects/:projectId/escalations', escalationRouter);
 router.use('/escalations', escalationRouter);
 router.use('/projects/:projectId/change-requests', changeRequestRouter);
 router.use('/projects/:projectId/schedule', scheduleRouter);
+router.use('/notifications', notificationsRouter);
 
 router.use('/logout', logoutRouter);
 router.use('/token', refreshTokenRouter);

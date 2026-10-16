@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AuthProvider } from "@/contexts/auth-context";
 import { Providers } from "./providers";
+import { ErrorToastViewport } from "@/components/ui/error-toast-viewport";
 import "./globals.css";
 import { Geist, Geist_Mono } from "next/font/google";
 
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Providers>
           <AuthProvider>{children}</AuthProvider>
         </Providers>
+        <ErrorToastViewport />
       </body>
     </html>
   );

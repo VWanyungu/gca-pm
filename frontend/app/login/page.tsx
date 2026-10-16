@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { AuthLayout } from "@/components/auth-layout";
 import { useAuth } from "@/hooks/use-auth";
+import { consumeRedirectPath } from "@/lib/session";
 
 export default function LoginPage() {
   const { isAuthenticated, isLoading, login } = useAuth();
@@ -18,7 +19,7 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) router.replace("/");
+    if (!isLoading && isAuthenticated) router.replace(consumeRedirectPath());
   }, [isLoading, isAuthenticated, router]);
 
   if (isLoading || isAuthenticated) return null;
@@ -29,8 +30,8 @@ export default function LoginPage() {
     setSubmitting(true);
     const err = await login(email, password);
     setSubmitting(false);
+    // On success the `isAuthenticated` effect above handles the redirect.
     if (err) setError(err);
-      else router.replace("/");
   }
 
   return (

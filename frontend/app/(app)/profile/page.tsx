@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Camera } from "lucide-react";
@@ -122,9 +123,12 @@ export default function ProfilePage() {
               <p className="text-[14px] text-gca-dark">{user.email}</p>
               <div className="h-px w-[300px] bg-gca-border" />
               <p className="text-[12px] text-gca-muted">Member since —</p>
-              <button className="text-left text-[13px] font-medium text-gca-green hover:underline cursor-pointer">
+              <Link
+                href="/notifications?tab=preferences"
+                className="text-left text-[13px] font-medium text-gca-green hover:underline"
+              >
                 Notification preferences →
-              </button>
+              </Link>
             </div>
 
             {/* Access column */}

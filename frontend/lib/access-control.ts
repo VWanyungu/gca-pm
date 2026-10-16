@@ -61,3 +61,5 @@ export const CAN_RAISE_CHANGE_REQUEST: Permission[] = [
 ];
 
 export const CAN_DECIDE_CHANGE_REQUEST: Permission[] = [{ role: "ExCo", scopeType: "global" }];
+
+export const CAN_MANAGE_USERS: Permission[] = [{ role: "Admin", scopeType: "global" }];

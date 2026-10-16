@@ -8,6 +8,8 @@ const USER_IDS = {
 const PROJECT_ID = '20000000-0000-0000-0000-000000000001';
 const SUBMISSION_ID = '54000000-0000-0000-0000-000000000003';
 const NOTIFICATION_ID = '55000000-0000-0000-0000-000000000001';
+const OVERDUE_RISK_NOTIFICATION_ID = '55000000-0000-0000-0000-000000000004';
+const DPR_MISSING_NOTIFICATION_ID = '55000000-0000-0000-0000-000000000005';
 const AUDIT_CORRELATION_ID = '55000000-0000-0000-0000-000000000002';
 
 export async function seed(knex: Knex): Promise<void> {
@@ -24,7 +26,7 @@ export async function seed(knex: Knex): Promise<void> {
       payload: { submission_id: SUBMISSION_ID, project_id: PROJECT_ID },
       in_app: true,
       dedupe_key: `seed:${SUBMISSION_ID}:approved`,
-      created_at: '2026-10-13T08:00:00Z',
+      created_at: '2026-10-16T08:11:00Z',
     })
     .onConflict('notification_id')
     .merge([
@@ -40,6 +42,43 @@ export async function seed(knex: Knex): Promise<void> {
       'dedupe_key',
       'created_at',
     ]);
+
+  await knex('notification')
+    .insert({
+      notification_id: OVERDUE_RISK_NOTIFICATION_ID,
+      recipient_id: USER_IDS.PM,
+      type_code: 'task_overdue_risk',
+      project_id: PROJECT_ID,
+      entity_type: 'schedule_task',
+      entity_id: null,
+      title: 'New overdue task risk',
+      body: "Trench excavation, Zone B passed its expected finish (3 Oct) at 68%. Address it before Monday's submission.",
+      payload: { project_id: PROJECT_ID },
+      in_app: true,
+      dedupe_key: 'seed:task_overdue_risk:zone-b-trench',
+      created_at: '2026-10-16T08:40:00Z',
+    })
+    .onConflict('notification_id')
+    .merge(['recipient_id', 'type_code', 'project_id', 'entity_type', 'entity_id', 'title', 'body', 'payload', 'in_app', 'dedupe_key', 'created_at']);
+
+  await knex('notification')
+    .insert({
+      notification_id: DPR_MISSING_NOTIFICATION_ID,
+      recipient_id: USER_IDS.PM,
+      type_code: 'dpr_missing',
+      project_id: PROJECT_ID,
+      entity_type: 'dpr',
+      entity_id: null,
+      title: 'DPR missing',
+      body: 'No DPR was submitted for Gitanga Mall, Block C by 23:00.',
+      payload: { project_id: PROJECT_ID },
+      in_app: true,
+      dedupe_key: 'seed:dpr_missing:block-c',
+      created_at: '2026-10-15T23:00:00Z',
+      read_at: '2026-10-16T07:00:00Z',
+    })
+    .onConflict('notification_id')
+    .merge(['recipient_id', 'type_code', 'project_id', 'entity_type', 'entity_id', 'title', 'body', 'payload', 'in_app', 'dedupe_key', 'created_at', 'read_at']);
 
   await knex('notification_delivery')
     .insert({
