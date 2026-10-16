@@ -177,6 +177,9 @@ router.get('/:projectId', canViewProject, async (req, res) => {
 
     const stages = await ProjectStages.list({ projectId });
     const statusHistory = await ProjectStatusHistory.listByProjectId(projectId);
+    // No scheduled-job runner exists yet (AC-SCH-30 to 34 describe a nightly job) — refresh
+    // today's snapshot on read instead, so the Overview always reflects the live schedule.
+    await ProjectMetrics.refreshSnapshot(projectId);
     const metrics = await ProjectMetrics.listByProjectId(projectId);
 
     res.status(200).json({

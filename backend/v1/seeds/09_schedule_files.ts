@@ -168,7 +168,7 @@ export async function seed(knex: Knex): Promise<void> {
       is_summary: false,
       is_critical: true,
       task_type: 'fixed_duration',
-      predecessors: [],
+      predecessors: JSON.stringify([]),
       resource_names: ['Civil works team'],
     },
     {
@@ -192,7 +192,7 @@ export async function seed(knex: Knex): Promise<void> {
       is_summary: false,
       is_critical: true,
       task_type: 'fixed_duration',
-      predecessors: [],
+      predecessors: JSON.stringify([]),
       resource_names: ['Civil works team'],
     },
   ];

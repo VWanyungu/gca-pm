@@ -990,6 +990,33 @@ export const listCustomMilestonesQuerySchema = Joi.object<ListCustomMilestonesQu
   limit: Joi.number().integer().min(1).max(100).default(50),
 });
 
+export const scheduleProjectParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+});
+
+export const listScheduleTasksQuerySchema = Joi.object<{ version_id?: string }>({
+  version_id: Joi.string().uuid().optional(),
+});
+
+export const scheduleVersionParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+  versionId: Joi.string().uuid().required(),
+});
+
+export const listReconciliationFlagsQuerySchema = Joi.object<{
+  includeAcknowledged: boolean;
+  page: number;
+  limit: number;
+}>({
+  includeAcknowledged: Joi.boolean().default(false),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(50),
+});
+
+export const acknowledgeReconciliationFlagsSchema = Joi.object<{ flag_ids: string[] }>({
+  flag_ids: Joi.array().items(Joi.string().uuid()).min(1).required(),
+});
+
 const DPR_STATUSES: DprStatus[] = ['draft', 'submitted'];
 const DPR_EFFECTS_SEVERITIES: DprEffectsSeverity[] = ['none', 'minor', 'significant', 'stoppage'];
 const DPR_PROGRESS_SOURCES: DprProgressSource[] = ['schedule_task', 'free_text'];
@@ -1503,4 +1530,12 @@ export const listWeeklySubmissionsQuerySchema = Joi.object<ListWeeklySubmissions
   week_start: Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).optional(),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(25),
+});
+
+export interface SetSubmissionClientPhotosBody {
+  photo_ids: string[];
+}
+
+export const setSubmissionClientPhotosSchema = Joi.object<SetSubmissionClientPhotosBody>({
+  photo_ids: Joi.array().items(Joi.string().uuid()).required(),
 });

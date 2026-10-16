@@ -27,17 +27,21 @@ interface RiskFormProps {
   stages: StageRow[];
   team: TeamMember[];
   editing?: Risk;
+  /** Prefill for "new risk from X" flows (e.g. an overdue schedule task) — ignored when `editing` is set. */
+  initial?: { title: string; description?: string; stageNo?: number; subtitle?: string };
   onDone: () => void;
   onCancel: () => void;
 }
 
-export function RiskForm({ projectId, projectName, stages, team, editing, onDone, onCancel }: RiskFormProps) {
+export function RiskForm({ projectId, projectName, stages, team, editing, initial, onDone, onCancel }: RiskFormProps) {
   const { data: categories = [] } = useRiskCategories(projectId);
   const invalidate = useRisksInvalidate(projectId);
 
-  const [title, setTitle] = useState(editing?.title ?? "");
-  const [description, setDescription] = useState(editing?.description ?? "");
-  const [stageNo, setStageNo] = useState(editing?.stage_no ? String(editing.stage_no) : "");
+  const [title, setTitle] = useState(editing?.title ?? initial?.title ?? "");
+  const [description, setDescription] = useState(editing?.description ?? initial?.description ?? "");
+  const [stageNo, setStageNo] = useState(
+    editing?.stage_no ? String(editing.stage_no) : initial?.stageNo ? String(initial.stageNo) : "",
+  );
   const [ownerId, setOwnerId] = useState(editing?.owner_id ?? "");
   const [categoryId, setCategoryId] = useState(editing?.category_id ? String(editing.category_id) : "");
   const [reviewBy, setReviewBy] = useState(editing?.review_by?.slice(0, 10) ?? "");
@@ -140,7 +144,7 @@ export function RiskForm({ projectId, projectName, stages, team, editing, onDone
         <p className="mt-[2px] text-[13px] text-gca-show">
           {editing
             ? `Raised ${formatLongDate(editing.opened_at)} by ${creatorName(editing.created_by, team)}`
-            : projectName}
+            : (initial?.subtitle ?? projectName)}
         </p>
       </div>
 

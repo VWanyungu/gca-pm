@@ -1371,6 +1371,15 @@ export class ProjectStatusHistory {
   }
 }
 
+function toLocalDateString(date: Date, timezone: string): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
 export interface ProjectMetricsSnapshotRow {
   project_id: string;
   as_of_date: string;
@@ -1404,6 +1413,71 @@ export class ProjectMetrics {
       actual_pct: Number(row.actual_pct),
       spi: row.spi === null ? null : Number(row.spi),
     }));
+  }
+
+  /** AC-SCH-30 to 34: upsert today's (project-local) snapshot from the current schedule.
+   *  Skips projects with no applied schedule version. No scheduled-job runner exists yet
+   *  (see docs/app-constraints.md §10), so routes call this on read instead of nightly. */
+  static async refreshSnapshot(projectId: string): Promise<ProjectMetricsSnapshotRow | null> {
+    const version = await db('schedule_version')
+      .where({ project_id: projectId, status: 'applied' })
+      .whereNull('deleted_at')
+      .orderBy('version_no', 'desc')
+      .first('schedule_version_id');
+    if (!version) return null;
+
+    const project = await db('projects').where({ project_id: projectId }).first('timezone');
+    if (!project) return null;
+
+    // AC-SCH-31: qualifying tasks are current revisions of non-removed, non-summary tasks;
+    // weight = duration_minutes (milestones have duration 0 and drop out of the weighted sums).
+    const agg = await db('schedule_task_revision as r')
+      .join('schedule_task as t', 't.task_id', 'r.task_id')
+      .where('t.project_id', projectId)
+      .whereNull('r.valid_to')
+      .whereNull('t.removed_in_version_id')
+      .andWhere('r.is_summary', false)
+      .select(
+        db.raw('SUM(r.duration_minutes) as total_weight'),
+        db.raw('SUM(r.duration_minutes * r.pct_work_complete) as weighted_actual'),
+        db.raw(`SUM(r.duration_minutes * (${PLANNED_I_EXPR})) as weighted_planned`),
+        db.raw('MAX(r.baseline_finish) as baseline_finish'),
+        db.raw('MAX(r.expected_finish) as forecast_finish'),
+      )
+      .first();
+
+    const totalWeight = Number(agg?.total_weight ?? 0);
+    // project_metrics_snapshot.planned_pct/actual_pct are NOT NULL; AC-SCH-32's "both null when
+    // Σw = 0" case (no qualifying tasks) has nothing to upsert, so skip instead of writing nulls.
+    if (totalWeight <= 0) return null;
+
+    const round2 = (n: number) => Math.round(n * 100) / 100;
+    const plannedPct = round2(Number(agg!.weighted_planned) / totalWeight);
+    const actualPct = round2(Number(agg!.weighted_actual) / totalWeight);
+    const spi = plannedPct > 0 ? round2(actualPct / plannedPct) : null;
+    const rag = spi === null ? null : spi >= 0.95 ? 'green' : spi >= 0.8 ? 'amber' : 'red';
+
+    const asOfDate = toLocalDateString(new Date(), project.timezone);
+    const toProjectLocalDate = (d: Date | null) => (d ? toLocalDateString(d, project.timezone) : null);
+
+    const [row] = await db('project_metrics_snapshot')
+      .insert({
+        project_id: projectId,
+        as_of_date: asOfDate,
+        schedule_version_id: version.schedule_version_id,
+        planned_pct: plannedPct,
+        actual_pct: actualPct,
+        spi,
+        rag,
+        baseline_finish: toProjectLocalDate(agg!.baseline_finish),
+        forecast_finish: toProjectLocalDate(agg!.forecast_finish),
+        computed_at: db.fn.now(),
+      })
+      .onConflict(['project_id', 'as_of_date'])
+      .merge(['schedule_version_id', 'planned_pct', 'actual_pct', 'spi', 'rag', 'baseline_finish', 'forecast_finish', 'computed_at'])
+      .returning('*');
+
+    return { ...row, planned_pct: Number(row.planned_pct), actual_pct: Number(row.actual_pct), spi: row.spi === null ? null : Number(row.spi) };
   }
 }
 
@@ -2729,6 +2803,280 @@ export class CustomMilestones {
   }
 }
 
+export interface ScheduleVersionRow {
+  schedule_version_id: string;
+  project_id: string;
+  version_no: number | null;
+  status: string;
+  upload_kind: string;
+  status_date: string | null;
+  source_file_id: string;
+  tasks_added: number | null;
+  tasks_removed: number | null;
+  tasks_modified: number | null;
+  pct_overwrites: number | null;
+  overdue_risks_created: number | null;
+  uploaded_by: string;
+  uploaded_at: Date;
+  applied_at: Date | null;
+}
+
+const SCHEDULE_VERSION_COLS = [
+  'schedule_version_id', 'project_id', 'version_no', 'status', 'upload_kind', 'status_date',
+  'source_file_id', 'tasks_added', 'tasks_removed', 'tasks_modified', 'pct_overwrites',
+  'overdue_risks_created', 'uploaded_by', 'uploaded_at', 'applied_at',
+];
+
+export interface ScheduleVersionChangeRow {
+  task_id: string;
+  task_name: string;
+  wbs: string | null;
+  change_type: 'added' | 'modified' | 'restored';
+  field: 'Task' | 'Start' | 'Finish' | 'Updated' | null;
+  change: string;
+}
+
+export class ScheduleVersions {
+  static async listApplied(projectId: string): Promise<ScheduleVersionRow[]> {
+    return db('schedule_version')
+      .where({ project_id: projectId, status: 'applied' })
+      .whereNull('deleted_at')
+      .select(SCHEDULE_VERSION_COLS)
+      .orderBy('version_no', 'desc');
+  }
+
+  /** What a given upload actually changed: every revision it introduced, classified by what
+   *  moved (compared to the revision it closed, if any). Real per-upload history, not a diff
+   *  between two arbitrary versions — AC-SCH-06/07 already record this at write time. */
+  static async getChanges(projectId: string, versionId: string): Promise<ScheduleVersionChangeRow[]> {
+    const rows = await db('schedule_task_revision as r')
+      .join('schedule_task as t', 't.task_id', 'r.task_id')
+      .leftJoin('schedule_task_revision as prev', function () {
+        this.on('prev.task_id', '=', 'r.task_id').andOn('prev.valid_to', '=', 'r.valid_from');
+      })
+      .where('t.project_id', projectId)
+      .andWhere('r.schedule_version_id', versionId)
+      .andWhere('r.is_summary', false)
+      .select(
+        't.task_id',
+        'r.task_name',
+        'r.wbs',
+        'r.change_type',
+        'r.start',
+        'r.expected_finish',
+        'prev.start as prev_start',
+        'prev.expected_finish as prev_expected_finish',
+      )
+      .orderBy('r.wbs', 'asc');
+
+    return rows.map((row): ScheduleVersionChangeRow => {
+      if (row.change_type !== 'modified' || !row.prev_start) {
+        return {
+          task_id: row.task_id,
+          task_name: row.task_name,
+          wbs: row.wbs,
+          change_type: row.change_type,
+          field: row.change_type === 'added' ? 'Task' : null,
+          change: row.change_type === 'added' ? 'New task' : 'Restored',
+        };
+      }
+      const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      if (row.prev_expected_finish.getTime() !== row.expected_finish.getTime()) {
+        return {
+          task_id: row.task_id,
+          task_name: row.task_name,
+          wbs: row.wbs,
+          change_type: 'modified',
+          field: 'Finish',
+          change: `${fmt(row.prev_expected_finish)} → ${fmt(row.expected_finish)}`,
+        };
+      }
+      if (row.prev_start.getTime() !== row.start.getTime()) {
+        return {
+          task_id: row.task_id,
+          task_name: row.task_name,
+          wbs: row.wbs,
+          change_type: 'modified',
+          field: 'Start',
+          change: `${fmt(row.prev_start)} → ${fmt(row.start)}`,
+        };
+      }
+      return {
+        task_id: row.task_id,
+        task_name: row.task_name,
+        wbs: row.wbs,
+        change_type: 'modified',
+        field: 'Updated',
+        change: 'Progress or other fields updated',
+      };
+    });
+  }
+}
+
+export interface ScheduleTaskRow {
+  task_id: string;
+  mpp_unique_id: number;
+  parent_task_id: string | null;
+  outline_level: number;
+  wbs: string | null;
+  task_name: string;
+  duration_minutes: number;
+  start: Date;
+  expected_finish: Date;
+  actual_start: Date | null;
+  actual_finish: Date | null;
+  pct_work_complete: string;
+  planned_pct_complete: string;
+  is_milestone: boolean;
+  is_summary: boolean;
+  is_critical: boolean;
+  predecessors: number[];
+  resource_names: string[];
+  responsible_user_id: string | null;
+  is_overdue: boolean;
+  /** Computed at read time from baseline dates (see PLANNED_PCT_SQL) — not the stale stored
+   *  `planned_pct_complete` column, which only reflects the value at upload time. */
+  planned_pct: string | null;
+}
+
+const SCHEDULE_TASK_COLS = [
+  't.task_id', 't.mpp_unique_id',
+  'r.parent_task_id', 'r.outline_level', 'r.wbs', 'r.task_name', 'r.duration_minutes',
+  'r.start', 'r.expected_finish', 'r.actual_start', 'r.actual_finish',
+  'r.pct_work_complete', 'r.planned_pct_complete',
+  'r.is_milestone', 'r.is_summary', 'r.is_critical',
+  'r.predecessors', 'r.resource_names', 'r.responsible_user_id',
+];
+
+/** "Where this task should be today" per AC-SCH-32: 0 before the planned window, 100 after,
+ *  linear in calendar time between. Window = baseline_start/finish, falling back to
+ *  start/expected_finish when not yet baselined (never null — every task has start/expected_finish).
+ *  Milestones are binary. A function of "now", so always computed at read time, never stored. */
+const PLANNED_I_EXPR = `
+  (CASE
+    WHEN r.is_milestone THEN
+      CASE WHEN COALESCE(r.baseline_finish, r.expected_finish) <= now() THEN 100 ELSE 0 END
+    WHEN COALESCE(r.baseline_finish, r.expected_finish) <= COALESCE(r.baseline_start, r.start) THEN 100
+    ELSE GREATEST(0, LEAST(100,
+      EXTRACT(EPOCH FROM (now() - COALESCE(r.baseline_start, r.start)))
+        / EXTRACT(EPOCH FROM (COALESCE(r.baseline_finish, r.expected_finish) - COALESCE(r.baseline_start, r.start)))
+        * 100
+    ))
+  END)
+`;
+const PLANNED_PCT_SQL = `ROUND((${PLANNED_I_EXPR})::numeric, 2) as planned_pct`;
+
+export class ScheduleTasks {
+  /** Current revision of every live task. Task identity (schedule_task) is permanent;
+   *  "current" is simply the still-open revision (valid_to IS NULL) of a non-removed task. */
+  static async listCurrent(projectId: string): Promise<ScheduleTaskRow[]> {
+    return db('schedule_task_revision as r')
+      .join('schedule_task as t', 't.task_id', 'r.task_id')
+      .where('t.project_id', projectId)
+      .whereNull('r.valid_to')
+      .whereNull('t.removed_in_version_id')
+      .select(
+        ...SCHEDULE_TASK_COLS,
+        db.raw(
+          "(r.is_summary = false AND r.pct_work_complete < 100 AND r.expected_finish < now()) as is_overdue",
+        ),
+        db.raw(PLANNED_PCT_SQL),
+      )
+      .orderBy('t.mpp_unique_id', 'asc');
+  }
+
+  /** Overdue tasks (AC-SCH-20), each left-joined to its auto-raised risk (if any) so the
+   *  Overdue tab can show "Add as risk" vs. "Risk raised · View". */
+  static async listOverdue(
+    projectId: string,
+  ): Promise<(ScheduleTaskRow & { risk_id: string | null; risk_status: string | null })[]> {
+    return db('schedule_task_revision as r')
+      .join('schedule_task as t', 't.task_id', 'r.task_id')
+      .leftJoin('risk as k', function () {
+        this.on('k.source_task_id', '=', 't.task_id').andOnVal('k.source', '=', 'auto_overdue_task');
+      })
+      .where('t.project_id', projectId)
+      .whereNull('r.valid_to')
+      .whereNull('t.removed_in_version_id')
+      .andWhere('r.is_summary', false)
+      .andWhere('r.pct_work_complete', '<', 100)
+      .andWhere('r.expected_finish', '<', db.fn.now())
+      .select(...SCHEDULE_TASK_COLS, 'k.risk_id', 'k.status as risk_status', db.raw(PLANNED_PCT_SQL))
+      .orderBy('r.expected_finish', 'asc');
+  }
+}
+
+export interface ReconciliationFlagRow {
+  flag_id: string;
+  task_id: string;
+  mpp_unique_id: number;
+  task_name: string;
+  dpr_pct: string;
+  schedule_pct: string;
+  reported_by: string | null;
+  reported_at: Date;
+  created_at: Date;
+  acknowledged_at: Date | null;
+  acknowledged_by: string | null;
+}
+
+export class ScheduleReconciliationFlags {
+  static async list({
+    projectId,
+    includeAcknowledged = false,
+    page = 1,
+    limit = 50,
+  }: {
+    projectId: string;
+    includeAcknowledged?: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    flags: ReconciliationFlagRow[];
+    pagination: { page: number; limit: number; total: number; pages: number };
+  }> {
+    const base = db('schedule_reconciliation_flag as f')
+      .join('schedule_task_revision as ow', 'ow.revision_id', 'f.overwritten_revision_id')
+      .join('schedule_task_revision as cur', 'cur.revision_id', 'f.overwriting_revision_id')
+      .join('schedule_task as t', 't.task_id', 'f.task_id')
+      .where('f.project_id', projectId);
+    if (!includeAcknowledged) base.whereNull('f.acknowledged_at');
+
+    const countRows = await base.clone().count<{ count: string }[]>('f.flag_id as count');
+    const total = Number(countRows[0]?.count ?? 0);
+
+    const flags = await base
+      .clone()
+      .select(
+        'f.flag_id',
+        't.task_id',
+        't.mpp_unique_id',
+        'cur.task_name',
+        // "DPR says" is the write-back the Planner's upload overwrote; "Schedule says" is what the upload set it to.
+        'ow.pct_work_complete as dpr_pct',
+        'cur.pct_work_complete as schedule_pct',
+        'ow.responsible_user_id as reported_by',
+        'ow.valid_from as reported_at',
+        'f.created_at',
+        'f.acknowledged_at',
+        'f.acknowledged_by',
+      )
+      .orderBy('f.created_at', 'desc')
+      .limit(limit)
+      .offset((page - 1) * limit);
+
+    return { flags, pagination: { page, limit, total, pages: Math.ceil(total / limit) || 1 } };
+  }
+
+  static async acknowledge(projectId: string, flagIds: string[], userId: string): Promise<number> {
+    return db('schedule_reconciliation_flag')
+      .where({ project_id: projectId })
+      .whereIn('flag_id', flagIds)
+      .whereNull('acknowledged_at')
+      .update({ acknowledged_at: db.fn.now(), acknowledged_by: userId });
+  }
+}
+
 export type DprStatus = 'draft' | 'submitted';
 export type DprEffectsSeverity = 'none' | 'minor' | 'significant' | 'stoppage';
 export type DprProgressSource = 'schedule_task' | 'free_text';
@@ -3856,7 +4204,6 @@ export interface SubmissionAddressedRiskRow {
   method: AddressedRiskMethod;
   added_by: string;
   added_at: Date;
-  risk_code?: string;
   risk_title?: string;
   risk_status?: string;
   dismissal_reason?: string | null;
@@ -4163,7 +4510,6 @@ export class WeeklySubmissions {
       .where('submission_addressed_risk.submission_id', submissionId)
       .select(
         'submission_addressed_risk.*',
-        'risk.risk_code',
         'risk.title as risk_title',
         'risk.status as risk_status',
       );
@@ -4636,7 +4982,6 @@ export class WeeklySubmissions {
       return {
         addressedRisk: {
           ...row,
-          risk_code: risk.risk_code,
           risk_title: risk.title,
           risk_status: risk.status,
         },
@@ -4665,6 +5010,94 @@ export class WeeklySubmissions {
         .where({ submission_id: submissionId, risk_id: riskId })
         .del();
 
+      return { success: true };
+    };
+
+    return trx ? execute(trx) : db.transaction(execute);
+  }
+}
+
+export interface SubmissionClientPhotoRow {
+  photo_id: string;
+  dpr_id: string;
+  file_id: string;
+  caption: string | null;
+  taken_at: Date | null;
+  report_date: string | Date;
+  site_location: string;
+  selected: boolean;
+}
+
+/** The DPR photos a PM has picked to go out with this submission's client report (AC-CRP area).
+ *  Candidates are every photo on a submitted DPR within the submission's week; `selected` reads
+ *  from `submission_client_photo`, the join table the "Send to client" flow reads at send time. */
+export class SubmissionClientPhotos {
+  static async listForSubmission(
+    submissionId: string,
+    projectId?: string,
+  ): Promise<SubmissionClientPhotoRow[] | null> {
+    let subQ = db('weekly_submission').where({ submission_id: submissionId });
+    if (projectId) subQ = subQ.andWhere({ project_id: projectId });
+    const submission = await subQ.first();
+    if (!submission) return null;
+
+    const weekStart = new Date(submission.week_start);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+
+    const rows = await db('dpr_photo as p')
+      .join('dpr as d', 'd.dpr_id', 'p.dpr_id')
+      .leftJoin('submission_client_photo as scp', function () {
+        this.on('scp.photo_id', '=', 'p.photo_id').andOn(
+          'scp.submission_id',
+          '=',
+          db.raw('?', [submissionId]),
+        );
+      })
+      .where('d.project_id', submission.project_id)
+      .andWhere('d.status', 'submitted')
+      .andWhereBetween('d.report_date', [
+        weekStart.toISOString().slice(0, 10),
+        weekEnd.toISOString().slice(0, 10),
+      ])
+      .select(
+        'p.photo_id',
+        'p.dpr_id',
+        'p.file_id',
+        'p.caption',
+        'p.taken_at',
+        'd.report_date',
+        'd.site_location',
+        db.raw('(scp.photo_id IS NOT NULL) as selected'),
+      )
+      .orderBy('d.report_date', 'asc')
+      .orderBy('p.sort_order', 'asc');
+
+    return rows as SubmissionClientPhotoRow[];
+  }
+
+  static async setSelected(
+    submissionId: string,
+    photoIds: string[],
+    projectId?: string,
+    trx?: Knex.Transaction,
+  ): Promise<{ notFound?: boolean; readOnly?: boolean; success?: boolean }> {
+    const execute = async (t: Knex.Transaction) => {
+      let q = t('weekly_submission').where({ submission_id: submissionId });
+      if (projectId) q = q.andWhere({ project_id: projectId });
+      const submission = await q.first();
+      if (!submission) return { notFound: true };
+      if (submission.status !== 'draft') return { readOnly: true };
+
+      await t('submission_client_photo').where({ submission_id: submissionId }).del();
+      if (photoIds.length > 0) {
+        const rows = photoIds.map((photo_id, idx) => ({
+          submission_id: submissionId,
+          photo_id,
+          sort_order: idx,
+        }));
+        await t('submission_client_photo').insert(rows);
+      }
       return { success: true };
     };
 

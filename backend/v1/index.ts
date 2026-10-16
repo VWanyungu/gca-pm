@@ -28,6 +28,7 @@ import dprRouter from './routers/dprRouter.js';
 import escalationRouter from './routers/escalationRouter.js';
 import changeRequestRouter from './routers/changeRequestRouter.js';
 import weeklySubmissionRouter from './routers/weeklySubmissionRouter.js';
+import scheduleRouter from './routers/scheduleRouter.js';
 
 const router = express.Router();
 
@@ -70,6 +71,7 @@ router.use('/projects/:projectId/escalation', escalationRouter);
 router.use('/projects/:projectId/escalations', escalationRouter);
 router.use('/escalations', escalationRouter);
 router.use('/projects/:projectId/change-requests', changeRequestRouter);
+router.use('/projects/:projectId/schedule', scheduleRouter);
 
 router.use('/logout', logoutRouter);
 router.use('/token', refreshTokenRouter);

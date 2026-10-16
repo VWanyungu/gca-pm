@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Sun, Moon, HelpCircle, Bell, ChevronDown, FolderKanban, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -33,11 +33,21 @@ const STATUS_LABELS: Record<string, string> = {
 
 export function Navbar() {
   const pathname = usePathname();
-  const { user, isAuthenticated } = useAuth();
+  const router = useRouter();
+  const { user, isAuthenticated, logout } = useAuth();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   useOutsideClick({ ref: dropdownRef, handler: () => setOpenDropdown(null) });
+  useOutsideClick({ ref: accountMenuRef, handler: () => setAccountMenuOpen(false) });
+
+  async function handleSignOut() {
+    setAccountMenuOpen(false);
+    await logout();
+    router.push("/login");
+  }
 
   const { data: recentProjects = [] } = useQuery({
     queryKey: ["projects", "recent"],
@@ -191,12 +201,50 @@ export function Navbar() {
         </button>
 
         {/* User menu */}
-        <button className="flex items-center gap-[8px] rounded-[8px] px-[4px] py-[2px]">
-          <div className="flex size-[32px] items-center justify-center rounded-[8px] bg-gca-badge-bg">
-            <span className="text-[12px] font-semibold text-gca-badge-text">{initials}</span>
-          </div>
-          <ChevronDown className="size-[8px] text-gca-show" />
-        </button>
+        <div className="relative" ref={accountMenuRef}>
+          <button
+            onClick={() => setAccountMenuOpen((open) => !open)}
+            className="flex items-center gap-[8px] rounded-[8px] px-[4px] py-[2px] cursor-pointer"
+          >
+            <div className="flex size-[32px] items-center justify-center rounded-[8px] bg-gca-badge-bg">
+              <span className="text-[12px] font-semibold text-gca-badge-text">{initials}</span>
+            </div>
+            <ChevronDown className="size-[8px] text-gca-show" />
+          </button>
+
+          {accountMenuOpen && (
+            <div className="absolute right-0 top-[44px] z-50 w-[260px] rounded-[12px] border border-gca-border bg-white p-[8px] shadow-[0px_10px_28px_0px_rgba(23,48,31,0.08)]">
+              <div className="flex flex-col gap-[2px] px-[10px] py-[8px]">
+                <p className="truncate text-[14px] font-semibold text-gca-dark">
+                  {user?.firstName || user?.email || "Account"}
+                </p>
+                <p className="truncate text-[12px] text-gca-show">{user?.email}</p>
+              </div>
+              <div className="my-[4px] h-px bg-gca-border" />
+              <Link
+                href="/profile"
+                onClick={() => setAccountMenuOpen(false)}
+                className="block rounded-[6px] px-[10px] py-[9px] text-[14px] text-gca-dark hover:bg-gca-page-bg"
+              >
+                My profile
+              </Link>
+              <Link
+                href="/profile"
+                onClick={() => setAccountMenuOpen(false)}
+                className="block rounded-[6px] px-[10px] py-[9px] text-[14px] text-gca-dark hover:bg-gca-page-bg"
+              >
+                Notification preferences
+              </Link>
+              <div className="my-[4px] h-px bg-gca-border" />
+              <button
+                onClick={handleSignOut}
+                className="block w-full rounded-[6px] px-[10px] py-[9px] text-left text-[14px] text-[#b42318] hover:bg-gca-page-bg cursor-pointer"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );
