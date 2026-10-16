@@ -1,3 +1,6 @@
+import { reportError } from "./toast";
+import { saveRedirectPath } from "./session";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -6,6 +9,21 @@ interface ApiResponse<T = unknown> {
   status: "success" | "fail" | "error";
   data: T | null;
   message: string;
+  httpStatus?: number;
+}
+
+// Messages the backend uses when the access token itself is the problem (missing, expired,
+// blacklisted). Anything else on a 401/403 (e.g. "Not authorized") is a permission issue,
+// not a session issue.
+const TOKEN_ERROR_MESSAGES = new Set([
+  "Token not provided",
+  "Expired or invalid token",
+  "Token is blacklisted",
+  "Authentication token not provided",
+]);
+
+function isTokenError(status: number, message: string): boolean {
+  return status === 401 || TOKEN_ERROR_MESSAGES.has(message);
 }
 
 function getTokens() {
@@ -18,9 +36,11 @@ function setToken(token: string) {
   localStorage.setItem("token", token);
 }
 
-function clearTokens() {
+function handleSessionExpired() {
   localStorage.removeItem("token");
   localStorage.removeItem("refreshToken");
+  saveRedirectPath();
+  window.location.href = "/login";
 }
 
 async function refreshAccessToken(): Promise<string | null> {
@@ -51,6 +71,7 @@ async function request<T = unknown>(
   path: string,
   method: Method,
   body?: unknown,
+  opts?: { silent?: boolean },
 ): Promise<ApiResponse<T>> {
   const { token } = getTokens();
 
@@ -62,14 +83,15 @@ async function request<T = unknown>(
   if (token) 
     headers["Authorization"] = `Bearer ${token}`;
 
-  try{
+  try {
     let res = await fetch(`${API_BASE}${path}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
     });
+    let result: ApiResponse<T> = await res.json();
 
-    if (res.status === 403 && token) {
+    if (token && isTokenError(res.status, result.message)) {
       const newToken = await refreshAccessToken();
       if (newToken) {
         headers["Authorization"] = `Bearer ${newToken}`;
@@ -78,30 +100,39 @@ async function request<T = unknown>(
           headers,
           body: body ? JSON.stringify(body) : undefined,
         });
-      } else {
-        clearTokens();
-        window.location.href = "/login";
-        return { status: "error", data: null, message: "Session expired" };
+        result = await res.json();
+      }
+
+      if (isTokenError(res.status, result.message)) {
+        handleSessionExpired();
+        return { status: "error", data: null, message: "Your session expired", httpStatus: res.status };
       }
     }
 
-    return res.json();
-  }catch (error) {
+    result.httpStatus = res.status;
+
+    // Validation failures (400) stay inline on the form; everything else surfaces as a toast,
+    // unless the caller handles the error itself (e.g. a full-page 403/404 state).
+    if (!res.ok && res.status !== 400 && !opts?.silent) {
+      reportError(result.message || "Something went wrong");
+    }
+
+    return result;
+  } catch (error) {
     console.error("Error during API request:", error);
+    if (!opts?.silent) reportError("An unexpected error occurred");
     return { status: "error", data: null, message: "An unexpected error occurred" };
   }
-
-  
 }
 
 export const api = {
-  get: <T = unknown>(path: string) => request<T>(path, "GET"),
-  post: <T = unknown>(path: string, body?: unknown) =>
-    request<T>(path, "POST", body),
-  put: <T = unknown>(path: string, body?: unknown) =>
-    request<T>(path, "PUT", body),
-  patch: <T = unknown>(path: string, body?: unknown) =>
-    request<T>(path, "PATCH", body),
-  delete: <T = unknown>(path: string, body?: unknown) =>
-    request<T>(path, "DELETE", body),
+  get: <T = unknown>(path: string, opts?: { silent?: boolean }) => request<T>(path, "GET", undefined, opts),
+  post: <T = unknown>(path: string, body?: unknown, opts?: { silent?: boolean }) =>
+    request<T>(path, "POST", body, opts),
+  put: <T = unknown>(path: string, body?: unknown, opts?: { silent?: boolean }) =>
+    request<T>(path, "PUT", body, opts),
+  patch: <T = unknown>(path: string, body?: unknown, opts?: { silent?: boolean }) =>
+    request<T>(path, "PATCH", body, opts),
+  delete: <T = unknown>(path: string, body?: unknown, opts?: { silent?: boolean }) =>
+    request<T>(path, "DELETE", body, opts),
 };

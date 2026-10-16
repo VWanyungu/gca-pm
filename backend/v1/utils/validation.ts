@@ -1,6 +1,8 @@
 import Joi from 'joi';
 import type {
   CreateUserInput,
+  AdminCreateUserInput,
+  UpdateUserInput,
   RoleName,
   ScopeType,
   StageEvent,
@@ -23,6 +25,39 @@ export const createUserSchema = Joi.object<CreateUserInput>({
   email: Joi.string().email().lowercase().required(),
   passwordHash: Joi.string().required(),
   username: Joi.string().alphanum().min(3).max(30).required(),
+});
+
+const USER_ROLE_NAMES: RoleName[] = ['PM', 'Planner', 'SiteEngineer', 'ExCo', 'Admin', 'ProjectCreator'];
+
+export const userIdParamSchema = Joi.object({
+  id: Joi.string().uuid().required(),
+});
+
+export const listUsersQuerySchema = Joi.object({
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(10),
+  search: Joi.string().trim().max(200).optional(),
+  globalRole: Joi.string().valid(...USER_ROLE_NAMES).optional(),
+  status: Joi.string().valid('active', 'deactivated').optional(),
+});
+
+export const adminCreateUserSchema = Joi.object<AdminCreateUserInput>({
+  firstName: Joi.string().trim().min(1).max(50).required(),
+  lastName: Joi.string().trim().min(1).max(50).required(),
+  email: Joi.string().email().lowercase().required(),
+  phone: Joi.string().trim().max(30).allow(null, '').optional(),
+  globalRole: Joi.string().valid(...USER_ROLE_NAMES).allow(null).optional(),
+});
+
+export const updateUserSchema = Joi.object<UpdateUserInput>({
+  firstName: Joi.string().trim().min(1).max(50).optional(),
+  lastName: Joi.string().trim().min(1).max(50).optional(),
+  phone: Joi.string().trim().max(30).allow(null, '').optional(),
+  globalRole: Joi.string().valid(...USER_ROLE_NAMES).allow(null).optional(),
+}).min(1);
+
+export const setUserStatusSchema = Joi.object({
+  status: Joi.string().valid('active', 'deactivated').required(),
 });
 
 export interface CreateRoleBody {
@@ -76,6 +111,20 @@ export const listRolesQuerySchema = Joi.object<ListRolesQuery>({
   projectId: Joi.string().uuid().optional(),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(10),
+});
+
+export interface ReassignMainRoleBody {
+  projectId: string;
+  role: 'PM' | 'Planner';
+  newUserId: string;
+  reason?: string | null;
+}
+
+export const reassignMainRoleSchema = Joi.object<ReassignMainRoleBody>({
+  projectId: Joi.string().uuid().required(),
+  role: Joi.string().valid('PM', 'Planner').required(),
+  newUserId: Joi.string().uuid().required(),
+  reason: Joi.string().trim().max(10000).allow(null, '').optional(),
 });
 
 export interface CreateRiskCategoryBody {

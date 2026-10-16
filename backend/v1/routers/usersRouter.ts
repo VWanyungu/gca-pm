@@ -1,6 +1,16 @@
 import express from 'express';
+import { randomUUID } from 'crypto';
 import { Users } from '../database/utils/database.js';
+import type { AdminCreateUserInput, UpdateUserInput } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import hashPassword from '../utils/hashPassword.js';
+import {
+  userIdParamSchema,
+  listUsersQuerySchema,
+  adminCreateUserSchema,
+  updateUserSchema,
+  setUserStatusSchema,
+} from '../utils/validation.js';
 
 const router = express.Router();
 
@@ -20,10 +30,14 @@ router.get('/', canRead, async (req, res) => {
 
   switch (type) {
     case 'multiple': {
-      const page = parseInt(String(req.query.page ?? '1'), 10);
-      const limit = parseInt(String(req.query.limit ?? '10'), 10);
+      const { error, value } = listUsersQuerySchema.validate(req.query, { abortEarly: false, stripUnknown: true });
+      if (error) {
+        res.status(400).json({ status: 'error', data: null, message: error.message });
+        return;
+      }
+      const { page, limit, search, globalRole, status } = value;
       try {
-        const response = await Users.getAllUsers({ page, limit });
+        const response = await Users.getAllUsers({ page, limit, search, globalRole, status });
         res.status(200).json({
           status: 'success',
           data: { response },
@@ -68,12 +82,94 @@ router.get('/', canRead, async (req, res) => {
   }
 });
 
-router.put('/', canWrite, (_req, res) => {
-  res.status(501).json({ status: 'error', data: null, message: 'Not implemented' });
+router.get('/:id', canRead, async (req, res) => {
+  const { error, value } = userIdParamSchema.validate(req.params);
+  if (error) {
+    res.status(400).json({ status: 'error', data: null, message: error.message });
+    return;
+  }
+  try {
+    const user = await Users.getUserById((value as { id: string }).id);
+    if (!user) {
+      res.status(404).json({ status: 'error', data: null, message: 'User not found' });
+      return;
+    }
+    res.status(200).json({ status: 'success', data: { user }, message: 'User retrieved successfully' });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({ status: 'error', data: null, message });
+  }
 });
 
-router.delete('/', canWrite, (_req, res) => {
-  res.status(501).json({ status: 'error', data: null, message: 'Not implemented' });
+// Admin-created user — no password field in the UI, so we mint a random one. The user resets
+// it via the existing forgot-password flow; a real "send invite email" is a follow-up (not built here).
+router.post('/', canWrite, async (req, res) => {
+  const { error, value } = adminCreateUserSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
+  if (error) {
+    res.status(400).json({ status: 'error', data: null, message: error.message });
+    return;
+  }
+  try {
+    const passwordHash = await hashPassword(randomUUID());
+    const user = await Users.createUserAdmin(value as AdminCreateUserInput, passwordHash, req.user!.userId);
+    res.status(201).json({ status: 'success', data: { user }, message: 'User created' });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({ status: 'error', data: null, message });
+  }
+});
+
+router.put('/:id', canWrite, async (req, res) => {
+  const params = userIdParamSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const body = updateUserSchema.validate(req.body ?? {}, { abortEarly: false, stripUnknown: true });
+  if (body.error) {
+    res.status(400).json({ status: 'error', data: null, message: body.error.message });
+    return;
+  }
+  try {
+    const user = await Users.updateUser(
+      (params.value as { id: string }).id,
+      body.value as UpdateUserInput,
+      req.user!.userId,
+    );
+    if (!user) {
+      res.status(404).json({ status: 'error', data: null, message: 'User not found' });
+      return;
+    }
+    res.status(200).json({ status: 'success', data: { user }, message: 'User updated' });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({ status: 'error', data: null, message });
+  }
+});
+
+// Deactivation is a soft status flag, not a delete — records stay, access is revoked.
+router.patch('/:id/status', canWrite, async (req, res) => {
+  const params = userIdParamSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const body = setUserStatusSchema.validate(req.body ?? {});
+  if (body.error) {
+    res.status(400).json({ status: 'error', data: null, message: body.error.message });
+    return;
+  }
+  try {
+    const user = await Users.setStatus((params.value as { id: string }).id, body.value.status);
+    if (!user) {
+      res.status(404).json({ status: 'error', data: null, message: 'User not found' });
+      return;
+    }
+    res.status(200).json({ status: 'success', data: { user }, message: 'User status updated' });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({ status: 'error', data: null, message });
+  }
 });
 
 export default router;

@@ -13,8 +13,39 @@ export interface UserListItem {
   last_name: string;
   email: string;
   username: string | null;
+  phone_number: string | null;
+  status: 'active' | 'deactivated';
   is_verified: boolean;
+  last_login: Date | null;
   created_at: Date;
+  global_role: RoleName | null;
+  project_access: { role: RoleName; count: number }[];
+}
+
+export interface UserDetail {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string | null;
+  status: 'active' | 'deactivated';
+  global_role: RoleName | null;
+  roles: (RoleGrantRow & { scope_name: string | null; is_main: boolean })[];
+}
+
+export interface UpdateUserInput {
+  firstName?: string;
+  lastName?: string;
+  phone?: string | null;
+  globalRole?: RoleName | null;
+}
+
+export interface AdminCreateUserInput {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string | null;
+  globalRole?: RoleName | null;
 }
 
 export interface UserAuthView {
@@ -43,21 +74,191 @@ export class Users {
   static async getAllUsers({
     page = 1,
     limit = 10,
-  }: { page?: number; limit?: number }): Promise<Paginated<UserListItem>> {
+    search,
+    globalRole,
+    status,
+  }: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    globalRole?: RoleName;
+    status?: 'active' | 'deactivated';
+  }): Promise<Paginated<UserListItem> & { activeCount: number }> {
     const offset = (page - 1) * limit;
-    const users = await db<UserListItem>('users')
-      .select('id', 'first_name', 'last_name', 'email', 'username', 'is_verified', 'created_at')
+    const base = db('users');
+    if (search) {
+      const term = `%${search.toLowerCase()}%`;
+      base.where((qb) => {
+        qb.whereRaw('lower(first_name || \' \' || last_name) like ?', [term]).orWhereRaw('lower(email) like ?', [
+          term,
+        ]);
+      });
+    }
+    if (status) base.where({ status });
+    if (globalRole) {
+      base.whereExists(
+        db('roles')
+          .whereRaw('roles.user_id = users.id')
+          .andWhere({ role: globalRole, scope_type: 'global' })
+          .whereNull('revoked_at'),
+      );
+    }
+
+    const countRows = await base.clone().count<{ count: string }[]>('id as count');
+    const total = Number(countRows[0]?.count ?? 0);
+    const [activeRow] = await db('users').where({ status: 'active' }).count<{ count: string }[]>('id as count');
+    const activeCount = activeRow?.count ?? '0';
+
+    const rows = await base
+      .clone()
+      .select(
+        'id',
+        'first_name',
+        'last_name',
+        'email',
+        'username',
+        'phone_number',
+        'status',
+        'is_verified',
+        'last_login',
+        'created_at',
+      )
       .limit(limit)
       .offset(offset)
       .orderBy('id');
 
-    const [row] = await db('users').count<{ total: string }[]>('* as total');
-    const total = Number(row?.total ?? 0);
+    const ids = rows.map((r) => r.id);
+    const roleRows = ids.length
+      ? await db('roles').select('user_id', 'role', 'scope_type').whereIn('user_id', ids).whereNull('revoked_at')
+      : [];
+
+    const users: UserListItem[] = rows.map((row) => {
+      const ownRoles = roleRows.filter((r) => r.user_id === row.id);
+      const globalRoleRow = ownRoles.find((r) => r.scope_type === 'global' && r.role !== 'Admin') ??
+        ownRoles.find((r) => r.scope_type === 'global');
+      const scoped = ownRoles.filter((r) => r.scope_type !== 'global');
+      const counts = new Map<RoleName, number>();
+      for (const r of scoped) counts.set(r.role, (counts.get(r.role) ?? 0) + 1);
+
+      return {
+        ...row,
+        global_role: globalRoleRow ? globalRoleRow.role : null,
+        project_access: Array.from(counts.entries()).map(([role, count]) => ({ role, count })),
+      };
+    });
 
     return {
       users,
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+      activeCount: Number(activeCount ?? 0),
     };
+  }
+
+  static async getUserById(id: string): Promise<UserDetail | null> {
+    const user = await db('users')
+      .select('id', 'first_name', 'last_name', 'email', 'phone_number', 'status')
+      .where({ id })
+      .first();
+    if (!user) return null;
+
+    const roleRows = await db('roles')
+      .select('attribute_id', 'user_id', 'role', 'scope_type', 'program_id', 'project_id', 'granted_by', 'granted_at')
+      .where({ user_id: id })
+      .whereNull('revoked_at');
+
+    const programIds = roleRows.filter((r) => r.program_id != null).map((r) => r.program_id);
+    const projectIds = roleRows.filter((r) => r.project_id != null).map((r) => r.project_id);
+    const programs = programIds.length
+      ? await db('programs').select('program_id', 'name').whereIn('program_id', programIds)
+      : [];
+    const projects = projectIds.length
+      ? await db('projects').select('project_id', 'name').whereIn('project_id', projectIds)
+      : [];
+
+    // "Main" PM/Planner isn't a flag in the schema: by convention (see frontend team-view.tsx's
+    // `mainOf`) it's whoever was granted that role on the project earliest among active grants.
+    const mainCandidateProjectIds = [
+      ...new Set(
+        roleRows.filter((r) => r.scope_type === 'project' && (r.role === 'PM' || r.role === 'Planner')).map((r) => r.project_id),
+      ),
+    ];
+    const mainHolderByKey = new Map<string, string>();
+    if (mainCandidateProjectIds.length) {
+      const allGrants = await db('roles')
+        .select('attribute_id', 'project_id', 'role', 'granted_at')
+        .whereIn('project_id', mainCandidateProjectIds as string[])
+        .whereIn('role', ['PM', 'Planner'])
+        .where('scope_type', 'project')
+        .whereNull('revoked_at')
+        .orderBy('granted_at', 'asc');
+      for (const g of allGrants) {
+        const key = `${g.project_id}:${g.role}`;
+        if (!mainHolderByKey.has(key)) mainHolderByKey.set(key, g.attribute_id);
+      }
+    }
+
+    const roles = roleRows.map((r) => ({
+      ...r,
+      scope_name:
+        r.scope_type === 'program'
+          ? programs.find((p) => p.program_id === r.program_id)?.name ?? null
+          : r.scope_type === 'project'
+            ? projects.find((p) => p.project_id === r.project_id)?.name ?? null
+            : null,
+      is_main:
+        r.scope_type === 'project' &&
+        (r.role === 'PM' || r.role === 'Planner') &&
+        mainHolderByKey.get(`${r.project_id}:${r.role}`) === r.attribute_id,
+    }));
+
+    const globalRoleRow = roles.find((r) => r.scope_type === 'global' && r.role !== 'Admin') ??
+      roles.find((r) => r.scope_type === 'global');
+
+    return { ...user, global_role: globalRoleRow ? globalRoleRow.role : null, roles };
+  }
+
+  static async updateUser(id: string, input: UpdateUserInput, actorId: string): Promise<UserDetail | null> {
+    const patch: Record<string, unknown> = {};
+    if (input.firstName !== undefined) patch.first_name = input.firstName;
+    if (input.lastName !== undefined) patch.last_name = input.lastName;
+    if (input.phone !== undefined) patch.phone_number = input.phone;
+    if (Object.keys(patch).length) {
+      patch.updated_at = db.fn.now();
+      await db('users').where({ id }).update(patch);
+    }
+    if (input.globalRole !== undefined) {
+      await Roles.setGlobalRole(id, input.globalRole, actorId);
+    }
+    return Users.getUserById(id);
+  }
+
+  static async setStatus(id: string, status: 'active' | 'deactivated'): Promise<UserDetail | null> {
+    const affected = await db('users').where({ id }).update({ status, updated_at: db.fn.now() });
+    if (!affected) return null;
+    return Users.getUserById(id);
+  }
+
+  static async createUserAdmin(
+    input: AdminCreateUserInput,
+    passwordHash: string,
+    actorId: string,
+  ): Promise<UserDetail | null> {
+    const id = randomUUID();
+    await db('users').insert({
+      id,
+      first_name: input.firstName,
+      last_name: input.lastName,
+      email: input.email,
+      password_hash: passwordHash,
+      username: input.email.split('@')[0],
+      phone_number: input.phone ?? null,
+      status: 'active',
+      is_verified: false,
+    });
+    if (input.globalRole) {
+      await Roles.setGlobalRole(id, input.globalRole, actorId);
+    }
+    return Users.getUserById(id);
   }
 
   static async getSingleUserByEmail(email: string): Promise<UserAuthView> {
@@ -163,6 +364,27 @@ export interface GrantInput {
 }
 
 export class Roles {
+  /** Replaces a user's single global role (e.g. the admin form's "Global role" field) with the given one, or clears it. */
+  static async setGlobalRole(userId: string, role: RoleName | null, actorId: string): Promise<void> {
+    await db.transaction(async (trx) => {
+      await trx('roles')
+        .where({ user_id: userId, scope_type: 'global' })
+        .whereNull('revoked_at')
+        .update({ revoked_by: actorId, revoked_at: trx.fn.now(), revoke_reason: 'Replaced via admin global role change' });
+      if (role) {
+        await trx('roles').insert({
+          attribute_id: randomUUID(),
+          user_id: userId,
+          role,
+          scope_type: 'global',
+          program_id: null,
+          project_id: null,
+          granted_by: actorId,
+        });
+      }
+    });
+  }
+
   static async getRoles(userId: string): Promise<RoleGrant[]> {
     const rows = await db('roles')
       .select('role', 'scope_type', 'program_id', 'project_id')
@@ -231,6 +453,68 @@ export class Roles {
       .whereNull('revoked_at')
       .first();
     return row ?? null;
+  }
+
+  /** Current main PM/Planner for a project: the earliest-granted active grant of that role (see getUserById). */
+  static async getMainHolder(
+    projectId: string,
+    role: 'PM' | 'Planner',
+  ): Promise<(RoleGrantRow & { first_name: string; last_name: string }) | null> {
+    const row = await db('roles')
+      .join('users', 'users.id', 'roles.user_id')
+      .select(
+        'roles.attribute_id',
+        'roles.user_id',
+        'roles.role',
+        'roles.scope_type',
+        'roles.program_id',
+        'roles.project_id',
+        'roles.granted_by',
+        'roles.granted_at',
+        'users.first_name',
+        'users.last_name',
+      )
+      .where({ 'roles.project_id': projectId, 'roles.role': role, 'roles.scope_type': 'project' })
+      .whereNull('roles.revoked_at')
+      .orderBy('roles.granted_at', 'asc')
+      .first();
+    return row ?? null;
+  }
+
+  /** Atomically demotes the current main PM/Planner on a project and promotes the new holder. */
+  static async reassignMain(input: {
+    projectId: string;
+    role: 'PM' | 'Planner';
+    newUserId: string;
+    actorId: string;
+    reason: string | null;
+  }): Promise<string> {
+    const { projectId, role, newUserId, actorId, reason } = input;
+    return db.transaction(async (trx) => {
+      const current = await trx('roles')
+        .where({ project_id: projectId, role, scope_type: 'project' })
+        .whereNull('revoked_at')
+        .orderBy('granted_at', 'asc')
+        .first();
+
+      if (current) {
+        await trx('roles')
+          .where({ attribute_id: current.attribute_id })
+          .update({ revoked_by: actorId, revoked_at: trx.fn.now(), revoke_reason: reason ?? 'Reassigned main ' + role });
+      }
+
+      const attributeId = randomUUID();
+      await trx('roles').insert({
+        attribute_id: attributeId,
+        user_id: newUserId,
+        role,
+        scope_type: 'project',
+        program_id: null,
+        project_id: projectId,
+        granted_by: actorId,
+      });
+      return attributeId;
+    });
   }
 }
 
@@ -5338,6 +5622,81 @@ export class ChangeRequests {
       .update({ status: 'withdrawn', withdrawn_at: new Date() })
       .returning(CHANGE_REQUEST_COLS);
     return row ?? null;
+  }
+}
+
+export interface NotificationRow {
+  notification_id: string;
+  recipient_id: string;
+  type_code: string;
+  project_id: string | null;
+  entity_type: string | null;
+  entity_id: string | null;
+  title: string;
+  body: string;
+  payload: Record<string, unknown>;
+  in_app: boolean;
+  created_at: Date;
+  read_at: Date | null;
+}
+
+export class Notifications {
+  static async listForUser(userId: string, { unreadOnly = false }: { unreadOnly?: boolean } = {}): Promise<NotificationRow[]> {
+    const query = db('notification').where({ recipient_id: userId, in_app: true });
+    if (unreadOnly) query.whereNull('read_at');
+    return query.orderBy('created_at', 'desc').limit(100);
+  }
+
+  static async unreadCount(userId: string): Promise<number> {
+    const row = await db('notification')
+      .where({ recipient_id: userId, in_app: true })
+      .whereNull('read_at')
+      .count<{ count: string }[]>('notification_id as count')
+      .first();
+    return Number(row?.count ?? 0);
+  }
+
+  static async markRead(notificationId: string, userId: string): Promise<boolean> {
+    const count = await db('notification')
+      .where({ notification_id: notificationId, recipient_id: userId })
+      .update({ read_at: db.fn.now() });
+    return count > 0;
+  }
+
+  static async markAllRead(userId: string): Promise<void> {
+    await db('notification').where({ recipient_id: userId }).whereNull('read_at').update({ read_at: db.fn.now() });
+  }
+}
+
+export interface NotificationTypeRow {
+  type_code: string;
+  description: string;
+  default_in_app: boolean;
+  default_email: boolean;
+  can_opt_out: boolean;
+}
+
+export interface NotificationPreferenceRow {
+  user_id: string;
+  type_code: string;
+  channel: 'in_app' | 'email';
+  enabled: boolean;
+}
+
+export class NotificationPreferences {
+  static async listTypes(): Promise<NotificationTypeRow[]> {
+    return db('notification_type').select('*').orderBy('type_code');
+  }
+
+  static async getForUser(userId: string): Promise<NotificationPreferenceRow[]> {
+    return db('notification_preference').where({ user_id: userId });
+  }
+
+  static async setForUser(userId: string, typeCode: string, channel: 'in_app' | 'email', enabled: boolean): Promise<void> {
+    await db('notification_preference')
+      .insert({ user_id: userId, type_code: typeCode, channel, enabled })
+      .onConflict(['user_id', 'type_code', 'channel'])
+      .merge(['enabled', 'updated_at']);
   }
 }
 

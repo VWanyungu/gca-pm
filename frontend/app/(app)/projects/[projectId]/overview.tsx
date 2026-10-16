@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_MANAGE_PROJECT } from "@/lib/access-control";
+import { SystemStateScreen } from "@/components/system-state/system-state-screen";
 import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
 import { StatusControl } from "@/components/project-overview/status-control";
 import { StagePipeline } from "@/components/project-overview/stage-pipeline";
@@ -20,6 +21,7 @@ import {
   useOpenEscalations,
   useDraftSubmission,
   useSidebarCounts,
+  ApiError,
 } from "@/components/project-overview/use-project-data";
 
 export default function ProjectOverview({ projectId }: { projectId: string }) {
@@ -61,6 +63,12 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
     );
   }
   if (error || !data) {
+    if (error instanceof ApiError && error.httpStatus === 403) {
+      return <SystemStateScreen code="403" />;
+    }
+    if (error instanceof ApiError && error.httpStatus === 404) {
+      return <SystemStateScreen code="404" />;
+    }
     return <p className="p-[40px] text-[14px] text-error-text">{error?.message ?? "Project not found"}</p>;
   }
 

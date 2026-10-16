@@ -8,9 +8,11 @@ import {
     revokeRoleParamsSchema,
     revokeRoleBodySchema,
     listRolesQuerySchema,
+    reassignMainRoleSchema,
     type CreateRoleBody,
     type RevokeRoleBody,
     type ListRolesQuery,
+    type ReassignMainRoleBody,
 } from '../utils/validation.js';
 
 const router = express.Router();
@@ -140,6 +142,31 @@ router.delete('/:attributeId', canCreateOrRevoke, async (req, res) => {
 
         const revokedRole = await Roles.revoke(attributeId, req.user!.userId, reason);
         res.status(200).json({ status: 'success', data: { revokedRole }, message: 'Role revoked' });
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        res.status(500).json({ status: 'error', data: null, message });
+    }
+});
+
+// Reassigns a project's main PM/Planner (the earliest-granted active holder of that role on the
+// project — see Users.getUserById / Roles.getMainHolder for the convention): demotes the current
+// holder and promotes the new one in one transaction. Gated the same as grant/revoke.
+router.post('/reassign-main', canCreateOrRevoke, async (req, res) => {
+    const { error, value } = reassignMainRoleSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
+    if (error) {
+        res.status(400).json({ status: 'error', data: null, message: error.message });
+        return;
+    }
+    const { projectId, role, newUserId, reason = null } = value as ReassignMainRoleBody;
+
+    if (!actorCanActOnScope(req.user!.role, 'project', null, projectId)) {
+        res.status(403).json({ status: 'error', data: null, message: 'Not authorized to reassign at this scope' });
+        return;
+    }
+
+    try {
+        const attributeId = await Roles.reassignMain({ projectId, role, newUserId, actorId: req.user!.userId, reason });
+        res.status(200).json({ status: 'success', data: { attributeId }, message: 'Main role reassigned' });
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
         res.status(500).json({ status: 'error', data: null, message });
