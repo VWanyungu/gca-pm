@@ -19,6 +19,10 @@
   --gca-badge-text: #1f5530;
   --gca-stepper-from: #eef5f0;
   --gca-stepper-to: #f8faf8;
+  --gca-teal: #0f766e;
+  --gca-blue: #2563eb;
+  --gca-purple: #7c3aed;
+  --gca-slate: #475569;
 }
 
 @theme inline {
@@ -39,6 +43,10 @@
   --color-gca-badge-text: var(--gca-badge-text);
   --color-gca-stepper-from: var(--gca-stepper-from);
   --color-gca-stepper-to: var(--gca-stepper-to);
+  --color-gca-teal: var(--gca-teal);
+  --color-gca-blue: var(--gca-blue);
+  --color-gca-purple: var(--gca-purple);
+  --color-gca-slate: var(--gca-slate);
   --font-sans: var(--font-geist);
   --font-mono: "Geist Mono", monospace;
 }

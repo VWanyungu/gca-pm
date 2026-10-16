@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   WeeklySubmissions,
+  SubmissionClientPhotos,
   Projects,
   type WeeklySubmissionStatus,
   type ProjectRag,
@@ -16,12 +17,14 @@ import {
   supersedeWeeklySubmissionSchema,
   addSubmissionAddressedRiskSchema,
   listWeeklySubmissionsQuerySchema,
+  setSubmissionClientPhotosSchema,
   type CreateWeeklySubmissionBody,
   type UpdateWeeklySubmissionBody,
   type ApproveWeeklySubmissionBody,
   type SupersedeWeeklySubmissionBody,
   type AddSubmissionAddressedRiskBody,
   type ListWeeklySubmissionsQuery,
+  type SetSubmissionClientPhotosBody,
 } from '../utils/validation.js';
 
 // mergeParams so :projectId from the parent mount reaches authorize + handlers.
@@ -525,6 +528,68 @@ router.delete('/:submissionId/addressed-risks/:riskId', canManage, async (req, r
       data: null,
       message: 'Addressed risk removed',
     });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({ status: 'error', data: null, message });
+  }
+});
+
+// GET /:submissionId/photos — candidate DPR photos for the submission's week, with selection state
+router.get('/:submissionId/photos', canView, async (req, res) => {
+  const params = weeklySubmissionParamsSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const { projectId, submissionId } = params.value as { projectId?: string; submissionId: string };
+
+  try {
+    const photos = await SubmissionClientPhotos.listForSubmission(submissionId, projectId);
+    if (!photos) {
+      res.status(404).json({ status: 'error', data: null, message: 'Weekly submission not found' });
+      return;
+    }
+
+    res.status(200).json({ status: 'success', data: { photos }, message: 'Submission photos retrieved' });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({ status: 'error', data: null, message });
+  }
+});
+
+// PUT /:submissionId/photos — replace the selected DPR photos for this submission's client report
+router.put('/:submissionId/photos', canManage, async (req, res) => {
+  const params = weeklySubmissionParamsSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const { projectId, submissionId } = params.value as { projectId?: string; submissionId: string };
+
+  const body = setSubmissionClientPhotosSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
+  if (body.error) {
+    res.status(400).json({ status: 'error', data: null, message: body.error.message });
+    return;
+  }
+  const { photo_ids } = body.value as SetSubmissionClientPhotosBody;
+
+  try {
+    const result = await SubmissionClientPhotos.setSelected(submissionId, photo_ids, projectId);
+    if (result.notFound) {
+      res.status(404).json({ status: 'error', data: null, message: 'Weekly submission not found' });
+      return;
+    }
+    if (result.readOnly) {
+      res.status(400).json({
+        status: 'error',
+        data: null,
+        message: 'Approved submissions are read-only — ask an Admin to supersede',
+      });
+      return;
+    }
+
+    const photos = await SubmissionClientPhotos.listForSubmission(submissionId, projectId);
+    res.status(200).json({ status: 'success', data: { photos }, message: 'Submission photos updated' });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     res.status(500).json({ status: 'error', data: null, message });
