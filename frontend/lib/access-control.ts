@@ -88,6 +88,11 @@ export const CAN_DECIDE_CHANGE_REQUEST: Permission[] = [{ role: "ExCo", scopeTyp
 
 export const CAN_MANAGE_USERS: Permission[] = [{ role: "Admin", scopeType: "global" }];
 
+export const CAN_VIEW_REPORTS: Permission[] = [
+  { role: "Admin", scopeType: "global" },
+  { role: "ExCo", scopeType: "global" },
+];
+
 /**
  * AC-DPR-01: create/edit/submit requires SiteEngineer@project or Admin@global. Mirrors
  * `canCreateOrEdit` in `backend/v1/routers/dprRouter.ts` exactly.

@@ -8,15 +8,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Search, Sun, Moon, HelpCircle, Bell, ChevronDown, FolderKanban, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
-import { canAccess, CAN_MANAGE_USERS } from "@/lib/access-control";
+import { canAccess, CAN_MANAGE_USERS, CAN_VIEW_REPORTS } from "@/lib/access-control";
 import useOutsideClick from "@/hooks/use-outside-click";
 import { useUnreadCount } from "@/components/notifications/use-notifications";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/" },
   { label: "Projects", href: "/projects", hasDropdown: true },
-  { label: "Portfolio", href: "/portfolio" },
-  { label: "Reports", href: "/reports" },
 ];
 
 interface RecentProject {
@@ -63,9 +61,13 @@ export function Navbar() {
 
   const { data: unreadCount = 0 } = useUnreadCount();
 
-  const navItems = canAccess(user?.role, CAN_MANAGE_USERS)
+  let navItems = canAccess(user?.role, CAN_MANAGE_USERS)
     ? [...NAV_ITEMS, { label: "Admin", href: "/admin" }]
     : NAV_ITEMS;
+
+  navItems = canAccess(user?.role, CAN_VIEW_REPORTS)
+    ? [...navItems, { label: "Exco", href: "/reports" }]
+    : navItems;
 
   const initials = user?.email
     ? user.email
@@ -131,8 +133,11 @@ export function Navbar() {
 
                 {/* Projects dropdown — recent projects + shortcuts (S-PM-09) */}
                 {item.hasDropdown && openDropdown === "Projects" && (
-                  <div onMouseEnter={() => setOpenDropdown(item.label)}
-                    onMouseLeave={() => setOpenDropdown(null)} className="absolute left-0 top-[48px] z-50 w-[294px] rounded-[10px] border border-gca-border bg-white p-[8px] shadow-[0px_4px_12px_rgba(0,0,0,0.08)]">
+                  <div
+                    onMouseEnter={() => setOpenDropdown(item.label)}
+                    onMouseLeave={() => setOpenDropdown(null)}
+                    className="absolute left-0 top-[48px] z-50 w-[294px] rounded-[10px] border border-gca-border bg-white p-[8px] shadow-[0px_4px_12px_rgba(0,0,0,0.08)]"
+                  >
                     <p className="pl-[14px] px-[10px] py-[6px] text-[12px] font-medium normal-case tracking-[0.4px] text-gca-muted">
                       Recent
                     </p>
@@ -145,13 +150,14 @@ export function Navbar() {
                       >
                         <p className="text-[13px] font-medium text-gca-dark">{project.name}</p>
                         <p className="text-[11px] text-gca-muted">
-                          {project.current_stage_name ?? "—"} · {STATUS_LABELS[project.status] ?? project.status}
+                          {project.current_stage_name ?? "—"} ·{" "}
+                          {STATUS_LABELS[project.status] ?? project.status}
                         </p>
                       </Link>
                     ))}
                     <div className="my-[9px] h-px bg-gca-border" />
                     <Link
-                      href="/projects"
+                      href="/"
                       onClick={() => setOpenDropdown(null)}
                       className="flex items-center gap-[10px] rounded-[6px] px-[10px] py-[8px] text-[14px] font-medium text-gca-dark hover:bg-gca-page-bg"
                     >

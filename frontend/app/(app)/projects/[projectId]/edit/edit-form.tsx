@@ -75,7 +75,8 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
     <main className="flex flex-col gap-[40px] px-[120px] pb-[48px] pt-[40px]">
       <div className="flex flex-col gap-[8px]">
         <Link
-          href={`/projects/${projectId}`}
+          // href={`/projects/${projectId}`}
+          href={`/`}
           className="flex gap-[6px] items-center text-[14px] font-medium text-gca-show"
         >
           <ArrowLeft className="size-[14px]" /> {details.name}
