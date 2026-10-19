@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { api } from "@/lib/api-client";
 import { ProjectStepper, type WizardStep } from "@/components/project-wizard/stepper";
@@ -27,28 +28,31 @@ interface ProjectResponse {
 
 export default function EditProjectForm({ projectId }: { projectId: string }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState("details");
-  const [details, setDetails] = useState<DetailsFormValues | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    api.get<ProjectResponse>(`/projects/${projectId}`).then((res) => {
-      if (res.status === "success" && res.data) {
-        const p = res.data.project;
-        setDetails({
-          name: p.name,
-          client_name: p.client_name ?? "",
-          program_id: String(p.program_id),
-          expected_start_date: p.expected_start_date?.slice(0, 10) ?? "",
-          expected_end_date: p.expected_end_date?.slice(0, 10) ?? "",
-          site_location: p.site_location ?? "",
-        });
-      } else {
-        setError(res.message);
-      }
-    });
-  }, [projectId]);
+  const {
+    data: details,
+    isLoading,
+    error: projectError,
+  } = useQuery({
+    queryKey: ["project", projectId, "edit"],
+    queryFn: async () => {
+      const res = await api.get<ProjectResponse>(`/projects/${projectId}`);
+      if (res.status !== "success" || !res.data) throw new Error(res.message);
+      const project = res.data.project;
+      return {
+        name: project.name,
+        client_name: project.client_name ?? "",
+        program_id: String(project.program_id),
+        expected_start_date: project.expected_start_date?.slice(0, 10) ?? "",
+        expected_end_date: project.expected_end_date?.slice(0, 10) ?? "",
+        site_location: project.site_location ?? "",
+      } satisfies DetailsFormValues;
+    },
+  });
 
   async function save(values: DetailsFormValues) {
     setSaving(true);
@@ -66,10 +70,17 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
       setError(res.message);
       return;
     }
-    setDetails(values);
+    queryClient.setQueryData(["project", projectId, "edit"], values);
   }
 
-  if (!details) return null;
+  if (isLoading) return <p className="p-[40px] text-[14px] text-gca-muted">Loading project…</p>;
+  if (!details) {
+    return (
+      <p className="p-[40px] text-[14px] text-error-text">
+        {projectError?.message ?? "Project not found"}
+      </p>
+    );
+  }
 
   return (
     <main className="flex flex-col gap-[40px] px-[120px] pb-[48px] pt-[40px]">
@@ -84,9 +95,9 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
         <h1 className="text-[28px] font-semibold tracking-[-0.7px] text-gca-dark">Edit project</h1>
       </div>
 
-      {error && (
+      {(error || projectError) && (
         <div className="rounded-[8px] bg-error-bg px-[14px] py-[12px] text-[14px] font-medium text-error-text">
-          {error}
+          {error ?? projectError?.message}
         </div>
       )}
 

@@ -38,8 +38,6 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
   const { data: draftSubmission, error: draftSubmissionError } = useDraftSubmission(projectId);
   const { data: counts, error: countsError } = useSidebarCounts(projectId);
 
-  console.log(milestones);
-
   const percentByStage = useMemo(() => {
     const result: Record<number, number> = {};
     for (const stage of data?.stages ?? []) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -65,17 +65,12 @@ export default function Home() {
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const router = useRouter();
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(6);
   const [view, setView] = useState<"card" | "table">("card");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [programFilter, setProgramFilter] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const showCreate = canAccess(user?.role, CAN_CREATE_PROJECT);
   // shortcut: edit check is global-only for now, upgrade to per-project when project-scoped roles are loaded
@@ -108,34 +103,43 @@ export default function Home() {
     { id: "cancelled", name: "Cancelled", value: "cancelled" },
   ];
 
-  const fetchProjects = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    const params = new URLSearchParams({ page: String(page), limit: String(perPage) });
-    if (search) params.set("search", search);
-    if (statusFilter) params.set("status", statusFilter);
-    if (programFilter && programFilter !== "all") params.set("program_id", programFilter);
+  const projectsQuery = useQuery({
+    queryKey: [
+      "projects",
+      {
+        page,
+        limit: perPage,
+        search,
+        status: statusFilter,
+        programId: programFilter !== "all" ? programFilter : "",
+      },
+    ],
+    queryFn: async () => {
+      const params = new URLSearchParams({ page: String(page), limit: String(perPage) });
+      if (search) params.set("search", search);
+      if (statusFilter) params.set("status", statusFilter);
+      if (programFilter && programFilter !== "all") params.set("program_id", programFilter);
 
-    const res = await api.get<ProjectsResponse>(`/projects?${params}`);
-    if (res.status === "success" && res.data) {
-      setProjects(res.data.projects.map(mapProject));
-      setTotal(res.data.total);
-      setTotalPages(res.data.totalPages);
-    } else {
-      setError(res.message);
-    }
-    setLoading(false);
-  }, [page, perPage, search, statusFilter, programFilter]);
+      const res = await api.get<ProjectsResponse>(`/projects?${params}`);
+      if (res.status !== "success" || !res.data) throw new Error(res.message);
+      return {
+        ...res.data,
+        projects: res.data.projects.map(mapProject),
+      };
+    },
+    enabled: isAuthenticated,
+  });
+  const projects = projectsQuery.data?.projects ?? [];
+  const total = projectsQuery.data?.total ?? 0;
+  const totalPages = projectsQuery.data?.totalPages ?? 1;
+  const loading = projectsQuery.isLoading;
+  const error = projectsQuery.error?.message ?? null;
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.replace("/login");
     }
   }, [authLoading, isAuthenticated, router]);
-
-  useEffect(() => {
-    if (isAuthenticated) fetchProjects();
-  }, [isAuthenticated, fetchProjects]);
 
   if (authLoading || !isAuthenticated) return null;
 
@@ -163,6 +167,12 @@ export default function Home() {
 
         {/* Loading state */}
         {loading && <LoadingSkeleton />}
+
+        {error && (
+          <div className="rounded-[8px] bg-error-bg px-[14px] py-[12px] text-[14px] font-medium text-error-text">
+            {error}
+          </div>
+        )}
 
         {/* Content */}
         {!loading && !error && (
@@ -281,13 +291,6 @@ export default function Home() {
             {/* Empty state */}
             {!loading && !error && projects.length === 0 && search != "" && statusFilter != "" && (
               <EmptyState showCreate={showCreate} />
-            )}
-
-            {/* Error */}
-            {error && (
-              <div className="rounded-[8px] bg-error-bg px-[14px] py-[12px] text-[14px] font-medium text-error-text">
-                {error}
-              </div>
             )}
 
             {/* Pagination */}
