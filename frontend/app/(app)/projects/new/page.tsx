@@ -44,7 +44,6 @@ export default function NewProjectPage() {
   const [scopeStages, setScopeStages] = useState<number[]>([4, 5, 6, 7]);
   const [people, setPeople] = useState(EMPTY_PEOPLE);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const { refetch: refetchSuggestedProjectCode } = useQuery({
     queryKey: ["projects", "suggested-code", details.program_id],
@@ -87,7 +86,6 @@ export default function NewProjectPage() {
 
   async function handleSubmit() {
     setSubmitting(true);
-    setError(null);
     try {
       // suggested codes can collide under concurrent creates; the backend 409s, retry once with a fresh code
       const getSuggestedCode = async () => {
@@ -128,7 +126,7 @@ export default function NewProjectPage() {
 
       router.push(`/projects/${projectId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create the project");
+      console.error("Could not create project:", err);
       setSubmitting(false);
     }
   }
@@ -149,12 +147,6 @@ export default function NewProjectPage() {
           </Link>
           <h1 className="text-[28px] font-semibold tracking-[-0.7px] text-gca-dark">New project</h1>
         </div>
-
-        {error && (
-          <div className="rounded-[8px] bg-error-bg px-[14px] py-[12px] text-[14px] font-medium text-error-text">
-            {error}
-          </div>
-        )}
 
         <div className="flex gap-[64px]">
           <ProjectStepper

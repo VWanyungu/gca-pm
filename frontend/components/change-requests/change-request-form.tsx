@@ -41,21 +41,28 @@ export function ChangeRequestForm({
   const [scheduleImpact, setScheduleImpact] = useState(
     editing?.schedule_impact_days != null ? String(editing.schedule_impact_days) : "",
   );
-  const [costImpact, setCostImpact] = useState(editing?.cost_impact != null ? String(editing.cost_impact) : "");
+  const [costImpact, setCostImpact] = useState(
+    editing?.cost_impact != null ? String(editing.cost_impact) : "",
+  );
   const [stageNo, setStageNo] = useState(editing?.stage_no ? String(editing.stage_no) : "");
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ title?: string; description?: string }>({});
 
-  const stageOptions = stages.filter((s) => s.in_scope).map((s) => ({ id: String(s.stage_no), name: s.stage_name }));
+  const stageOptions = stages
+    .filter((s) => s.in_scope)
+    .map((s) => ({ id: String(s.stage_no), name: s.stage_name }));
 
   async function submit() {
-    if (!title.trim() || !description.trim()) {
-      setError("Title and description are required");
+    const nextErrors = {
+      title: title.trim() ? undefined : "Title is required",
+      description: description.trim() ? undefined : "Description is required",
+    };
+    setFieldErrors(nextErrors);
+    if (nextErrors.title || nextErrors.description) {
       return;
     }
     setSaving(true);
-    setError(null);
 
     const body: Record<string, unknown> = {
       title: title.trim(),
@@ -73,10 +80,7 @@ export function ChangeRequestForm({
       : await api.post(`/projects/${projectId}/change-requests`, body);
 
     setSaving(false);
-    if (res.status !== "success") {
-      setError(res.message || "Couldn't save the change request");
-      return;
-    }
+    if (res.status !== "success") return;
     invalidate();
     onDone();
   }
@@ -98,8 +102,6 @@ export function ChangeRequestForm({
         <p className="mt-[2px] text-[13px] text-gca-show">{projectName}</p>
       </div>
 
-      {error && <p className="rounded-[8px] bg-error-bg px-[14px] py-[10px] text-[13px] text-error-text">{error}</p>}
-
       <div className="flex w-full items-start gap-[48px] border-t border-gca-border pt-[24px]">
         <div className="w-[280px] shrink-0">
           <p className="text-[14px] font-semibold text-gca-dark">Change</p>
@@ -112,10 +114,19 @@ export function ChangeRequestForm({
             </label>
             <input
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setFieldErrors((current) => ({ ...current, title: undefined }));
+              }}
+              aria-invalid={!!fieldErrors.title}
               placeholder="e.g. Meter spec change"
-              className="h-[40px] rounded-[8px] border border-gca-border px-[13px] text-[14px] outline-none focus:border-gca-green"
+              className={`h-[40px] rounded-[8px] border px-[13px] text-[14px] outline-none focus:border-gca-green ${
+                fieldErrors.title ? "border-error-border" : "border-gca-border"
+              }`}
             />
+            {fieldErrors.title && (
+              <span className="text-[12px] text-error-text">{fieldErrors.title}</span>
+            )}
           </div>
           <div className="flex flex-col gap-[6px]">
             <label className="text-[14px] text-gca-dark">
@@ -143,11 +154,20 @@ export function ChangeRequestForm({
             </label>
             <textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                setFieldErrors((current) => ({ ...current, description: undefined }));
+              }}
+              aria-invalid={!!fieldErrors.description}
               placeholder="What is changing and why?"
               rows={4}
-              className="rounded-[8px] border border-gca-border px-[13px] py-[11px] text-[14px] outline-none focus:border-gca-green"
+              className={`rounded-[8px] border px-[13px] py-[11px] text-[14px] outline-none focus:border-gca-green ${
+                fieldErrors.description ? "border-error-border" : "border-gca-border"
+              }`}
             />
+            {fieldErrors.description && (
+              <span className="text-[12px] text-error-text">{fieldErrors.description}</span>
+            )}
           </div>
         </div>
       </div>
@@ -220,7 +240,10 @@ export function ChangeRequestForm({
       <div className="flex w-full items-center justify-between gap-[16px] border-t border-gca-border pt-[20px]">
         <p className="text-[13px] text-gca-muted">Goes to ExCo for the Tuesday review</p>
         <div className="flex items-center gap-[16px]">
-          <button onClick={onCancel} className="cursor-pointer hover:text-red-500 text-[14px] font-medium text-gca-show">
+          <button
+            onClick={onCancel}
+            className="cursor-pointer hover:text-red-500 text-[14px] font-medium text-gca-show"
+          >
             Cancel
           </button>
           <button

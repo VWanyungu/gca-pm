@@ -17,7 +17,10 @@ export default function ResetPasswordPage({ token }: { token: string }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+    password?: string;
+    confirmPassword?: string;
+  }>({});
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
@@ -28,17 +31,12 @@ export default function ResetPasswordPage({ token }: { token: string }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
-      return;
-    }
+    const nextErrors = {
+      password: password.length >= 6 ? undefined : "Password must be at least 6 characters",
+      confirmPassword: password === confirmPassword ? undefined : "Passwords do not match",
+    };
+    setFieldErrors(nextErrors);
+    if (Object.values(nextErrors).some(Boolean)) return;
 
     setSubmitting(true);
     const res = await api.post(`/reset-password/${token}`, { password });
@@ -46,8 +44,6 @@ export default function ResetPasswordPage({ token }: { token: string }) {
 
     if (res.status === "success") {
       setSuccess(true);
-    } else {
-      setError(res.message);
     }
   }
 
@@ -61,9 +57,7 @@ export default function ResetPasswordPage({ token }: { token: string }) {
           <h1 className="text-[32px] font-semibold tracking-[-0.8px] text-gca-dark">
             Password reset
           </h1>
-          <p className="text-[15px] text-gca-muted">
-            Your password has been reset successfully.
-          </p>
+          <p className="text-[15px] text-gca-muted">Your password has been reset successfully.</p>
           <Link
             href="/login"
             className="w-full rounded-[8px] bg-gca-green px-[16px] py-[14px] text-center text-[15px] font-semibold text-white hover:bg-gca-green-hover"
@@ -85,21 +79,13 @@ export default function ResetPasswordPage({ token }: { token: string }) {
           <ArrowLeft className="size-[14px]" />
           Back to sign in
         </Link>
-        
+
         <div>
           <h1 className="text-[32px] font-semibold leading-normal tracking-[-0.8px] text-gca-dark">
             Reset password
           </h1>
-          <p className="mt-[8px] text-[15px] text-gca-muted">
-            Enter your new password.
-          </p>
+          <p className="mt-[8px] text-[15px] text-gca-muted">Enter your new password.</p>
         </div>
-
-        {error && (
-          <div className="rounded-[8px] bg-error-bg px-[14px] py-[12px] text-[14px] font-medium text-error-text">
-            {error}
-          </div>
-        )}
 
         <div className="flex flex-col gap-[16px]">
           <div className="flex flex-col gap-[6px]">
@@ -110,11 +96,16 @@ export default function ResetPasswordPage({ token }: { token: string }) {
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                required
                 placeholder="Enter new password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-[8px] border border-gca-border bg-white px-[14px] py-[13px] pr-[70px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:border-gca-green focus:ring-1 focus:ring-gca-green"
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setFieldErrors((current) => ({ ...current, password: undefined }));
+                }}
+                aria-invalid={!!fieldErrors.password}
+                className={`w-full rounded-[8px] border bg-white px-[14px] py-[13px] pr-[70px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:border-gca-green focus:ring-1 focus:ring-gca-green ${
+                  fieldErrors.password ? "border-error-border" : "border-gca-border"
+                }`}
               />
               <button
                 type="button"
@@ -129,6 +120,9 @@ export default function ResetPasswordPage({ token }: { token: string }) {
                 {showPassword ? "Hide" : "Show"}
               </button>
             </div>
+            {fieldErrors.password && (
+              <span className="text-[12px] text-error-text">{fieldErrors.password}</span>
+            )}
           </div>
 
           <div className="flex flex-col gap-[6px]">
@@ -139,25 +133,29 @@ export default function ResetPasswordPage({ token }: { token: string }) {
               <input
                 id="confirm"
                 type={showConfirm ? "text" : "password"}
-                required
                 placeholder="Confirm new password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full rounded-[8px] border border-gca-border bg-white px-[14px] py-[13px] pr-[70px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:border-gca-green focus:ring-1 focus:ring-gca-green"
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  setFieldErrors((current) => ({ ...current, confirmPassword: undefined }));
+                }}
+                aria-invalid={!!fieldErrors.confirmPassword}
+                className={`w-full rounded-[8px] border bg-white px-[14px] py-[13px] pr-[70px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:border-gca-green focus:ring-1 focus:ring-gca-green ${
+                  fieldErrors.confirmPassword ? "border-error-border" : "border-gca-border"
+                }`}
               />
               <button
                 type="button"
                 onClick={() => setShowConfirm(!showConfirm)}
                 className="absolute right-[14px] top-1/2 -translate-y-1/2 flex items-center gap-[4px] text-[13px] font-medium text-gca-show hover:text-gca-dark"
               >
-                {showConfirm ? (
-                  <EyeOff className="size-[14px]" />
-                ) : (
-                  <Eye className="size-[14px]" />
-                )}
+                {showConfirm ? <EyeOff className="size-[14px]" /> : <Eye className="size-[14px]" />}
                 {showConfirm ? "Hide" : "Show"}
               </button>
             </div>
+            {fieldErrors.confirmPassword && (
+              <span className="text-[12px] text-error-text">{fieldErrors.confirmPassword}</span>
+            )}
           </div>
         </div>
 
@@ -173,7 +171,6 @@ export default function ResetPasswordPage({ token }: { token: string }) {
             "Reset password"
           )}
         </button>
-
       </div>
     </AuthLayout>
   );

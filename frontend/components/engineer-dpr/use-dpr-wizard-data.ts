@@ -38,8 +38,7 @@ export function useEngineerProjects() {
   const results = useQueries({
     queries: projectIds.map((projectId) => ({
       queryKey: ["project", projectId],
-      queryFn: async () =>
-        unwrap(await api.get<ProjectDetailResponse>(`/projects/${projectId}`, { silent: true })),
+      queryFn: async () => unwrap(await api.get<ProjectDetailResponse>(`/projects/${projectId}`)),
       staleTime: 30_000,
     })),
   });
@@ -168,7 +167,9 @@ function toCreateBody(draft: DprDraftInput) {
 
 export async function createDraftDpr(projectId: string, draft: DprDraftInput) {
   return unwrap(
-    await api.post<{ dpr: DprDetail }>(`/projects/${projectId}/dpr`, toCreateBody(draft)),
+    await api.post<{ dpr: DprDetail }>(`/projects/${projectId}/dpr`, toCreateBody(draft), {
+      silent: true,
+    }),
   ).dpr;
 }
 
@@ -177,13 +178,18 @@ export async function patchDpr(projectId: string, dprId: string, draft: DprDraft
     await api.patch<{ dpr: DprDetail }>(
       `/projects/${projectId}/dpr/${dprId}`,
       toCreateBody(draft),
+      { silent: true },
     ),
   ).dpr;
 }
 
 export async function submitDpr(projectId: string, dprId: string) {
   return unwrap(
-    await api.post<{ dpr: DprDetail }>(`/projects/${projectId}/dpr/${dprId}/submit`, {}),
+    await api.post<{ dpr: DprDetail }>(
+      `/projects/${projectId}/dpr/${dprId}/submit`,
+      {},
+      { silent: true },
+    ),
   ).dpr;
 }
 

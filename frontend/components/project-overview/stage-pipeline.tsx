@@ -35,7 +35,6 @@ export function StagePipeline({
   const [pendingScope, setPendingScope] = useState<Set<number>>(new Set());
   const [saving, setSaving] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [selectedStageNo, setSelectedStageNo] = useState<number>(currentStage?.stage_no ?? 0);
   const menuRef = useRef<HTMLDivElement>(null);
   useOutsideClick({ ref: menuRef, handler: () => setMenuOpen(false) });
@@ -49,7 +48,6 @@ export function StagePipeline({
   const inScopeCount = stages.filter((s) => s.in_scope).length;
 
   function startEdit() {
-    setActionError(null);
     setPendingScope(new Set(stages.filter((s) => s.in_scope).map((s) => s.stage_no)));
     setEditMode(true);
   }
@@ -66,30 +64,28 @@ export function StagePipeline({
 
   async function saveScope() {
     setSaving(true);
-    setActionError(null);
     const changed = stages.filter((s) => s.in_scope !== pendingScope.has(s.stage_no));
     const results = await Promise.all(
       changed.map((s) =>
-        api.patch(`/projects/${projectId}/stages/${s.stage_no}`, { in_scope: pendingScope.has(s.stage_no) }),
+        api.patch(`/projects/${projectId}/stages/${s.stage_no}`, {
+          in_scope: pendingScope.has(s.stage_no),
+        }),
       ),
     );
     setSaving(false);
     const failed = results.find((r) => r.status !== "success");
-    if (failed) {
-      setActionError(failed.message || "Couldn't save scope changes");
-      return;
-    }
+    if (failed) return;
     setEditMode(false);
     onChanged();
   }
 
   async function setCurrentStage(stageNo: number) {
-    setSelectedStageNo(stageNo)
+    const previousStageNo = selectedStageNo;
+    setSelectedStageNo(stageNo);
     setMenuOpen(false);
-    setActionError(null);
     const res = await api.patch(`/projects/${projectId}/stages/${stageNo}`, { state: "active" });
     if (res.status !== "success") {
-      setActionError(res.message || "Couldn't update the current stage");
+      setSelectedStageNo(previousStageNo);
       return;
     }
     onChanged();
@@ -97,15 +93,10 @@ export function StagePipeline({
 
   return (
     <section className="flex w-full flex-col gap-[16px] pb-[20px]">
-      {actionError && (
-        <p className="rounded-[8px] bg-error-bg px-[14px] py-[10px] text-[13px] text-error-text">{actionError}</p>
-      )}
       <div className="flex w-full items-center justify-between">
         <div className="flex items-center gap-[14px]">
           <h2 className="text-[16px] font-semibold text-gca-dark">Stages</h2>
-          {editMode && (
-            <p className="text-[13px] text-gca-green">Edit scope</p>
-          )}
+          {editMode && <p className="text-[13px] text-gca-green">Edit scope</p>}
           {!editMode && current && (
             <div ref={menuRef} className="relative">
               <button
@@ -120,7 +111,9 @@ export function StagePipeline({
               </button>
               {menuOpen && (
                 <div className="absolute left-0 top-[36px] z-50 flex w-[282px] flex-col gap-[2px] rounded-[12px] border border-gca-border bg-white p-[8px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
-                  <p className="px-[10px] pb-[6px] pt-[2px] text-[12px] font-medium text-gca-muted">Set current stage</p>
+                  <p className="px-[10px] pb-[6px] pt-[2px] text-[12px] font-medium text-gca-muted">
+                    Set current stage
+                  </p>
                   {sorted
                     .filter((s) => s.in_scope)
                     .map((s) => {
@@ -143,14 +136,25 @@ export function StagePipeline({
                               {STAGE_SHORT_NAME[s.stage_no]}
                             </span>
                           </span>
-                          <span className={`font-mono text-[12px] ${selected ? "text-gca-badge-text" : "text-gca-muted"}`}>
-                            {s.state === "complete" ? "Done" : s.state === "active" ? `${percentByStage[s.stage_no] ?? 0}%` : "Not started"}
+                          <span
+                            className={`font-mono text-[12px] ${selected ? "text-gca-badge-text" : "text-gca-muted"}`}
+                          >
+                            {s.state === "complete"
+                              ? "Done"
+                              : s.state === "active"
+                                ? `${percentByStage[s.stage_no] ?? 0}%`
+                                : "Not started"}
                           </span>
                         </button>
                       );
                     })}
                   <div className="my-[4px] h-px bg-gca-border" />
-                  <p className="px-[10px] pb-[2px] pt-[6px] text-[12px] text-gca-muted">{(sorted.filter((s) => !s.in_scope)).map((s) => `${STAGE_SHORT_NAME[s.stage_no]}, `)} is out of scope</p>
+                  <p className="px-[10px] pb-[2px] pt-[6px] text-[12px] text-gca-muted">
+                    {sorted
+                      .filter((s) => !s.in_scope)
+                      .map((s) => `${STAGE_SHORT_NAME[s.stage_no]}, `)}{" "}
+                    is out of scope
+                  </p>
                 </div>
               )}
             </div>
@@ -160,7 +164,10 @@ export function StagePipeline({
         {canManage &&
           (editMode ? (
             <div className="flex items-center gap-[16px]">
-              <button onClick={() => setEditMode(false)} className="text-[13px] font-medium text-gca-show">
+              <button
+                onClick={() => setEditMode(false)}
+                className="text-[13px] font-medium text-gca-show"
+              >
                 Cancel
               </button>
               <button
@@ -172,7 +179,10 @@ export function StagePipeline({
               </button>
             </div>
           ) : (
-            <button onClick={startEdit} className="flex items-center gap-[6px] text-[13px] font-medium text-gca-green">
+            <button
+              onClick={startEdit}
+              className="flex items-center gap-[6px] text-[13px] font-medium text-gca-green"
+            >
               Edit scope
               <ChevronDown className="size-[18] -rotate-90" />
             </button>
@@ -183,7 +193,12 @@ export function StagePipeline({
         {sorted.map((s) => {
           const locked = s.state !== "not_started";
           const checked = editMode ? pendingScope.has(s.stage_no) : s.in_scope;
-          const pct = s.state === "complete" ? 100 : s.state === "active" ? (percentByStage[s.stage_no] ?? 0) : 0;
+          const pct =
+            s.state === "complete"
+              ? 100
+              : s.state === "active"
+                ? (percentByStage[s.stage_no] ?? 0)
+                : 0;
 
           const columnClassName = "flex w-[98px] flex-col gap-[6px]";
           const columnContent = (
@@ -212,27 +227,32 @@ export function StagePipeline({
                             className="flex size-[18px] items-center justify-center border-2 border-gca-border rounded-[4px] disabled:cursor-not-allowed"
                           >
                             {checked && (
-                              <>
-                                {checked && <Check className="size-[12px] text-gca-green" />}
-                              </>
+                              <>{checked && <Check className="size-[12px] text-gca-green" />}</>
                             )}
                           </button>
                         ) : (
                           <></>
                         )}
                       </>
-                    )
-                    }
+                    )}
                   </>
-              )}
-              
-              <p className={`text-[12px] w-[98px] ${s.state === "active" ? "font-semibold text-gca-dark" : "font-medium text-gca-muted"}`}>
-                {STAGE_SHORT_NAME[s.stage_no]}
-              </p>
+                )}
+
+                <p
+                  className={`text-[12px] w-[98px] ${s.state === "active" ? "font-semibold text-gca-dark" : "font-medium text-gca-muted"}`}
+                >
+                  {STAGE_SHORT_NAME[s.stage_no]}
+                </p>
               </div>
-              
-              <p className={`text-[12px] w-[98px] ${s.state === "active" ? "text-gca-green" : "text-gca-muted"}`}>
-                {!checked ? "Out of scope" : s.state === "active" ? `${pct}%` : STATE_LABEL[s.state]}
+
+              <p
+                className={`text-[12px] w-[98px] ${s.state === "active" ? "text-gca-green" : "text-gca-muted"}`}
+              >
+                {!checked
+                  ? "Out of scope"
+                  : s.state === "active"
+                    ? `${pct}%`
+                    : STATE_LABEL[s.state]}
               </p>
             </>
           );
@@ -242,7 +262,11 @@ export function StagePipeline({
               {columnContent}
             </div>
           ) : (
-            <Link key={s.stage_no} href={`/projects/${projectId}/stages/${s.stage_no}`} className={columnClassName}>
+            <Link
+              key={s.stage_no}
+              href={`/projects/${projectId}/stages/${s.stage_no}`}
+              className={columnClassName}
+            >
               {columnContent}
             </Link>
           );

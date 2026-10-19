@@ -15,7 +15,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -26,12 +26,15 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    const nextErrors = {
+      email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? undefined : "Enter a valid email address",
+      password: password ? undefined : "Password is required",
+    };
+    setFieldErrors(nextErrors);
+    if (Object.values(nextErrors).some(Boolean)) return;
     setSubmitting(true);
-    const err = await login(email, password);
+    await login(email, password);
     setSubmitting(false);
-    // On success the `isAuthenticated` effect above handles the redirect.
-    if (err) setError(err);
   }
 
   return (
@@ -41,12 +44,6 @@ export default function LoginPage() {
           Sign in
         </h1>
 
-        {error && (
-          <div className="rounded-[8px] bg-error-bg px-[14px] py-[12px] text-[14px] font-medium text-error-text">
-            {error}
-          </div>
-        )}
-
         <div className="flex flex-col gap-[16px]">
           <div className="flex flex-col gap-[6px]">
             <label htmlFor="email" className="font-medium text-[13px] text-gca-dark">
@@ -55,12 +52,20 @@ export default function LoginPage() {
             <input
               id="email"
               type="email"
-              required
               placeholder="name@gca.co.ke"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-[8px] border border-gca-border bg-white px-[14px] py-[13px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:border-gca-green focus:ring-1 focus:ring-gca-green"
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setFieldErrors((current) => ({ ...current, email: undefined }));
+              }}
+              aria-invalid={!!fieldErrors.email}
+              className={`w-full rounded-[8px] border bg-white px-[14px] py-[13px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:border-gca-green focus:ring-1 focus:ring-gca-green ${
+                fieldErrors.email ? "border-error-border" : "border-gca-border"
+              }`}
             />
+            {fieldErrors.email && (
+              <span className="text-[12px] text-error-text">{fieldErrors.email}</span>
+            )}
           </div>
 
           <div className="flex flex-col gap-[6px]">
@@ -79,13 +84,16 @@ export default function LoginPage() {
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                required
                 placeholder="Enter your password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setFieldErrors((current) => ({ ...current, password: undefined }));
+                }}
+                aria-invalid={!!fieldErrors.password}
                 className={`w-full rounded-[8px] border bg-white px-[14px] py-[13px] pr-[70px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:ring-1 ${
-                  error
-                    ? "border-[1.5px] border-error-border focus:border-error-border focus:ring-error-border"
+                  fieldErrors.password
+                    ? "border-error-border focus:border-error-border focus:ring-error-border"
                     : "border-gca-border focus:border-gca-green focus:ring-gca-green"
                 }`}
               />
@@ -102,6 +110,9 @@ export default function LoginPage() {
                 {showPassword ? "Hide" : "Show"}
               </button>
             </div>
+            {fieldErrors.password && (
+              <span className="text-[12px] text-error-text">{fieldErrors.password}</span>
+            )}
           </div>
         </div>
 

@@ -40,17 +40,28 @@ export function AddActivityForm({
   const [dueDate, setDueDate] = useState(editing?.due_date?.slice(0, 10) ?? "");
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+    title?: string;
+    ownerId?: string;
+    dueDate?: string;
+  }>({});
 
-  const ownerOptions = uniquePeople(team).map((m) => ({ id: m.user_id, name: `${m.first_name} ${m.last_name}` }));
+  const ownerOptions = uniquePeople(team).map((m) => ({
+    id: m.user_id,
+    name: `${m.first_name} ${m.last_name}`,
+  }));
 
   async function submit() {
-    if (!title.trim() || !ownerId || !dueDate) {
-      setError("Title, owner and due date are required");
+    const nextErrors = {
+      title: title.trim() ? undefined : "Title is required",
+      ownerId: ownerId ? undefined : "Owner is required",
+      dueDate: dueDate ? undefined : "Due date is required",
+    };
+    setFieldErrors(nextErrors);
+    if (Object.values(nextErrors).some(Boolean)) {
       return;
     }
     setSaving(true);
-    setError(null);
 
     const body: Record<string, unknown> = {
       title: title.trim(),
@@ -65,10 +76,7 @@ export function AddActivityForm({
         body,
       );
       setSaving(false);
-      if (res.status !== "success") {
-        setError(res.message || "Couldn't save the activity");
-        return;
-      }
+      if (res.status !== "success") return;
       onDone();
       return;
     }
@@ -81,10 +89,7 @@ export function AddActivityForm({
       stage_no: stageNo,
     });
     setSaving(false);
-    if (res.status !== "success") {
-      setError(res.message || "Couldn't add the activity");
-      return;
-    }
+    if (res.status !== "success") return;
     onDone();
   }
 
@@ -105,12 +110,6 @@ export function AddActivityForm({
         <p className="text-[14px] text-gca-show">{stageName}</p>
       </div>
 
-      {error && (
-        <p className="rounded-[8px] bg-error-bg px-[14px] py-[10px] text-[13px] text-error-text">
-          {error}
-        </p>
-      )}
-
       <div className="flex w-full items-start gap-[48px] border-t border-gca-border pt-[24px]">
         <div className="w-[280px] shrink-0">
           <p className="text-[14px] font-semibold text-gca-dark">Activity</p>
@@ -123,10 +122,19 @@ export function AddActivityForm({
             </label>
             <input
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setFieldErrors((current) => ({ ...current, title: undefined }));
+              }}
+              aria-invalid={!!fieldErrors.title}
               placeholder="e.g. Inspect valves at supplier"
-              className="h-[40px] rounded-[8px] border border-gca-border px-[13px] text-[14px] outline-none focus:border-gca-green"
+              className={`h-[40px] rounded-[8px] border px-[13px] text-[14px] outline-none focus:border-gca-green ${
+                fieldErrors.title ? "border-error-border" : "border-gca-border"
+              }`}
             />
+            {fieldErrors.title && (
+              <span className="text-[12px] text-error-text">{fieldErrors.title}</span>
+            )}
           </div>
           <div className="flex flex-col gap-[6px]">
             <label className="text-[14px] text-gca-dark">Description</label>
@@ -158,9 +166,17 @@ export function AddActivityForm({
               title="Choose owner"
               data={ownerOptions}
               selectedId={ownerId}
-              style="h-[40px] w-full rounded-[8px] border border-gca-border px-[13px] text-[14px]"
-              onSelect={(id) => setOwnerId(id)}
+              style={`h-[40px] w-full rounded-[8px] border px-[13px] text-[14px] ${
+                fieldErrors.ownerId ? "border-error-border" : "border-gca-border"
+              }`}
+              onSelect={(id) => {
+                setOwnerId(id);
+                setFieldErrors((current) => ({ ...current, ownerId: undefined }));
+              }}
             />
+            {fieldErrors.ownerId && (
+              <span className="text-[12px] text-error-text">{fieldErrors.ownerId}</span>
+            )}
           </div>
           <div className="flex w-full flex-col gap-[6px]">
             <label className="text-[14px] text-gca-dark">
@@ -169,9 +185,18 @@ export function AddActivityForm({
             <input
               type="date"
               value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="h-[40px] rounded-[8px] border border-gca-border px-[13px] text-[14px] outline-none focus:border-gca-green"
+              onChange={(e) => {
+                setDueDate(e.target.value);
+                setFieldErrors((current) => ({ ...current, dueDate: undefined }));
+              }}
+              aria-invalid={!!fieldErrors.dueDate}
+              className={`h-[40px] rounded-[8px] border px-[13px] text-[14px] outline-none focus:border-gca-green ${
+                fieldErrors.dueDate ? "border-error-border" : "border-gca-border"
+              }`}
             />
+            {fieldErrors.dueDate && (
+              <span className="text-[12px] text-error-text">{fieldErrors.dueDate}</span>
+            )}
           </div>
         </div>
       </div>

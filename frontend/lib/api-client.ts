@@ -80,8 +80,7 @@ async function request<T = unknown>(
     "api-v": "v1",
   };
 
-  if (token) 
-    headers["Authorization"] = `Bearer ${token}`;
+  if (token) headers["Authorization"] = `Bearer ${token}`;
 
   try {
     let res = await fetch(`${API_BASE}${path}`, {
@@ -105,15 +104,18 @@ async function request<T = unknown>(
 
       if (isTokenError(res.status, result.message)) {
         handleSessionExpired();
-        return { status: "error", data: null, message: "Your session expired", httpStatus: res.status };
+        return {
+          status: "error",
+          data: null,
+          message: "Your session expired",
+          httpStatus: res.status,
+        };
       }
     }
 
     result.httpStatus = res.status;
 
-    // Validation failures (400) stay inline on the form; everything else surfaces as a toast,
-    // unless the caller handles the error itself (e.g. a full-page 403/404 state).
-    if (!res.ok && res.status !== 400 && !opts?.silent) {
+    if ((!res.ok || result.status !== "success") && !opts?.silent) {
       reportError(result.message || "Something went wrong");
     }
 
@@ -126,7 +128,8 @@ async function request<T = unknown>(
 }
 
 export const api = {
-  get: <T = unknown>(path: string, opts?: { silent?: boolean }) => request<T>(path, "GET", undefined, opts),
+  get: <T = unknown>(path: string, opts?: { silent?: boolean }) =>
+    request<T>(path, "GET", undefined, opts),
   post: <T = unknown>(path: string, body?: unknown, opts?: { silent?: boolean }) =>
     request<T>(path, "POST", body, opts),
   put: <T = unknown>(path: string, body?: unknown, opts?: { silent?: boolean }) =>

@@ -54,7 +54,7 @@ export function StatusControl({ projectId, status, canManage, onChanged }: Statu
   const [target, setTarget] = useState<ProjectStatus | null>(null);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [reasonError, setReasonError] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useOutsideClick({
@@ -70,20 +70,17 @@ export function StatusControl({ projectId, status, canManage, onChanged }: Statu
   async function confirmChange() {
     if (!target) return;
     if (REASON_REQUIRED.includes(target) && !reason.trim()) {
-      setError("A reason is required for this change.");
+      setReasonError("A reason is required for this change.");
       return;
     }
     setSubmitting(true);
-    setError(null);
+    setReasonError(null);
     const res = await api.patch(`/projects/${projectId}`, {
       status: target,
       status_reason: reason.trim() || null,
     });
     setSubmitting(false);
-    if (res.status !== "success") {
-      setError(res.message);
-      return;
-    }
+    if (res.status !== "success") return;
     setMenuOpen(false);
     setTarget(null);
     setReason("");
@@ -137,7 +134,9 @@ export function StatusControl({ projectId, status, canManage, onChanged }: Statu
                   />
                   <span
                     className={`text-[14px] ${
-                      selected ? `font-medium ${danger ? "text-error-text" : "text-gca-dark"}` : "font-normal text-gca-dark"
+                      selected
+                        ? `font-medium ${danger ? "text-error-text" : "text-gca-dark"}`
+                        : "font-normal text-gca-dark"
                     }`}
                   >
                     {ACTION_LABELS[opt]}
@@ -158,14 +157,23 @@ export function StatusControl({ projectId, status, canManage, onChanged }: Statu
                   </label>
                   <textarea
                     value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    placeholder={target === "cancelled" ? "Why is it being cancelled?" : "Why is it on hold?"}
-                    className="h-[80px] resize-none rounded-[8px] border border-gca-border px-[12px] py-[11px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
+                    onChange={(e) => {
+                      setReason(e.target.value);
+                      setReasonError(null);
+                    }}
+                    placeholder={
+                      target === "cancelled" ? "Why is it being cancelled?" : "Why is it on hold?"
+                    }
+                    aria-invalid={!!reasonError}
+                    className={`h-[80px] resize-none rounded-[8px] border px-[12px] py-[11px] text-[14px] text-gca-dark outline-none focus:border-gca-green ${
+                      reasonError ? "border-error-border" : "border-gca-border"
+                    }`}
                   />
+                  {reasonError && (
+                    <span className="text-[12px] text-error-text">{reasonError}</span>
+                  )}
                 </div>
               )}
-
-              {error && <p className="text-[12px] text-error-text">{error}</p>}
 
               <div className="flex justify-end gap-[8px]">
                 <button
@@ -178,7 +186,9 @@ export function StatusControl({ projectId, status, canManage, onChanged }: Statu
                   onClick={confirmChange}
                   disabled={submitting}
                   className={`rounded-[8px] px-[12px] py-[7px] text-[13px] font-semibold text-white disabled:opacity-50 ${
-                    target === "cancelled" ? "bg-error-text" : "bg-gca-green hover:bg-gca-green-hover"
+                    target === "cancelled"
+                      ? "bg-error-text"
+                      : "bg-gca-green hover:bg-gca-green-hover"
                   }`}
                 >
                   {ACTION_LABELS[target]}

@@ -51,6 +51,7 @@ export function PeopleStep({
 }: PeopleStepProps) {
   const { user } = useAuth();
   const [draft, setDraft] = useState<ClientContact>({ name: "", role: "", email: "" });
+  const [contactErrors, setContactErrors] = useState<{ name?: string; email?: string }>({});
 
   const { data: users = [] } = useQuery({
     queryKey: ["users", "assignable"],
@@ -79,7 +80,14 @@ export function PeopleStep({
   }
 
   function addContact() {
-    if (!draft.name.trim() || !draft.email.trim()) return;
+    const nextErrors = {
+      name: draft.name.trim() ? undefined : "Name is required",
+      email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email)
+        ? undefined
+        : "Enter a valid email address",
+    };
+    setContactErrors(nextErrors);
+    if (Object.values(nextErrors).some(Boolean)) return;
     onChange({ ...value, clientTeam: [...value.clientTeam, draft] });
     setDraft({ name: "", role: "", email: "" });
   }
@@ -139,25 +147,47 @@ export function PeopleStep({
         <p className="text-[13px] text-gca-show">Client contacts receive project reports.</p>
       </div>
 
-      <div className="flex items-center gap-[12px]">
-        <input
-          value={draft.name}
-          onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-          placeholder="Full name"
-          className="h-[42px] w-[180px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
-        />
+      <div className="flex items-start gap-[12px]">
+        <div className="flex w-[180px] flex-col gap-[4px]">
+          <input
+            value={draft.name}
+            onChange={(e) => {
+              setDraft({ ...draft, name: e.target.value });
+              setContactErrors((current) => ({ ...current, name: undefined }));
+            }}
+            aria-invalid={!!contactErrors.name}
+            placeholder="Full name"
+            className={`h-[42px] rounded-[8px] border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green ${
+              contactErrors.name ? "border-error-border" : "border-gca-border"
+            }`}
+          />
+          {contactErrors.name && (
+            <span className="text-[12px] text-error-text">{contactErrors.name}</span>
+          )}
+        </div>
         <input
           value={draft.role}
           onChange={(e) => setDraft({ ...draft, role: e.target.value })}
           placeholder="Role"
           className="h-[42px] w-[140px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
         />
-        <input
-          value={draft.email}
-          onChange={(e) => setDraft({ ...draft, email: e.target.value })}
-          placeholder="Email"
-          className="h-[42px] w-[196px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
-        />
+        <div className="flex w-[196px] flex-col gap-[4px]">
+          <input
+            value={draft.email}
+            onChange={(e) => {
+              setDraft({ ...draft, email: e.target.value });
+              setContactErrors((current) => ({ ...current, email: undefined }));
+            }}
+            aria-invalid={!!contactErrors.email}
+            placeholder="Email"
+            className={`h-[42px] rounded-[8px] border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green ${
+              contactErrors.email ? "border-error-border" : "border-gca-border"
+            }`}
+          />
+          {contactErrors.email && (
+            <span className="text-[12px] text-error-text">{contactErrors.email}</span>
+          )}
+        </div>
         <button
           type="button"
           onClick={addContact}

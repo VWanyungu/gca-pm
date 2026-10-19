@@ -59,11 +59,7 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
       </div>
     );
   }
-  if (error || !stage || !project) {
-    return (
-      <p className="p-[40px] text-[14px] text-error-text">{error?.message ?? "Stage not found"}</p>
-    );
-  }
+  if (error || !stage || !project) return null;
 
   const editingActivity =
     subView.mode === "edit"

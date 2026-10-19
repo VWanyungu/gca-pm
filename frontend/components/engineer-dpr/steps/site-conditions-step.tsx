@@ -7,9 +7,10 @@ interface StepProps {
   draft: DprDraftInput;
   update: (patch: Partial<DprDraftInput>) => void;
   projectId: string;
+  siteLocationError?: boolean;
 }
 
-export function SiteConditionsStep({ draft, update }: StepProps) {
+export function SiteConditionsStep({ draft, update, siteLocationError = false }: StepProps) {
   const { data: weatherCategories = [] } = useWeatherCategories();
 
   return (
@@ -21,9 +22,13 @@ export function SiteConditionsStep({ draft, update }: StepProps) {
         <input
           value={draft.site_location}
           onChange={(e) => update({ site_location: e.target.value })}
+          aria-invalid={siteLocationError}
           placeholder="e.g. Gitanga Mall · Block A"
-          className="h-[48px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green"
+          className={`h-[48px] w-full rounded-[8px] border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green ${
+            siteLocationError ? "border-error-border" : "border-gca-border"
+          }`}
         />
+        {siteLocationError && <span className="text-[12px] text-error-text">Site is required</span>}
       </div>
 
       <div className="flex flex-col gap-[6px]">

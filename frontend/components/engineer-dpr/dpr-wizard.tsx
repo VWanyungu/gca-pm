@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LoaderCircle } from "lucide-react";
+import { reportError } from "@/lib/toast";
 import { useProjectDetail } from "@/components/project-overview/use-project-data";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_CREATE_DPR } from "@/lib/access-control";
@@ -42,7 +43,7 @@ export function DprWizard({ projectId }: { projectId: string }) {
     reportDate,
   );
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [siteLocationError, setSiteLocationError] = useState(false);
   const { data: prefill } = useDprPrefill(projectId);
 
   // AC-DPR-12: a brand-new draft pre-fills the previous submitted DPR's site location,
@@ -68,32 +69,50 @@ export function DprWizard({ projectId }: { projectId: string }) {
   const StepComponent = STEP_COMPONENTS[currentStep];
   const isLastStep = currentStep === WIZARD_STEPS.length - 1;
 
+  function updateDraft(patch: Partial<typeof draft>) {
+    if (patch.site_location?.trim()) setSiteLocationError(false);
+    update(patch);
+  }
+
   if (user && !canAccess(user.role, CAN_CREATE_DPR, { projectId })) {
     return (
       <div className="flex flex-1 items-center justify-center p-[40px]">
-        <p className="text-[14px] text-gca-muted">You don&apos;t have access to create a DPR for this project.</p>
+        <p className="text-[14px] text-gca-muted">
+          You don&apos;t have access to create a DPR for this project.
+        </p>
       </div>
     );
   }
 
   async function handleSaveDraft() {
-    setError(null);
+    if (!draft.site_location.trim()) {
+      setSiteLocationError(true);
+      setCurrentStep(0);
+      return;
+    }
     try {
       await save();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save draft");
+      reportError(err instanceof Error ? err.message : "Could not save draft");
     }
   }
 
   async function handlePrimary() {
-    setError(null);
     if (!isLastStep) {
-      try {
-        await save();
-      } catch {
-        // keep navigating locally even if the autosave hasn't caught up yet
+      if (draft.site_location.trim()) {
+        try {
+          await save();
+        } catch (err) {
+          reportError(err instanceof Error ? err.message : "Could not save draft");
+        }
       }
       setCurrentStep(currentStep + 1);
+      return;
+    }
+
+    if (!draft.site_location.trim()) {
+      setSiteLocationError(true);
+      setCurrentStep(0);
       return;
     }
 
@@ -105,7 +124,7 @@ export function DprWizard({ projectId }: { projectId: string }) {
       const submitted = await submitDpr(projectId, id);
       router.push(`/engineer/dpr/${submitted.dpr_id}/confirmation?projectId=${projectId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not submit DPR");
+      reportError(err instanceof Error ? err.message : "Could not submit DPR");
     } finally {
       setSubmitting(false);
     }
@@ -145,10 +164,17 @@ export function DprWizard({ projectId }: { projectId: string }) {
       <StepNavigator currentStep={currentStep} onStepClick={setCurrentStep} />
 
       <div className="flex flex-1 flex-col gap-[16px] overflow-y-auto p-[16px]">
-        <StepComponent draft={draft} update={update} projectId={projectId} />
+        {currentStep === 0 ? (
+          <SiteConditionsStep
+            draft={draft}
+            update={updateDraft}
+            projectId={projectId}
+            siteLocationError={siteLocationError}
+          />
+        ) : (
+          <StepComponent draft={draft} update={updateDraft} projectId={projectId} />
+        )}
       </div>
-
-      {error && <p className="px-[16px] pb-[8px] text-[13px] text-error-text">{error}</p>}
 
       <div className="flex gap-[12px] border-t border-gca-border bg-white px-[16px] pt-[12px] pb-[30px]">
         <button
