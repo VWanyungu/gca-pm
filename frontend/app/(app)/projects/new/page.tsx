@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { api } from "@/lib/api-client";
 import { ProjectStepper, type WizardStep } from "@/components/project-wizard/stepper";
@@ -42,19 +43,26 @@ export default function NewProjectPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { refetch: refetchSuggestedProjectCode } = useQuery({
+    queryKey: ["projects", "suggested-code", details.program_id],
+    queryFn: async () => {
+      const res = await api.get<{ suggested_project_code: string }>(
+        `/projects/suggest-code?program_id=${details.program_id}`,
+      );
+      if (res.status !== "success" || !res.data) throw new Error(res.message);
+      return res.data.suggested_project_code;
+    },
+    enabled: !!details.program_id,
+  });
+
   function advance(from: string, to: string) {
     setCompleted((c) => (c.includes(from) ? c : [...c, from]));
     setStep(to);
   }
 
-  async function createProject(): Promise<{ project: { project_id: string } }> {
-    const codeRes = await api.get<{ suggested_project_code: string }>(
-      `/projects/suggest-code?program_id=${details.program_id}`,
-    );
-    if (codeRes.status !== "success" || !codeRes.data) throw new Error(codeRes.message);
-
+  async function createProject(projectCode: string): Promise<{ project: { project_id: string } }> {
     const createRes = await api.post<{ project: { project_id: string } }>("/projects", {
-      project_code: codeRes.data.suggested_project_code,
+      project_code: projectCode,
       name: details.name,
       client_name: details.client_name,
       program_id: Number(details.program_id),
@@ -76,12 +84,21 @@ export default function NewProjectPage() {
     setError(null);
     try {
       // suggested codes can collide under concurrent creates; the backend 409s, retry once with a fresh code
+      const getSuggestedCode = async () => {
+        const result = await refetchSuggestedProjectCode();
+        if (result.error) throw result.error;
+        if (!result.data) throw new Error("Could not get a suggested project code");
+        return result.data;
+      };
+
+      let suggestedCode = await getSuggestedCode();
       let created;
       try {
-        created = await createProject();
+        created = await createProject(suggestedCode);
       } catch (err) {
         if (err instanceof Error && err.message.includes("was just taken")) {
-          created = await createProject();
+          suggestedCode = await getSuggestedCode();
+          created = await createProject(suggestedCode);
         } else {
           throw err;
         }
