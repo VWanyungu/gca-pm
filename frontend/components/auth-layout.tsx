@@ -25,9 +25,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
                 <div className="hidden md:block">
                   <GcaLogo />
                 </div>
-                <div className="mt-0 w-full max-w-[456px] md:mt-[119px]">
-                  {children}
-                </div>
+                <div className="mt-0 w-full max-w-[456px] md:mt-[119px]">{children}</div>
               </div>
               <p className="mt-[32px] text-[12px] text-gca-muted md:mt-[48px]">
                 &copy; {new Date().getFullYear()} Gas Connect Africa &middot;{" "}
@@ -57,13 +55,5 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
 }
 
 function GcaLogo() {
-  return (
-    <Image
-      src="/logo-gca.png"
-      alt="Gas Connect Africa"
-      width={89}
-      height={32}
-      priority
-    />
-  );
+  return <Image src="/GCA Logo.svg" alt="Gas Connect Africa" width={89} height={32} priority />;
 }

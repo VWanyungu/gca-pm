@@ -88,7 +88,7 @@ export function Navbar() {
       {/* Left: logo + nav */}
       <div className="flex items-center gap-[20px]">
         <Link href="/">
-          <Image src="/logo-gca.png" alt="Gas Connect Africa" width={89} height={32} priority />
+          <Image src="/GCA Logo.svg" alt="Gas Connect Africa" width={89} height={32} priority />
         </Link>
         <div className="h-[20px] w-px bg-gca-border" />
         <nav className="flex items-center gap-[4px]" ref={dropdownRef}>
