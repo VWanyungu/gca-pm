@@ -87,10 +87,10 @@ router.get('/', canView, async (req, res) => {
     return;
   }
   const { projectId } = params.value as { projectId: string };
-  const { stage_no, type, status, page, limit } = query.value as ListChangeRequestsQuery;
+  const { stage_no, type, status, search, page, limit } = query.value as ListChangeRequestsQuery;
 
   try {
-    const result = await ChangeRequests.list({ projectId, stageNo: stage_no, type, status, page, limit });
+    const result = await ChangeRequests.list({ projectId, stageNo: stage_no, type, status, search, page, limit });
     res.status(200).json({ status: 'success', data: result, message: 'Change requests retrieved' });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

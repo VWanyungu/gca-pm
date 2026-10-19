@@ -125,10 +125,10 @@ router.get('/', canView, async (req, res) => {
         return;
     }
     const { projectId } = params.value as { projectId: string };
-    const { status, kind, stage_no, source, page, limit } = query.value as ListRiskIssuesQuery;
+    const { status, kind, stage_no, source, rating, search, page, limit } = query.value as ListRiskIssuesQuery;
 
     try {
-        const result = await RiskIssues.list({ projectId, status, kind, stageNo: stage_no, source, page, limit });
+        const result = await RiskIssues.list({ projectId, status, kind, stageNo: stage_no, source, rating, search, page, limit });
         res.status(200).json({ status: 'success', data: result, message: 'Risk/issues retrieved' });
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';

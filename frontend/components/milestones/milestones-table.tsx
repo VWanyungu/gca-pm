@@ -18,6 +18,8 @@ interface MilestonesTableProps {
   milestones: MilestoneRow[];
   sourceFilter: MilestoneSource | "all";
   canManage: boolean;
+  page: number;
+  onPageChange: (page: number) => void;
   onEdit: (milestoneId: string) => void;
 }
 
@@ -25,9 +27,10 @@ export function MilestonesTable({
   milestones,
   sourceFilter,
   canManage,
+  page,
+  onPageChange,
   onEdit,
 }: MilestonesTableProps) {
-  const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(PER_PAGE);
 
   const filtered = useMemo(
@@ -49,7 +52,7 @@ export function MilestonesTable({
         <div className="flex flex-col items-center gap-[4px] text-center">
           <p className="text-[14px] font-semibold text-gca-dark">Nothing here</p>
           <p className="max-w-[420px] text-[13px] text-gca-show">
-            Schedule and custom milestones for this project will show up here.
+            No milestones match the current search or source filter.
           </p>
         </div>
       </div>
@@ -110,10 +113,10 @@ export function MilestonesTable({
           totalPages={pages}
           perPage={perPage}
           total={total}
-          onPageChange={setPage}
+          onPageChange={onPageChange}
           onPerPageChange={(n) => {
             setPerPage(n);
-            setPage(1);
+            onPageChange(1);
           }}
           label="milestones"
         />

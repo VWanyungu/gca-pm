@@ -66,7 +66,11 @@ export function MilestoneChart({ milestones, sourceFilter, onSelect }: Milestone
   }, [filtered]);
 
   if (!chart) {
-    return <p className="py-[56px] text-center text-[13px] text-gca-show">No milestones to plot.</p>;
+    return (
+      <p className="py-[56px] text-center text-[13px] text-gca-show">
+        No milestones match the current search or source filter.
+      </p>
+    );
   }
 
   const rangeLabel = `${chart.months[0].toLocaleDateString("en-GB", { month: "short", year: "numeric" })} – ${chart.months[chart.months.length - 1].toLocaleDateString("en-GB", { month: "short", year: "numeric" })}`;

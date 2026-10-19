@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChartGantt, Plus, Table, type LucideIcon } from "lucide-react";
+import { ChartGantt, Plus, Search, Table, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_MANAGE_PROJECT } from "@/lib/access-control";
 import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
@@ -40,10 +40,15 @@ export function MilestonesView({ projectId }: { projectId: string }) {
 
   const [viewMode, setViewMode] = useState<ViewMode>("chart");
   const [sourceFilter, setSourceFilter] = useState<MilestoneSource | "all">("all");
+  const [search, setSearch] = useState("");
+  const [tablePage, setTablePage] = useState(1);
   const [subView, setSubView] = useState<SubView>({ mode: "list" });
 
   const canManage = canAccess(user?.role, CAN_MANAGE_PROJECT, { projectId });
   const customCount = milestones.filter((m) => m.source === "custom").length;
+  const searchedMilestones = search.trim()
+    ? milestones.filter((milestone) => milestone.title.toLowerCase().includes(search.trim().toLowerCase()))
+    : milestones;
 
   if (!project) return null;
 
@@ -62,7 +67,7 @@ export function MilestonesView({ projectId }: { projectId: string }) {
                     {milestones.length} milestones · {customCount} custom
                   </p>
                 </div>
-                <div className="flex items-center gap-[12px]">
+                <div className="flex flex-wrap items-center justify-end gap-[12px]">
                   <SegmentedControl
                     options={[
                       { id: "chart", label: "Chart", icon: ChartGantt },
@@ -71,7 +76,28 @@ export function MilestonesView({ projectId }: { projectId: string }) {
                     selected={viewMode}
                     onSelect={(id) => setViewMode(id as ViewMode)}
                   />
-                  <SegmentedControl options={SOURCE_TABS} selected={sourceFilter} onSelect={setSourceFilter} />
+                  <SegmentedControl
+                    options={SOURCE_TABS}
+                    selected={sourceFilter}
+                    onSelect={(value) => {
+                      setSourceFilter(value);
+                      setTablePage(1);
+                    }}
+                  />
+                  <label className="flex h-[40px] w-[240px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[12px]">
+                    <Search className="size-[14px] shrink-0 text-gca-muted" />
+                    <input
+                      type="search"
+                      value={search}
+                      onChange={(event) => {
+                        setSearch(event.target.value);
+                        setTablePage(1);
+                      }}
+                      placeholder="Search milestones"
+                      aria-label="Search milestones"
+                      className="min-w-0 w-full bg-transparent text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
+                    />
+                  </label>
                   {canManage && (
                     <button
                       onClick={() => setSubView({ mode: "add" })}
@@ -86,15 +112,17 @@ export function MilestonesView({ projectId }: { projectId: string }) {
 
               {viewMode === "chart" ? (
                 <MilestoneChart
-                  milestones={milestones}
+                  milestones={searchedMilestones}
                   sourceFilter={sourceFilter}
                   onSelect={(milestoneId) => setSubView({ mode: "detail", milestoneId })}
                 />
               ) : (
                 <MilestonesTable
-                  milestones={milestones}
+                  milestones={searchedMilestones}
                   sourceFilter={sourceFilter}
                   canManage={canManage}
+                  page={tablePage}
+                  onPageChange={setTablePage}
                   onEdit={(milestoneId) => setSubView({ mode: "edit", milestoneId })}
                 />
               )}

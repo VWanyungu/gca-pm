@@ -1,22 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, ShieldCheck } from "lucide-react";
+import { Plus, Search, ShieldCheck } from "lucide-react";
 import Dropdown from "@/components/Dropdown";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { Pagination } from "@/components/pagination";
 import { useRisks } from "./use-risks-data";
-import { formatShortDate, ratingFromScore, statusInfo, type RiskSource, type RiskStatus } from "./types";
-import { STAGE_SHORT_NAME, type StageRow, type TeamMember } from "@/components/project-overview/types";
+import {
+  formatShortDate,
+  ratingFromScore,
+  statusInfo,
+  type RiskRating,
+  type RiskStatus,
+} from "./types";
+import { STAGE_SHORT_NAME, type TeamMember } from "@/components/project-overview/types";
 
-const STAGE_FILTER_ALL = "all";
-const SOURCE_FILTER_ALL = "all";
 const STATUS_FILTER_ALL = "all";
-
-const SOURCE_OPTIONS = [
-  { id: SOURCE_FILTER_ALL, name: "All sources" },
-  { id: "manual", name: "Manual" },
-  { id: "overdue_task", name: "From schedule" },
-];
+const RATING_FILTER_ALL = "all";
 
 const STATUS_OPTIONS = [
   { id: STATUS_FILTER_ALL, name: "All statuses" },
@@ -26,6 +26,13 @@ const STATUS_OPTIONS = [
   { id: "dismissed", name: "Dismissed" },
 ];
 
+const RATING_OPTIONS = [
+  { id: RATING_FILTER_ALL, name: "All ratings" },
+  { id: "high", name: "High" },
+  { id: "medium", name: "Medium" },
+  { id: "low", name: "Low" },
+];
+
 function ownerName(ownerId: string, team: TeamMember[]) {
   const member = team.find((m) => m.user_id === ownerId);
   return member ? `${member.first_name[0]}. ${member.last_name}` : "—";
@@ -33,25 +40,25 @@ function ownerName(ownerId: string, team: TeamMember[]) {
 
 interface RisksTableProps {
   projectId: string;
-  stages: StageRow[];
   team: TeamMember[];
   canManage: boolean;
   onAddRisk: () => void;
   onOpenRisk: (riskId: string) => void;
 }
 
-export function RisksTable({ projectId, stages, team, canManage, onAddRisk, onOpenRisk }: RisksTableProps) {
-  const [stageFilter, setStageFilter] = useState(STAGE_FILTER_ALL);
-  const [sourceFilter, setSourceFilter] = useState(SOURCE_FILTER_ALL);
+export function RisksTable({ projectId, team, canManage, onAddRisk, onOpenRisk }: RisksTableProps) {
   const [statusFilter, setStatusFilter] = useState("all");
+  const [ratingFilter, setRatingFilter] = useState(RATING_FILTER_ALL);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(6);
 
   const { data } = useRisks({
     projectId,
-    stageNo: stageFilter === STAGE_FILTER_ALL ? undefined : Number(stageFilter),
-    source: sourceFilter === SOURCE_FILTER_ALL ? undefined : (sourceFilter as RiskSource),
     status: statusFilter === STATUS_FILTER_ALL ? undefined : (statusFilter as RiskStatus),
+    rating: ratingFilter === RATING_FILTER_ALL ? undefined : (ratingFilter as RiskRating),
+    search: debouncedSearch,
     page,
     limit: perPage,
   });
@@ -59,13 +66,6 @@ export function RisksTable({ projectId, stages, team, canManage, onAddRisk, onOp
   const risks = data?.riskIssues ?? [];
   const total = data?.pagination.total ?? 0;
   const pages = data?.pagination.pages ?? 1;
-
-  const stageOptions = [
-    { id: STAGE_FILTER_ALL, name: "All stages" },
-    ...stages
-      .filter((s) => s.in_scope)
-      .map((s) => ({ id: String(s.stage_no), name: STAGE_SHORT_NAME[s.stage_no] ?? s.stage_name })),
-  ];
 
   function changeFilter(setter: (v: string) => void, value: string) {
     setter(value);
@@ -87,27 +87,34 @@ export function RisksTable({ projectId, stages, team, canManage, onAddRisk, onOp
         )}
       </div>
 
-      <div className="flex items-center gap-[12px]">
-        <Dropdown
-          id="risk-filter-stage"
-          data={stageOptions}
-          selectedId={stageFilter}
-          style="h-[40px] rounded-[8px] border border-gca-border bg-white px-[13px] text-[14px] text-gca-dark"
-          onSelect={(id) => changeFilter(setStageFilter, id)}
-        />
-        <Dropdown
-          id="risk-filter-source"
-          data={SOURCE_OPTIONS}
-          selectedId={sourceFilter}
-          style="h-[40px] rounded-[8px] border border-gca-border bg-white px-[13px] text-[14px] text-gca-dark"
-          onSelect={(id) => changeFilter(setSourceFilter, id)}
-        />
+      <div className="flex flex-wrap items-center gap-[12px]">
+        <label className="flex h-[40px] w-[260px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[12px]">
+          <Search className="size-[14px] shrink-0 text-gca-muted" />
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
+            placeholder="Search risks"
+            aria-label="Search risks"
+            className="min-w-0 w-full bg-transparent text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
+          />
+        </label>
         <Dropdown
           id="risk-filter-status"
           data={STATUS_OPTIONS}
           selectedId={statusFilter}
           style="h-[40px] rounded-[8px] border border-gca-border bg-white px-[13px] text-[14px] text-gca-dark"
           onSelect={(id) => changeFilter(setStatusFilter, id)}
+        />
+        <Dropdown
+          id="risk-filter-rating"
+          data={RATING_OPTIONS}
+          selectedId={ratingFilter}
+          style="h-[40px] rounded-[8px] border border-gca-border bg-white px-[13px] text-[14px] text-gca-dark"
+          onSelect={(id) => changeFilter(setRatingFilter, id)}
         />
       </div>
 
@@ -145,31 +152,43 @@ export function RisksTable({ projectId, stages, team, canManage, onAddRisk, onOp
                     i > 0 ? "border-t border-gca-border" : ""
                   }`}
                 >
-                  <p className="w-[32%] truncate text-[13px] font-medium text-gca-dark">{risk.title}</p>
+                  <p className="w-[32%] truncate text-[13px] font-medium text-gca-dark">
+                    {risk.title}
+                  </p>
                   <p className="w-[13%] text-[13px] text-gca-dark">
                     {risk.stage_no ? (STAGE_SHORT_NAME[risk.stage_no] ?? risk.stage_no) : "—"}
                   </p>
-                  <p className={`w-[11%] text-[13px] font-semibold ${rating.className}`}>{rating.label}</p>
-                  <p className="w-[16%] text-[13px] text-gca-dark">{ownerName(risk.owner_id, team)}</p>
-                  <p className={`w-[16%] text-[13px] font-semibold ${status.className}`}>{status.label}</p>
-                  <p className="w-[12%] text-[13px] text-gca-dark">{formatShortDate(risk.opened_at)}</p>
+                  <p className={`w-[11%] text-[13px] font-semibold ${rating.className}`}>
+                    {rating.label}
+                  </p>
+                  <p className="w-[16%] text-[13px] text-gca-dark">
+                    {ownerName(risk.owner_id, team)}
+                  </p>
+                  <p className={`w-[16%] text-[13px] font-semibold ${status.className}`}>
+                    {status.label}
+                  </p>
+                  <p className="w-[12%] text-[13px] text-gca-dark">
+                    {formatShortDate(risk.opened_at)}
+                  </p>
                 </button>
               );
             })}
           </div>
 
-          {pages > 1 && <Pagination
-            page={page}
-            totalPages={Math.max(pages, 1)}
-            perPage={perPage}
-            total={total}
-            onPageChange={setPage}
-            onPerPageChange={(n) => {
-              setPerPage(n);
-              setPage(1);
-            }}
-            label="risks"
-          />}
+          {pages > 1 && (
+            <Pagination
+              page={page}
+              totalPages={Math.max(pages, 1)}
+              perPage={perPage}
+              total={total}
+              onPageChange={setPage}
+              onPerPageChange={(n) => {
+                setPerPage(n);
+                setPage(1);
+              }}
+              label="risks"
+            />
+          )}
         </>
       )}
     </div>

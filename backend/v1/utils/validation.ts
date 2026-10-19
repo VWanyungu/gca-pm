@@ -249,6 +249,8 @@ export interface ListRiskIssuesQuery {
   kind?: RiskKindLiteral;
   stage_no?: number;
   source?: "manual" | "overdue_task";
+  rating?: "low" | "medium" | "high";
+  search?: string;
   page?: number;
   limit?: number;
 }
@@ -316,6 +318,8 @@ export const listRiskIssuesQuerySchema = Joi.object<ListRiskIssuesQuery>({
   kind: Joi.string().valid("risk", "issue").optional(),
   stage_no: Joi.number().integer().min(1).max(10).optional(),
   source: Joi.string().valid("manual", "overdue_task").optional(),
+  rating: Joi.string().valid("low", "medium", "high").optional(),
+  search: Joi.string().trim().max(200).optional(),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(25),
 });
@@ -353,6 +357,7 @@ export interface ListChangeRequestsQuery {
   stage_no?: number;
   type?: ChangeRequestType;
   status?: ChangeRequestStatus;
+  search?: string;
   page?: number;
   limit?: number;
 }
@@ -415,6 +420,7 @@ export const listChangeRequestsQuerySchema =
     status: Joi.string()
       .valid("pending", "approved", "rejected", "withdrawn")
       .optional(),
+    search: Joi.string().trim().max(200).optional(),
     page: Joi.number().integer().min(1).default(1),
     limit: Joi.number().integer().min(1).max(100).default(25),
   });

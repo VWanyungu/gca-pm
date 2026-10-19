@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import type { Risk, RiskCategory, RiskStatus, RiskSource } from "./types";
+import type { Risk, RiskCategory, RiskRating, RiskStatus, RiskSource } from "./types";
 
 function unwrap<T>(res: { status: string; data: T | null; message: string }): T {
   if (res.status !== "success" || !res.data) throw new Error(res.message);
@@ -14,6 +14,8 @@ export function useRisks({
   stageNo,
   source,
   status,
+  rating,
+  search,
   page,
   limit = 6,
 }: {
@@ -21,16 +23,20 @@ export function useRisks({
   stageNo?: number;
   source?: RiskSource;
   status?: RiskStatus;
+  rating?: RiskRating;
+  search?: string;
   page: number;
   limit?: number;
 }) {
   return useQuery({
-    queryKey: ["project", projectId, "risks", { stageNo, source, status, page, limit }],
+    queryKey: ["project", projectId, "risks", { stageNo, source, status, rating, search, page, limit }],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (stageNo) params.set("stage_no", String(stageNo));
       if (source) params.set("source", source);
       if (status) params.set("status", status);
+      if (rating) params.set("rating", rating);
+      if (search?.trim()) params.set("search", search.trim());
       return unwrap(
         await api.get<{
           riskIssues: Risk[];

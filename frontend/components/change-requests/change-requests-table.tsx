@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, GitPullRequest } from "lucide-react";
+import { Plus, GitPullRequest, Search } from "lucide-react";
 import Dropdown from "@/components/Dropdown";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { Pagination } from "@/components/pagination";
 import { useChangeRequests } from "./use-change-requests-data";
 import {
@@ -47,6 +48,8 @@ export function ChangeRequestsTable({ projectId, stages, canRaise, onRaise, onOp
   const [stageFilter, setStageFilter] = useState(STAGE_FILTER_ALL);
   const [typeFilter, setTypeFilter] = useState(TYPE_FILTER_ALL);
   const [statusFilter, setStatusFilter] = useState(STATUS_FILTER_ALL);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(6);
 
@@ -55,6 +58,7 @@ export function ChangeRequestsTable({ projectId, stages, canRaise, onRaise, onOp
     stageNo: stageFilter === STAGE_FILTER_ALL ? undefined : Number(stageFilter),
     type: typeFilter === TYPE_FILTER_ALL ? undefined : (typeFilter as ChangeRequestType),
     status: statusFilter === STATUS_FILTER_ALL ? undefined : (statusFilter as ChangeRequestStatus),
+    search: debouncedSearch,
     page,
     limit: perPage,
   });
@@ -95,7 +99,21 @@ export function ChangeRequestsTable({ projectId, stages, canRaise, onRaise, onOp
         )}
       </div>
 
-      <div className="flex items-center gap-[12px]">
+      <div className="flex flex-wrap items-center gap-[12px]">
+        <label className="flex h-[40px] w-[260px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[12px]">
+          <Search className="size-[14px] shrink-0 text-gca-muted" />
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
+            placeholder="Search change requests"
+            aria-label="Search change requests"
+            className="min-w-0 w-full bg-transparent text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
+          />
+        </label>
         <Dropdown
           id="cr-filter-stage"
           data={stageOptions}

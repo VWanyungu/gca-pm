@@ -1,6 +1,7 @@
 export type RiskStatus = "open" | "mitigated" | "closed" | "dismissed" | "auto_resolved";
 export type RiskKind = "risk" | "issue";
 export type RiskSource = "manual" | "overdue_task";
+export type RiskRating = "low" | "medium" | "high";
 
 export interface RiskCategory {
   risk_category_id: number;

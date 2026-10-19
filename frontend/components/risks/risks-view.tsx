@@ -37,7 +37,6 @@ export function RisksView({ projectId }: { projectId: string }) {
           {subView.mode === "list" && (
             <RisksTable
               projectId={projectId}
-              stages={project.stages}
               team={team}
               canManage={canManage}
               onAddRisk={() => setSubView({ mode: "add" })}

@@ -873,6 +873,8 @@ export class RiskIssues {
     kind,
     stageNo,
     source,
+    rating,
+    search,
     page = 1,
     limit = 25,
   }: {
@@ -881,6 +883,8 @@ export class RiskIssues {
     kind?: RiskKind;
     stageNo?: number;
     source?: RiskSource;
+    rating?: 'low' | 'medium' | 'high';
+    search?: string;
     page?: number;
     limit?: number;
   }): Promise<{
@@ -892,6 +896,10 @@ export class RiskIssues {
     if (kind) base.andWhere({ kind });
     if (stageNo !== undefined) base.andWhere({ stage_no: stageNo });
     if (source) base.andWhere({ source });
+    if (rating === 'low') base.andWhere('score', '<', 8);
+    if (rating === 'medium') base.andWhere('score', '>=', 8).andWhere('score', '<', 15);
+    if (rating === 'high') base.andWhere('score', '>=', 15);
+    if (search) base.andWhereILike('title', `%${search}%`);
 
     const countRows = await base.clone().count<{ count: string }[]>('risk_id as count');
     const total = Number(countRows[0]?.count ?? 0);
@@ -5726,6 +5734,7 @@ export class ChangeRequests {
     stageNo,
     type,
     status,
+    search,
     page = 1,
     limit = 25,
   }: {
@@ -5733,6 +5742,7 @@ export class ChangeRequests {
     stageNo?: number;
     type?: ChangeRequestType;
     status?: ChangeRequestStatus;
+    search?: string;
     page?: number;
     limit?: number;
   }): Promise<{
@@ -5743,6 +5753,7 @@ export class ChangeRequests {
     if (stageNo !== undefined) base.andWhere({ stage_no: stageNo });
     if (type) base.andWhere({ type });
     if (status) base.andWhere({ status });
+    if (search) base.andWhereILike('title', `%${search}%`);
 
     const countRows = await base.clone().count<{ count: string }[]>('change_id as count');
     const total = Number(countRows[0]?.count ?? 0);

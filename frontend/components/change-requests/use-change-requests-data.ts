@@ -14,6 +14,7 @@ export function useChangeRequests({
   stageNo,
   type,
   status,
+  search,
   page,
   limit = 6,
 }: {
@@ -21,16 +22,18 @@ export function useChangeRequests({
   stageNo?: number;
   type?: ChangeRequestType;
   status?: ChangeRequestStatus;
+  search?: string;
   page: number;
   limit?: number;
 }) {
   return useQuery({
-    queryKey: ["project", projectId, "change-requests", { stageNo, type, status, page, limit }],
+    queryKey: ["project", projectId, "change-requests", { stageNo, type, status, search, page, limit }],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (stageNo) params.set("stage_no", String(stageNo));
       if (type) params.set("type", type);
       if (status) params.set("status", status);
+      if (search?.trim()) params.set("search", search.trim());
       return unwrap(
         await api.get<{
           changeRequests: ChangeRequest[];
