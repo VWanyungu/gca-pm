@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import type { TeamMember } from "@/components/project-overview/types";
 import { useWeekDprs } from "./use-weekly-submission-data";
@@ -89,11 +90,12 @@ export function WeekDprStrip({
             {new Date(openDay).toDateString()}
           </h3>
 
-          <div className="grid grid-cols-4 gap-[12px] text-[12px] font-medium text-gca-muted border-b border-gca-border pb-[4px]">
+          <div className="grid grid-cols-5 gap-[12px] text-[12px] font-medium text-gca-muted border-b border-gca-border pb-[4px]">
             <span>Site</span>
             <span>Engineer</span>
             <span>Submitted</span>
             <span>Status</span>
+            <span></span>
           </div>
           {openDprs.length === 0 ? (
             <p className="text-[13px] text-error-text text-center py-[12px]">
@@ -103,7 +105,7 @@ export function WeekDprStrip({
             openDprs.map((dpr) => (
               <div
                 key={dpr.dpr_id}
-                className="grid grid-cols-4 gap-[12px] text-[13px] text-gca-dark border-b border-gca-border pb-[4px]"
+                className="grid grid-cols-5 gap-[12px] text-[13px] text-gca-dark border-b border-gca-border pb-[4px] items-center"
               >
                 <span>{dpr.site_location}</span>
                 <span>{authorName(dpr.author_id, team)}</span>
@@ -118,6 +120,12 @@ export function WeekDprStrip({
                 <span className={dpr.is_late ? "text-gca-warning" : "text-gca-green"}>
                   {dpr.status === "submitted" ? (dpr.is_late ? "Late" : "On time") : "Draft"}
                 </span>
+                <Link
+                  href={`/projects/${projectId}/dpr/${dpr.dpr_id}`}
+                  className="font-medium text-gca-green justify-self-end"
+                >
+                  View DPR
+                </Link>
               </div>
             ))
           )}

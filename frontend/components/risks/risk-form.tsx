@@ -14,7 +14,7 @@ import {
   type Risk,
   type RiskStatus,
 } from "./types";
-import type { StageRow, TeamMember } from "@/components/project-overview/types";
+import { uniquePeople, type StageRow, TeamMember } from "@/components/project-overview/types";
 
 function creatorName(userId: string, team: TeamMember[]) {
   const member = team.find((m) => m.user_id === userId);
@@ -27,8 +27,10 @@ interface RiskFormProps {
   stages: StageRow[];
   team: TeamMember[];
   editing?: Risk;
-  /** Prefill for "new risk from X" flows (e.g. an overdue schedule task) — ignored when `editing` is set. */
-  initial?: { title: string; description?: string; stageNo?: number; subtitle?: string };
+  /** Prefill for "new risk from X" flows (e.g. an overdue schedule task) — ignored when `editing` is set.
+   *  `sourceTaskId` links the new risk back to the schedule task it came from, which is what
+   *  lets the Overdue tab show that the task is already covered. */
+  initial?: { title: string; description?: string; stageNo?: number; subtitle?: string; sourceTaskId?: string };
   onDone: () => void;
   onCancel: () => void;
 }
@@ -56,7 +58,7 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
   const [deleteReason, setDeleteReason] = useState("");
 
   const stageOptions = stages.filter((s) => s.in_scope).map((s) => ({ id: String(s.stage_no), name: s.stage_name }));
-  const ownerOptions = team.map((m) => ({ id: m.user_id, name: `${m.first_name} ${m.last_name}` }));
+  const ownerOptions = uniquePeople(team).map((m) => ({ id: m.user_id, name: `${m.first_name} ${m.last_name}` }));
   const categoryOptions = categories.map((c) => ({ id: String(c.risk_category_id), name: c.name }));
   const statusOptions = editing
     ? [editing.status, ...STATUS_TRANSITIONS[editing.status]].map((s) => ({
@@ -103,7 +105,11 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
         return;
       }
     } else {
-      const res = await api.post(`/projects/${projectId}/risks`, { ...body, kind: "risk" });
+      const res = await api.post(`/projects/${projectId}/risks`, {
+        ...body,
+        kind: "risk",
+        source_task_id: initial?.sourceTaskId ?? null,
+      });
       setSaving(false);
       if (res.status !== "success") {
         setError(res.message || "Couldn't create the risk");

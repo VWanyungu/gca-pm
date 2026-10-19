@@ -81,13 +81,46 @@ export function SubmitMode({
     invalidate();
   }
 
+  // AC-WKS-03: picking a top risk pre-fills top_risk_text/top_action from that risk's
+  // own title/mitigation — no free-text entry. Marking again clears it.
+  async function setTopRisk(risk: { risk_id: string; title: string; mitigation: string | null }) {
+    const isCurrent = submission.top_risk_id === risk.risk_id;
+    await updateWeeklySubmission(projectId, submission.submission_id, {
+      top_risk_id: isCurrent ? null : risk.risk_id,
+      top_risk_text: isCurrent ? null : risk.title,
+      top_action: isCurrent ? null : (risk.mitigation ?? ""),
+    });
+    invalidate();
+  }
+
+  async function markNoRisksThisWeek() {
+    await updateWeeklySubmission(projectId, submission.submission_id, {
+      top_risk_id: null,
+      top_risk_text: "No significant risks this week.",
+      top_action: "No action needed.",
+    });
+    invalidate();
+  }
+
+  async function clearTopRisk() {
+    await updateWeeklySubmission(projectId, submission.submission_id, {
+      top_risk_id: null,
+      top_risk_text: null,
+      top_action: null,
+    });
+    invalidate();
+  }
+
   const addressedRisks = submission.addressed_risks ?? [];
+  // Matches AC-WKS-04 (backend approval validation) exactly. Schedule progress is
+  // informational only — AC-WKS-05 explicitly allows approval with no schedule.
   const checks = {
     progress: !!latestMetric,
     commentary: commentary.trim().length > 0,
-    topRisks: addressedRisks.length > 0 && !!submission.top_risk_id,
+    topRiskText: !!submission.top_risk_text?.trim(),
+    topAction: !!submission.top_action?.trim(),
   };
-  const ready = checks.progress && checks.commentary && checks.topRisks;
+  const ready = checks.commentary && checks.topRiskText && checks.topAction;
 
   async function submit() {
     setSubmitting(true);
@@ -235,7 +268,7 @@ export function SubmitMode({
 
             {/* Top Risks and Actions */}
             <div className="flex w-full flex-col gap-[4px]">
-              <div className="flex items-center justify-between pb-[12px]">
+              <div className="flex items-center justify-between pb-[4px]">
                 <h3 className="text-[16px] font-semibold text-gca-dark">Top risks and actions</h3>
                 {!addingRisk && addressedRisks.length > 0 && (
                   <button
@@ -246,6 +279,15 @@ export function SubmitMode({
                   </button>
                 )}
               </div>
+              <p className="pb-[8px] text-[13px] text-gca-show">
+                Mark one addressed risk as this week&apos;s top risk — its title and mitigation
+                become the top risk and action required to submit.{" "}
+                {!submission.top_risk_text && (
+                  <button onClick={markNoRisksThisWeek} className="cursor-pointer font-medium text-gca-green">
+                    No risks this week
+                  </button>
+                )}
+              </p>
 
               {addingRisk && (
                 <div className="pb-[16px]">
@@ -272,12 +314,22 @@ export function SubmitMode({
                           Pick this week&apos;s top risks from the risk register
                         </p>
                       </div>
-                      <button
-                        onClick={() => setAddingRisk(true)}
-                        className="mt-[8px] flex cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-white py-[10px] pl-[14px] pr-[16px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
-                      >
-                        Add from register
-                      </button>
+                      <div className="mt-[8px] flex items-center gap-[12px]">
+                        <button
+                          onClick={() => setAddingRisk(true)}
+                          className="flex cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-white py-[10px] pl-[14px] pr-[16px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+                        >
+                          Add from register
+                        </button>
+                        {!submission.top_risk_text && (
+                          <button
+                            onClick={markNoRisksThisWeek}
+                            className="cursor-pointer text-[13px] font-medium text-gca-green"
+                          >
+                            No risks this week
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )
                 : addressedRisks.map((risk, i) => (
@@ -288,6 +340,9 @@ export function SubmitMode({
                       addressedRisk={risk}
                       isMainTopRisk={risk.risk_id === submission.top_risk_id}
                       team={team}
+                      onMarkAsTopRisk={(title, mitigation) =>
+                        setTopRisk({ risk_id: risk.risk_id, title, mitigation })
+                      }
                       onRemove={async () => {
                         await removeAddressedRisk(
                           projectId,
@@ -298,6 +353,17 @@ export function SubmitMode({
                       }}
                     />
                   ))}
+
+              {!submission.top_risk_id && submission.top_risk_text && (
+                <div className="flex items-center justify-between rounded-[8px] bg-gca-badge-bg px-[14px] py-[10px] text-[13px]">
+                  <span className="font-medium text-gca-green">
+                    Top risk: {submission.top_risk_text}
+                  </span>
+                  <button onClick={clearTopRisk} className="cursor-pointer text-gca-muted">
+                    Clear
+                  </button>
+                </div>
+              )}
             </div>
 
             <DprPhotosSection projectId={projectId} submissionId={submission.submission_id} />
@@ -325,15 +391,8 @@ export function SubmitMode({
                   <h3 className="text-[16px] font-semibold text-gca-dark">Ready to submit?</h3>
                   <ChecklistItem ok={checks.progress} label="Progress from this week's schedule" />
                   <ChecklistItem ok={checks.commentary} label="Commentary written" />
-                  <ChecklistItem
-                    ok={checks.topRisks}
-                    label={
-                      checks.topRisks
-                        ? `${addressedRisks.length} top risks with actions`
-                        : "No top risks selected"
-                    }
-                  />
-                  {/* {submitError && <p className="text-[13px] text-error-text">{submitError}</p>} */}
+                  <ChecklistItem ok={checks.topRiskText && checks.topAction} label="Top risk marked" />
+                  {submitError && <p className="text-[13px] text-error-text">{submitError}</p>}
                   <button
                     onClick={submit}
                     disabled={!ready || submitting}
@@ -343,11 +402,9 @@ export function SubmitMode({
                   </button>
                   {!ready && !submitError && (
                     <p className="text-[12px] text-error-text">
-                      {!checks.topRisks
-                        ? "Add at least one top risk to submit."
-                        : !checks.commentary
-                          ? "Write a commentary to submit."
-                          : "Add this week's progress to submit."}
+                      {!checks.commentary
+                        ? "Write a commentary to submit."
+                        : "Mark a top risk, or 'No risks this week', to submit."}
                     </p>
                   )}
                   {!DEPARTMENT_LEAD_EMAIL && (

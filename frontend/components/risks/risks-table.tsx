@@ -15,7 +15,7 @@ const STATUS_FILTER_ALL = "all";
 const SOURCE_OPTIONS = [
   { id: SOURCE_FILTER_ALL, name: "All sources" },
   { id: "manual", name: "Manual" },
-  { id: "auto_overdue_task", name: "Auto-flagged" },
+  { id: "overdue_task", name: "From schedule" },
 ];
 
 const STATUS_OPTIONS = [

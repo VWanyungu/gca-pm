@@ -17,6 +17,7 @@ export function AddressedRiskRow({
   addressedRisk,
   isMainTopRisk,
   team,
+  onMarkAsTopRisk,
   onRemove,
 }: {
   index: number;
@@ -24,6 +25,7 @@ export function AddressedRiskRow({
   addressedRisk: SubmissionAddressedRisk;
   isMainTopRisk: boolean;
   team: TeamMember[];
+  onMarkAsTopRisk?: (title: string, mitigation: string | null) => void;
   onRemove?: () => void;
 }) {
   const { data: risk } = useRisk(projectId, addressedRisk.risk_id);
@@ -49,6 +51,14 @@ export function AddressedRiskRow({
             <p className="w-[360px] text-gca-dark">{risk?.mitigation || "—"}</p>
             <p className="whitespace-nowrap text-gca-show">{ownerName(risk?.owner_id, team)}</p>
           </div>
+          {onMarkAsTopRisk && risk && (
+            <button
+              onClick={() => onMarkAsTopRisk(risk.title, risk.mitigation ?? null)}
+              className="w-fit cursor-pointer text-[12px] font-medium text-gca-green"
+            >
+              {isMainTopRisk ? "Unmark as top risk" : "Mark as top risk"}
+            </button>
+          )}
         </div>
       </div>
       {onRemove && (

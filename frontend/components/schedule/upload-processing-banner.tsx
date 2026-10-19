@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
+import { useScheduleVersion } from "./use-schedule-data";
+import type { ParseDiagnostic, ScheduleVersion } from "./types";
 
 const STEPS = [
   { key: "reading", label: "Reading file" },
@@ -13,28 +15,45 @@ const STEPS = [
 const STEP_DURATION_MS = 700;
 
 interface UploadProcessingBannerProps {
+  projectId: string;
+  versionId: string;
   fileName: string;
   fileSizeLabel: string;
   onCancel: () => void;
-  onComplete: () => void;
+  onComplete: (version: ScheduleVersion) => void;
+  onFailed: (diagnostics: ParseDiagnostic[]) => void;
 }
 
-/** Simulated client-side only: there is no MPP parsing service yet, so this steps through the
- *  same stages the real one will report, then always resolves to success. Replace the timer
- *  below with a real upload request + poll (or SSE) once that service exists. */
-export function UploadProcessingBanner({ fileName, fileSizeLabel, onCancel, onComplete }: UploadProcessingBannerProps) {
+/** Polls the queued version until the server finishes with it. The steps below are paced on a
+ *  timer because the service reports a status rather than progress, but the last one only
+ *  completes when the version really is applied — the banner never claims success on its own. */
+export function UploadProcessingBanner({
+  projectId,
+  versionId,
+  fileName,
+  fileSizeLabel,
+  onCancel,
+  onComplete,
+  onFailed,
+}: UploadProcessingBannerProps) {
   const [stepIndex, setStepIndex] = useState(0);
+  const { data: version } = useScheduleVersion(projectId, versionId);
+  const settled = version?.status === "applied" || version?.status === "failed";
 
   useEffect(() => {
-    if (stepIndex >= STEPS.length) {
-      const id = setTimeout(onComplete, STEP_DURATION_MS);
-      return () => clearTimeout(id);
-    }
+    // Hold on the last step while the server is still working.
+    if (stepIndex >= STEPS.length - 1 && !settled) return;
+    if (stepIndex >= STEPS.length) return;
     const id = setTimeout(() => setStepIndex((i) => i + 1), STEP_DURATION_MS);
     return () => clearTimeout(id);
-  }, [stepIndex, onComplete]);
+  }, [stepIndex, settled]);
 
-  const progressPct = Math.min(100, (stepIndex / STEPS.length) * 100);
+  useEffect(() => {
+    if (version?.status === "applied") onComplete(version);
+    if (version?.status === "failed") onFailed(version.parse_diagnostics ?? []);
+  }, [version, onComplete, onFailed]);
+
+  const progressPct = settled ? 100 : Math.min(90, (stepIndex / STEPS.length) * 100);
 
   return (
     <div className="flex w-full flex-col gap-[16px] rounded-[12px] border border-gca-border bg-white p-[20px]">

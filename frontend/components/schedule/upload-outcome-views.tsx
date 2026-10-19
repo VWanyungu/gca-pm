@@ -20,6 +20,8 @@ function StatTile({ label, value, note, emphasize }: StatTileProps) {
 }
 
 interface UploadResultViewProps {
+  /** Tasks whose dates or other stored fields changed in this version (AC-SCH-06). */
+  datesMoved: number;
   fileName: string;
   uploadedAt: string;
   taskCount: number;
@@ -33,6 +35,7 @@ interface UploadResultViewProps {
  *  project's real current schedule data rather than fabricated upload numbers. */
 export function UploadResultView({
   fileName,
+  datesMoved,
   uploadedAt,
   taskCount,
   overdueCount,
@@ -65,15 +68,10 @@ export function UploadResultView({
         </div>
       </div>
 
-      <p className="rounded-[8px] bg-gca-badge-bg px-[16px] py-[12px] text-[13px] text-gca-badge-text">
-        Preview — the schedule parsing service isn&apos;t connected yet, so these numbers reflect your
-        current schedule rather than a real parse of the uploaded file.
-      </p>
-
       <div className="flex w-full gap-[16px]">
         <StatTile label="Tasks" value={taskCount} />
-        <StatTile label="Dates moved" value={0} note="vs previous version" />
-        <StatTile label="New overdue tasks" value={overdueCount} note="Shown to the PM" emphasize={overdueCount > 0} />
+        <StatTile label="Dates moved" value={datesMoved} note="vs previous version" />
+        <StatTile label="Overdue tasks" value={overdueCount} note="Review on the Overdue tab" emphasize={overdueCount > 0} />
         <StatTile label="Reconciliation flags" value={flagCount} note="From DPR progress" />
       </div>
     </div>

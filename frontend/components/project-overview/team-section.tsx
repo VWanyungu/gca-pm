@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { initials, type TeamMember, type ClientContact } from "./types";
+import { initials, uniquePeople, type TeamMember, type ClientContact } from "./types";
 
 export function TeamSection({
   projectId,
@@ -24,7 +24,7 @@ export function TeamSection({
               </p>
             </div>
             <div className="flex items-center">
-            {team.map((m) => (
+            {uniquePeople(team).map((m) => (
               <div
                 key={m.attribute_id}
                 className="mr-[-8px] flex size-[36px] items-center justify-center rounded-[10px] border-2 border-white bg-gca-badge-bg"

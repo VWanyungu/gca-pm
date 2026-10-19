@@ -8,6 +8,7 @@ import type {
   AddressedRiskMethod,
   SubmissionPhoto,
   DprSummary,
+  DprDetail,
 } from "./types";
 import { addDays } from "./types";
 
@@ -87,6 +88,18 @@ export function useWeekDprs(projectId: string, weekStart: string) {
           `/projects/${projectId}/dpr?from_date=${weekStart}&to_date=${addDays(weekStart, 6)}&limit=100`,
         ),
       ).dprs,
+    staleTime: 10_000,
+  });
+}
+
+export function useDpr(projectId: string, dprId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["project", projectId, "dpr", dprId],
+    queryFn: async () =>
+      unwrap(
+        await api.get<{ dpr: DprDetail }>(`/projects/${projectId}/dpr/${dprId}`),
+      ).dpr,
+    enabled: !!dprId,
     staleTime: 10_000,
   });
 }

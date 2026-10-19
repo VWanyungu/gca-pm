@@ -65,6 +65,7 @@ export interface SubmissionPhoto {
   report_date: string;
   site_location: string;
   selected: boolean;
+  url: string;
 }
 
 export interface DprSummary {
@@ -77,6 +78,102 @@ export interface DprSummary {
   submitted_at: string | null;
   is_late: boolean | null;
 }
+
+export type DprEffectsSeverity = "none" | "minor" | "significant" | "stoppage";
+export type DprProgressSource = "schedule_task" | "free_text";
+
+export interface DprWorkItem {
+  work_item_id: string;
+  dpr_id: string;
+  sort_order: number;
+  work_area: string;
+  work_carried_out: string;
+}
+
+export interface DprActivityProgress {
+  dpr_activity_progress_id: string;
+  dpr_id: string;
+  sort_order: number;
+  source: DprProgressSource;
+  task_id: string | null;
+  free_text: string | null;
+  today_pct: number;
+  total_pct: number;
+  task_name?: string | null;
+}
+
+export interface DprPersonnelRoleCount {
+  personnel_group_id: string;
+  personnel_role_id: number;
+  headcount: number;
+  role_name: string;
+}
+
+export interface DprPersonnelGroup {
+  personnel_group_id: string;
+  dpr_id: string;
+  project_contractor_id: string;
+  sort_order: number;
+  total_headcount: number;
+  role_counts: DprPersonnelRoleCount[];
+  contractor_name: string;
+  party_type: "contractor" | "subcontractor";
+}
+
+export interface DprPhoto {
+  photo_id: string;
+  dpr_id: string;
+  file_id: string;
+  caption: string | null;
+  sort_order: number;
+  taken_at: string | null;
+  gps_lat: number | null;
+  gps_lng: number | null;
+  uploaded_by: string;
+  uploaded_at: string;
+  url: string;
+}
+
+export interface DprDetail {
+  dpr_id: string;
+  dpr_ref: string | null;
+  project_id: string;
+  stage_no: number;
+  report_date: string;
+  site_location: string;
+  contract_no: string | null;
+  weather_category_id: number | null;
+  weather_category_name: string | null;
+  temp_min_c: number | null;
+  temp_max_c: number | null;
+  humidity_pct: number | null;
+  wind: string | null;
+  effects_text: string | null;
+  effects_severity: DprEffectsSeverity;
+  equipment_text: string | null;
+  visitors_text: string | null;
+  delays_text: string | null;
+  incidents_text: string | null;
+  other_notes_text: string | null;
+  status: "draft" | "submitted";
+  author_id: string;
+  author_name: string;
+  submitted_by: string | null;
+  submitted_by_name: string | null;
+  submitted_at: string | null;
+  is_late: boolean | null;
+  work_items: DprWorkItem[];
+  activity_progress: DprActivityProgress[];
+  personnel_groups: DprPersonnelGroup[];
+  photos: DprPhoto[];
+}
+
+export const EFFECTS_SEVERITY_LABEL: Record<DprEffectsSeverity, string> = {
+  none: "No effect",
+  minor: "Minor",
+  significant: "Significant",
+  stoppage: "Work stopped",
+};
 
 /** Monday (ISO yyyy-mm-dd) of the week containing `date`. */
 export function mondayOf(date: Date): string {

@@ -7,10 +7,10 @@ import {
   barColor,
   clampToWindow,
   groupProgress,
-  orderForGanttDisplay,
+  phaseLevel,
   rootGroupName,
-  taskInWindow,
   topicOrder,
+  visibleScheduleRows,
   workDays,
   type DateWindow,
   type ScheduleTask,
@@ -49,28 +49,13 @@ export function GanttChart({ tasks, window }: GanttChartProps) {
   const byId = useMemo(() => new Map(tasks.map((t) => [t.task_id, t])), [tasks]);
   const byMppId = useMemo(() => new Map(tasks.map((t) => [t.mpp_unique_id, t])), [tasks]);
   const topics = useMemo(() => topicOrder(tasks), [tasks]);
+  const level = useMemo(() => phaseLevel(tasks), [tasks]);
+  const baseLevel = useMemo(
+    () => (tasks.length ? Math.min(...tasks.map((t) => t.outline_level)) : 1),
+    [tasks],
+  );
 
-  const visible = useMemo(() => {
-    if (!window) return orderForGanttDisplay(tasks);
-    // Keep leaves that overlap the window, plus only the ancestor groups that still have
-    // a surviving descendant — an empty topic shouldn't show up in a 2-week lookahead.
-    const survivingLeafIds = new Set(
-      tasks.filter((t) => !t.is_summary && taskInWindow(t, window)).map((t) => t.task_id),
-    );
-    const childrenOf = new Map<string, ScheduleTask[]>();
-    for (const t of tasks) {
-      if (!t.parent_task_id) continue;
-      const list = childrenOf.get(t.parent_task_id);
-      if (list) list.push(t);
-      else childrenOf.set(t.parent_task_id, [t]);
-    }
-    function hasSurvivingDescendant(t: ScheduleTask): boolean {
-      if (survivingLeafIds.has(t.task_id)) return true;
-      return (childrenOf.get(t.task_id) ?? []).some(hasSurvivingDescendant);
-    }
-    const kept = tasks.filter((t) => (t.is_summary ? hasSurvivingDescendant(t) : survivingLeafIds.has(t.task_id)));
-    return orderForGanttDisplay(kept);
-  }, [tasks, window]);
+  const visible = useMemo(() => visibleScheduleRows(tasks, window), [tasks, window]);
 
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   // Stable across re-renders so the library's initial-scroll effect doesn't keep re-firing.
@@ -79,7 +64,7 @@ export function GanttChart({ tasks, window }: GanttChartProps) {
   const rows = useMemo<GanttTask[]>(
     () =>
       visible.map((t) => {
-        const groupName = rootGroupName(t, byId);
+        const groupName = rootGroupName(t, byId, level);
         const topicIndex = groupName ? topics.indexOf(groupName) : -1;
         const rawStart = new Date(t.start);
         const rawEnd = t.is_milestone ? rawStart : new Date(t.expected_finish);
@@ -104,7 +89,7 @@ export function GanttChart({ tasks, window }: GanttChartProps) {
             : { backgroundColor: barColor(t, topicIndex), progressColor: "rgba(0,0,0,0.22)" },
         };
       }),
-    [visible, byId, byMppId, topics, collapsed, window],
+    [visible, byId, byMppId, topics, level, collapsed, window],
   );
 
   // The library's own scroll-to-viewDate effect races with its "no scroll set yet" default
@@ -188,19 +173,25 @@ export function GanttChart({ tasks, window }: GanttChartProps) {
             {(listTasks as GanttTask[]).map((t) => {
               const source = byId.get(t.id);
               const isGroup = t.type === "project";
+              const isPhase = source?.outline_level === level;
+              const indent = source ? (source.outline_level - baseLevel) * 14 : 0;
               return (
                 <div
                   key={t.id}
-                  className="flex items-center border-b border-gca-border"
+                  className={`flex items-center border-b border-gca-border ${isPhase ? "bg-gca-badge-bg" : ""}`}
                   style={{ height: ROW_HEIGHT }}
                 >
                   <span
-                    style={{ width: TASK_COL, paddingLeft: isGroup ? 16 : 32 }}
+                    style={{ width: TASK_COL, paddingLeft: 16 + indent }}
                     className={`flex items-center gap-[8px] truncate pr-[8px] text-[13px] ${
-                      isGroup ? "font-semibold text-gca-dark" : "font-medium text-gca-dark"
+                      isPhase
+                        ? "font-semibold uppercase tracking-[0.04em] text-gca-badge-text"
+                        : isGroup
+                          ? "font-semibold text-gca-dark"
+                          : "font-medium text-gca-dark"
                     }`}
                   >
-                    {isGroup && (
+                    {isGroup ? (
                       <button
                         type="button"
                         onClick={() => onExpanderClick(t)}
@@ -209,6 +200,15 @@ export function GanttChart({ tasks, window }: GanttChartProps) {
                       >
                         {t.hideChildren ? "▸" : "▾"}
                       </button>
+                    ) : (
+                      <span className="w-[10px]" aria-hidden />
+                    )}
+                    {/* MS Project lets a summary row carry the milestone flag too, so this is
+                        drawn from the source row rather than from the bar type. */}
+                    {source?.is_milestone && (
+                      <span className="shrink-0 text-[10px] text-gca-green" title="Milestone" aria-label="Milestone">
+                        ◆
+                      </span>
                     )}
                     <span className="truncate" title={t.name}>
                       {t.name}

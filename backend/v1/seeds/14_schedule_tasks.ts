@@ -259,7 +259,7 @@ export async function seed(knex: Knex): Promise<void> {
         impact: 3,
         owner_id: USER_IDS.PM,
         status: 'open',
-        source: 'auto_overdue_task',
+        source: 'overdue_task',
         source_task_id: taskId('traffic-management'),
         source_schedule_version_id: SCHEDULE_VERSION_ID,
         kind: 'risk',

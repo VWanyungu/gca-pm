@@ -1,6 +1,6 @@
 import express from 'express';
 import { randomUUID } from 'crypto';
-import { RiskIssues, RiskCategories } from '../database/utils/database.js';
+import { RiskIssues, RiskCategories, ScheduleTasks, ScheduleVersions } from '../database/utils/database.js';
 import type { RiskStatus } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
 import {
@@ -62,6 +62,26 @@ router.post('/', canManage, async (req, res) => {
             return;
         }
 
+        // AC-GEN-10: a risk raised from a schedule task must reference a task of this same
+        // project. The DB checks tie source, source_task_id and source_schedule_version_id
+        // together, so all three are set or none are.
+        let sourceTaskId: string | null = null;
+        let sourceVersionId: string | null = null;
+        if (input.source_task_id) {
+            const task = await ScheduleTasks.getById(projectId, input.source_task_id);
+            if (!task) {
+                res.status(400).json({ status: 'error', data: null, message: 'source_task_id must be a task of this project' });
+                return;
+            }
+            const latest = await ScheduleVersions.latestApplied(projectId);
+            if (!latest) {
+                res.status(400).json({ status: 'error', data: null, message: 'This project has no applied schedule' });
+                return;
+            }
+            sourceTaskId = task.task_id;
+            sourceVersionId = latest.schedule_version_id;
+        }
+
         const now = new Date();
         const kind = input.kind;
         const created = await RiskIssues.create({
@@ -77,7 +97,9 @@ router.post('/', canManage, async (req, res) => {
             mitigation: input.mitigation ?? null,
             review_by: input.review_by ?? null,
             status: 'open',
-            source: 'manual',
+            source: sourceTaskId ? 'overdue_task' : 'manual',
+            source_task_id: sourceTaskId,
+            source_schedule_version_id: sourceVersionId,
             kind,
             realised_at: kind === 'issue' ? now : null,
             realised_by: kind === 'issue' ? req.user!.userId : null,
@@ -186,7 +208,7 @@ router.patch('/:riskId', canManage, async (req, res) => {
         }
 
         if (patch.kind === 'issue' && existing.kind !== 'issue') {
-            if (existing.source === 'auto_overdue_task') {
+            if (existing.source === 'overdue_task') {
                 res.status(403).json({ status: 'error', data: null, message: 'Auto-overdue risks cannot be converted to issues' });
                 return;
             }

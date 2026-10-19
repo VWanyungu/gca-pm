@@ -1,6 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { Tokens } from '../database/utils/database.js';
+import { Tokens, Roles } from '../database/utils/database.js';
 import generateJwtToken from '../utils/generateJwtToken.js';
 import type { JwtUserPayload } from '../../types.js';
 
@@ -25,15 +25,22 @@ router.post('/', async (req, res) => {
     return;
   }
 
-  jwt.verify(refreshToken, secret, (err, decoded) => {
+  jwt.verify(refreshToken, secret, async (err, decoded) => {
     if (err || !decoded || typeof decoded === 'string') {
       res.status(401).json({ status: 'error', data: null, message: 'Invalid refresh token' });
       return;
     }
 
     const user = decoded as JwtUserPayload;
-    const { token } = generateJwtToken(user, 'token');
-    res.status(200).json({ status: 'success', data: { token }, message: 'Token refreshed' });
+
+    // Read the grants back from the database rather than copying them out of the old token.
+    // Roles change while a session is open — creating a project makes you its PM and Planner,
+    // an Admin can revoke access — and a token minted from a token would carry the stale set
+    // until the user signed out and in again. A revoked role must stop working, too.
+    const roles = await Roles.getRoles(user.userId);
+
+    const { token } = generateJwtToken({ ...user, role: roles }, 'token');
+    res.status(200).json({ status: 'success', data: { token, role: roles }, message: 'Token refreshed' });
   });
 });
 

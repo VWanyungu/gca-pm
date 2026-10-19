@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Download, Search, Upload } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { canAccess, CAN_MANAGE_PROJECT } from "@/lib/access-control";
+import { canAccess, CAN_MANAGE_PROJECT, CAN_UPLOAD_SCHEDULE } from "@/lib/access-control";
 import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
 import {
   useProjectDetail,
@@ -20,15 +20,16 @@ import { ScheduleHistoryView } from "./schedule-history-view";
 import { VersionChangesView } from "./version-changes-view";
 import { UploadScheduleForm, type UploadDraft } from "./upload-schedule-form";
 import { UploadProcessingBanner } from "./upload-processing-banner";
-import { UploadResultView } from "./upload-outcome-views";
+import { UploadResultView, UploadFailedView, type UploadProblem } from "./upload-outcome-views";
 import {
   useOverdueTasks,
   useReconciliationFlags,
   useScheduleInvalidate,
   useScheduleTasks,
   useScheduleVersions,
+  useUploadSchedule,
 } from "./use-schedule-data";
-import { formatShortDate, taskInWindow, type OverdueTask, type ScheduleVersion } from "./types";
+import { formatShortDate, taskInWindow, type OverdueTask, type ParseDiagnostic, type ScheduleVersion } from "./types";
 import type { TeamMember } from "@/components/project-overview/types";
 
 type Tab = "gantt" | "table" | "overdue" | "reconciliation";
@@ -38,7 +39,8 @@ type SubView =
   | { mode: "history" }
   | { mode: "version-changes"; version: ScheduleVersion }
   | { mode: "upload-form" }
-  | { mode: "upload-result"; fileName: string; uploadedAt: string };
+  | { mode: "upload-result"; fileName: string; uploadedAt: string; version: ScheduleVersion }
+  | { mode: "upload-failed"; fileName: string; fileSizeLabel: string; uploadedAt: string; problems: UploadProblem[] };
 
 function uploaderName(userId: string | undefined, team: TeamMember[]) {
   const member = team.find((m) => m.user_id === userId);
@@ -55,6 +57,29 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/** The parser reports a column and a message; the failure view wants a task, the problem and
+ *  what to do about it. A diagnostic without a task id is about the file as a whole. */
+function diagnosticsToProblems(diagnostics: ParseDiagnostic[]): UploadProblem[] {
+  return diagnostics.map((d) => ({
+    task: d.mpp_unique_id ? `Task ${d.mpp_unique_id}` : "This file",
+    problem: d.message,
+    howToFix: d.field
+      ? `Set a valid ${d.field.replace(/_/g, " ")} in MS Project and upload again.`
+      : "Fix this in MS Project and upload again.",
+  }));
+}
+
+/** No report endpoint yet: hand the Planner the same list as a text file from the browser. */
+function downloadProblemReport(fileName: string, problems: UploadProblem[]) {
+  const lines = [`Upload problems for ${fileName}`, "", ...problems.map((p) => `- ${p.task}: ${p.problem} (${p.howToFix})`)];
+  const url = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/plain" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${fileName.replace(/\.mpp$/i, "")}-upload-problems.txt`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export function ScheduleView({ projectId }: { projectId: string }) {
   const { user } = useAuth();
   const { data: project } = useProjectDetail(projectId);
@@ -69,10 +94,12 @@ export function ScheduleView({ projectId }: { projectId: string }) {
   const [range, setRange] = useState<"full" | "lookahead">("full");
   const [search, setSearch] = useState("");
   const [subView, setSubView] = useState<SubView>({ mode: "list" });
-  const [uploadProcessing, setUploadProcessing] = useState<{ fileName: string; fileSizeLabel: string } | null>(null);
+  const [uploadProcessing, setUploadProcessing] = useState<{ versionId: string; fileName: string; fileSizeLabel: string } | null>(null);
+  const uploadSchedule = useUploadSchedule(projectId);
   const invalidate = useScheduleInvalidate(projectId);
 
   const canManage = canAccess(user?.role, CAN_MANAGE_PROJECT, { projectId });
+  const canUpload = canAccess(user?.role, CAN_UPLOAD_SCHEDULE, { projectId });
   const currentVersion = versions[0];
 
   const filteredTasks = useMemo(() => {
@@ -126,8 +153,12 @@ export function ScheduleView({ projectId }: { projectId: string }) {
                 title: `Overdue: ${t.task_name}`,
                 description: `Expected finish was ${formatShortDate(t.expected_finish)}. The task is ${Math.round(Number(t.pct_work_complete))}% complete.`,
                 subtitle: `From schedule task ${t.wbs} · ${t.task_name}`,
+                sourceTaskId: t.task_id,
               }}
-              onDone={() => setSubView({ mode: "list" })}
+              onDone={() => {
+                invalidate();
+                setSubView({ mode: "list" });
+              }}
               onCancel={() => setSubView({ mode: "list" })}
             />
           </main>
@@ -136,7 +167,13 @@ export function ScheduleView({ projectId }: { projectId: string }) {
     );
   }
 
-  if (subView.mode === "history" || subView.mode === "version-changes" || subView.mode === "upload-form" || subView.mode === "upload-result") {
+  if (
+    subView.mode === "history" ||
+    subView.mode === "version-changes" ||
+    subView.mode === "upload-form" ||
+    subView.mode === "upload-result" ||
+    subView.mode === "upload-failed"
+  ) {
     return (
       <div className="flex min-h-[calc(100vh-64px)] w-full">
         <ProjectSidebar projectId={projectId} stages={project.stages} counts={counts} active="schedule" />
@@ -165,10 +202,26 @@ export function ScheduleView({ projectId }: { projectId: string }) {
                 currentVersion={currentVersion}
                 team={team}
                 onCancel={() => setSubView({ mode: "list" })}
-                onSubmit={(draft: UploadDraft) => {
-                  setUploadProcessing({ fileName: draft.file.name, fileSizeLabel: formatFileSize(draft.file.size) });
+                submitting={uploadSchedule.isPending}
+                onSubmit={async (draft: UploadDraft) => {
+                  const result = await uploadSchedule.mutateAsync(draft);
+                  setUploadProcessing({
+                    versionId: result.schedule_version_id,
+                    fileName: draft.file.name,
+                    fileSizeLabel: formatFileSize(draft.file.size),
+                  });
                   setSubView({ mode: "list" });
                 }}
+              />
+            )}
+            {subView.mode === "upload-failed" && (
+              <UploadFailedView
+                fileName={subView.fileName}
+                fileSizeLabel={subView.fileSizeLabel}
+                uploadedAt={subView.uploadedAt}
+                problems={subView.problems}
+                onDownloadReport={() => downloadProblemReport(subView.fileName, subView.problems)}
+                onUploadAgain={() => setSubView({ mode: "upload-form" })}
               />
             )}
             {subView.mode === "upload-result" && (
@@ -176,8 +229,9 @@ export function ScheduleView({ projectId }: { projectId: string }) {
                 fileName={subView.fileName}
                 uploadedAt={subView.uploadedAt}
                 taskCount={tasks.filter((t) => !t.is_summary).length}
-                overdueCount={overdue.length}
-                flagCount={flags.filter((f) => !f.acknowledged_at).length}
+                datesMoved={subView.version.tasks_modified ?? 0}
+                overdueCount={subView.version.overdue_task_count ?? 0}
+                flagCount={subView.version.pct_overwrites ?? 0}
                 onViewChanges={() =>
                   currentVersion
                     ? setSubView({ mode: "version-changes", version: currentVersion })
@@ -222,7 +276,7 @@ export function ScheduleView({ projectId }: { projectId: string }) {
               >
                 <Download className="size-[16px] text-gca-dark" />
               </button>
-              {canManage && (
+              {canUpload && (
                 <button
                   onClick={() => setSubView({ mode: "upload-form" })}
                   className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
@@ -236,14 +290,27 @@ export function ScheduleView({ projectId }: { projectId: string }) {
 
           {uploadProcessing && (
             <UploadProcessingBanner
+              projectId={projectId}
+              versionId={uploadProcessing.versionId}
               fileName={uploadProcessing.fileName}
               fileSizeLabel={uploadProcessing.fileSizeLabel}
               onCancel={() => setUploadProcessing(null)}
-              onComplete={() => {
+              onComplete={(version) => {
                 const fileName = uploadProcessing.fileName;
                 setUploadProcessing(null);
                 invalidate();
-                setSubView({ mode: "upload-result", fileName, uploadedAt: new Date().toISOString() });
+                setSubView({ mode: "upload-result", fileName, uploadedAt: new Date().toISOString(), version });
+              }}
+              onFailed={(diagnostics) => {
+                const { fileName, fileSizeLabel } = uploadProcessing;
+                setUploadProcessing(null);
+                setSubView({
+                  mode: "upload-failed",
+                  fileName,
+                  fileSizeLabel,
+                  uploadedAt: new Date().toISOString(),
+                  problems: diagnosticsToProblems(diagnostics),
+                });
               }}
             />
           )}

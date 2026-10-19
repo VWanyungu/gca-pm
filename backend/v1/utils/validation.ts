@@ -185,6 +185,9 @@ export interface CreateRiskIssueBody {
   mitigation?: string | null;
   review_by?: string | null;
   kind: RiskKindLiteral;
+  /** Set when the PM raises this from an overdue schedule task, so the Overdue tab can show
+   *  that the task is already covered. Only valid for kind='risk'. */
+  source_task_id?: string | null;
 }
 
 export interface UpdateRiskIssueBody {
@@ -206,7 +209,7 @@ export interface ListRiskIssuesQuery {
   status?: RiskStatusLiteral | 'auto_resolved';
   kind?: RiskKindLiteral;
   stage_no?: number;
-  source?: 'manual' | 'auto_overdue_task';
+  source?: 'manual' | 'overdue_task';
   page?: number;
   limit?: number;
 }
@@ -236,6 +239,12 @@ export const createRiskIssueSchema = Joi.object<CreateRiskIssueBody>({
   mitigation: Joi.string().trim().max(10000).allow(null, '').optional(),
   review_by: Joi.string().isoDate().allow(null).optional(),
   kind: Joi.string().valid('risk', 'issue').required(),
+  // ck_risk_auto_is_risk: a risk raised from a schedule task is never an issue.
+  source_task_id: Joi.when('kind', {
+    is: 'risk',
+    then: Joi.string().uuid().allow(null).optional(),
+    otherwise: Joi.any().strip(),
+  }),
 });
 
 export const updateRiskIssueSchema = Joi.object<UpdateRiskIssueBody>({
@@ -263,7 +272,7 @@ export const listRiskIssuesQuerySchema = Joi.object<ListRiskIssuesQuery>({
   status: Joi.string().valid('open', 'mitigated', 'closed', 'dismissed', 'auto_resolved').optional(),
   kind: Joi.string().valid('risk', 'issue').optional(),
   stage_no: Joi.number().integer().min(1).max(10).optional(),
-  source: Joi.string().valid('manual', 'auto_overdue_task').optional(),
+  source: Joi.string().valid('manual', 'overdue_task').optional(),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(25),
 });
@@ -438,6 +447,14 @@ export const listWeatherCategoriesQuerySchema = Joi.object<ListWeatherCategories
   includeInactive: Joi.boolean().default(false),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(50),
+});
+
+export interface ListPersonnelRolesQuery {
+  include_inactive?: boolean;
+}
+
+export const listPersonnelRolesQuerySchema = Joi.object<ListPersonnelRolesQuery>({
+  include_inactive: Joi.boolean().default(false),
 });
 
 export interface CreateStageStateHistoryBody {
@@ -1052,6 +1069,27 @@ export const scheduleVersionParamsSchema = Joi.object({
   versionId: Joi.string().uuid().required(),
 });
 
+export interface UploadScheduleBody {
+  file: string;
+  filename: string;
+  scope_mode: 'milestones_only' | 'current_stage' | 'every_task';
+  change_request_id?: string | null;
+  notes?: string | null;
+}
+
+/** AC-SCH-01/02. `file` is the .mpp as base64 or a data URI; size and type are checked
+ *  against the bytes in utils/objectStorage.ts, not here. Supplying `change_request_id`
+ *  is what makes an upload a rebaseline. */
+export const uploadScheduleSchema = Joi.object<UploadScheduleBody>({
+  file: Joi.string().required(),
+  filename: Joi.string().max(500).required(),
+  scope_mode: Joi.string()
+    .valid('milestones_only', 'current_stage', 'every_task')
+    .default('every_task'),
+  change_request_id: Joi.string().uuid().allow(null).optional(),
+  notes: Joi.string().max(2000).allow('', null).optional(),
+});
+
 export const listReconciliationFlagsQuerySchema = Joi.object<{
   includeAcknowledged: boolean;
   page: number;
@@ -1320,6 +1358,18 @@ export const updateDprSchema = Joi.object<UpdateDprBody>({
     .max(20)
     .optional(),
 }).min(1);
+
+export interface UploadDprPhotoBody {
+  file: string;
+  filename: string;
+  caption?: string | null;
+}
+
+export const uploadDprPhotoSchema = Joi.object<UploadDprPhotoBody>({
+  file: Joi.string().required(),
+  filename: Joi.string().trim().max(500).required(),
+  caption: Joi.string().trim().max(1000).allow(null, '').optional(),
+});
 
 export const listDprsQuerySchema = Joi.object<ListDprsQuery>({
   stage_no: Joi.number().integer().min(1).max(10).optional(),

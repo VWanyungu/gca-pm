@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
-import { daysLate, formatShortDate, groupByTopic, type OverdueTask, type ScheduleTask } from "./types";
+import {
+  daysLate,
+  formatShortDate,
+  groupByTopic,
+  hasOpenRisk,
+  spentRiskLabel,
+  type OverdueTask,
+  type ScheduleTask,
+} from "./types";
 
 interface OverdueTasksViewProps {
   projectId: string;
@@ -57,7 +65,7 @@ export function OverdueTasksView({ projectId, tasks, allTasks, onAddAsRisk }: Ov
                 </p>
               </div>
 
-              {t.risk_id ? (
+              {hasOpenRisk(t) ? (
                 <div className="flex shrink-0 items-center gap-[12px] text-[13px] font-medium">
                   <span className="text-gca-show">Risk raised</span>
                   <Link href={`/projects/${projectId}/risks`} className="text-gca-green hover:underline">
@@ -65,12 +73,17 @@ export function OverdueTasksView({ projectId, tasks, allTasks, onAddAsRisk }: Ov
                   </Link>
                 </div>
               ) : (
-                <button
-                  onClick={() => onAddAsRisk(t)}
-                  className="cursor-pointer flex shrink-0 items-center gap-[6px] rounded-[8px] border border-gca-border px-[14px] py-[8px] text-[13px] font-semibold text-gca-dark hover:bg-gca-page-bg"
-                >
-                  + Add as risk
-                </button>
+                <div className="flex shrink-0 items-center gap-[12px]">
+                  {t.risk_id && (
+                    <span className="text-[13px] text-gca-muted">{spentRiskLabel(t.risk_status)}</span>
+                  )}
+                  <button
+                    onClick={() => onAddAsRisk(t)}
+                    className="cursor-pointer flex shrink-0 items-center gap-[6px] rounded-[8px] border border-gca-border px-[14px] py-[8px] text-[13px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+                  >
+                    + Add as risk
+                  </button>
+                </div>
               )}
             </div>
           ))}

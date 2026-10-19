@@ -4,8 +4,19 @@ import { useState } from "react";
 import Link from "next/link";
 import { useWeeklySubmissions } from "./use-weekly-submission-data";
 import { formatWeekPeriod, weekNumber } from "./types";
+import { StringDecoder } from "string_decoder";
 
-export function WeeklyRegisterTable({ projectId }: { projectId: string }) {
+export function WeeklyRegisterTable({
+  projectId,
+  tab,
+  setTab,
+  weekStart,
+}: {
+  projectId: string;
+  tab: string;
+  setTab: (tab: "week" | "register") => void;
+  weekStart: string;
+}) {
   const [page, setPage] = useState(1);
   const limit = 5;
   const { data } = useWeeklySubmissions({ projectId, status: "approved", page, limit });
@@ -14,9 +25,44 @@ export function WeeklyRegisterTable({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex w-full flex-col gap-[20px]">
-      <div>
+      {/* <div>
         <h1 className="text-[20px] font-semibold tracking-[-0.3px] text-gca-dark">Weekly register</h1>
         <p className="mt-[2px] text-[13px] text-gca-show">Submitted weeks for this project</p>
+      </div> */}
+
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-[20px] font-semibold tracking-[-0.3px] text-gca-dark">
+            Weekly register
+          </h1>
+          <p className="mt-[2px] text-[13px] text-gca-show">Submitted weeks for this project</p>
+        </div>
+        <button className="rounded-[6px] bg-gca-green px-[12px] py-[6px] text-[13px] font-medium text-white">
+          Export
+        </button>
+      </div>
+
+      <div className="flex w-fit gap-[2px] rounded-[8px] bg-gca-page-bg p-[3px]">
+        <button
+          onClick={() => setTab("week")}
+          className={`cursor-pointer rounded-[6px] px-[12px] py-[6px] text-[13px] ${
+            tab === "week"
+              ? "bg-white font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
+              : "font-normal text-gca-show"
+          }`}
+        >
+          Week {weekNumber(weekStart)}
+        </button>
+        <button
+          onClick={() => setTab("register")}
+          className={`cursor-pointer rounded-[6px] px-[12px] py-[6px] text-[13px] ${
+            tab === "register"
+              ? "bg-white font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
+              : "font-normal text-gca-show"
+          }`}
+        >
+          Register
+        </button>
       </div>
 
       <div className="w-full">
@@ -38,12 +84,20 @@ export function WeeklyRegisterTable({ projectId }: { projectId: string }) {
               <span className="font-mono font-medium">{weekNumber(s.week_start)}</span>
               <span>{formatWeekPeriod(s.week_start)}</span>
               <span>{s.creator_name ?? "—"}</span>
-              <span>{s.approved_at ? new Date(s.approved_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—"}</span>
+              <span>
+                {s.approved_at
+                  ? new Date(s.approved_at).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })
+                  : "—"}
+              </span>
               <Link
                 href={`/projects/${projectId}/weekly-submission/${s.submission_id}`}
                 className="justify-self-end text-[13px] font-medium text-gca-green"
               >
-                View →
+                View
               </Link>
             </div>
           ))

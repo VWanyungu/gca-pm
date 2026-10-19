@@ -1,6 +1,6 @@
 import express from 'express';
 import { WeatherCategories } from '../database/utils/database.js';
-import authorize from '../middlewares/authorize.js';
+import authorize, { authorizeAnyRole } from '../middlewares/authorize.js';
 import {
     createWeatherCategorySchema,
     updateWeatherCategorySchema,
@@ -19,13 +19,14 @@ const canManage = authorize([
     { role: 'Admin', scopeType: 'global' },
 ]);
 
-const canListWeatherCategories = authorize([
-    { role: 'ExCo', scopeType: 'global' },
-    { role: 'Admin', scopeType: 'global' },
-    { role: 'PM', scopeType: 'global' },
-    { role: 'Planner', scopeType: 'global' },
-    { role: 'SiteEngineer', scopeType: 'global' },
-    { role: 'ProjectCreator', scopeType: 'global' },
+// Reference data, not project-scoped — any grant of these roles qualifies (see authorizeAnyRole).
+const canListWeatherCategories = authorizeAnyRole([
+    'ExCo',
+    'Admin',
+    'PM',
+    'Planner',
+    'SiteEngineer',
+    'ProjectCreator',
 ]);
 
 router.post('/', canManage, async (req, res) => {

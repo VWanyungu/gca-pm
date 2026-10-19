@@ -1,6 +1,6 @@
 export type RiskStatus = "open" | "mitigated" | "closed" | "dismissed" | "auto_resolved";
 export type RiskKind = "risk" | "issue";
-export type RiskSource = "manual" | "auto_overdue_task";
+export type RiskSource = "manual" | "overdue_task";
 
 export interface RiskCategory {
   risk_category_id: number;
@@ -41,7 +41,7 @@ export function ratingFromScore(score: number): { label: string; className: stri
 }
 
 export function statusInfo(risk: Pick<Risk, "status" | "source">): { label: string; className: string } {
-  if (risk.source === "auto_overdue_task") {
+  if (risk.source === "overdue_task") {
     if (risk.status === "open") return { label: "Unaddressed", className: "text-error-text" };
     if (risk.status === "mitigated") return { label: "Addressed", className: "text-gca-green" };
   }

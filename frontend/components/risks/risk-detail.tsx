@@ -37,7 +37,7 @@ export function RiskDetail({ projectId, riskId, team, canManage, onBack, onEdit 
   const rating = ratingFromScore(risk.score);
   const status = statusInfo(risk);
   const categoryName = categories.find((c) => c.risk_category_id === risk.category_id)?.name ?? "—";
-  const canQuickAct = canManage && risk.source === "auto_overdue_task" && risk.status === "open";
+  const canQuickAct = canManage && risk.source === "overdue_task" && risk.status === "open";
 
   async function saveMitigation() {
     if (!risk) return;

@@ -754,9 +754,31 @@ export class WeatherCategories {
   }
 }
 
+export interface PersonnelRoleRow {
+  personnel_role_id: number;
+  name: string;
+  sort_order: number;
+  is_active: boolean;
+}
+
+export class PersonnelRoles {
+  static async list({
+    includeInactive = false,
+  }: { includeInactive?: boolean } = {}): Promise<{ roles: PersonnelRoleRow[] }> {
+    const base = db('personnel_role');
+    if (!includeInactive) base.where({ is_active: true });
+
+    const roles = await base
+      .select('personnel_role_id', 'name', 'sort_order', 'is_active')
+      .orderBy('sort_order', 'asc');
+
+    return { roles };
+  }
+}
+
 export type RiskStatus = 'open' | 'mitigated' | 'closed' | 'dismissed' | 'auto_resolved';
 export type RiskKind = 'risk' | 'issue';
-export type RiskSource = 'manual' | 'auto_overdue_task';
+export type RiskSource = 'manual' | 'overdue_task';
 
 export interface RiskIssueRow {
   risk_id: string;
@@ -802,6 +824,10 @@ export interface RiskIssueCreateInput {
   review_by: string | null;
   status: RiskStatus;
   source: RiskSource;
+  /** Both set together with source='overdue_task', or all three left alone
+   *  (ck_risk_auto_task_id, ck_risk_auto_schedule_version). */
+  source_task_id?: string | null;
+  source_schedule_version_id?: string | null;
   kind: RiskKind;
   realised_at: Date | null;
   realised_by: string | null;
@@ -1368,6 +1394,36 @@ export class ProjectStages {
           })
           .returning(STAGE_STATE_HISTORY_COLS);
         createdEvent = evt;
+      }
+
+      // Completing a stage hands the project on to whatever's next in scope, so "current
+      // stage" never goes blank mid-project (only once every in-scope stage is done).
+      if (historyEvent === 'completed') {
+        const nextStage = await trx('project_stage')
+          .where({ project_id: projectId, in_scope: true, state: 'not_started' })
+          .andWhere('stage_no', '>', stageNo)
+          .orderBy('stage_no', 'asc')
+          .first();
+
+        if (nextStage) {
+          await trx('project_stage')
+            .where({ project_id: projectId, stage_no: nextStage.stage_no })
+            .update({ state: 'active', last_changed_by: actorId, last_changed_at: trx.fn.now() });
+
+          await trx('stage_state_history').insert({
+            event_id: randomUUID(),
+            project_id: projectId,
+            stage_no: nextStage.stage_no,
+            event: 'activated',
+            from_state: 'not_started',
+            to_state: 'active',
+            reason: 'Auto-activated after the preceding stage was completed',
+            checklist_snapshot: null,
+            closure_notes: null,
+            actor_id: actorId,
+            occurred_at: new Date(),
+          });
+        }
       }
 
       const pdmStage = await trx('pdm_stage').where({ stage_no: stageNo }).first();
@@ -2063,9 +2119,24 @@ export class Projects {
       .join('pdm_stage', 'project_stage.stage_no', 'pdm_stage.stage_no')
       .whereIn('project_stage.project_id', projectIds)
       .where('project_stage.state', 'active')
-      .select('project_stage.project_id', 'project_stage.stage_no', 'pdm_stage.name as stage_name');
+      .select('project_stage.project_id', 'project_stage.stage_no', 'pdm_stage.name as stage_name')
+      .orderBy('project_stage.stage_no', 'asc');
 
     for (const row of rows) map.set(row.project_id, row);
+
+    // A project with every in-scope stage complete has no active stage — keep showing
+    // the last one it completed rather than going blank.
+    const withoutCurrent = projectIds.filter((id) => !map.has(id));
+    if (withoutCurrent.length > 0) {
+      const completedRows = await db('project_stage')
+        .join('pdm_stage', 'project_stage.stage_no', 'pdm_stage.stage_no')
+        .whereIn('project_stage.project_id', withoutCurrent)
+        .where('project_stage.state', 'complete')
+        .select('project_stage.project_id', 'project_stage.stage_no', 'pdm_stage.name as stage_name')
+        .orderBy('project_stage.stage_no', 'asc');
+      for (const row of completedRows) map.set(row.project_id, row);
+    }
+
     return map;
   }
 
@@ -3099,16 +3170,20 @@ export interface ScheduleVersionRow {
   tasks_removed: number | null;
   tasks_modified: number | null;
   pct_overwrites: number | null;
-  overdue_risks_created: number | null;
+  overdue_task_count: number | null;
   uploaded_by: string;
   uploaded_at: Date;
   applied_at: Date | null;
+  notes: string | null;
+  parse_diagnostics?: { mpp_unique_id?: number; field?: string; message: string }[] | null;
+  /** Only selected by the upload paths (latestApplied, createQueued), not by list reads. */
+  file_sha256?: string;
 }
 
 const SCHEDULE_VERSION_COLS = [
   'schedule_version_id', 'project_id', 'version_no', 'status', 'upload_kind', 'status_date',
   'source_file_id', 'tasks_added', 'tasks_removed', 'tasks_modified', 'pct_overwrites',
-  'overdue_risks_created', 'uploaded_by', 'uploaded_at', 'applied_at',
+  'overdue_task_count', 'uploaded_by', 'uploaded_at', 'applied_at', 'notes',
 ];
 
 export interface ScheduleVersionChangeRow {
@@ -3195,6 +3270,84 @@ export class ScheduleVersions {
       };
     });
   }
+
+  /** The version a new upload is compared against: kind defaulting (AC-SCH-02) and the
+   *  duplicate-file warning (AC-SCH-03) both read it. */
+  static async latestApplied(projectId: string): Promise<ScheduleVersionRow | undefined> {
+    return db('schedule_version')
+      .where({ project_id: projectId, status: 'applied' })
+      .whereNull('deleted_at')
+      .select([...SCHEDULE_VERSION_COLS, 'file_sha256'])
+      .orderBy('version_no', 'desc')
+      .first();
+  }
+
+  /** One version in any state, including queued, parsing and failed — what the upload screen
+   *  polls while processing runs, and what AC-SCH-42 shows Planners for a failed upload. */
+  static async getById(projectId: string, versionId: string): Promise<ScheduleVersionRow | undefined> {
+    return db('schedule_version')
+      .where({ project_id: projectId, schedule_version_id: versionId })
+      .whereNull('deleted_at')
+      .select([...SCHEDULE_VERSION_COLS, 'file_sha256', 'parse_diagnostics'])
+      .first();
+  }
+
+  static async hasInFlight(projectId: string): Promise<boolean> {
+    const row = await db('schedule_version')
+      .where({ project_id: projectId })
+      .whereIn('status', ['queued', 'parsing'])
+      .select('schedule_version_id')
+      .first();
+    return Boolean(row);
+  }
+
+  /** AC-SCH-01: queue an upload for the parser. version_no, counts and applied_at stay null
+   *  until the apply transaction runs — the ck_sv_* checks tie them to status = 'applied'. */
+  static async createQueued(input: CreateScheduleVersionInput): Promise<ScheduleVersionRow> {
+    try {
+      const [row] = await db('schedule_version')
+        .insert({
+          schedule_version_id: randomUUID(),
+          project_id: input.project_id,
+          status: 'queued',
+          upload_kind: input.upload_kind,
+          change_request_id: input.change_request_id ?? null,
+          scope_mode: input.scope_mode,
+          source_file_id: input.source_file_id,
+          file_sha256: input.file_sha256,
+          uploaded_by: input.uploaded_by,
+          notes: input.notes ?? null,
+        })
+        .returning([...SCHEDULE_VERSION_COLS, 'file_sha256']);
+      return row;
+    } catch (err) {
+      // ux_sv_one_inflight: another upload for this project is already queued or parsing.
+      if ((err as { code?: string }).code === '23505') {
+        throw new ScheduleUploadInFlightError();
+      }
+      throw err;
+    }
+  }
+}
+
+export interface CreateScheduleVersionInput {
+  project_id: string;
+  upload_kind: 'regular' | 'initial_baseline' | 'rebaseline';
+  change_request_id?: string | null;
+  scope_mode: ScheduleScopeMode;
+  source_file_id: string;
+  file_sha256: string;
+  uploaded_by: string;
+  notes?: string | null;
+}
+
+export type ScheduleScopeMode = 'milestones_only' | 'current_stage' | 'every_task';
+
+export class ScheduleUploadInFlightError extends Error {
+  constructor() {
+    super('An upload for this project is still being processed');
+    this.name = 'ScheduleUploadInFlightError';
+  }
 }
 
 export interface ScheduleTaskRow {
@@ -3236,7 +3389,7 @@ const SCHEDULE_TASK_COLS = [
  *  linear in calendar time between. Window = baseline_start/finish, falling back to
  *  start/expected_finish when not yet baselined (never null — every task has start/expected_finish).
  *  Milestones are binary. A function of "now", so always computed at read time, never stored. */
-const PLANNED_I_EXPR = `
+export const PLANNED_I_EXPR = `
   (CASE
     WHEN r.is_milestone THEN
       CASE WHEN COALESCE(r.baseline_finish, r.expected_finish) <= now() THEN 100 ELSE 0 END
@@ -3251,6 +3404,18 @@ const PLANNED_I_EXPR = `
 const PLANNED_PCT_SQL = `ROUND((${PLANNED_I_EXPR})::numeric, 2) as planned_pct`;
 
 export class ScheduleTasks {
+  /** One live task of this project: it exists, still has a current revision and has not been
+   *  removed by a later upload. Used to check a risk's source_task_id before linking it. */
+  static async getById(projectId: string, taskId: string): Promise<{ task_id: string } | undefined> {
+    return db('schedule_task as t')
+      .join('schedule_task_revision as r', 'r.task_id', 't.task_id')
+      .where({ 't.project_id': projectId, 't.task_id': taskId })
+      .whereNull('r.valid_to')
+      .whereNull('t.removed_in_version_id')
+      .select('t.task_id')
+      .first();
+  }
+
   /** Current revision of every live task. Task identity (schedule_task) is permanent;
    *  "current" is simply the still-open revision (valid_to IS NULL) of a non-removed task. */
   static async listCurrent(projectId: string): Promise<ScheduleTaskRow[]> {
@@ -3271,22 +3436,49 @@ export class ScheduleTasks {
 
   /** Overdue tasks (AC-SCH-20), each left-joined to its auto-raised risk (if any) so the
    *  Overdue tab can show "Add as risk" vs. "Risk raised · View". */
+  /**
+   * AC-SCH-20, and the list the PM works from: tasks past their expected finish and not
+   * finished. "Past" is a project-local calendar question — a task due today is not overdue
+   * at 09:00 just because the server is in UTC — so the comparison runs in the project's zone.
+   *
+   * Each task appears once. A task can carry several risks over time (one dismissed, another
+   * raised after the planner moved it), so the most relevant one is picked: a risk that still
+   * covers the task first, then the most recently raised. Dismissed and auto-resolved risks
+   * do not cover anything — the PM threw one out, the other closed itself when the task
+   * stopped being overdue — so a task holding only those reads as uncovered and can be
+   * raised again.
+   */
   static async listOverdue(
     projectId: string,
   ): Promise<(ScheduleTaskRow & { risk_id: string | null; risk_status: string | null })[]> {
-    return db('schedule_task_revision as r')
-      .join('schedule_task as t', 't.task_id', 'r.task_id')
-      .leftJoin('risk as k', function () {
-        this.on('k.source_task_id', '=', 't.task_id').andOnVal('k.source', '=', 'auto_overdue_task');
-      })
-      .where('t.project_id', projectId)
-      .whereNull('r.valid_to')
-      .whereNull('t.removed_in_version_id')
-      .andWhere('r.is_summary', false)
-      .andWhere('r.pct_work_complete', '<', 100)
-      .andWhere('r.expected_finish', '<', db.fn.now())
-      .select(...SCHEDULE_TASK_COLS, 'k.risk_id', 'k.status as risk_status', db.raw(PLANNED_PCT_SQL))
-      .orderBy('r.expected_finish', 'asc');
+    const { rows } = await db.raw(
+      `
+      SELECT ${SCHEDULE_TASK_COLS.join(', ')},
+             k.risk_id,
+             k.status AS risk_status,
+             ${PLANNED_PCT_SQL}
+      FROM schedule_task_revision r
+      JOIN schedule_task t ON t.task_id = r.task_id
+      JOIN projects p ON p.project_id = t.project_id
+      LEFT JOIN LATERAL (
+        SELECT risk_id, status
+        FROM risk
+        WHERE source_task_id = t.task_id AND source = 'overdue_task'
+        ORDER BY (status IN ('open', 'mitigated', 'closed')) DESC, opened_at DESC
+        LIMIT 1
+      ) k ON true
+      WHERE t.project_id = :projectId
+        AND r.valid_to IS NULL
+        AND t.removed_in_version_id IS NULL
+        AND r.is_summary = false
+        AND r.is_active = true
+        AND r.pct_work_complete < 100
+        AND (r.expected_finish AT TIME ZONE p.timezone)::date < (now() AT TIME ZONE p.timezone)::date
+      ORDER BY r.expected_finish ASC
+      `,
+      { projectId },
+    );
+    return rows;
   }
 }
 
@@ -3411,12 +3603,14 @@ export interface DprActivityProgressRow {
   free_text: string | null;
   today_pct: number;
   total_pct: number;
+  task_name?: string | null;
 }
 
 export interface DprPersonnelRoleCountRow {
   personnel_group_id: string;
   personnel_role_id: number;
   headcount: number;
+  role_name?: string;
 }
 
 export interface DprPersonnelGroupRow {
@@ -3441,6 +3635,7 @@ export interface DprPhotoRow {
   gps_lng: number | null;
   uploaded_by: string;
   uploaded_at: Date;
+  url?: string;
 }
 
 export interface DprDetailsRow extends DprRow {
@@ -3448,6 +3643,9 @@ export interface DprDetailsRow extends DprRow {
   activity_progress: DprActivityProgressRow[];
   personnel_groups: DprPersonnelGroupRow[];
   photos: DprPhotoRow[];
+  weather_category_name?: string | null;
+  author_name?: string;
+  submitted_by_name?: string | null;
 }
 
 export interface CreateDprInput {
@@ -3772,9 +3970,15 @@ export class Dprs {
 
     const t = trx || db;
 
-    const [workItems, activityProgress, personnelGroups, photos] = await Promise.all([
+    const [workItems, activityProgress, personnelGroups, photos, users, weatherCategory] = await Promise.all([
       t('dpr_work_item').where({ dpr_id: dprId }).orderBy('sort_order', 'asc'),
-      t('dpr_activity_progress').where({ dpr_id: dprId }).orderBy('sort_order', 'asc'),
+      t('dpr_activity_progress as dap')
+        .leftJoin('schedule_task_revision as str', function () {
+          this.on('str.task_id', '=', 'dap.task_id').andOnNull('str.valid_to');
+        })
+        .where({ 'dap.dpr_id': dprId })
+        .select('dap.*', 'str.task_name')
+        .orderBy('dap.sort_order', 'asc'),
       t('dpr_personnel_group as dpg')
         .join('project_contractor as pc', 'dpg.project_contractor_id', 'pc.project_contractor_id')
         .join('contractor as c', 'pc.contractor_id', 'c.contractor_id')
@@ -3785,15 +3989,27 @@ export class Dprs {
           'pc.party_type',
         )
         .orderBy('dpg.sort_order', 'asc'),
-      t('dpr_photo').where({ dpr_id: dprId }).orderBy('sort_order', 'asc'),
+      t('dpr_photo as dp')
+        .join('file_object as fo', 'fo.file_id', 'dp.file_id')
+        .where({ 'dp.dpr_id': dprId })
+        .select('dp.*', 'fo.storage_key as url')
+        .orderBy('dp.sort_order', 'asc'),
+      t('users')
+        .whereIn('id', [dpr.author_id, dpr.submitted_by].filter(Boolean))
+        .select('id', db.raw("NULLIF(CONCAT(first_name, ' ', last_name), ' ') as name")),
+      dpr.weather_category_id
+        ? t('weather_category').where({ weather_category_id: dpr.weather_category_id }).first()
+        : null,
     ]);
 
     // Attach role counts to personnel groups
     const groupIds = personnelGroups.map((g: any) => g.personnel_group_id);
-    let roleCounts: DprPersonnelRoleCountRow[] = [];
+    let roleCounts: (DprPersonnelRoleCountRow & { role_name: string })[] = [];
     if (groupIds.length > 0) {
-      roleCounts = await t('dpr_personnel_role_count')
-        .whereIn('personnel_group_id', groupIds);
+      roleCounts = await t('dpr_personnel_role_count as prc')
+        .join('personnel_role as pr', 'pr.personnel_role_id', 'prc.personnel_role_id')
+        .whereIn('prc.personnel_group_id', groupIds)
+        .select('prc.*', 'pr.name as role_name');
     }
 
     const groupsWithRoles = personnelGroups.map((g: any) => ({
@@ -3801,12 +4017,17 @@ export class Dprs {
       role_counts: roleCounts.filter((rc) => rc.personnel_group_id === g.personnel_group_id),
     }));
 
+    const nameById = new Map(users.map((u: any) => [u.id, u.name]));
+
     return {
       ...dpr,
       work_items: workItems,
       activity_progress: activityProgress,
       personnel_groups: groupsWithRoles,
       photos,
+      weather_category_name: weatherCategory?.name ?? null,
+      author_name: nameById.get(dpr.author_id),
+      submitted_by_name: dpr.submitted_by ? nameById.get(dpr.submitted_by) ?? null : null,
     };
   }
 
@@ -4965,7 +5186,7 @@ export class WeeklySubmissions {
       const unaddressedRisks = await t('risk')
         .where({
           project_id: existing.project_id,
-          source: 'auto_overdue_task',
+          source: 'overdue_task',
           status: 'open',
         })
         .whereNull('addressed_at')
@@ -5310,6 +5531,7 @@ export interface SubmissionClientPhotoRow {
   report_date: string | Date;
   site_location: string;
   selected: boolean;
+  url: string;
 }
 
 /** The DPR photos a PM has picked to go out with this submission's client report (AC-CRP area).
@@ -5331,6 +5553,7 @@ export class SubmissionClientPhotos {
 
     const rows = await db('dpr_photo as p')
       .join('dpr as d', 'd.dpr_id', 'p.dpr_id')
+      .join('file_object as fo', 'fo.file_id', 'p.file_id')
       .leftJoin('submission_client_photo as scp', function () {
         this.on('scp.photo_id', '=', 'p.photo_id').andOn(
           'scp.submission_id',
@@ -5352,6 +5575,7 @@ export class SubmissionClientPhotos {
         'p.taken_at',
         'd.report_date',
         'd.site_location',
+        'fo.storage_key as url',
         db.raw('(scp.photo_id IS NOT NULL) as selected'),
       )
       .orderBy('d.report_date', 'asc')
@@ -5703,3 +5927,105 @@ export class NotificationPreferences {
 
 
 
+
+export type FilePurpose = 'dpr_photo' | 'activity_attachment' | 'schedule_mpp' | 'client_report_pdf';
+export type FileVariant = 'original' | 'thumbnail' | 'display';
+export type FileStatus = 'pending_upload' | 'scanning' | 'available' | 'rejected';
+
+export interface FileObjectRow {
+  file_id: string;
+  project_id: string | null;
+  purpose: FilePurpose;
+  parent_file_id: string | null;
+  variant: FileVariant;
+  storage_key: string;
+  original_filename: string;
+  mime_type: string;
+  size_bytes: number;
+  sha256: string;
+  width_px: number | null;
+  height_px: number | null;
+  status: FileStatus;
+  rejection_reason: string | null;
+  uploaded_by: string;
+  created_at: Date;
+}
+
+export interface CreateFileObjectInput {
+  project_id: string | null;
+  purpose: FilePurpose;
+  variant?: FileVariant;
+  parent_file_id?: string | null;
+  storage_key: string;
+  original_filename: string;
+  mime_type: string;
+  size_bytes: number;
+  sha256: string;
+  width_px?: number | null;
+  height_px?: number | null;
+  status: FileStatus;
+  rejection_reason?: string | null;
+  uploaded_by: string;
+}
+
+const FILE_OBJECT_COLS = [
+  'file_id', 'project_id', 'purpose', 'parent_file_id', 'variant', 'storage_key',
+  'original_filename', 'mime_type', 'size_bytes', 'sha256', 'width_px', 'height_px',
+  'status', 'rejection_reason', 'uploaded_by', 'created_at',
+];
+
+/** size_bytes is bigint, which pg returns as a string. Every size here fits in a JS number
+ *  (the largest purpose cap is 50 MB), so normalise it once on the way out. */
+function toFileObjectRow(row: Record<string, unknown>): FileObjectRow {
+  return { ...row, size_bytes: Number(row.size_bytes) } as FileObjectRow;
+}
+
+/** Storage-agnostic metadata for every uploaded object: schedule files, DPR photos,
+ *  activity attachments and generated client reports. The bytes live wherever
+ *  utils/objectStorage.ts put them; storage_key is the handle. */
+export class FileObjects {
+  static async create(input: CreateFileObjectInput): Promise<FileObjectRow> {
+    const [row] = await db('file_object')
+      .insert({
+        file_id: randomUUID(),
+        project_id: input.project_id,
+        purpose: input.purpose,
+        parent_file_id: input.parent_file_id ?? null,
+        variant: input.variant ?? 'original',
+        storage_key: input.storage_key,
+        original_filename: input.original_filename,
+        mime_type: input.mime_type,
+        size_bytes: input.size_bytes,
+        sha256: input.sha256,
+        width_px: input.width_px ?? null,
+        height_px: input.height_px ?? null,
+        status: input.status,
+        rejection_reason: input.rejection_reason ?? null,
+        uploaded_by: input.uploaded_by,
+      })
+      .returning(FILE_OBJECT_COLS);
+    return toFileObjectRow(row);
+  }
+
+  /** AC-GEN-08: soft-deleted files are invisible to every read path. */
+  static async getById(fileId: string): Promise<FileObjectRow | undefined> {
+    const row = await db('file_object')
+      .where({ file_id: fileId })
+      .whereNull('deleted_at')
+      .select(FILE_OBJECT_COLS)
+      .first();
+    return row ? toFileObjectRow(row) : undefined;
+  }
+
+  static async markRejected(fileId: string, reason: string): Promise<void> {
+    await db('file_object')
+      .where({ file_id: fileId })
+      .update({ status: 'rejected', rejection_reason: reason });
+  }
+
+  /** Hard delete, for undoing an upload whose owning row was never written. Rows that have
+   *  been referenced are retired with deleted_at instead (AC-GEN-08), never with this. */
+  static async remove(fileId: string): Promise<void> {
+    await db('file_object').where({ file_id: fileId }).del();
+  }
+}

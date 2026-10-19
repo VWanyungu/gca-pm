@@ -48,7 +48,15 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
     return result;
   }, [data?.stages, activities]);
 
-  const currentStage = useMemo(() => data?.stages.find((s) => s.state === "active"), [data?.stages]);
+  const currentStage = useMemo(() => {
+    const stages = data?.stages ?? [];
+    // AC-STG-10: the highest-numbered active stage; if every in-scope stage is complete,
+    // fall back to the last one completed rather than showing nothing.
+    return (
+      [...stages].reverse().find((s) => s.state === "active") ??
+      [...stages].reverse().find((s) => s.state === "complete")
+    );
+  }, [data?.stages]);
 
   const overdueActivities = useMemo(() => {
     const today = new Date();

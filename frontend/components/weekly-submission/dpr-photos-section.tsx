@@ -7,6 +7,9 @@ import {
   useWeeklySubmissionInvalidate,
 } from "./use-weekly-submission-data";
 import { Camera, Shield } from "lucide-react";
+import { Pagination } from "@/components/pagination";
+
+const DEFAULT_PER_PAGE = 6;
 
 function formatTakenAt(iso: string | null): string {
   if (!iso) return "—";
@@ -28,6 +31,8 @@ export function DprPhotosSection({
   const { data: photos = [] } = useSubmissionPhotos(projectId, submissionId);
   const invalidate = useWeeklySubmissionInvalidate(projectId);
   const [pending, setPending] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
 
   async function setSelection(photoIds: string[]) {
     setPending("saving");
@@ -45,6 +50,14 @@ export function DprPhotosSection({
   }
 
   const selectedCount = photos.filter((p) => p.selected).length;
+  const totalPages = Math.max(1, Math.ceil(photos.length / perPage));
+  const currentPage = Math.min(page, totalPages);
+  const pagePhotos = photos.slice((currentPage - 1) * perPage, currentPage * perPage);
+
+  function changePerPage(next: number) {
+    setPerPage(next);
+    setPage(1);
+  }
 
   return (
     <div className="flex w-full flex-col gap-[16px] rounded-[12px] bg-white py-[24px]">
@@ -85,14 +98,20 @@ export function DprPhotosSection({
       ) : (
         <>
           <div className="grid grid-cols-3 gap-[16px]">
-            {photos.map((photo) => (
+            {pagePhotos.map((photo) => (
               <button
                 key={photo.photo_id}
                 onClick={() => toggle(photo.photo_id)}
                 disabled={pending === "saving"}
                 className="flex flex-col gap-[8px] text-left disabled:opacity-60"
               >
-                <div className="relative aspect-video w-full rounded-[8px] bg-gca-badge-bg">
+                <div className="relative aspect-video w-full overflow-hidden rounded-[8px] bg-gca-badge-bg">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- external, unconfigured image hosts */}
+                  <img
+                    src={photo.url}
+                    alt={photo.caption ?? photo.site_location}
+                    className="size-full object-cover"
+                  />
                   <span
                     className={`absolute left-[8px] top-[8px] flex size-[20px] items-center justify-center rounded-[5px] border ${
                       photo.selected ? "border-gca-green bg-gca-green" : "border-white bg-white/80"
@@ -111,6 +130,17 @@ export function DprPhotosSection({
           <p className="text-[13px] text-gca-muted">
             {selectedCount} of {photos.length} photos selected
           </p>
+          {photos.length > 0 && (
+            <Pagination
+              page={currentPage}
+              totalPages={totalPages}
+              perPage={perPage}
+              total={photos.length}
+              onPageChange={setPage}
+              onPerPageChange={changePerPage}
+              label="photos"
+            />
+          )}
         </>
       )}
     </div>

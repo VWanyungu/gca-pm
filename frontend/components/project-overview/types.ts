@@ -50,6 +50,16 @@ export interface TeamMember {
   email: string;
 }
 
+/**
+ * The team list is a list of role grants, so someone holding two roles on a project — a PM who
+ * is also the Planner, say — appears twice. Anywhere a person should be listed once (an owner
+ * picker, an avatar row) needs this; anywhere the grant itself is the subject does not.
+ */
+export function uniquePeople(team: TeamMember[]): TeamMember[] {
+  const seen = new Set<string>();
+  return team.filter((m) => (seen.has(m.user_id) ? false : (seen.add(m.user_id), true)));
+}
+
 export interface ClientContact {
   contact_id: string;
   project_id: string;
@@ -106,7 +116,7 @@ export interface StageRisk {
   status: "open" | "mitigated" | "closed" | "dismissed" | "auto_resolved";
   kind: "risk" | "issue";
   impact: number;
-  source: "manual" | "auto_overdue_task";
+  source: "manual" | "overdue_task";
 }
 
 export interface Milestone {

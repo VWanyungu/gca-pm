@@ -10,11 +10,23 @@ export interface ScheduleVersion {
   tasks_removed: number | null;
   tasks_modified: number | null;
   pct_overwrites: number | null;
-  overdue_risks_created: number | null;
+  overdue_task_count: number | null;
   uploaded_by: string;
   uploaded_at: string;
   applied_at: string | null;
+  notes: string | null;
+  parse_diagnostics?: ParseDiagnostic[] | null;
 }
+
+/** What the parser reported about a file it refused (AC-SCH-04). */
+export interface ParseDiagnostic {
+  mpp_unique_id?: number;
+  field?: string;
+  message: string;
+}
+
+/** What the upload form offers, and the value each choice stores (AC-SCH-07). */
+export type ScopeMode = "every_task" | "milestones_only" | "current_stage";
 
 /** Current revision of a schedule task. Read-only client-side; uploads/edits happen via the (future) MPP parser. */
 export interface ScheduleTask {
@@ -45,6 +57,21 @@ export interface ScheduleTask {
 export interface OverdueTask extends ScheduleTask {
   risk_id: string | null;
   risk_status: string | null;
+}
+
+/**
+ * Whether the task's risk still stands for it. A dismissed risk was thrown out by the PM and
+ * an auto-resolved one closed itself when the task stopped being overdue — if the task is
+ * overdue again, neither speaks for it, so the PM can raise a fresh one.
+ */
+export function hasOpenRisk(task: OverdueTask): boolean {
+  if (!task.risk_id) return false;
+  return task.risk_status !== "dismissed" && task.risk_status !== "auto_resolved";
+}
+
+/** How a spent risk is described next to the button that offers to raise another. */
+export function spentRiskLabel(status: string | null): string {
+  return status === "auto_resolved" ? "Previous risk auto-resolved" : "Previous risk dismissed";
 }
 
 export interface VersionChange {
@@ -124,24 +151,53 @@ export function groupPlannedProgress(group: ScheduleTask, allTasks: ScheduleTask
   return withPlanned.reduce((sum, c) => sum + Number(c.planned_pct), 0) / withPlanned.length;
 }
 
-/** Walks parent_task_id up to the outermost summary row (the phase group: Procurement, etc). */
-export function rootGroupName(task: ScheduleTask, byId: Map<string, ScheduleTask>): string | null {
-  let current: ScheduleTask | undefined = task;
-  while (current?.parent_task_id) {
-    current = byId.get(current.parent_task_id);
-  }
-  return current?.is_summary ? current.task_name : null;
+/**
+ * The outline level the project's phases live at.
+ *
+ * Planners usually wrap the whole schedule in one level-1 row named after the project, which
+ * makes level 2 the level people mean by "the phases" — Milestones, Procurement, Construction.
+ * A file written without that wrapper has its phases at level 1. The first level holding more
+ * than one task is the phase level in both shapes.
+ */
+export function phaseLevel(allTasks: ScheduleTask[]): number {
+  const counts = new Map<number, number>();
+  for (const t of allTasks) counts.set(t.outline_level, (counts.get(t.outline_level) ?? 0) + 1);
+  const levels = [...counts.keys()].sort((a, b) => a - b);
+  return levels.find((level) => (counts.get(level) ?? 0) > 1) ?? levels[0] ?? 1;
 }
 
-/** The ordered list of top-level topics as they appear in the current schedule (e.g. Milestones,
- *  Constraints, Preliminaries and Mobilization, Procurement, ...) — whatever the Planner's latest
- *  upload defines, in upload/WBS order. Nothing here assumes a fixed set of PDM-stage-like names. */
+/** Walks parent_task_id up to the task's phase — the ancestor at the phase level, or itself. */
+export function phaseOf(
+  task: ScheduleTask,
+  byId: Map<string, ScheduleTask>,
+  level: number,
+): ScheduleTask | null {
+  let current: ScheduleTask | undefined = task;
+  while (current && current.outline_level > level) {
+    current = current.parent_task_id ? byId.get(current.parent_task_id) : undefined;
+  }
+  return current?.outline_level === level ? current : null;
+}
+
+/** The phase name a task belongs to, for grouping and colouring. */
+export function rootGroupName(
+  task: ScheduleTask,
+  byId: Map<string, ScheduleTask>,
+  level: number,
+): string | null {
+  return phaseOf(task, byId, level)?.task_name ?? null;
+}
+
+/** The ordered list of phases as they appear in the current schedule (Milestones, Constraints,
+ *  Preliminaries and Mobilization, Procurement, ...) — whatever the Planner's latest upload
+ *  defines, in upload/WBS order. */
 export function topicOrder(allTasks: ScheduleTask[]): string[] {
   const byId = new Map(allTasks.map((t) => [t.task_id, t]));
+  const level = phaseLevel(allTasks);
   const seen = new Set<string>();
   const order: string[] = [];
   for (const t of allTasks) {
-    const name = rootGroupName(t, byId);
+    const name = rootGroupName(t, byId, level);
     if (name && !seen.has(name)) {
       seen.add(name);
       order.push(name);
@@ -158,10 +214,11 @@ export function groupByTopic<T>(
   allTasks: ScheduleTask[],
 ): { group: string | null; items: T[] }[] {
   const byId = new Map(allTasks.map((t) => [t.task_id, t]));
+  const level = phaseLevel(allTasks);
   const buckets = new Map<string | null, T[]>();
   for (const item of items) {
     const task = byId.get(taskIdOf(item));
-    const group = task ? rootGroupName(task, byId) : null;
+    const group = task ? rootGroupName(task, byId, level) : null;
     const bucket = buckets.get(group);
     if (bucket) bucket.push(item);
     else buckets.set(group, [item]);
@@ -183,16 +240,37 @@ export function orderForGanttDisplay(tasks: ScheduleTask[]): ScheduleTask[] {
     if (list) list.push(t);
     else childrenByParent.set(t.parent_task_id, [t]);
   }
+  for (const siblings of childrenByParent.values()) siblings.sort(compareWbs);
 
   const result: ScheduleTask[] = [];
   function emit(t: ScheduleTask) {
     result.push(t);
     for (const child of childrenByParent.get(t.task_id) ?? []) emit(child);
   }
-  for (const t of tasks) {
+  for (const t of [...tasks].sort(compareWbs)) {
     if (!t.parent_task_id || !presentIds.has(t.parent_task_id)) emit(t);
   }
   return result;
+}
+
+/**
+ * Orders siblings the way MS Project lists them: by WBS, compared segment by segment as
+ * numbers so 1.10 follows 1.9 instead of 1.1. Unique IDs reflect the order rows were created
+ * in the file, not where they sit in the plan — sorting by them puts phase 1.3 above 1.1.
+ */
+export function compareWbs(a: ScheduleTask, b: ScheduleTask): number {
+  if (a.wbs && b.wbs) {
+    const left = a.wbs.split(".");
+    const right = b.wbs.split(".");
+    for (let i = 0; i < Math.max(left.length, right.length); i += 1) {
+      const l = Number(left[i] ?? -1);
+      const r = Number(right[i] ?? -1);
+      if (Number.isNaN(l) || Number.isNaN(r)) break; // a non-numeric code: fall through
+      if (l !== r) return l - r;
+    }
+    if (a.wbs !== b.wbs) return a.wbs.localeCompare(b.wbs);
+  }
+  return a.mpp_unique_id - b.mpp_unique_id;
 }
 
 export interface DateWindow {
@@ -219,4 +297,48 @@ export function taskStatusLabel(t: ScheduleTask): { label: string; className: st
   if (t.is_overdue) return { label: "Overdue", className: "text-error-text" };
   if (Number(t.pct_work_complete) > 0) return { label: "In progress", className: "text-gca-green" };
   return { label: "Not started", className: "text-gca-show" };
+}
+
+/**
+ * The rows a schedule view should show, depth-first so each group is followed by its own
+ * children. With a window, leaves that fall outside it are dropped along with any group left
+ * holding nothing — a two-week lookahead should not list empty phases.
+ *
+ * Shared by the Gantt and the Table so the two never disagree about what is in the schedule.
+ */
+export function visibleScheduleRows(tasks: ScheduleTask[], window?: DateWindow): ScheduleTask[] {
+  if (!window) return orderForGanttDisplay(tasks);
+
+  const survivingLeafIds = new Set(
+    tasks.filter((t) => !t.is_summary && taskInWindow(t, window)).map((t) => t.task_id),
+  );
+  const childrenOf = new Map<string, ScheduleTask[]>();
+  for (const t of tasks) {
+    if (!t.parent_task_id) continue;
+    const list = childrenOf.get(t.parent_task_id);
+    if (list) list.push(t);
+    else childrenOf.set(t.parent_task_id, [t]);
+  }
+  const hasSurvivingDescendant = (t: ScheduleTask): boolean =>
+    survivingLeafIds.has(t.task_id) ||
+    (childrenOf.get(t.task_id) ?? []).some(hasSurvivingDescendant);
+
+  const kept = tasks.filter((t) =>
+    t.is_summary ? hasSurvivingDescendant(t) : survivingLeafIds.has(t.task_id),
+  );
+  return orderForGanttDisplay(kept);
+}
+
+/** True when any ancestor of this task is collapsed, so the row should not be drawn. */
+export function isHiddenByCollapse(
+  task: ScheduleTask,
+  byId: Map<string, ScheduleTask>,
+  collapsed: Set<string>,
+): boolean {
+  let parentId = task.parent_task_id;
+  while (parentId) {
+    if (collapsed.has(parentId)) return true;
+    parentId = byId.get(parentId)?.parent_task_id ?? null;
+  }
+  return false;
 }

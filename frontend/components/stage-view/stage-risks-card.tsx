@@ -13,7 +13,7 @@ function severity(risk: StageRisk): { label: string; className: string } {
 
 function sourceLabel(risk: StageRisk) {
   const kind = risk.kind === "issue" ? "Issue" : "Risk";
-  return risk.source === "auto_overdue_task" ? `${kind} · Auto-flagged` : `${kind} · Manual`;
+  return risk.source === "overdue_task" ? `${kind} · From schedule` : `${kind} · Manual`;
 }
 
 export function StageRisksCard({ projectId, stageNo }: { projectId: string; stageNo: number }) {

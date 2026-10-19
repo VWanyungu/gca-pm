@@ -12,10 +12,13 @@ import {
   createDprSchema,
   updateDprSchema,
   listDprsQuerySchema,
+  uploadDprPhotoSchema,
   type CreateDprBody,
   type UpdateDprBody,
   type ListDprsQuery,
+  type UploadDprPhotoBody,
 } from '../utils/validation.js';
+import { storeObject, FileValidationError, FileStorageError } from '../utils/objectStorage.js';
 
 // mergeParams so :projectId reaches authorize and handlers
 const router = express.Router({ mergeParams: true });
@@ -103,6 +106,60 @@ router.get('/prefill', canCreateOrEdit, async (req, res) => {
       message: 'Prefill data retrieved',
     });
   } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({ status: 'error', data: null, message });
+  }
+});
+
+// POST /projects/:projectId/dpr/photos/upload - AC-DPR-09
+// Registered before /:dprId routes so "photos" isn't captured as a dprId param.
+router.post('/photos/upload', canCreateOrEdit, async (req, res) => {
+  const params = projectIdParamSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const body = uploadDprPhotoSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
+  if (body.error) {
+    res.status(400).json({ status: 'error', data: null, message: body.error.message });
+    return;
+  }
+  const { projectId } = params.value as { projectId: string };
+  const input = body.value as UploadDprPhotoBody;
+
+  try {
+    const project = await Projects.getById(projectId);
+    if (!project) {
+      res.status(404).json({ status: 'error', data: null, message: 'Project not found' });
+      return;
+    }
+
+    const { fileObject, url } = await storeObject({
+      file: input.file,
+      purpose: 'dpr_photo',
+      projectId,
+      uploadedBy: req.user!.userId,
+      originalFilename: input.filename,
+    });
+
+    res.status(201).json({
+      status: 'success',
+      data: { file_id: fileObject.file_id, url },
+      message: 'Photo uploaded',
+    });
+  } catch (err) {
+    if (err instanceof FileValidationError) {
+      res.status(400).json({ status: 'error', data: null, message: err.message });
+      return;
+    }
+    if (err instanceof FileStorageError) {
+      res.status(502).json({
+        status: 'error',
+        data: null,
+        message: `Could not store the photo: ${err.message}`,
+      });
+      return;
+    }
     const message = err instanceof Error ? err.message : 'Unknown error';
     res.status(500).json({ status: 'error', data: null, message });
   }

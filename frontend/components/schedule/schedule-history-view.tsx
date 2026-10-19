@@ -73,7 +73,7 @@ export function ScheduleHistoryView({
               <p className="w-[18%]">By</p>
               <p className="w-[13%]">Tasks added</p>
               <p className="w-[13%]">Tasks changed</p>
-              <p className="w-[13%]">New overdue</p>
+              <p className="w-[13%]">Overdue</p>
               <p className="w-[11%]" />
             </div>
             {rows.map((v, i) => {
@@ -92,8 +92,8 @@ export function ScheduleHistoryView({
                     {v.tasks_added !== null ? `+${v.tasks_added}` : "—"}
                   </p>
                   <p className="w-[13%] font-mono text-[13px] text-gca-dark">{v.tasks_modified ?? "—"}</p>
-                  <p className={`w-[13%] font-mono text-[13px] ${(v.overdue_risks_created ?? 0) > 0 ? "font-semibold text-error-text" : "text-gca-dark"}`}>
-                    {v.overdue_risks_created ?? "—"}
+                  <p className={`w-[13%] font-mono text-[13px] ${(v.overdue_task_count ?? 0) > 0 ? "font-semibold text-error-text" : "text-gca-dark"}`}>
+                    {v.overdue_task_count ?? "—"}
                   </p>
                   <div className="flex w-[11%] items-center justify-end gap-[12px] text-[13px] font-medium">
                     <button onClick={() => onViewChanges(v)} className="cursor-pointer text-gca-green hover:underline">

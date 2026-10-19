@@ -13,7 +13,7 @@
     "allowSyntheticDefaultImports": true,
     "outDir": "dist",
     "rootDir": ".",
-    "types": ["node"]
+    "types": ["node", "bun"]
   },
   "include": ["**/*.ts"],
   "exclude": ["node_modules", "dist"]

@@ -1,0 +1,12 @@
+{
+  "name": "gca-e2e",
+  "private": true,
+  "description": "Playwright smoke + RBAC tests for GCA PDM. Test cases documented in TEST-CASES.md.",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

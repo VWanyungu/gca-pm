@@ -346,7 +346,7 @@ export async function seed(knex: Knex): Promise<void> {
       status_date: '2026-08-01',
       source_file_id: FILE_IDS.PROJECT_2_SCHEDULE,
       file_sha256: 'e'.repeat(64),
-      tasks_added: 1, tasks_removed: 0, tasks_modified: 0, pct_overwrites: 0, overdue_risks_created: 0,
+      tasks_added: 1, tasks_removed: 0, tasks_modified: 0, pct_overwrites: 0, overdue_task_count: 0,
       uploaded_by: USER_IDS.PLANNER,
       uploaded_at: '2026-08-01T07:00:00Z',
       applied_at: '2026-08-01T07:05:00Z',
@@ -361,7 +361,7 @@ export async function seed(knex: Knex): Promise<void> {
       status_date: '2026-08-10',
       source_file_id: FILE_IDS.PROJECT_3_SCHEDULE,
       file_sha256: 'f'.repeat(64),
-      tasks_added: 1, tasks_removed: 0, tasks_modified: 0, pct_overwrites: 0, overdue_risks_created: 0,
+      tasks_added: 1, tasks_removed: 0, tasks_modified: 0, pct_overwrites: 0, overdue_task_count: 0,
       uploaded_by: USER_IDS.PLANNER,
       uploaded_at: '2026-08-10T07:00:00Z',
       applied_at: '2026-08-10T07:05:00Z',
@@ -373,7 +373,7 @@ export async function seed(knex: Knex): Promise<void> {
     .merge([
       'project_id', 'version_no', 'status', 'upload_kind', 'scope_mode', 'status_date',
       'source_file_id', 'file_sha256', 'tasks_added', 'tasks_removed', 'tasks_modified',
-      'pct_overwrites', 'overdue_risks_created', 'uploaded_by', 'uploaded_at', 'applied_at',
+      'pct_overwrites', 'overdue_task_count', 'uploaded_by', 'uploaded_at', 'applied_at',
     ]);
 
   // 2. Project metrics snapshot time series (varied per project, trending with occasional dips).

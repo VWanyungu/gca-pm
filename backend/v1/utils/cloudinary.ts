@@ -155,3 +155,49 @@ export async function uploadAttachmentToCloudinary(
     };
   }
 }
+
+/**
+ * Removes an object from Cloudinary by its public id. Used to undo an upload whose database
+ * row could not be written, so a failed request does not leave a paid-for orphan behind.
+ *
+ * Signed REST call rather than the SDK: this runs on an error path, where the SDK's own
+ * import-and-configure dance is one more thing that can throw.
+ */
+export async function deleteFromCloudinary(
+  publicId: string,
+  resourceType: 'image' | 'raw' | 'video' = 'raw',
+): Promise<void> {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY || process.env.API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET || process.env.API_SECRET;
+
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new Error('Cloudinary credentials missing; cannot delete object');
+  }
+
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signature = createHash('sha1')
+    .update(`public_id=${publicId}&timestamp=${timestamp}${apiSecret}`)
+    .digest('hex');
+
+  const formData = new FormData();
+  formData.append('public_id', publicId);
+  formData.append('api_key', apiKey);
+  formData.append('timestamp', String(timestamp));
+  formData.append('signature', signature);
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/destroy`,
+    { method: 'POST', body: formData },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Cloudinary delete failed: ${response.statusText} - ${await response.text()}`);
+  }
+
+  // Cloudinary answers 200 with {"result":"not found"} for an id that is already gone.
+  const data = (await response.json()) as { result?: string };
+  if (data.result !== 'ok' && data.result !== 'not found') {
+    throw new Error(`Cloudinary delete returned "${data.result}" for ${publicId}`);
+  }
+}

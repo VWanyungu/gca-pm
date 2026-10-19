@@ -17,11 +17,18 @@ export default function authorize(requestedRole: RequiredRole[]): RequestHandler
 
         const { programId, projectId } = req.params;
 
-        const matches = (userRole: TokenGrant, requiredRole: RequiredRole) =>
-            userRole.role === requiredRole.role &&
-            userRole.scope_type === requiredRole.scopeType &&
-            (requiredRole.scopeType !== 'program' || userRole.program_id === programId) &&
-            (requiredRole.scopeType !== 'project' || userRole.project_id === projectId);
+        // A grant is global, per-program or per-project, and the wider scope contains the
+        // narrower one: a global PM is a PM of every project, so anywhere a PM@project would
+        // be allowed, a PM@global is too. A project-scoped grant never satisfies a
+        // requirement for a global one, which stays the stronger ask.
+        const matches = (userRole: TokenGrant, requiredRole: RequiredRole) => {
+            if (userRole.role !== requiredRole.role) return false;
+            if (userRole.scope_type === 'global') return true;
+            if (userRole.scope_type !== requiredRole.scopeType) return false;
+            if (requiredRole.scopeType === 'program') return userRole.program_id === programId;
+            if (requiredRole.scopeType === 'project') return userRole.project_id === projectId;
+            return true;
+        };
 
         const isAuthorized = roles.some(role => (role.role === 'Admin' && role.scope_type === 'global') || requestedRole.some(requiredRole => matches(role, requiredRole)));
 
@@ -33,6 +40,27 @@ export default function authorize(requestedRole: RequiredRole[]): RequestHandler
             isAuthorized,
         });
 
+        isAuthorized ? next() : deny(res);
+    };
+}
+
+/**
+ * For read-only, project-agnostic reference data (weather categories, personnel roles): any
+ * grant of one of these roles qualifies, at any scope. `authorize()`'s project/program scope
+ * check only works on routes that carry a matching `:projectId`/`:programId` param — a
+ * reference-data route has neither, so a project-scoped grant (the common case for
+ * SiteEngineer, Planner, etc.) can never satisfy `authorize()`'s `scopeType: 'project'` there.
+ */
+export function authorizeAnyRole(roles: RoleName[]): RequestHandler {
+    return (req, res, next) => {
+        const grants = req.user?.role;
+        if (!grants) {
+            res.status(403).json({ status: 'error', data: req.user, message: 'Authentication token not provided' });
+            return;
+        }
+        const isAuthorized = grants.some(
+            (grant) => (grant.role === 'Admin' && grant.scope_type === 'global') || roles.includes(grant.role),
+        );
         isAuthorized ? next() : deny(res);
     };
 }

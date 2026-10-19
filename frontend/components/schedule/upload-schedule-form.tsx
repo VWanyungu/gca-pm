@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { ArrowLeft, Upload } from "lucide-react";
-import { formatLongDateTime, type ScheduleVersion } from "./types";
+import { formatLongDateTime, type ScheduleVersion, type ScopeMode } from "./types";
 import type { TeamMember } from "@/components/project-overview/types";
 
 function uploaderName(userId: string, team: TeamMember[]) {
@@ -16,9 +16,17 @@ function formatSize(bytes: number): string {
 
 export interface UploadDraft {
   file: File;
-  scopeMode: "full" | "current_stage";
+  scopeMode: ScopeMode;
   notes: string;
 }
+
+/** AC-SCH-07: every task is stored whatever is chosen here; this only sets the default
+ *  filter the schedule is read through afterwards. */
+const SCOPE_OPTIONS: { value: ScopeMode; label: string; hint: string }[] = [
+  { value: "every_task", label: "Full project", hint: "Every task in the file" },
+  { value: "milestones_only", label: "Milestones", hint: "Milestone tasks only" },
+  { value: "current_stage", label: "Current stage", hint: "" },
+];
 
 interface UploadScheduleFormProps {
   currentVersion?: ScheduleVersion;
@@ -26,11 +34,13 @@ interface UploadScheduleFormProps {
   team: TeamMember[];
   onCancel: () => void;
   onSubmit: (draft: UploadDraft) => void;
+  /** True while the file is being sent, so the button cannot be pressed twice. */
+  submitting?: boolean;
 }
 
-export function UploadScheduleForm({ currentVersion, currentStageName, team, onCancel, onSubmit }: UploadScheduleFormProps) {
+export function UploadScheduleForm({ currentVersion, currentStageName, team, onCancel, onSubmit, submitting = false }: UploadScheduleFormProps) {
   const [file, setFile] = useState<File | null>(null);
-  const [scopeMode, setScopeMode] = useState<"full" | "current_stage">("full");
+  const [scopeMode, setScopeMode] = useState<ScopeMode>("every_task");
   const [notes, setNotes] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -101,24 +111,20 @@ export function UploadScheduleForm({ currentVersion, currentStageName, team, onC
           <p className="mt-[4px] text-[13px] text-gca-show">How much of the file to read.</p>
         </div>
         <div className="flex w-full max-w-[792px] gap-[16px]">
-          <button
-            onClick={() => setScopeMode("full")}
-            className={`flex-1 cursor-pointer rounded-[8px] border px-[16px] py-[14px] text-left ${
-              scopeMode === "full" ? "border-gca-green bg-gca-badge-bg" : "border-gca-border"
-            }`}
-          >
-            <p className="text-[14px] font-medium text-gca-dark">Full project</p>
-            <p className="mt-[2px] text-[13px] text-gca-show">Every task in the file</p>
-          </button>
-          <button
-            onClick={() => setScopeMode("current_stage")}
-            className={`flex-1 cursor-pointer rounded-[8px] border px-[16px] py-[14px] text-left ${
-              scopeMode === "current_stage" ? "border-gca-green bg-gca-badge-bg" : "border-gca-border"
-            }`}
-          >
-            <p className="text-[14px] font-medium text-gca-dark">Current stage</p>
-            <p className="mt-[2px] text-[13px] text-gca-show">{currentStageName ?? "Active stage"} tasks only</p>
-          </button>
+          {SCOPE_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => setScopeMode(option.value)}
+              className={`flex-1 cursor-pointer rounded-[8px] border px-[16px] py-[14px] text-left ${
+                scopeMode === option.value ? "border-gca-green bg-gca-badge-bg" : "border-gca-border"
+              }`}
+            >
+              <p className="text-[14px] font-medium text-gca-dark">{option.label}</p>
+              <p className="mt-[2px] text-[13px] text-gca-show">
+                {option.value === "current_stage" ? (currentStageName ?? "Active stage") + " tasks only" : option.hint}
+              </p>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -158,11 +164,11 @@ export function UploadScheduleForm({ currentVersion, currentStageName, team, onC
           </button>
           <button
             onClick={() => file && onSubmit({ file, scopeMode, notes: notes.trim() })}
-            disabled={!file}
+            disabled={!file || submitting}
             className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Upload className="size-[14px]" />
-            Upload
+            {submitting ? "Uploading…" : "Upload"}
           </button>
         </div>
       </div>

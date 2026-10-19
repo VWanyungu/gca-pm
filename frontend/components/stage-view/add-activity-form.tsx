@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { api } from "@/lib/api-client";
 import Dropdown from "@/components/Dropdown";
-import type { StageActivity, TeamMember } from "@/components/project-overview/types";
+import { uniquePeople, type StageActivity, TeamMember } from "@/components/project-overview/types";
 
 function fileToDataUri(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -42,7 +42,7 @@ export function AddActivityForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const ownerOptions = team.map((m) => ({ id: m.user_id, name: `${m.first_name} ${m.last_name}` }));
+  const ownerOptions = uniquePeople(team).map((m) => ({ id: m.user_id, name: `${m.first_name} ${m.last_name}` }));
 
   async function submit() {
     if (!title.trim() || !ownerId || !dueDate) {

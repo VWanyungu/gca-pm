@@ -6,43 +6,54 @@ import {
   formatShortDate,
   groupPlannedProgress,
   groupProgress,
-  taskInWindow,
+  isHiddenByCollapse,
+  phaseLevel,
   taskStatusLabel,
+  visibleScheduleRows,
   workDays,
   type DateWindow,
   type ScheduleTask,
 } from "./types";
 
 const PER_PAGE = 12;
+const INDENT_PER_LEVEL = 16;
 
 interface ScheduleTableProps {
   tasks: ScheduleTask[];
-  /** Restrict the displayed rows (used by the "Next 2 weeks" lookahead). Topic % stays cumulative. */
+  /** Restrict the displayed rows (used by the "Next 2 weeks" lookahead). Phase % stays cumulative. */
   window?: DateWindow;
 }
 
+/**
+ * The schedule as an indented tree, in the order the file lists it.
+ *
+ * A schedule is as deep as the planner made it — this file runs four levels — so rows are
+ * rendered from one depth-first list rather than as groups-with-children. Pagination slices
+ * that same list, which keeps every page a contiguous run of the schedule instead of a page
+ * of headers whose children all landed on some other page.
+ */
 export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(PER_PAGE);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
-  const leaves = useMemo(() => tasks.filter((t) => !t.is_summary), [tasks]);
-  const groups = useMemo(() => tasks.filter((t) => t.is_summary), [tasks]);
-  const windowedLeaves = useMemo(
-    () => (window ? leaves.filter((t) => taskInWindow(t, window)) : leaves),
-    [leaves, window],
-  );
-  const visibleLeaves = useMemo(
-    () => windowedLeaves.filter((t) => !t.parent_task_id || !collapsed.has(t.parent_task_id)),
-    [windowedLeaves, collapsed],
+  const byId = useMemo(() => new Map(tasks.map((t) => [t.task_id, t])), [tasks]);
+  const level = useMemo(() => phaseLevel(tasks), [tasks]);
+  const ordered = useMemo(() => visibleScheduleRows(tasks, window), [tasks, window]);
+  const rows = useMemo(
+    () => ordered.filter((t) => !isHiddenByCollapse(t, byId, collapsed)),
+    [ordered, byId, collapsed],
   );
 
-  const total = visibleLeaves.length;
-  const pages = Math.max(Math.ceil(total / perPage), 1);
-  const pageLeaveIds = useMemo(
-    () => new Set(visibleLeaves.slice((page - 1) * perPage, page * perPage).map((t) => t.task_id)),
-    [visibleLeaves, page, perPage],
+  const baseLevel = useMemo(
+    () => (ordered.length ? Math.min(...ordered.map((t) => t.outline_level)) : 1),
+    [ordered],
   );
+
+  const total = rows.length;
+  const pages = Math.max(Math.ceil(total / perPage), 1);
+  const currentPage = Math.min(page, pages);
+  const pageRows = rows.slice((currentPage - 1) * perPage, currentPage * perPage);
 
   function toggleGroup(groupId: string) {
     setCollapsed((prev) => {
@@ -56,15 +67,7 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
   if (tasks.length === 0) {
     return <p className="py-[56px] text-center text-[13px] text-gca-show">No schedule tasks to show.</p>;
   }
-
-  // Groups render in order with their own page-visible children directly beneath; ungrouped leaves come
-  // last. A topic with nothing in the current window (or with no children at all) doesn't show.
-  const sections = [
-    ...groups.map((g) => ({ group: g, children: windowedLeaves.filter((t) => t.parent_task_id === g.task_id) })),
-    { group: null, children: windowedLeaves.filter((t) => !t.parent_task_id) },
-  ].filter((s) => s.children.length > 0);
-
-  if (sections.length === 0) {
+  if (rows.length === 0) {
     return <p className="py-[56px] text-center text-[13px] text-gca-show">No tasks in this window.</p>;
   }
 
@@ -82,57 +85,75 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
         </div>
 
         <div className="max-h-[520px] overflow-y-auto">
-          {sections.map(({ group, children }, si) => {
-            const pageChildren = children.filter((t) => pageLeaveIds.has(t.task_id));
-            const isCollapsed = group ? collapsed.has(group.task_id) : false;
+          {pageRows.map((t, i) => {
+            const isPhase = t.outline_level === level;
+            const isGroup = t.is_summary;
+            const status = taskStatusLabel(t);
+            const progress = isGroup ? groupProgress(t, tasks) : Number(t.pct_work_complete);
+            const planned = isGroup
+              ? groupPlannedProgress(t, tasks)
+              : t.planned_pct !== null
+                ? Number(t.planned_pct)
+                : null;
 
             return (
-              <div key={group?.task_id ?? "ungrouped"}>
-                {group && (
-                  <button
-                    type="button"
-                    onClick={() => toggleGroup(group.task_id)}
-                    className={`flex w-full cursor-pointer items-center gap-[10px] bg-gca-badge-bg px-[16px] py-[10px] text-left ${si > 0 ? "border-t border-gca-border" : ""}`}
+              <div
+                key={t.task_id}
+                className={`flex w-full items-center gap-[10px] px-[16px] ${
+                  isPhase ? "bg-gca-badge-bg py-[10px]" : "py-[12px]"
+                } ${i > 0 ? "border-t border-gca-border" : ""}`}
+              >
+                <div
+                  className="flex w-[28%] items-center gap-[8px] truncate pr-[8px]"
+                  style={{ paddingLeft: (t.outline_level - baseLevel) * INDENT_PER_LEVEL }}
+                >
+                  {isGroup ? (
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(t.task_id)}
+                      className="cursor-pointer text-gca-muted"
+                      aria-label={collapsed.has(t.task_id) ? "Expand" : "Collapse"}
+                    >
+                      {collapsed.has(t.task_id) ? "▸" : "▾"}
+                    </button>
+                  ) : (
+                    <span className="w-[10px]" aria-hidden />
+                  )}
+                  {/* A milestone is a dated marker rather than work, and MS Project lets a summary
+                      row carry the flag too, so the diamond is drawn independently of the row type. */}
+                  {t.is_milestone && (
+                    <span className="shrink-0 text-[10px] text-gca-green" title="Milestone" aria-label="Milestone">
+                      ◆
+                    </span>
+                  )}
+                  <span
+                    className={`truncate text-[13px] ${
+                      isPhase
+                        ? "font-semibold uppercase tracking-[0.04em] text-gca-badge-text"
+                        : isGroup
+                          ? "font-semibold text-gca-dark"
+                          : "font-medium text-gca-dark"
+                    }`}
+                    title={t.task_name}
                   >
-                    <p className="flex w-[28%] items-center gap-[8px] truncate text-[13px] font-semibold text-gca-badge-text">
-                      <span aria-hidden>{isCollapsed ? "▸" : "▾"}</span>
-                      {group.task_name}
-                    </p>
-                    <p className="w-[11%] text-[13px] font-medium text-gca-badge-text">
-                      {Math.round(groupProgress(group, tasks))}%
-                    </p>
-                    <p className="w-[11%] text-[13px] font-medium text-gca-badge-text">
-                      {(() => {
-                        const planned = groupPlannedProgress(group, tasks);
-                        return planned !== null ? `${Math.round(planned)}%` : "—";
-                      })()}
-                    </p>
-                    <p className="w-[11%] font-mono text-[13px] text-gca-badge-text">{workDays(group.duration_minutes)}</p>
-                    <p className="w-[12%]" />
-                    <p className="w-[12%]" />
-                    <p className="w-[15%]" />
-                  </button>
-                )}
-                {!isCollapsed &&
-                  pageChildren.map((t, i) => {
-                    const status = taskStatusLabel(t);
-                    return (
-                      <div
-                        key={t.task_id}
-                        className={`flex w-full items-center gap-[10px] px-[16px] py-[12px] ${i > 0 || !!group ? "border-t border-gca-border" : ""}`}
-                      >
-                        <p className="w-[28%] truncate pl-[16px] text-[13px] font-medium text-gca-dark">{t.task_name}</p>
-                        <p className="w-[11%] text-[13px] text-gca-dark">{Math.round(Number(t.pct_work_complete))}%</p>
-                        <p className="w-[11%] text-[13px] text-gca-show">
-                          {t.planned_pct !== null ? `${Math.round(Number(t.planned_pct))}%` : "—"}
-                        </p>
-                        <p className="w-[11%] font-mono text-[13px] text-gca-dark">{workDays(t.duration_minutes)}</p>
-                        <p className="w-[12%] font-mono text-[13px] text-gca-dark">{formatShortDate(t.start)}</p>
-                        <p className="w-[12%] font-mono text-[13px] text-gca-dark">{formatShortDate(t.expected_finish)}</p>
-                        <p className={`w-[15%] text-[13px] font-semibold ${status.className}`}>{status.label}</p>
-                      </div>
-                    );
-                  })}
+                    {t.task_name}
+                  </span>
+                </div>
+
+                <p className={`w-[11%] text-[13px] ${isGroup ? "font-medium" : ""} text-gca-dark`}>
+                  {Math.round(progress)}%
+                </p>
+                <p className={`w-[11%] text-[13px] ${isGroup ? "font-medium text-gca-dark" : "text-gca-show"}`}>
+                  {planned !== null ? `${Math.round(planned)}%` : "—"}
+                </p>
+                <p className="w-[11%] font-mono text-[13px] text-gca-dark">{workDays(t.duration_minutes)}</p>
+                <p className="w-[12%] font-mono text-[13px] text-gca-dark">{formatShortDate(t.start)}</p>
+                <p className="w-[12%] font-mono text-[13px] text-gca-dark">{formatShortDate(t.expected_finish)}</p>
+                {/* A summary row's status is the roll-up of its children, which the Status column
+                    cannot express, so only real work carries one. */}
+                <p className={`w-[15%] text-[13px] font-semibold ${isGroup ? "" : status.className}`}>
+                  {isGroup ? "" : status.label}
+                </p>
               </div>
             );
           })}
@@ -141,7 +162,7 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
 
       {pages > 1 && (
         <Pagination
-          page={page}
+          page={currentPage}
           totalPages={pages}
           perPage={perPage}
           total={total}
@@ -150,7 +171,7 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
             setPerPage(n);
             setPage(1);
           }}
-          label="tasks"
+          label="rows"
         />
       )}
     </div>

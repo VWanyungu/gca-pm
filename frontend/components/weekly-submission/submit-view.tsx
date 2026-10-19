@@ -59,7 +59,14 @@ export function SubmitView({ projectId }: { projectId: string }) {
 
       <div className="flex w-full justify-center">
         <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[40px]">
-          {tab === "register" && <WeeklyRegisterTable projectId={projectId} />}
+          {tab === "register" && (
+            <WeeklyRegisterTable
+              projectId={projectId}
+              weekStart={weekStart}
+              tab={tab}
+              setTab={setTab}
+            />
+          )}
 
           {tab === "week" && !isLoading && (
             <>
@@ -97,19 +104,55 @@ export function SubmitView({ projectId }: { projectId: string }) {
               )}
 
               {!weekSubmission?.draft && !weekSubmission?.approved && (
-                <div className="flex w-full flex-col items-start gap-[12px] rounded-[12px] border border-gca-border bg-white p-[32px]">
-                  <h2 className="text-[18px] font-semibold text-gca-dark">
-                    Start Week {weekNumber(weekStart)} submission
-                  </h2>
-                  <p className="text-[14px] text-gca-show">{formatWeekPeriod(weekStart)}</p>
-                  <button
-                    onClick={startWeek}
-                    disabled={creating}
-                    className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white disabled:opacity-50"
-                  >
-                    Start submission
-                  </button>
-                </div>
+                <>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h1 className="text-[20px] font-semibold tracking-[-0.3px] text-gca-dark">
+                        Week {weekNumber(weekStart)} submission
+                      </h1>
+                      <p className="mt-[2px] text-[13px] text-gca-show">
+                        {formatWeekPeriod(weekStart)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex w-fit gap-[2px] rounded-[8px] bg-gca-page-bg p-[3px]">
+                    <button
+                      onClick={() => setTab("week")}
+                      className={`cursor-pointer rounded-[6px] px-[12px] py-[6px] text-[13px] ${
+                        tab === "week"
+                          ? "bg-white font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
+                          : "font-normal text-gca-show"
+                      }`}
+                    >
+                      Week {weekNumber(weekStart)}
+                    </button>
+                    <button
+                      onClick={() => setTab("register")}
+                      className={`cursor-pointer rounded-[6px] px-[12px] py-[6px] text-[13px] ${
+                        tab === "register"
+                          ? "bg-white font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
+                          : "font-normal text-gca-show"
+                      }`}
+                    >
+                      Register
+                    </button>
+                  </div>
+
+                  <div className="flex w-full flex-col items-start gap-[12px] rounded-[12px] border border-gca-border bg-white p-[32px]">
+                    <h2 className="text-[18px] font-semibold text-gca-dark">
+                      Start Week {weekNumber(weekStart)} submission
+                    </h2>
+                    <p className="text-[14px] text-gca-show">{formatWeekPeriod(weekStart)}</p>
+                    <button
+                      onClick={startWeek}
+                      disabled={creating}
+                      className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white disabled:opacity-50"
+                    >
+                      Start submission
+                    </button>
+                  </div>
+                </>
               )}
             </>
           )}
