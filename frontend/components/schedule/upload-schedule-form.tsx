@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowLeft, Upload } from "lucide-react";
+import { ArrowLeft, LoaderCircle, Upload } from "lucide-react";
 import { formatLongDateTime, type ScheduleVersion, type ScopeMode } from "./types";
 import type { TeamMember } from "@/components/project-overview/types";
 
@@ -165,10 +165,17 @@ export function UploadScheduleForm({ currentVersion, currentStageName, team, onC
           <button
             onClick={() => file && onSubmit({ file, scopeMode, notes: notes.trim() })}
             disabled={!file || submitting}
-            className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label={submitting ? "Uploading" : undefined}
+            className="cursor-pointer flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Upload className="size-[14px]" />
-            {submitting ? "Uploading…" : "Upload"}
+            {submitting ? (
+              <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />
+            ) : (
+              <>
+                <Upload className="size-[14px]" />
+                Upload
+              </>
+            )}
           </button>
         </div>
       </div>

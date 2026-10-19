@@ -23,6 +23,9 @@ interface ProjectResponse {
     expected_start_date: string | null;
     expected_end_date: string | null;
     site_location: string | null;
+    is_mechanical: boolean;
+    is_civil: boolean;
+    is_electrical: boolean;
   };
 }
 
@@ -30,6 +33,7 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [step, setStep] = useState("details");
+  const [draftDetails, setDraftDetails] = useState<DetailsFormValues | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,6 +54,9 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
         expected_start_date: project.expected_start_date?.slice(0, 10) ?? "",
         expected_end_date: project.expected_end_date?.slice(0, 10) ?? "",
         site_location: project.site_location ?? "",
+        is_mechanical: project.is_mechanical ?? true,
+        is_civil: project.is_civil ?? false,
+        is_electrical: project.is_electrical ?? false,
       } satisfies DetailsFormValues;
     },
   });
@@ -64,12 +71,16 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
       expected_start_date: values.expected_start_date,
       expected_end_date: values.expected_end_date || null,
       site_location: values.site_location || null,
+      is_mechanical: values.is_mechanical,
+      is_civil: values.is_civil,
+      is_electrical: values.is_electrical,
     });
     setSaving(false);
     if (res.status !== "success") {
       setError(res.message);
       return;
     }
+    setDraftDetails(values);
     queryClient.setQueryData(["project", projectId, "edit"], values);
   }
 
@@ -112,10 +123,13 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
 
         {step === "details" && (
           <DetailsStep
-            defaultValues={details}
+            defaultValues={draftDetails ?? details}
             onCancel={() => router.push(`/projects/${projectId}`)}
             nextLabel="Next: People"
-            onNext={() => setStep("people")}
+            onNext={(values) => {
+              setDraftDetails(values);
+              setStep("people");
+            }}
             onSave={save}
             saving={saving}
           />

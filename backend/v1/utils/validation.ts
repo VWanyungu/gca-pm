@@ -932,7 +932,7 @@ export const createProjectSchema = Joi.object<CreateProjectBody>({
   site_lng: Joi.number().min(-180).max(180).allow(null).optional(),
   timezone: Joi.string().trim().default("Africa/Nairobi"),
   is_civil: Joi.boolean().default(false),
-  is_mechanical: Joi.boolean().default(false),
+  is_mechanical: Joi.boolean().default(true),
   is_electrical: Joi.boolean().default(false),
   expected_start_date: Joi.string().isoDate().allow(null).optional(),
   expected_end_date: Joi.string().isoDate().allow(null).optional(),
