@@ -3,7 +3,14 @@
 import { useMemo, useState } from "react";
 import { Pencil, Flag } from "lucide-react";
 import { Pagination } from "@/components/pagination";
-import { formatShortDate, milestoneStatus, sourceLabel, variance, type MilestoneRow, type MilestoneSource } from "./types";
+import {
+  formatShortDate,
+  milestoneStatus,
+  sourceLabel,
+  variance,
+  type MilestoneRow,
+  type MilestoneSource,
+} from "./types";
 
 const PER_PAGE = 8;
 
@@ -14,12 +21,18 @@ interface MilestonesTableProps {
   onEdit: (milestoneId: string) => void;
 }
 
-export function MilestonesTable({ milestones, sourceFilter, canManage, onEdit }: MilestonesTableProps) {
+export function MilestonesTable({
+  milestones,
+  sourceFilter,
+  canManage,
+  onEdit,
+}: MilestonesTableProps) {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(PER_PAGE);
 
   const filtered = useMemo(
-    () => (sourceFilter === "all" ? milestones : milestones.filter((m) => m.source === sourceFilter)),
+    () =>
+      sourceFilter === "all" ? milestones : milestones.filter((m) => m.source === sourceFilter),
     [milestones, sourceFilter],
   );
 
@@ -64,10 +77,18 @@ export function MilestonesTable({ milestones, sourceFilter, canManage, onEdit }:
               className={`flex w-full items-center gap-[10px] py-[12px] ${i > 0 ? "border-t border-gca-border" : ""}`}
             >
               <p className="w-[35%] truncate text-[13px] font-medium text-gca-dark">{m.title}</p>
-              <p className={`w-[15%] text-[13px] font-medium ${source.className}`}>{source.label}</p>
-              <p className="w-[15%] font-mono text-[13px] text-gca-dark">{formatShortDate(m.planned_date)}</p>
-              <p className={`w-[12%] font-mono text-[13px] font-semibold ${v.className}`}>{v.label}</p>
-              <p className={`w-[13%] text-[13px] font-semibold ${status.className}`}>{status.label}</p>
+              <p className={`w-[15%] text-[13px] font-medium ${source.className}`}>
+                {source.label}
+              </p>
+              <p className="w-[15%] font-mono text-[13px] text-gca-dark">
+                {formatShortDate(m.planned_date ?? m.forecast_date)}
+              </p>
+              <p className={`w-[12%] font-mono text-[13px] font-semibold ${v.className}`}>
+                {v.label}
+              </p>
+              <p className={`w-[13%] text-[13px] font-semibold ${status.className}`}>
+                {status.label}
+              </p>
               <div className="flex w-[10%] justify-end">
                 {canManage && m.source === "custom" && (
                   <button

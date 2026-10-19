@@ -1,4 +1,4 @@
-import Joi from 'joi';
+import Joi from "joi";
 import type {
   CreateUserInput,
   AdminCreateUserInput,
@@ -16,7 +16,7 @@ import type {
   ChangeRequestType,
   ChangeRequestStatus,
   ChangeDecision,
-} from '../database/utils/database.js';
+} from "../database/utils/database.js";
 
 export const createUserSchema = Joi.object<CreateUserInput>({
   id: Joi.string().uuid().required(),
@@ -27,7 +27,14 @@ export const createUserSchema = Joi.object<CreateUserInput>({
   username: Joi.string().alphanum().min(3).max(30).required(),
 });
 
-const USER_ROLE_NAMES: RoleName[] = ['PM', 'Planner', 'SiteEngineer', 'ExCo', 'Admin', 'ProjectCreator'];
+const USER_ROLE_NAMES: RoleName[] = [
+  "PM",
+  "Planner",
+  "SiteEngineer",
+  "ExCo",
+  "Admin",
+  "ProjectCreator",
+];
 
 export const userIdParamSchema = Joi.object({
   id: Joi.string().uuid().required(),
@@ -37,27 +44,35 @@ export const listUsersQuerySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(10),
   search: Joi.string().trim().max(200).optional(),
-  globalRole: Joi.string().valid(...USER_ROLE_NAMES).optional(),
-  status: Joi.string().valid('active', 'deactivated').optional(),
+  globalRole: Joi.string()
+    .valid(...USER_ROLE_NAMES)
+    .optional(),
+  status: Joi.string().valid("active", "deactivated").optional(),
 });
 
 export const adminCreateUserSchema = Joi.object<AdminCreateUserInput>({
   firstName: Joi.string().trim().min(1).max(50).required(),
   lastName: Joi.string().trim().min(1).max(50).required(),
   email: Joi.string().email().lowercase().required(),
-  phone: Joi.string().trim().max(30).allow(null, '').optional(),
-  globalRole: Joi.string().valid(...USER_ROLE_NAMES).allow(null).optional(),
+  phone: Joi.string().trim().max(30).allow(null, "").optional(),
+  globalRole: Joi.string()
+    .valid(...USER_ROLE_NAMES)
+    .allow(null)
+    .optional(),
 });
 
 export const updateUserSchema = Joi.object<UpdateUserInput>({
   firstName: Joi.string().trim().min(1).max(50).optional(),
   lastName: Joi.string().trim().min(1).max(50).optional(),
-  phone: Joi.string().trim().max(30).allow(null, '').optional(),
-  globalRole: Joi.string().valid(...USER_ROLE_NAMES).allow(null).optional(),
+  phone: Joi.string().trim().max(30).allow(null, "").optional(),
+  globalRole: Joi.string()
+    .valid(...USER_ROLE_NAMES)
+    .allow(null)
+    .optional(),
 }).min(1);
 
 export const setUserStatusSchema = Joi.object({
-  status: Joi.string().valid('active', 'deactivated').required(),
+  status: Joi.string().valid("active", "deactivated").required(),
 });
 
 export interface CreateRoleBody {
@@ -79,20 +94,31 @@ export interface ListRolesQuery {
   limit?: number;
 }
 
-const ROLE_NAMES: RoleName[] = ['PM', 'Planner', 'SiteEngineer', 'ExCo', 'Admin', 'ProjectCreator'];
-const SCOPE_TYPES: ScopeType[] = ['global', 'program', 'project'];
+const ROLE_NAMES: RoleName[] = [
+  "PM",
+  "Planner",
+  "SiteEngineer",
+  "ExCo",
+  "Admin",
+  "ProjectCreator",
+];
+const SCOPE_TYPES: ScopeType[] = ["global", "program", "project"];
 
 export const createRoleSchema = Joi.object<CreateRoleBody>({
   userId: Joi.string().uuid().required(),
-  role: Joi.string().valid(...ROLE_NAMES).required(),
-  scopeType: Joi.string().valid(...SCOPE_TYPES).required(),
-  programId: Joi.when('scopeType', {
-    is: 'program',
+  role: Joi.string()
+    .valid(...ROLE_NAMES)
+    .required(),
+  scopeType: Joi.string()
+    .valid(...SCOPE_TYPES)
+    .required(),
+  programId: Joi.when("scopeType", {
+    is: "program",
     then: Joi.number().integer().positive().required(),
     otherwise: Joi.any().strip(),
   }),
-  projectId: Joi.when('scopeType', {
-    is: 'project',
+  projectId: Joi.when("scopeType", {
+    is: "project",
     then: Joi.string().uuid().required(),
     otherwise: Joi.any().strip(),
   }),
@@ -103,7 +129,7 @@ export const revokeRoleParamsSchema = Joi.object({
 });
 
 export const revokeRoleBodySchema = Joi.object<RevokeRoleBody>({
-  reason: Joi.string().trim().max(10000).allow(null, '').optional(),
+  reason: Joi.string().trim().max(10000).allow(null, "").optional(),
 });
 
 export const listRolesQuerySchema = Joi.object<ListRolesQuery>({
@@ -115,16 +141,16 @@ export const listRolesQuerySchema = Joi.object<ListRolesQuery>({
 
 export interface ReassignMainRoleBody {
   projectId: string;
-  role: 'PM' | 'Planner';
+  role: "PM" | "Planner";
   newUserId: string;
   reason?: string | null;
 }
 
 export const reassignMainRoleSchema = Joi.object<ReassignMainRoleBody>({
   projectId: Joi.string().uuid().required(),
-  role: Joi.string().valid('PM', 'Planner').required(),
+  role: Joi.string().valid("PM", "Planner").required(),
   newUserId: Joi.string().uuid().required(),
-  reason: Joi.string().trim().max(10000).allow(null, '').optional(),
+  reason: Joi.string().trim().max(10000).allow(null, "").optional(),
 });
 
 export interface CreateRiskCategoryBody {
@@ -148,14 +174,26 @@ export interface ListRiskCategoriesQuery {
 }
 
 export const createRiskCategorySchema = Joi.object<CreateRiskCategoryBody>({
-  code: Joi.string().trim().lowercase().pattern(/^[a-z0-9_]+$/).min(2).max(50).required(),
+  code: Joi.string()
+    .trim()
+    .lowercase()
+    .pattern(/^[a-z0-9_]+$/)
+    .min(2)
+    .max(50)
+    .required(),
   name: Joi.string().trim().min(1).max(100).required(),
   sort_order: Joi.number().integer().min(0).max(32767).required(),
   is_active: Joi.boolean().optional(),
 });
 
 export const updateRiskCategorySchema = Joi.object<UpdateRiskCategoryBody>({
-  code: Joi.string().trim().lowercase().pattern(/^[a-z0-9_]+$/).min(2).max(50).optional(),
+  code: Joi.string()
+    .trim()
+    .lowercase()
+    .pattern(/^[a-z0-9_]+$/)
+    .min(2)
+    .max(50)
+    .optional(),
   name: Joi.string().trim().min(1).max(100).optional(),
   sort_order: Joi.number().integer().min(0).max(32767).optional(),
   is_active: Joi.boolean().optional(),
@@ -165,14 +203,15 @@ export const riskCategoryIdParamSchema = Joi.object({
   id: Joi.number().integer().positive().required(),
 });
 
-export const listRiskCategoriesQuerySchema = Joi.object<ListRiskCategoriesQuery>({
-  includeInactive: Joi.boolean().default(false),
-  page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(50),
-});
+export const listRiskCategoriesQuerySchema =
+  Joi.object<ListRiskCategoriesQuery>({
+    includeInactive: Joi.boolean().default(false),
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(50),
+  });
 
-export type RiskStatusLiteral = 'open' | 'mitigated' | 'closed' | 'dismissed';
-export type RiskKindLiteral = 'risk' | 'issue';
+export type RiskStatusLiteral = "open" | "mitigated" | "closed" | "dismissed";
+export type RiskKindLiteral = "risk" | "issue";
 
 export interface CreateRiskIssueBody {
   title: string;
@@ -202,14 +241,14 @@ export interface UpdateRiskIssueBody {
   review_by?: string | null;
   status?: RiskStatusLiteral;
   dismissal_reason?: string | null;
-  kind?: 'issue';
+  kind?: "issue";
 }
 
 export interface ListRiskIssuesQuery {
-  status?: RiskStatusLiteral | 'auto_resolved';
+  status?: RiskStatusLiteral | "auto_resolved";
   kind?: RiskKindLiteral;
   stage_no?: number;
-  source?: 'manual' | 'overdue_task';
+  source?: "manual" | "overdue_task";
   page?: number;
   limit?: number;
 }
@@ -225,23 +264,23 @@ export const riskIssueParamsSchema = Joi.object({
 
 export const createRiskIssueSchema = Joi.object<CreateRiskIssueBody>({
   title: Joi.string().trim().min(1).max(500).required(),
-  description: Joi.string().trim().max(10000).allow(null, '').optional(),
+  description: Joi.string().trim().max(10000).allow(null, "").optional(),
   category_id: Joi.number().integer().positive().required(),
   stage_no: Joi.number().integer().min(1).allow(null).optional(),
   // likelihood is required when kind='risk' (AC-RSK-01 + DB check ck_risk_likelihood_for_risks).
-  likelihood: Joi.when('kind', {
-    is: 'risk',
+  likelihood: Joi.when("kind", {
+    is: "risk",
     then: Joi.number().integer().min(1).max(5).required(),
     otherwise: Joi.any().strip(),
   }),
   impact: Joi.number().integer().min(1).max(5).required(),
   owner_id: Joi.string().uuid().optional(),
-  mitigation: Joi.string().trim().max(10000).allow(null, '').optional(),
+  mitigation: Joi.string().trim().max(10000).allow(null, "").optional(),
   review_by: Joi.string().isoDate().allow(null).optional(),
-  kind: Joi.string().valid('risk', 'issue').required(),
+  kind: Joi.string().valid("risk", "issue").required(),
   // ck_risk_auto_is_risk: a risk raised from a schedule task is never an issue.
-  source_task_id: Joi.when('kind', {
-    is: 'risk',
+  source_task_id: Joi.when("kind", {
+    is: "risk",
     then: Joi.string().uuid().allow(null).optional(),
     otherwise: Joi.any().strip(),
   }),
@@ -249,34 +288,37 @@ export const createRiskIssueSchema = Joi.object<CreateRiskIssueBody>({
 
 export const updateRiskIssueSchema = Joi.object<UpdateRiskIssueBody>({
   title: Joi.string().trim().min(1).max(500).optional(),
-  description: Joi.string().trim().max(10000).allow(null, '').optional(),
+  description: Joi.string().trim().max(10000).allow(null, "").optional(),
   category_id: Joi.number().integer().positive().optional(),
   stage_no: Joi.number().integer().min(1).allow(null).optional(),
   likelihood: Joi.number().integer().min(1).max(5).allow(null).optional(),
   impact: Joi.number().integer().min(1).max(5).optional(),
   owner_id: Joi.string().uuid().optional(),
-  mitigation: Joi.string().trim().max(10000).allow(null, '').optional(),
+  mitigation: Joi.string().trim().max(10000).allow(null, "").optional(),
   review_by: Joi.string().isoDate().allow(null).optional(),
-  status: Joi.string().valid('open', 'mitigated', 'closed', 'dismissed').optional(),
+  status: Joi.string()
+    .valid("open", "mitigated", "closed", "dismissed")
+    .optional(),
   // Required when transitioning to dismissed (AC-RSK-02).
-  dismissal_reason: Joi.when('status', {
-    is: 'dismissed',
+  dismissal_reason: Joi.when("status", {
+    is: "dismissed",
     then: Joi.string().trim().min(1).max(10000).required(),
-    otherwise: Joi.string().trim().max(10000).allow(null, '').optional(),
+    otherwise: Joi.string().trim().max(10000).allow(null, "").optional(),
   }),
   // AC-RSK-03: risk → issue conversion is one-way; kind can only ever be set to 'issue'.
-  kind: Joi.string().valid('issue').optional(),
+  kind: Joi.string().valid("issue").optional(),
 }).min(1);
 
 export const listRiskIssuesQuerySchema = Joi.object<ListRiskIssuesQuery>({
-  status: Joi.string().valid('open', 'mitigated', 'closed', 'dismissed', 'auto_resolved').optional(),
-  kind: Joi.string().valid('risk', 'issue').optional(),
+  status: Joi.string()
+    .valid("open", "mitigated", "closed", "dismissed", "auto_resolved")
+    .optional(),
+  kind: Joi.string().valid("risk", "issue").optional(),
   stage_no: Joi.number().integer().min(1).max(10).optional(),
-  source: Joi.string().valid('manual', 'overdue_task').optional(),
+  source: Joi.string().valid("manual", "overdue_task").optional(),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(25),
 });
-
 
 export interface CreateChangeRequestBody {
   stage_no?: number | null;
@@ -326,7 +368,7 @@ export const changeRequestParamsSchema = Joi.object({
 
 // AC-GEN-10: cost_currency pairs with cost_impact (ck_cr_cost_currency_pair).
 const costImpactField = Joi.number().precision(2).allow(null).optional();
-const costCurrencyField = Joi.when('cost_impact', {
+const costCurrencyField = Joi.when("cost_impact", {
   is: Joi.number().required(),
   then: Joi.string().length(3).uppercase().required(),
   otherwise: Joi.string().length(3).uppercase().allow(null).optional(),
@@ -334,11 +376,11 @@ const costCurrencyField = Joi.when('cost_impact', {
 
 export const createChangeRequestSchema = Joi.object<CreateChangeRequestBody>({
   stage_no: Joi.number().integer().min(1).max(10).allow(null).optional(),
-  type: Joi.string().valid('scope', 'schedule', 'cost').required(),
+  type: Joi.string().valid("scope", "schedule", "cost").required(),
   title: Joi.string().trim().min(1).max(500).required(),
   scope_description: Joi.string().trim().min(1).max(10000).required(),
   reason: Joi.string().trim().min(1).max(10000).required(),
-  supporting_notes: Joi.string().trim().max(10000).allow(null, '').optional(),
+  supporting_notes: Joi.string().trim().max(10000).allow(null, "").optional(),
   cost_impact: costImpactField,
   cost_currency: costCurrencyField,
   schedule_impact_days: Joi.number().integer().allow(null).optional(),
@@ -346,33 +388,36 @@ export const createChangeRequestSchema = Joi.object<CreateChangeRequestBody>({
 
 export const updateChangeRequestSchema = Joi.object<UpdateChangeRequestBody>({
   stage_no: Joi.number().integer().min(1).max(10).allow(null).optional(),
-  type: Joi.string().valid('scope', 'schedule', 'cost').optional(),
+  type: Joi.string().valid("scope", "schedule", "cost").optional(),
   title: Joi.string().trim().min(1).max(500).optional(),
   scope_description: Joi.string().trim().min(1).max(10000).optional(),
   reason: Joi.string().trim().min(1).max(10000).optional(),
-  supporting_notes: Joi.string().trim().max(10000).allow(null, '').optional(),
+  supporting_notes: Joi.string().trim().max(10000).allow(null, "").optional(),
   cost_impact: costImpactField,
   cost_currency: costCurrencyField,
   schedule_impact_days: Joi.number().integer().allow(null).optional(),
 }).min(1);
 
 export const decideChangeRequestSchema = Joi.object<DecideChangeRequestBody>({
-  decision: Joi.string().valid('approve', 'reject').required(),
+  decision: Joi.string().valid("approve", "reject").required(),
   // ck_ca_reject_comment_required
-  comment: Joi.when('decision', {
-    is: 'reject',
+  comment: Joi.when("decision", {
+    is: "reject",
     then: Joi.string().trim().min(1).max(10000).required(),
-    otherwise: Joi.string().trim().max(10000).allow(null, '').optional(),
+    otherwise: Joi.string().trim().max(10000).allow(null, "").optional(),
   }),
 });
 
-export const listChangeRequestsQuerySchema = Joi.object<ListChangeRequestsQuery>({
-  stage_no: Joi.number().integer().min(1).max(10).optional(),
-  type: Joi.string().valid('scope', 'schedule', 'cost').optional(),
-  status: Joi.string().valid('pending', 'approved', 'rejected', 'withdrawn').optional(),
-  page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(25),
-});
+export const listChangeRequestsQuerySchema =
+  Joi.object<ListChangeRequestsQuery>({
+    stage_no: Joi.number().integer().min(1).max(10).optional(),
+    type: Joi.string().valid("scope", "schedule", "cost").optional(),
+    status: Joi.string()
+      .valid("pending", "approved", "rejected", "withdrawn")
+      .optional(),
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(25),
+  });
 
 export interface CreateProgramBody {
   name: string;
@@ -428,34 +473,38 @@ export interface ListWeatherCategoriesQuery {
   limit?: number;
 }
 
-export const createWeatherCategorySchema = Joi.object<CreateWeatherCategoryBody>({
-  name: Joi.string().trim().min(1).max(100).required(),
-  sort_order: Joi.number().integer().min(0).max(32767).required(),
-  is_active: Joi.boolean().optional(),
-});
+export const createWeatherCategorySchema =
+  Joi.object<CreateWeatherCategoryBody>({
+    name: Joi.string().trim().min(1).max(100).required(),
+    sort_order: Joi.number().integer().min(0).max(32767).required(),
+    is_active: Joi.boolean().optional(),
+  });
 
-export const updateWeatherCategorySchema = Joi.object<UpdateWeatherCategoryBody>({
-  name: Joi.string().trim().min(1).max(100).optional(),
-  sort_order: Joi.number().integer().min(0).max(32767).optional(),
-  is_active: Joi.boolean().optional(),
-}).min(1);
+export const updateWeatherCategorySchema =
+  Joi.object<UpdateWeatherCategoryBody>({
+    name: Joi.string().trim().min(1).max(100).optional(),
+    sort_order: Joi.number().integer().min(0).max(32767).optional(),
+    is_active: Joi.boolean().optional(),
+  }).min(1);
 
 export const weatherCategoryIdParamSchema = Joi.object({
   id: Joi.number().integer().positive().required(),
 });
-export const listWeatherCategoriesQuerySchema = Joi.object<ListWeatherCategoriesQuery>({
-  includeInactive: Joi.boolean().default(false),
-  page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(50),
-});
+export const listWeatherCategoriesQuerySchema =
+  Joi.object<ListWeatherCategoriesQuery>({
+    includeInactive: Joi.boolean().default(false),
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(50),
+  });
 
 export interface ListPersonnelRolesQuery {
   include_inactive?: boolean;
 }
 
-export const listPersonnelRolesQuerySchema = Joi.object<ListPersonnelRolesQuery>({
-  include_inactive: Joi.boolean().default(false),
-});
+export const listPersonnelRolesQuerySchema =
+  Joi.object<ListPersonnelRolesQuery>({
+    include_inactive: Joi.boolean().default(false),
+  });
 
 export interface CreateStageStateHistoryBody {
   stage_no: number;
@@ -486,15 +535,20 @@ export interface ListStageStateHistoryQuery {
 }
 
 const STAGE_EVENTS: StageEvent[] = [
-  'added_to_scope',
-  'removed_from_scope',
-  'activated',
-  'deactivated',
-  'completed',
-  'reopened',
+  "added_to_scope",
+  "removed_from_scope",
+  "activated",
+  "deactivated",
+  "completed",
+  "reopened",
 ];
 
-const STAGE_STATES: StageState[] = ['not_started', 'active', 'inactive', 'complete'];
+const STAGE_STATES: StageState[] = [
+  "not_started",
+  "active",
+  "inactive",
+  "complete",
+];
 
 export const stageStateHistoryProjectParamsSchema = Joi.object({
   projectId: Joi.string().uuid().required(),
@@ -505,41 +559,58 @@ export const stageStateHistoryEventParamsSchema = Joi.object({
   eventId: Joi.string().uuid().required(),
 });
 
-export const createStageStateHistorySchema = Joi.object<CreateStageStateHistoryBody>({
-  stage_no: Joi.number().integer().min(1).max(10).required(),
-  event: Joi.string().valid(...STAGE_EVENTS).required(),
-  from_state: Joi.string().valid(...STAGE_STATES).allow(null).optional(),
-  to_state: Joi.string().valid(...STAGE_STATES).required(),
-  reason: Joi.string().trim().max(10000).allow(null, '').optional(),
-  checklist_snapshot: Joi.when('event', {
-    is: 'completed',
-    then: Joi.object().default({ template_id: null, items: [] }),
-    otherwise: Joi.any().strip(),
-  }),
-  closure_notes: Joi.when('event', {
-    is: 'completed',
-    then: Joi.string().trim().max(10000).allow(null, '').optional(),
-    otherwise: Joi.any().strip(),
-  }),
-  submission_id: Joi.string().uuid().allow(null).optional(),
-  update_project_stage: Joi.boolean().default(true),
-});
+export const createStageStateHistorySchema =
+  Joi.object<CreateStageStateHistoryBody>({
+    stage_no: Joi.number().integer().min(1).max(10).required(),
+    event: Joi.string()
+      .valid(...STAGE_EVENTS)
+      .required(),
+    from_state: Joi.string()
+      .valid(...STAGE_STATES)
+      .allow(null)
+      .optional(),
+    to_state: Joi.string()
+      .valid(...STAGE_STATES)
+      .required(),
+    reason: Joi.string().trim().max(10000).allow(null, "").optional(),
+    checklist_snapshot: Joi.when("event", {
+      is: "completed",
+      then: Joi.object().default({ template_id: null, items: [] }),
+      otherwise: Joi.any().strip(),
+    }),
+    closure_notes: Joi.when("event", {
+      is: "completed",
+      then: Joi.string().trim().max(10000).allow(null, "").optional(),
+      otherwise: Joi.any().strip(),
+    }),
+    submission_id: Joi.string().uuid().allow(null).optional(),
+    update_project_stage: Joi.boolean().default(true),
+  });
 
-export const updateStageStateHistorySchema = Joi.object<UpdateStageStateHistoryBody>({
-  from_state: Joi.string().valid(...STAGE_STATES).allow(null).optional(),
-  to_state: Joi.string().valid(...STAGE_STATES).optional(),
-  reason: Joi.string().trim().max(10000).allow(null, '').optional(),
-  checklist_snapshot: Joi.object().allow(null).optional(),
-  closure_notes: Joi.string().trim().max(10000).allow(null, '').optional(),
-  submission_id: Joi.string().uuid().allow(null).optional(),
-}).min(1);
+export const updateStageStateHistorySchema =
+  Joi.object<UpdateStageStateHistoryBody>({
+    from_state: Joi.string()
+      .valid(...STAGE_STATES)
+      .allow(null)
+      .optional(),
+    to_state: Joi.string()
+      .valid(...STAGE_STATES)
+      .optional(),
+    reason: Joi.string().trim().max(10000).allow(null, "").optional(),
+    checklist_snapshot: Joi.object().allow(null).optional(),
+    closure_notes: Joi.string().trim().max(10000).allow(null, "").optional(),
+    submission_id: Joi.string().uuid().allow(null).optional(),
+  }).min(1);
 
-export const listStageStateHistoryQuerySchema = Joi.object<ListStageStateHistoryQuery>({
-  stage_no: Joi.number().integer().min(1).max(10).optional(),
-  event: Joi.string().valid(...STAGE_EVENTS).optional(),
-  page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(25),
-});
+export const listStageStateHistoryQuerySchema =
+  Joi.object<ListStageStateHistoryQuery>({
+    stage_no: Joi.number().integer().min(1).max(10).optional(),
+    event: Joi.string()
+      .valid(...STAGE_EVENTS)
+      .optional(),
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(25),
+  });
 
 export interface CreateProjectStageBody {
   stage_no: number;
@@ -572,25 +643,36 @@ export const projectStageParamsSchema = Joi.object({
 
 export const listProjectStagesQuerySchema = Joi.object<ListProjectStagesQuery>({
   in_scope: Joi.boolean().optional(),
-  state: Joi.string().valid(...STAGE_STATES).optional(),
+  state: Joi.string()
+    .valid(...STAGE_STATES)
+    .optional(),
 });
 
 export const createProjectStageSchema = Joi.object<CreateProjectStageBody>({
   stage_no: Joi.number().integer().min(1).max(10).required(),
   in_scope: Joi.boolean().default(true),
-  state: Joi.string().valid(...STAGE_STATES).default('not_started'),
-  reason: Joi.string().trim().max(10000).allow(null, '').optional(),
+  state: Joi.string()
+    .valid(...STAGE_STATES)
+    .default("not_started"),
+  reason: Joi.string().trim().max(10000).allow(null, "").optional(),
 });
 
 export const updateProjectStageSchema = Joi.object<UpdateProjectStageBody>({
-  state: Joi.string().valid(...STAGE_STATES).optional(),
+  state: Joi.string()
+    .valid(...STAGE_STATES)
+    .optional(),
   in_scope: Joi.boolean().optional(),
-  reason: Joi.string().trim().max(10000).allow(null, '').optional(),
+  reason: Joi.string().trim().max(10000).allow(null, "").optional(),
   checklist_snapshot: Joi.object().allow(null).optional(),
-  closure_notes: Joi.string().trim().max(10000).allow(null, '').optional(),
+  closure_notes: Joi.string().trim().max(10000).allow(null, "").optional(),
 }).min(1);
 
-const ACTIVITY_STATUSES: ActivityStatus[] = ['open', 'in_progress', 'done', 'cancelled'];
+const ACTIVITY_STATUSES: ActivityStatus[] = [
+  "open",
+  "in_progress",
+  "done",
+  "cancelled",
+];
 
 export interface CreateStageActivityBody {
   stage_no: number;
@@ -635,7 +717,7 @@ const stageActivityAttachmentItemSchema = Joi.alternatives().try(
     file: Joi.string().optional(),
     file_id: Joi.string().uuid().optional(),
     attachment_id: Joi.string().max(1000).optional(),
-    caption: Joi.string().trim().max(1000).allow(null, '').optional(),
+    caption: Joi.string().trim().max(1000).allow(null, "").optional(),
     sort_order: Joi.number().integer().min(0).max(32767).default(0),
   }),
 );
@@ -643,30 +725,40 @@ const stageActivityAttachmentItemSchema = Joi.alternatives().try(
 export const createStageActivitySchema = Joi.object<CreateStageActivityBody>({
   stage_no: Joi.number().integer().min(1).max(10).required(),
   title: Joi.string().trim().min(1).max(500).required(),
-  description: Joi.string().trim().max(10000).allow(null, '').optional(),
-  status: Joi.string().valid(...ACTIVITY_STATUSES).default('open'),
+  description: Joi.string().trim().max(10000).allow(null, "").optional(),
+  status: Joi.string()
+    .valid(...ACTIVITY_STATUSES)
+    .default("open"),
   due_date: Joi.string().isoDate().allow(null).optional(),
   owner_id: Joi.string().uuid().allow(null).optional(),
   attachment: stageActivityAttachmentItemSchema.optional(),
-  attachments: Joi.array().items(stageActivityAttachmentItemSchema).max(20).optional(),
+  attachments: Joi.array()
+    .items(stageActivityAttachmentItemSchema)
+    .max(20)
+    .optional(),
 });
 
 export const updateStageActivitySchema = Joi.object<UpdateStageActivityBody>({
   stage_no: Joi.number().integer().min(1).max(10).optional(),
   title: Joi.string().trim().min(1).max(500).optional(),
-  description: Joi.string().trim().max(10000).allow(null, '').optional(),
-  status: Joi.string().valid(...ACTIVITY_STATUSES).optional(),
+  description: Joi.string().trim().max(10000).allow(null, "").optional(),
+  status: Joi.string()
+    .valid(...ACTIVITY_STATUSES)
+    .optional(),
   due_date: Joi.string().isoDate().allow(null).optional(),
   owner_id: Joi.string().uuid().allow(null).optional(),
 }).min(1);
 
-export const listStageActivitiesQuerySchema = Joi.object<ListStageActivitiesQuery>({
-  stage_no: Joi.number().integer().min(1).max(10).optional(),
-  status: Joi.string().valid(...ACTIVITY_STATUSES).optional(),
-  owner_id: Joi.string().uuid().optional(),
-  page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(25),
-});
+export const listStageActivitiesQuerySchema =
+  Joi.object<ListStageActivitiesQuery>({
+    stage_no: Joi.number().integer().min(1).max(10).optional(),
+    status: Joi.string()
+      .valid(...ACTIVITY_STATUSES)
+      .optional(),
+    owner_id: Joi.string().uuid().optional(),
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(25),
+  });
 
 export interface CreateStageActivityAttachmentBody {
   file?: string;
@@ -696,22 +788,25 @@ export const stageActivityAttachmentListParamsSchema = Joi.object({
   activityId: Joi.string().uuid().required(),
 });
 
-export const createStageActivityAttachmentSchema = Joi.object<CreateStageActivityAttachmentBody>({
-  file: Joi.string().optional(),
-  file_id: Joi.string().uuid().optional(),
-  attachment_id: Joi.string().max(1000).optional(),
-  caption: Joi.string().trim().max(1000).allow(null, '').optional(),
-  sort_order: Joi.number().integer().min(0).max(32767).default(0),
-});
+export const createStageActivityAttachmentSchema =
+  Joi.object<CreateStageActivityAttachmentBody>({
+    file: Joi.string().optional(),
+    file_id: Joi.string().uuid().optional(),
+    attachment_id: Joi.string().max(1000).optional(),
+    caption: Joi.string().trim().max(1000).allow(null, "").optional(),
+    sort_order: Joi.number().integer().min(0).max(32767).default(0),
+  });
 
-export const updateStageActivityAttachmentSchema = Joi.object<UpdateStageActivityAttachmentBody>({
-  caption: Joi.string().trim().max(1000).allow(null, '').optional(),
-  sort_order: Joi.number().integer().min(0).max(32767).optional(),
-}).min(1);
+export const updateStageActivityAttachmentSchema =
+  Joi.object<UpdateStageActivityAttachmentBody>({
+    caption: Joi.string().trim().max(1000).allow(null, "").optional(),
+    sort_order: Joi.number().integer().min(0).max(32767).optional(),
+  }).min(1);
 
-export const listStageActivityAttachmentsQuerySchema = Joi.object<ListStageActivityAttachmentsQuery>({
-  includeRemoved: Joi.boolean().default(false),
-});
+export const listStageActivityAttachmentsQuerySchema =
+  Joi.object<ListStageActivityAttachmentsQuery>({
+    includeRemoved: Joi.boolean().default(false),
+  });
 
 export interface CreateStageChecklistItemBody {
   text: string;
@@ -733,16 +828,23 @@ export const stageChecklistItemParamsSchema = Joi.object({
   itemId: Joi.string().uuid().required(),
 });
 
-export const createStageChecklistItemSchema = Joi.object<CreateStageChecklistItemBody>({
-  text: Joi.string().trim().min(1).max(10000).required(),
-});
+export const createStageChecklistItemSchema =
+  Joi.object<CreateStageChecklistItemBody>({
+    text: Joi.string().trim().min(1).max(10000).required(),
+  });
 
-export const updateStageChecklistItemSchema = Joi.object<UpdateStageChecklistItemBody>({
-  is_checked: Joi.boolean().optional(),
-  text: Joi.string().trim().min(1).max(10000).optional(),
-}).min(1);
+export const updateStageChecklistItemSchema =
+  Joi.object<UpdateStageChecklistItemBody>({
+    is_checked: Joi.boolean().optional(),
+    text: Joi.string().trim().min(1).max(10000).optional(),
+  }).min(1);
 
-const PROJECT_STATUSES: ProjectStatus[] = ['active', 'on_hold', 'complete', 'cancelled'];
+const PROJECT_STATUSES: ProjectStatus[] = [
+  "active",
+  "on_hold",
+  "complete",
+  "cancelled",
+];
 
 export interface CreateProjectBody {
   project_code: string;
@@ -818,16 +920,17 @@ export const createProjectSchema = Joi.object<CreateProjectBody>({
     .pattern(/^[0-9]{3}-[0-9]{3}\.[0-9]{4}$/)
     .required()
     .messages({
-      'string.pattern.base': 'project_code must match NNN-NNN.YYYY format (e.g. 001-001.2026)',
+      "string.pattern.base":
+        "project_code must match NNN-NNN.YYYY format (e.g. 001-001.2026)",
     }),
   name: Joi.string().trim().min(1).max(500).required(),
   program_id: Joi.number().integer().required(),
-  client_name: Joi.string().trim().max(500).allow(null, '').optional(),
-  country: Joi.string().trim().max(100).allow(null, '').optional(),
-  site_location: Joi.string().trim().max(500).allow(null, '').optional(),
+  client_name: Joi.string().trim().max(500).allow(null, "").optional(),
+  country: Joi.string().trim().max(100).allow(null, "").optional(),
+  site_location: Joi.string().trim().max(500).allow(null, "").optional(),
   site_lat: Joi.number().min(-90).max(90).allow(null).optional(),
   site_lng: Joi.number().min(-180).max(180).allow(null).optional(),
-  timezone: Joi.string().trim().default('Africa/Nairobi'),
+  timezone: Joi.string().trim().default("Africa/Nairobi"),
   is_civil: Joi.boolean().default(false),
   is_mechanical: Joi.boolean().default(false),
   is_electrical: Joi.boolean().default(false),
@@ -835,25 +938,33 @@ export const createProjectSchema = Joi.object<CreateProjectBody>({
   expected_end_date: Joi.string().isoDate().allow(null).optional(),
   estimated_value: Joi.number().min(0).allow(null).optional(),
   currency: Joi.string().trim().length(3).uppercase().allow(null).optional(),
-  status: Joi.string().valid(...PROJECT_STATUSES).default('active'),
-  legacy_source_ref: Joi.string().trim().max(255).allow(null, '').optional(),
+  status: Joi.string()
+    .valid(...PROJECT_STATUSES)
+    .default("active"),
+  legacy_source_ref: Joi.string().trim().max(255).allow(null, "").optional(),
   holiday_calendar_id: Joi.number().integer().allow(null).optional(),
   dpr_expected_weekdays: Joi.array()
     .items(Joi.number().integer().min(1).max(7))
     .default([1, 2, 3, 4, 5, 6]),
   pm_user_id: Joi.string().uuid().allow(null).optional(),
   planner_user_id: Joi.string().uuid().allow(null).optional(),
-  scope_stages: Joi.array().items(Joi.number().integer().min(1).max(10)).min(1).optional(),
-  initial_active_stages: Joi.array().items(Joi.number().integer().min(1).max(10)).min(1).optional(),
+  scope_stages: Joi.array()
+    .items(Joi.number().integer().min(1).max(10))
+    .min(1)
+    .optional(),
+  initial_active_stages: Joi.array()
+    .items(Joi.number().integer().min(1).max(10))
+    .min(1)
+    .optional(),
   site_engineer_user_ids: Joi.array().items(Joi.string().uuid()).optional(),
 });
 
 export const updateProjectSchema = Joi.object<UpdateProjectBody>({
   name: Joi.string().trim().min(1).max(500).optional(),
   program_id: Joi.number().integer().optional(),
-  client_name: Joi.string().trim().max(500).allow(null, '').optional(),
-  country: Joi.string().trim().max(100).allow(null, '').optional(),
-  site_location: Joi.string().trim().max(500).allow(null, '').optional(),
+  client_name: Joi.string().trim().max(500).allow(null, "").optional(),
+  country: Joi.string().trim().max(100).allow(null, "").optional(),
+  site_location: Joi.string().trim().max(500).allow(null, "").optional(),
   site_lat: Joi.number().min(-90).max(90).allow(null).optional(),
   site_lng: Joi.number().min(-180).max(180).allow(null).optional(),
   timezone: Joi.string().trim().optional(),
@@ -864,23 +975,29 @@ export const updateProjectSchema = Joi.object<UpdateProjectBody>({
   expected_end_date: Joi.string().isoDate().allow(null).optional(),
   estimated_value: Joi.number().min(0).allow(null).optional(),
   currency: Joi.string().trim().length(3).uppercase().allow(null).optional(),
-  legacy_source_ref: Joi.string().trim().max(255).allow(null, '').optional(),
+  legacy_source_ref: Joi.string().trim().max(255).allow(null, "").optional(),
   holiday_calendar_id: Joi.number().integer().allow(null).optional(),
-  dpr_expected_weekdays: Joi.array().items(Joi.number().integer().min(1).max(7)).optional(),
-  status: Joi.string().valid(...PROJECT_STATUSES).optional(),
-  status_reason: Joi.string().trim().max(10000).allow(null, '').optional(),
+  dpr_expected_weekdays: Joi.array()
+    .items(Joi.number().integer().min(1).max(7))
+    .optional(),
+  status: Joi.string()
+    .valid(...PROJECT_STATUSES)
+    .optional(),
+  status_reason: Joi.string().trim().max(10000).allow(null, "").optional(),
 }).min(1);
 
 export const listProjectsQuerySchema = Joi.object<ListProjectsQuery>({
   program_id: Joi.number().integer().optional(),
-  status: Joi.string().valid(...PROJECT_STATUSES).optional(),
+  status: Joi.string()
+    .valid(...PROJECT_STATUSES)
+    .optional(),
   country: Joi.string().trim().optional(),
   search: Joi.string().trim().max(100).optional(),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(25),
 });
 
-const PARTY_TYPES: PartyType[] = ['contractor', 'subcontractor'];
+const PARTY_TYPES: PartyType[] = ["contractor", "subcontractor"];
 
 export interface CreateContractorBody {
   name: string;
@@ -938,13 +1055,13 @@ export const projectContractorLinkIdParamSchema = Joi.object({
 
 export const createContractorSchema = Joi.object<CreateContractorBody>({
   name: Joi.string().trim().min(1).max(500).required(),
-  registration_no: Joi.string().trim().max(100).allow(null, '').optional(),
+  registration_no: Joi.string().trim().max(100).allow(null, "").optional(),
   is_active: Joi.boolean().default(true),
 });
 
 export const updateContractorSchema = Joi.object<UpdateContractorBody>({
   name: Joi.string().trim().min(1).max(500).optional(),
-  registration_no: Joi.string().trim().max(100).allow(null, '').optional(),
+  registration_no: Joi.string().trim().max(100).allow(null, "").optional(),
   is_active: Joi.boolean().optional(),
 }).min(1);
 
@@ -960,21 +1077,28 @@ export const listContractorsQuerySchema = Joi.object<ListContractorsQuery>({
   limit: Joi.number().integer().min(1).max(100).default(25),
 });
 
-export const createProjectContractorSchema = Joi.object<CreateProjectContractorBody>({
-  contractor_id: Joi.string().uuid().optional(),
-  contractor_name: Joi.string().trim().min(1).max(500).optional(),
-  party_type: Joi.string().valid(...PARTY_TYPES).default('contractor'),
-  is_active: Joi.boolean().default(true),
-}).or('contractor_id', 'contractor_name');
+export const createProjectContractorSchema =
+  Joi.object<CreateProjectContractorBody>({
+    contractor_id: Joi.string().uuid().optional(),
+    contractor_name: Joi.string().trim().min(1).max(500).optional(),
+    party_type: Joi.string()
+      .valid(...PARTY_TYPES)
+      .default("contractor"),
+    is_active: Joi.boolean().default(true),
+  }).or("contractor_id", "contractor_name");
 
-export const updateProjectContractorSchema = Joi.object<UpdateProjectContractorBody>({
-  party_type: Joi.string().valid(...PARTY_TYPES).optional(),
-  is_active: Joi.boolean().optional(),
-}).min(1);
+export const updateProjectContractorSchema =
+  Joi.object<UpdateProjectContractorBody>({
+    party_type: Joi.string()
+      .valid(...PARTY_TYPES)
+      .optional(),
+    is_active: Joi.boolean().optional(),
+  }).min(1);
 
-export const listProjectContractorsQuerySchema = Joi.object<ListProjectContractorsQuery>({
-  includeInactive: Joi.boolean().default(false),
-});
+export const listProjectContractorsQuerySchema =
+  Joi.object<ListProjectContractorsQuery>({
+    includeInactive: Joi.boolean().default(false),
+  });
 
 export interface CreateClientContactBody {
   name: string;
@@ -986,7 +1110,7 @@ export interface CreateClientContactBody {
 export const createClientContactSchema = Joi.object<CreateClientContactBody>({
   name: Joi.string().trim().min(1).max(500).required(),
   email: Joi.string().email().required(),
-  title: Joi.string().trim().max(500).allow(null, '').optional(),
+  title: Joi.string().trim().max(500).allow(null, "").optional(),
   receives_reports: Joi.boolean().default(true),
 });
 
@@ -1030,39 +1154,44 @@ export const customMilestoneParamsSchema = Joi.object({
   milestoneId: Joi.string().uuid().required(),
 });
 
-export const createCustomMilestoneSchema = Joi.object<CreateCustomMilestoneBody>({
-  stage_no: Joi.number().integer().min(1).max(10).allow(null).optional(),
-  title: Joi.string().trim().min(1).max(500).required(),
-  planned_date: Joi.string().isoDate().required(),
-  forecast_date: Joi.string().isoDate().allow(null).optional(),
-  actual_date: Joi.string().isoDate().allow(null).optional(),
-  notes: Joi.string().trim().max(10000).allow(null, '').optional(),
-});
+export const createCustomMilestoneSchema =
+  Joi.object<CreateCustomMilestoneBody>({
+    stage_no: Joi.number().integer().min(1).max(10).allow(null).optional(),
+    title: Joi.string().trim().min(1).max(500).required(),
+    planned_date: Joi.string().isoDate().required(),
+    forecast_date: Joi.string().isoDate().allow(null).optional(),
+    actual_date: Joi.string().isoDate().allow(null).optional(),
+    notes: Joi.string().trim().max(10000).allow(null, "").optional(),
+  });
 
-export const updateCustomMilestoneSchema = Joi.object<UpdateCustomMilestoneBody>({
-  stage_no: Joi.number().integer().min(1).max(10).allow(null).optional(),
-  title: Joi.string().trim().min(1).max(500).optional(),
-  planned_date: Joi.string().isoDate().optional(),
-  forecast_date: Joi.string().isoDate().allow(null).optional(),
-  actual_date: Joi.string().isoDate().allow(null).optional(),
-  notes: Joi.string().trim().max(10000).allow(null, '').optional(),
-}).min(1);
+export const updateCustomMilestoneSchema =
+  Joi.object<UpdateCustomMilestoneBody>({
+    stage_no: Joi.number().integer().min(1).max(10).allow(null).optional(),
+    title: Joi.string().trim().min(1).max(500).optional(),
+    planned_date: Joi.string().isoDate().optional(),
+    forecast_date: Joi.string().isoDate().allow(null).optional(),
+    actual_date: Joi.string().isoDate().allow(null).optional(),
+    notes: Joi.string().trim().max(10000).allow(null, "").optional(),
+  }).min(1);
 
-export const listCustomMilestonesQuerySchema = Joi.object<ListCustomMilestonesQuery>({
-  stage_no: Joi.number().integer().min(1).max(10).optional(),
-  includeRemoved: Joi.boolean().default(false),
-  all: Joi.boolean().default(false),
-  page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(50),
-});
+export const listCustomMilestonesQuerySchema =
+  Joi.object<ListCustomMilestonesQuery>({
+    stage_no: Joi.number().integer().min(1).max(10).optional(),
+    includeRemoved: Joi.boolean().default(false),
+    all: Joi.boolean().default(false),
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(50),
+  });
 
 export const scheduleProjectParamsSchema = Joi.object({
   projectId: Joi.string().uuid().required(),
 });
 
-export const listScheduleTasksQuerySchema = Joi.object<{ version_id?: string }>({
-  version_id: Joi.string().uuid().optional(),
-});
+export const listScheduleTasksQuerySchema = Joi.object<{ version_id?: string }>(
+  {
+    version_id: Joi.string().uuid().optional(),
+  },
+);
 
 export const scheduleVersionParamsSchema = Joi.object({
   projectId: Joi.string().uuid().required(),
@@ -1072,7 +1201,7 @@ export const scheduleVersionParamsSchema = Joi.object({
 export interface UploadScheduleBody {
   file: string;
   filename: string;
-  scope_mode: 'milestones_only' | 'current_stage' | 'every_task';
+  scope_mode: "milestones_only" | "current_stage" | "every_task";
   change_request_id?: string | null;
   notes?: string | null;
 }
@@ -1084,10 +1213,10 @@ export const uploadScheduleSchema = Joi.object<UploadScheduleBody>({
   file: Joi.string().required(),
   filename: Joi.string().max(500).required(),
   scope_mode: Joi.string()
-    .valid('milestones_only', 'current_stage', 'every_task')
-    .default('every_task'),
+    .valid("milestones_only", "current_stage", "every_task")
+    .default("every_task"),
   change_request_id: Joi.string().uuid().allow(null).optional(),
-  notes: Joi.string().max(2000).allow('', null).optional(),
+  notes: Joi.string().max(2000).allow("", null).optional(),
 });
 
 export const listReconciliationFlagsQuerySchema = Joi.object<{
@@ -1100,13 +1229,23 @@ export const listReconciliationFlagsQuerySchema = Joi.object<{
   limit: Joi.number().integer().min(1).max(100).default(50),
 });
 
-export const acknowledgeReconciliationFlagsSchema = Joi.object<{ flag_ids: string[] }>({
+export const acknowledgeReconciliationFlagsSchema = Joi.object<{
+  flag_ids: string[];
+}>({
   flag_ids: Joi.array().items(Joi.string().uuid()).min(1).required(),
 });
 
-const DPR_STATUSES: DprStatus[] = ['draft', 'submitted'];
-const DPR_EFFECTS_SEVERITIES: DprEffectsSeverity[] = ['none', 'minor', 'significant', 'stoppage'];
-const DPR_PROGRESS_SOURCES: DprProgressSource[] = ['schedule_task', 'free_text'];
+const DPR_STATUSES: DprStatus[] = ["draft", "submitted"];
+const DPR_EFFECTS_SEVERITIES: DprEffectsSeverity[] = [
+  "none",
+  "minor",
+  "significant",
+  "stoppage",
+];
+const DPR_PROGRESS_SOURCES: DprProgressSource[] = [
+  "schedule_task",
+  "free_text",
+];
 
 export interface CreateDprWorkItemInput {
   work_item_id?: string;
@@ -1214,20 +1353,24 @@ export const createDprSchema = Joi.object<CreateDprBody>({
   stage_no: Joi.number().integer().min(1).max(10).optional(),
   report_date: Joi.string().isoDate().required(),
   site_location: Joi.string().trim().min(1).max(500).required(),
-  contract_no: Joi.string().trim().max(100).allow(null, '').optional(),
+  contract_no: Joi.string().trim().max(100).allow(null, "").optional(),
   weather_category_id: Joi.number().integer().allow(null).optional(),
   temp_min_c: Joi.number().min(-50).max(60).allow(null).optional(),
   temp_max_c: Joi.number().min(-50).max(60).allow(null).optional(),
   humidity_pct: Joi.number().integer().min(0).max(100).allow(null).optional(),
-  wind: Joi.string().trim().max(100).allow(null, '').optional(),
-  effects_text: Joi.string().trim().max(10000).allow(null, '').optional(),
-  effects_severity: Joi.string().valid(...DPR_EFFECTS_SEVERITIES).default('none'),
-  equipment_text: Joi.string().trim().max(10000).allow(null, '').optional(),
-  visitors_text: Joi.string().trim().max(10000).allow(null, '').optional(),
-  delays_text: Joi.string().trim().max(10000).allow(null, '').optional(),
-  incidents_text: Joi.string().trim().max(10000).allow(null, '').optional(),
-  other_notes_text: Joi.string().trim().max(10000).allow(null, '').optional(),
-  status: Joi.string().valid(...DPR_STATUSES).default('draft'),
+  wind: Joi.string().trim().max(100).allow(null, "").optional(),
+  effects_text: Joi.string().trim().max(10000).allow(null, "").optional(),
+  effects_severity: Joi.string()
+    .valid(...DPR_EFFECTS_SEVERITIES)
+    .default("none"),
+  equipment_text: Joi.string().trim().max(10000).allow(null, "").optional(),
+  visitors_text: Joi.string().trim().max(10000).allow(null, "").optional(),
+  delays_text: Joi.string().trim().max(10000).allow(null, "").optional(),
+  incidents_text: Joi.string().trim().max(10000).allow(null, "").optional(),
+  other_notes_text: Joi.string().trim().max(10000).allow(null, "").optional(),
+  status: Joi.string()
+    .valid(...DPR_STATUSES)
+    .default("draft"),
   work_items: Joi.array()
     .items(
       Joi.object({
@@ -1243,7 +1386,9 @@ export const createDprSchema = Joi.object<CreateDprBody>({
       Joi.object({
         dpr_activity_progress_id: Joi.string().uuid().optional(),
         sort_order: Joi.number().integer().min(0).optional(),
-        source: Joi.string().valid(...DPR_PROGRESS_SOURCES).required(),
+        source: Joi.string()
+          .valid(...DPR_PROGRESS_SOURCES)
+          .required(),
         task_id: Joi.string().uuid().allow(null).optional(),
         free_text: Joi.string().trim().max(10000).allow(null).optional(),
         today_pct: Joi.number().min(0).max(100).required(),
@@ -1274,7 +1419,7 @@ export const createDprSchema = Joi.object<CreateDprBody>({
       Joi.object({
         photo_id: Joi.string().uuid().optional(),
         file_id: Joi.string().uuid().required(),
-        caption: Joi.string().trim().max(1000).allow(null, '').optional(),
+        caption: Joi.string().trim().max(1000).allow(null, "").optional(),
         sort_order: Joi.number().integer().min(0).optional(),
         taken_at: Joi.string().isoDate().allow(null).optional(),
         gps_lat: Joi.number().min(-90).max(90).allow(null).optional(),
@@ -1289,19 +1434,21 @@ export const updateDprSchema = Joi.object<UpdateDprBody>({
   stage_no: Joi.number().integer().min(1).max(10).optional(),
   report_date: Joi.string().isoDate().optional(),
   site_location: Joi.string().trim().min(1).max(500).optional(),
-  contract_no: Joi.string().trim().max(100).allow(null, '').optional(),
+  contract_no: Joi.string().trim().max(100).allow(null, "").optional(),
   weather_category_id: Joi.number().integer().allow(null).optional(),
   temp_min_c: Joi.number().min(-50).max(60).allow(null).optional(),
   temp_max_c: Joi.number().min(-50).max(60).allow(null).optional(),
   humidity_pct: Joi.number().integer().min(0).max(100).allow(null).optional(),
-  wind: Joi.string().trim().max(100).allow(null, '').optional(),
-  effects_text: Joi.string().trim().max(10000).allow(null, '').optional(),
-  effects_severity: Joi.string().valid(...DPR_EFFECTS_SEVERITIES).optional(),
-  equipment_text: Joi.string().trim().max(10000).allow(null, '').optional(),
-  visitors_text: Joi.string().trim().max(10000).allow(null, '').optional(),
-  delays_text: Joi.string().trim().max(10000).allow(null, '').optional(),
-  incidents_text: Joi.string().trim().max(10000).allow(null, '').optional(),
-  other_notes_text: Joi.string().trim().max(10000).allow(null, '').optional(),
+  wind: Joi.string().trim().max(100).allow(null, "").optional(),
+  effects_text: Joi.string().trim().max(10000).allow(null, "").optional(),
+  effects_severity: Joi.string()
+    .valid(...DPR_EFFECTS_SEVERITIES)
+    .optional(),
+  equipment_text: Joi.string().trim().max(10000).allow(null, "").optional(),
+  visitors_text: Joi.string().trim().max(10000).allow(null, "").optional(),
+  delays_text: Joi.string().trim().max(10000).allow(null, "").optional(),
+  incidents_text: Joi.string().trim().max(10000).allow(null, "").optional(),
+  other_notes_text: Joi.string().trim().max(10000).allow(null, "").optional(),
   work_items: Joi.array()
     .items(
       Joi.object({
@@ -1317,7 +1464,9 @@ export const updateDprSchema = Joi.object<UpdateDprBody>({
       Joi.object({
         dpr_activity_progress_id: Joi.string().uuid().optional(),
         sort_order: Joi.number().integer().min(0).optional(),
-        source: Joi.string().valid(...DPR_PROGRESS_SOURCES).required(),
+        source: Joi.string()
+          .valid(...DPR_PROGRESS_SOURCES)
+          .required(),
         task_id: Joi.string().uuid().allow(null).optional(),
         free_text: Joi.string().trim().max(10000).allow(null).optional(),
         today_pct: Joi.number().min(0).max(100).required(),
@@ -1348,7 +1497,7 @@ export const updateDprSchema = Joi.object<UpdateDprBody>({
       Joi.object({
         photo_id: Joi.string().uuid().optional(),
         file_id: Joi.string().uuid().required(),
-        caption: Joi.string().trim().max(1000).allow(null, '').optional(),
+        caption: Joi.string().trim().max(1000).allow(null, "").optional(),
         sort_order: Joi.number().integer().min(0).optional(),
         taken_at: Joi.string().isoDate().allow(null).optional(),
         gps_lat: Joi.number().min(-90).max(90).allow(null).optional(),
@@ -1368,12 +1517,14 @@ export interface UploadDprPhotoBody {
 export const uploadDprPhotoSchema = Joi.object<UploadDprPhotoBody>({
   file: Joi.string().required(),
   filename: Joi.string().trim().max(500).required(),
-  caption: Joi.string().trim().max(1000).allow(null, '').optional(),
+  caption: Joi.string().trim().max(1000).allow(null, "").optional(),
 });
 
 export const listDprsQuerySchema = Joi.object<ListDprsQuery>({
   stage_no: Joi.number().integer().min(1).max(10).optional(),
-  status: Joi.string().valid(...DPR_STATUSES).optional(),
+  status: Joi.string()
+    .valid(...DPR_STATUSES)
+    .optional(),
   from_date: Joi.string().isoDate().optional(),
   to_date: Joi.string().isoDate().optional(),
   author_id: Joi.string().uuid().optional(),
@@ -1381,7 +1532,11 @@ export const listDprsQuerySchema = Joi.object<ListDprsQuery>({
   limit: Joi.number().integer().min(1).max(100).default(25),
 });
 
-export type EscalationStatusLiteral = 'open' | 'acknowledged' | 'resolved' | 'voided';
+export type EscalationStatusLiteral =
+  | "open"
+  | "acknowledged"
+  | "resolved"
+  | "voided";
 
 export interface CreateEscalationBody {
   submission_id: string;
@@ -1424,36 +1579,48 @@ export const escalationParamsSchema = Joi.object({
 
 export const createEscalationSchema = Joi.object<CreateEscalationBody>({
   submission_id: Joi.string().uuid().required(),
-  status: Joi.string().valid('open', 'acknowledged', 'resolved', 'voided').default('open'),
-  note: Joi.string().trim().max(10000).allow(null, '').optional(),
+  status: Joi.string()
+    .valid("open", "acknowledged", "resolved", "voided")
+    .default("open"),
+  note: Joi.string().trim().max(10000).allow(null, "").optional(),
 });
 
 export const updateEscalationSchema = Joi.object<UpdateEscalationBody>({
-  status: Joi.string().valid('open', 'acknowledged', 'resolved', 'voided').optional(),
-  note: Joi.string().trim().max(10000).allow(null, '').optional(),
+  status: Joi.string()
+    .valid("open", "acknowledged", "resolved", "voided")
+    .optional(),
+  note: Joi.string().trim().max(10000).allow(null, "").optional(),
 }).min(1);
 
-export const acknowledgeEscalationSchema = Joi.object<AcknowledgeEscalationBody>({
-  note: Joi.string().trim().max(10000).allow(null, '').optional(),
-});
+export const acknowledgeEscalationSchema =
+  Joi.object<AcknowledgeEscalationBody>({
+    note: Joi.string().trim().max(10000).allow(null, "").optional(),
+  });
 
 export const resolveEscalationSchema = Joi.object<ResolveEscalationBody>({
-  note: Joi.string().trim().max(10000).allow(null, '').optional(),
+  note: Joi.string().trim().max(10000).allow(null, "").optional(),
 });
 
-export const createEscalationResponseSchema = Joi.object<CreateEscalationResponseBody>({
-  body: Joi.string().trim().min(1).max(10000).required(),
-  is_acknowledgement: Joi.boolean().default(false),
-});
+export const createEscalationResponseSchema =
+  Joi.object<CreateEscalationResponseBody>({
+    body: Joi.string().trim().min(1).max(10000).required(),
+    is_acknowledgement: Joi.boolean().default(false),
+  });
 
 export const listEscalationsQuerySchema = Joi.object<ListEscalationsQuery>({
-  status: Joi.string().valid('open', 'acknowledged', 'resolved', 'voided').optional(),
+  status: Joi.string()
+    .valid("open", "acknowledged", "resolved", "voided")
+    .optional(),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(25),
 });
 
-export type WeeklySubmissionStatusLiteral = 'draft' | 'approved' | 'superseded';
-export type AddressedRiskMethodLiteral = 'top_risk' | 'top_action' | 'commentary' | 'dismissed';
+export type WeeklySubmissionStatusLiteral = "draft" | "approved" | "superseded";
+export type AddressedRiskMethodLiteral =
+  | "top_risk"
+  | "top_action"
+  | "commentary"
+  | "dismissed";
 
 export interface CreateWeeklySubmissionBody {
   week_start: string;
@@ -1496,7 +1663,7 @@ export interface ApproveWeeklySubmissionBody {
   planned_pct?: number;
   actual_pct?: number;
   spi?: number | null;
-  rag?: 'green' | 'amber' | 'red' | null;
+  rag?: "green" | "amber" | "red" | null;
   schedule_version_id?: string | null;
 }
 
@@ -1518,19 +1685,21 @@ export interface ListWeeklySubmissionsQuery {
 }
 
 const isMondayValidator = (value: string, helpers: Joi.CustomHelpers) => {
-  const parts = value.split('-');
+  const parts = value.split("-");
   if (parts.length !== 3) {
-    return helpers.error('any.invalid');
+    return helpers.error("any.invalid");
   }
   const year = Number(parts[0]);
   const month = Number(parts[1]);
   const day = Number(parts[2]);
   const utcDate = new Date(Date.UTC(year, month - 1, day));
   if (isNaN(utcDate.getTime())) {
-    return helpers.error('any.invalid');
+    return helpers.error("any.invalid");
   }
   if (utcDate.getUTCDay() !== 1) {
-    return helpers.message({ custom: 'week_start must be a Monday (day of week 1)' });
+    return helpers.message({
+      custom: "week_start must be a Monday (day of week 1)",
+    });
   }
   return value;
 };
@@ -1550,91 +1719,130 @@ export const weeklySubmissionAddressedRiskParamsSchema = Joi.object({
   riskId: Joi.string().uuid().required(),
 });
 
-export const createWeeklySubmissionSchema = Joi.object<CreateWeeklySubmissionBody>({
-  week_start: Joi.string()
-    .pattern(/^\d{4}-\d{2}-\d{2}$/)
-    .custom(isMondayValidator)
-    .required(),
-  active_stages: Joi.array().items(Joi.number().integer().min(1).max(30)).optional(),
-  scope_change_text: Joi.string().trim().max(2000).default('No scope change'),
-  top_risk_id: Joi.string().uuid().allow(null).optional(),
-  top_risk_text: Joi.string().trim().max(1000).allow(null, '').optional(),
-  top_action: Joi.string().trim().max(2000).allow(null, '').optional(),
-  pm_commentary: Joi.string().trim().max(10000).allow(null, '').optional(),
-  exco_decision_needed: Joi.string().trim().max(2000).allow(null, '').optional(),
-  escalate: Joi.boolean().default(false),
-  escalation_reason: Joi.string()
-    .trim()
-    .max(10000)
-    .allow(null, '')
-    .when('escalate', {
-      is: true,
-      then: Joi.string().trim().min(1).required(),
-      otherwise: Joi.optional(),
-    }),
-  addressed_risks: Joi.array()
-    .items(
-      Joi.object({
-        risk_id: Joi.string().uuid().required(),
-        method: Joi.string().valid('top_risk', 'top_action', 'commentary', 'dismissed').required(),
-        dismissal_reason: Joi.string().trim().max(1000).allow(null, '').optional(),
+export const createWeeklySubmissionSchema =
+  Joi.object<CreateWeeklySubmissionBody>({
+    week_start: Joi.string()
+      .pattern(/^\d{4}-\d{2}-\d{2}$/)
+      .custom(isMondayValidator)
+      .required(),
+    active_stages: Joi.array()
+      .items(Joi.number().integer().min(1).max(30))
+      .optional(),
+    scope_change_text: Joi.string().trim().max(2000).default("No scope change"),
+    top_risk_id: Joi.string().uuid().allow(null).optional(),
+    top_risk_text: Joi.string().trim().max(1000).allow(null, "").optional(),
+    top_action: Joi.string().trim().max(2000).allow(null, "").optional(),
+    pm_commentary: Joi.string().trim().max(10000).allow(null, "").optional(),
+    exco_decision_needed: Joi.string()
+      .trim()
+      .max(2000)
+      .allow(null, "")
+      .optional(),
+    escalate: Joi.boolean().default(false),
+    escalation_reason: Joi.string()
+      .trim()
+      .max(10000)
+      .allow(null, "")
+      .when("escalate", {
+        is: true,
+        then: Joi.string().trim().min(1).required(),
+        otherwise: Joi.optional(),
       }),
-    )
-    .optional(),
-});
+    addressed_risks: Joi.array()
+      .items(
+        Joi.object({
+          risk_id: Joi.string().uuid().required(),
+          method: Joi.string()
+            .valid("top_risk", "top_action", "commentary", "dismissed")
+            .required(),
+          dismissal_reason: Joi.string()
+            .trim()
+            .max(1000)
+            .allow(null, "")
+            .optional(),
+        }),
+      )
+      .optional(),
+  });
 
-export const updateWeeklySubmissionSchema = Joi.object<UpdateWeeklySubmissionBody>({
-  active_stages: Joi.array().items(Joi.number().integer().min(1).max(30)).optional(),
-  scope_change_text: Joi.string().trim().max(2000).optional(),
-  top_risk_id: Joi.string().uuid().allow(null).optional(),
-  top_risk_text: Joi.string().trim().max(1000).allow(null, '').optional(),
-  top_action: Joi.string().trim().max(2000).allow(null, '').optional(),
-  pm_commentary: Joi.string().trim().max(10000).allow(null, '').optional(),
-  exco_decision_needed: Joi.string().trim().max(2000).allow(null, '').optional(),
-  escalate: Joi.boolean().optional(),
-  escalation_reason: Joi.string().trim().max(10000).allow(null, '').optional(),
-  addressed_risks: Joi.array()
-    .items(
-      Joi.object({
-        risk_id: Joi.string().uuid().required(),
-        method: Joi.string().valid('top_risk', 'top_action', 'commentary', 'dismissed').required(),
-        dismissal_reason: Joi.string().trim().max(1000).allow(null, '').optional(),
-      }),
-    )
-    .optional(),
-  updated_at: Joi.string().isoDate().optional(),
-}).min(1);
+export const updateWeeklySubmissionSchema =
+  Joi.object<UpdateWeeklySubmissionBody>({
+    active_stages: Joi.array()
+      .items(Joi.number().integer().min(1).max(30))
+      .optional(),
+    scope_change_text: Joi.string().trim().max(2000).optional(),
+    top_risk_id: Joi.string().uuid().allow(null).optional(),
+    top_risk_text: Joi.string().trim().max(1000).allow(null, "").optional(),
+    top_action: Joi.string().trim().max(2000).allow(null, "").optional(),
+    pm_commentary: Joi.string().trim().max(10000).allow(null, "").optional(),
+    exco_decision_needed: Joi.string()
+      .trim()
+      .max(2000)
+      .allow(null, "")
+      .optional(),
+    escalate: Joi.boolean().optional(),
+    escalation_reason: Joi.string()
+      .trim()
+      .max(10000)
+      .allow(null, "")
+      .optional(),
+    addressed_risks: Joi.array()
+      .items(
+        Joi.object({
+          risk_id: Joi.string().uuid().required(),
+          method: Joi.string()
+            .valid("top_risk", "top_action", "commentary", "dismissed")
+            .required(),
+          dismissal_reason: Joi.string()
+            .trim()
+            .max(1000)
+            .allow(null, "")
+            .optional(),
+        }),
+      )
+      .optional(),
+    updated_at: Joi.string().isoDate().optional(),
+  }).min(1);
 
-export const approveWeeklySubmissionSchema = Joi.object<ApproveWeeklySubmissionBody>({
-  updated_at: Joi.string().isoDate().optional(),
-  planned_pct: Joi.number().min(0).max(100).optional(),
-  actual_pct: Joi.number().min(0).max(100).optional(),
-  spi: Joi.number().min(0).max(10).allow(null).optional(),
-  rag: Joi.string().valid('green', 'amber', 'red').allow(null).optional(),
-  schedule_version_id: Joi.string().uuid().allow(null).optional(),
-});
+export const approveWeeklySubmissionSchema =
+  Joi.object<ApproveWeeklySubmissionBody>({
+    updated_at: Joi.string().isoDate().optional(),
+    planned_pct: Joi.number().min(0).max(100).optional(),
+    actual_pct: Joi.number().min(0).max(100).optional(),
+    spi: Joi.number().min(0).max(10).allow(null).optional(),
+    rag: Joi.string().valid("green", "amber", "red").allow(null).optional(),
+    schedule_version_id: Joi.string().uuid().allow(null).optional(),
+  });
 
-export const supersedeWeeklySubmissionSchema = Joi.object<SupersedeWeeklySubmissionBody>({
-  supersede_reason: Joi.string().trim().min(1).max(10000).required(),
-});
+export const supersedeWeeklySubmissionSchema =
+  Joi.object<SupersedeWeeklySubmissionBody>({
+    supersede_reason: Joi.string().trim().min(1).max(10000).required(),
+  });
 
-export const addSubmissionAddressedRiskSchema = Joi.object<AddSubmissionAddressedRiskBody>({
-  risk_id: Joi.string().uuid().required(),
-  method: Joi.string().valid('top_risk', 'top_action', 'commentary', 'dismissed').required(),
-  dismissal_reason: Joi.string().trim().max(1000).allow(null, '').optional(),
-});
+export const addSubmissionAddressedRiskSchema =
+  Joi.object<AddSubmissionAddressedRiskBody>({
+    risk_id: Joi.string().uuid().required(),
+    method: Joi.string()
+      .valid("top_risk", "top_action", "commentary", "dismissed")
+      .required(),
+    dismissal_reason: Joi.string().trim().max(1000).allow(null, "").optional(),
+  });
 
-export const listWeeklySubmissionsQuerySchema = Joi.object<ListWeeklySubmissionsQuery>({
-  status: Joi.string().valid('draft', 'approved', 'superseded').optional(),
-  week_start: Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(25),
-});
+export const listWeeklySubmissionsQuerySchema =
+  Joi.object<ListWeeklySubmissionsQuery>({
+    status: Joi.string().valid("draft", "approved", "superseded").optional(),
+    week_start: Joi.string()
+      .pattern(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(25),
+  });
 
 export interface SetSubmissionClientPhotosBody {
   photo_ids: string[];
 }
 
-export const setSubmissionClientPhotosSchema = Joi.object<SetSubmissionClientPhotosBody>({
-  photo_ids: Joi.array().items(Joi.string().uuid()).required(),
-});
+export const setSubmissionClientPhotosSchema =
+  Joi.object<SetSubmissionClientPhotosBody>({
+    photo_ids: Joi.array().items(Joi.string().uuid()).required(),
+  });
