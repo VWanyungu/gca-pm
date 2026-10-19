@@ -31,10 +31,14 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
   const { data: team = [], error: teamError } = useProjectTeam(projectId);
   const { data: clientContacts = [], error: clientContactsError } = useClientContacts(projectId);
   const { data: activities = [], error: activitiesError } = useStageActivities(projectId);
-  const { data: milestones = [], error: milestonesError } = useMilestones(projectId);
+  const { data: milestones = [], error: milestonesError } = useMilestones(projectId, {
+    aggregate: true,
+  });
   const { data: escalations = [], error: escalationsError } = useOpenEscalations(projectId);
   const { data: draftSubmission, error: draftSubmissionError } = useDraftSubmission(projectId);
   const { data: counts, error: countsError } = useSidebarCounts(projectId);
+
+  console.log(milestones);
 
   const percentByStage = useMemo(() => {
     const result: Record<number, number> = {};
@@ -60,7 +64,9 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
 
   const overdueActivities = useMemo(() => {
     const today = new Date();
-    return activities.filter((a) => a.status === "open" && a.due_date && new Date(a.due_date) < today);
+    return activities.filter(
+      (a) => a.status === "open" && a.due_date && new Date(a.due_date) < today,
+    );
   }, [activities]);
 
   if (isLoading) {
@@ -77,7 +83,11 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
     if (error instanceof ApiError && error.httpStatus === 404) {
       return <SystemStateScreen code="404" />;
     }
-    return <p className="p-[40px] text-[14px] text-error-text">{error?.message ?? "Project not found"}</p>;
+    return (
+      <p className="p-[40px] text-[14px] text-error-text">
+        {error?.message ?? "Project not found"}
+      </p>
+    );
   }
 
   const canManage = canAccess(user?.role, CAN_MANAGE_PROJECT, { projectId });
@@ -99,7 +109,6 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex min-h-[calc(100vh-64px)] w-full">
-      
       <ProjectSidebar
         projectId={projectId}
         stages={data.stages}
@@ -109,53 +118,54 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
       />
 
       <div className=" w-full flex justify-center">
-          <main className="flex w-full flex-col gap-[28px] p-[40px] max-w-[1200px]">
-        {sectionError && (
-          <p className="rounded-[8px] bg-error-bg px-[14px] py-[10px] text-[13px] text-error-text">
-            Some sections of this page failed to load. Try refreshing.
-          </p>
-        )}
-
-        <header className="flex w-full items-center justify-between">
-          <div className="flex flex-col gap-[8px]">
-            <h1 className="text-[30px] font-semibold tracking-[-0.75px] text-gca-dark">{data.project.name}</h1>
-            <p className="text-[14px] text-gca-show">
-              {data.project.client_name ?? "—"} · Week {weekNumber}
+        <main className="flex w-full flex-col gap-[28px] p-[40px] max-w-[1200px]">
+          {sectionError && (
+            <p className="rounded-[8px] bg-error-bg px-[14px] py-[10px] text-[13px] text-error-text">
+              Some sections of this page failed to load. Try refreshing.
             </p>
-          </div>
-          <StatusControl
+          )}
+
+          <header className="flex w-full items-center justify-between">
+            <div className="flex flex-col gap-[8px]">
+              <h1 className="text-[30px] font-semibold tracking-[-0.75px] text-gca-dark">
+                {data.project.name}
+              </h1>
+              <p className="text-[14px] text-gca-show">
+                {data.project.client_name ?? "—"} · Week {weekNumber}
+              </p>
+            </div>
+            <StatusControl
+              projectId={projectId}
+              status={data.project.status}
+              canManage={canManage}
+              onChanged={invalidate}
+            />
+          </header>
+
+          <StagePipeline
             projectId={projectId}
-            status={data.project.status}
+            stages={data.stages}
+            currentStage={currentStage}
+            percentByStage={percentByStage}
             canManage={canManage}
             onChanged={invalidate}
           />
-        </header>
 
-        <StagePipeline
-          projectId={projectId}
-          stages={data.stages}
-          currentStage={currentStage}
-          percentByStage={percentByStage}
-          canManage={canManage}
-          onChanged={invalidate}
-        />
+          <div className="flex w-full items-start gap-[20px]">
+            <ProgressCard metrics={data.metrics} />
+            <NeedsAttentionCard
+              projectId={projectId}
+              overdueActivities={overdueActivities}
+              draftWeekStart={draftSubmission?.week_start ?? null}
+              escalations={escalations}
+            />
+          </div>
 
-        <div className="flex w-full items-start gap-[20px]">
-          <ProgressCard metrics={data.metrics} />
-          <NeedsAttentionCard
-            projectId={projectId}
-            overdueActivities={overdueActivities}
-            draftWeekStart={draftSubmission?.week_start ?? null}
-            escalations={escalations}
-          />
-        </div>
+          <NextMilestonesRow projectId={projectId} milestones={milestones} />
 
-        <NextMilestonesRow projectId={projectId} milestones={milestones} />
-
-        <TeamSection projectId={projectId} team={team} clientContacts={clientContacts} />
-      </main>
+          <TeamSection projectId={projectId} team={team} clientContacts={clientContacts} />
+        </main>
       </div>
-    
     </div>
   );
 }

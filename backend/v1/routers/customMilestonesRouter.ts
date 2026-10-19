@@ -114,8 +114,8 @@ router.get('/', canView, async (req, res) => {
       return;
     }
 
-    // If query requests all milestones (schedule + custom from view)
-    if (filter.all) {
+    // If requested, return schedule and custom milestones from the combined view.
+    if (filter.aggregate) {
       const allMilestones = await CustomMilestones.listAllMilestones(projectId);
       res.status(200).json({
         status: 'success',

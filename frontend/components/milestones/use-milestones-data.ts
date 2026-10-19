@@ -14,7 +14,7 @@ export function useAllMilestones(projectId: string) {
   return useQuery({
     queryKey: ["project", projectId, "milestones", "all"],
     queryFn: async () =>
-      unwrap(await api.get<{ milestones: MilestoneRow[] }>(`/projects/${projectId}/milestones?all=true`))
+      unwrap(await api.get<{ milestones: MilestoneRow[] }>(`/projects/${projectId}/milestones?aggregate=true`))
         .milestones,
     staleTime: 10_000,
   });

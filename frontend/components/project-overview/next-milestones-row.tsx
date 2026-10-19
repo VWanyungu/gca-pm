@@ -40,6 +40,10 @@ export function NextMilestonesRow({
           {upcoming.map((m, i) => {
             const date = m.forecast_date ?? m.planned_date;
             const atRisk = (m.slippage_days ?? 0) > 0;
+            const overdue = new Date(date) < new Date();
+            const daysOverdue = Math.floor(
+              (new Date().getTime() - new Date(date).getTime()) / (1000 * 60 * 60 * 24),
+            );
             return (
               <div
                 key={m.milestone_id}
@@ -52,9 +56,13 @@ export function NextMilestonesRow({
                   {m.title}
                 </p>
                 <p
-                  className={`text-[12px] font-medium ${atRisk ? "text-gca-warning" : "text-gca-green"}`}
+                  className={`text-[12px] font-medium ${overdue ? "text-gca-warning" : atRisk ? "text-gca-warning" : "text-gca-green"}`}
                 >
-                  {atRisk ? `At risk · +${m.slippage_days} days` : "On track"}
+                  {overdue
+                    ? `Overdue by ${daysOverdue} days`
+                    : atRisk
+                      ? `At risk · +${m.slippage_days} days`
+                      : "On track"}
                 </p>
               </div>
             );

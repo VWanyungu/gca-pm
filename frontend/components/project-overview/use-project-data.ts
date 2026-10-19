@@ -12,13 +12,21 @@ import type {
 } from "./types";
 
 export class ApiError extends Error {
-  constructor(message: string, public httpStatus: number) {
+  constructor(
+    message: string,
+    public httpStatus: number,
+  ) {
     super(message);
     this.name = "ApiError";
   }
 }
 
-function unwrap<T>(res: { status: string; data: T | null; message: string; httpStatus?: number }): T {
+function unwrap<T>(res: {
+  status: string;
+  data: T | null;
+  message: string;
+  httpStatus?: number;
+}): T {
   if (res.status !== "success" || !res.data) throw new ApiError(res.message, res.httpStatus ?? 500);
   return res.data;
 }
@@ -42,7 +50,9 @@ export function useProjectTeam(projectId: string) {
     queryKey: ["project", projectId, "team"],
     queryFn: async () =>
       unwrap(
-        await api.get<{ roles: TeamMember[] }>(`/roles?projectId=${projectId}&limit=100`, { silent: true }),
+        await api.get<{ roles: TeamMember[] }>(`/roles?projectId=${projectId}&limit=100`, {
+          silent: true,
+        }),
       ).roles,
     staleTime: 30_000,
   });
@@ -53,7 +63,9 @@ export function useClientContacts(projectId: string) {
     queryKey: ["project", projectId, "client-contacts"],
     queryFn: async () =>
       unwrap(
-        await api.get<{ contacts: ClientContact[] }>(`/projects/${projectId}/client-contacts`, { silent: true }),
+        await api.get<{ contacts: ClientContact[] }>(`/projects/${projectId}/client-contacts`, {
+          silent: true,
+        }),
       ).contacts,
     staleTime: 30_000,
   });
@@ -77,13 +89,13 @@ export function useStageActivities(projectId: string) {
   });
 }
 
-export function useMilestones(projectId: string) {
+export function useMilestones(projectId: string, options?: { aggregate: boolean }) {
   return useQuery({
     queryKey: ["project", projectId, "milestones"],
     queryFn: async () =>
       unwrap(
         await api.get<{ milestones: Milestone[] } & Pagination>(
-          `/projects/${projectId}/milestones?limit=50`,
+          `/projects/${projectId}/milestones?limit=50&aggregate=${options?.aggregate ? "true" : "false"}`,
           { silent: true },
         ),
       ).milestones,
@@ -124,9 +136,13 @@ export function useSidebarCounts(projectId: string) {
     queryKey: ["project", projectId, "sidebar-counts"],
     queryFn: async () => {
       const [submissions, risks, changeRequests] = await Promise.all([
-        api.get<Pagination>(`/projects/${projectId}/weekly-submission?status=draft&limit=1`, { silent: true }),
+        api.get<Pagination>(`/projects/${projectId}/weekly-submission?status=draft&limit=1`, {
+          silent: true,
+        }),
         api.get<Pagination>(`/projects/${projectId}/risks?status=open&limit=1`, { silent: true }),
-        api.get<Pagination>(`/projects/${projectId}/change-requests?status=pending&limit=1`, { silent: true }),
+        api.get<Pagination>(`/projects/${projectId}/change-requests?status=pending&limit=1`, {
+          silent: true,
+        }),
       ]);
       return {
         submit: unwrap(submissions).pagination.total,

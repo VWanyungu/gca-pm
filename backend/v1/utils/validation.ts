@@ -1140,7 +1140,7 @@ export interface UpdateCustomMilestoneBody {
 export interface ListCustomMilestonesQuery {
   stage_no?: number;
   includeRemoved?: boolean;
-  all?: boolean;
+  aggregate?: boolean;
   page?: number;
   limit?: number;
 }
@@ -1178,7 +1178,7 @@ export const listCustomMilestonesQuerySchema =
   Joi.object<ListCustomMilestonesQuery>({
     stage_no: Joi.number().integer().min(1).max(10).optional(),
     includeRemoved: Joi.boolean().default(false),
-    all: Joi.boolean().default(false),
+    aggregate: Joi.boolean().default(false),
     page: Joi.number().integer().min(1).default(1),
     limit: Joi.number().integer().min(1).max(100).default(50),
   });

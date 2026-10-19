@@ -30,11 +30,15 @@ export interface CustomMilestone {
   slippage_days?: number | null;
 }
 
-export function milestoneStatus(m: Pick<MilestoneRow, "actual_date" | "slippage_days">): {
+export function milestoneStatus(
+  m: Pick<MilestoneRow, "actual_date" | "slippage_days" | "forecast_date" | "planned_date">,
+): {
   label: string;
   className: string;
 } {
   if (m.actual_date) return { label: "Completed", className: "text-gca-green" };
+  if (m.forecast_date && new Date() > new Date(m.forecast_date!) && !m.actual_date)
+    return { label: "Overdue", className: "text-gca-warning" };
   if ((m.slippage_days ?? 0) > 0) return { label: "At risk", className: "text-gca-warning" };
   return { label: "Upcoming", className: "text-gca-show" };
 }
@@ -46,7 +50,8 @@ export function sourceLabel(source: MilestoneSource): { label: string; className
 }
 
 export function variance(slippageDays: number | null): { label: string; className: string } {
-  if (slippageDays === null || slippageDays === undefined) return { label: "—", className: "text-gca-show" };
+  if (slippageDays === null || slippageDays === undefined)
+    return { label: "—", className: "text-gca-show" };
   if (slippageDays > 0) return { label: `+${slippageDays}d`, className: "text-gca-warning" };
   if (slippageDays < 0) return { label: `${slippageDays}d`, className: "text-gca-show" };
   return { label: "0d", className: "text-gca-dark" };
@@ -59,7 +64,11 @@ export function formatShortDate(iso: string | null): string {
 
 export function formatLongDate(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 /** dd/mm/yyyy, as shown in the Figma form fields. */
