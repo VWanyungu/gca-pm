@@ -28,15 +28,15 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
   const { user } = useAuth();
   const { data, isLoading, error } = useProjectDetail(projectId);
   const invalidate = useProjectDetailInvalidate(projectId);
-  const { data: team = [], error: teamError } = useProjectTeam(projectId);
-  const { data: clientContacts = [], error: clientContactsError } = useClientContacts(projectId);
-  const { data: activities = [], error: activitiesError } = useStageActivities(projectId);
-  const { data: milestones = [], error: milestonesError } = useMilestones(projectId, {
+  const { data: team = [] } = useProjectTeam(projectId);
+  const { data: clientContacts = [] } = useClientContacts(projectId);
+  const { data: activities = [] } = useStageActivities(projectId);
+  const { data: milestones = [] } = useMilestones(projectId, {
     aggregate: true,
   });
-  const { data: escalations = [], error: escalationsError } = useOpenEscalations(projectId);
-  const { data: draftSubmission, error: draftSubmissionError } = useDraftSubmission(projectId);
-  const { data: counts, error: countsError } = useSidebarCounts(projectId);
+  const { data: escalations = [] } = useOpenEscalations(projectId);
+  const { data: draftSubmission } = useDraftSubmission(projectId);
+  const { data: counts } = useSidebarCounts(projectId);
 
   const percentByStage = useMemo(() => {
     const result: Record<number, number> = {};
@@ -81,23 +81,10 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
     if (error instanceof ApiError && error.httpStatus === 404) {
       return <SystemStateScreen code="404" />;
     }
-    return (
-      <p className="p-[40px] text-[14px] text-error-text">
-        {error?.message ?? "Project not found"}
-      </p>
-    );
+    return null;
   }
 
   const canManage = canAccess(user?.role, CAN_MANAGE_PROJECT, { projectId });
-
-  const sectionError =
-    teamError ||
-    clientContactsError ||
-    activitiesError ||
-    milestonesError ||
-    escalationsError ||
-    draftSubmissionError ||
-    countsError;
 
   const today = new Date();
 
@@ -117,12 +104,6 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
 
       <div className=" w-full flex justify-center">
         <main className="flex w-full flex-col gap-[28px] p-[40px] max-w-[1200px]">
-          {sectionError && (
-            <p className="rounded-[8px] bg-error-bg px-[14px] py-[10px] text-[13px] text-error-text">
-              Some sections of this page failed to load. Try refreshing.
-            </p>
-          )}
-
           <header className="flex w-full items-center justify-between">
             <div className="flex flex-col gap-[8px]">
               <h1 className="text-[30px] font-semibold tracking-[-0.75px] text-gca-dark">

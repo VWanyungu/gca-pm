@@ -15,7 +15,7 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) router.replace("/");
@@ -25,7 +25,11 @@ export default function ForgotPasswordPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError("Enter a valid email address");
+      return;
+    }
+    setEmailError(null);
     setSubmitting(true);
 
     const res = await api.post<{ resetLink: string }>("/forgot-password", {
@@ -35,8 +39,6 @@ export default function ForgotPasswordPage() {
     setSubmitting(false);
     if (res.status === "success") {
       setSent(true);
-    } else {
-      setError(res.message);
     }
   }
 
@@ -86,12 +88,6 @@ export default function ForgotPasswordPage() {
           </p>
         </div>
 
-        {error && (
-          <div className="rounded-[8px] bg-error-bg px-[14px] py-[12px] text-[14px] font-medium text-error-text">
-            {error}
-          </div>
-        )}
-
         <div className="flex flex-col gap-[6px]">
           <label htmlFor="email" className="text-[13px] font-semibold text-gca-dark">
             Email
@@ -99,12 +95,18 @@ export default function ForgotPasswordPage() {
           <input
             id="email"
             type="email"
-            required
             placeholder="name@gca.co.ke"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-[8px] border border-gca-border bg-white px-[14px] py-[13px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:border-gca-green focus:ring-1 focus:ring-gca-green"
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setEmailError(null);
+            }}
+            aria-invalid={!!emailError}
+            className={`w-full rounded-[8px] border bg-white px-[14px] py-[13px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:border-gca-green focus:ring-1 focus:ring-gca-green ${
+              emailError ? "border-error-border" : "border-gca-border"
+            }`}
           />
+          {emailError && <span className="text-[12px] text-error-text">{emailError}</span>}
         </div>
 
         <button

@@ -83,7 +83,7 @@ export function DetailsStep({
   });
 
   return (
-    <form onSubmit={handleSubmit(onNext)} className="flex w-full flex-col gap-[24px]">
+    <form noValidate onSubmit={handleSubmit(onNext)} className="flex w-full flex-col gap-[24px]">
       <h2 className="text-[26px] font-semibold tracking-[-0.39px] text-gca-dark">
         Project details
       </h2>
@@ -91,8 +91,11 @@ export function DetailsStep({
       <Field label="Project name" required error={errors.name?.message}>
         <input
           {...register("name")}
+          aria-invalid={!!errors.name}
           placeholder="e.g. Gitanga Mall Reticulation"
-          className="h-[42px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
+          className={`h-[42px] rounded-[8px] border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green ${
+            errors.name ? "border-error-border" : "border-gca-border"
+          }`}
         />
       </Field>
 
@@ -100,8 +103,11 @@ export function DetailsStep({
         <Field label="Client" required error={errors.client_name?.message} className="w-1/2">
           <input
             {...register("client_name")}
+            aria-invalid={!!errors.client_name}
             placeholder="Client name"
-            className="h-[42px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
+            className={`h-[42px] rounded-[8px] border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green ${
+              errors.client_name ? "border-error-border" : "border-gca-border"
+            }`}
           />
         </Field>
         <Field label="Program" required error={errors.program_id?.message} className="w-1/2">
@@ -109,7 +115,9 @@ export function DetailsStep({
             id="program_id"
             title="Choose program"
             data={programs.map((p) => ({ id: String(p.program_id), name: p.name }))}
-            style="h-[42px] w-full rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
+            style={`h-[42px] w-full rounded-[8px] border px-[12px] text-[14px] text-gca-dark ${
+              errors.program_id ? "border-error-border" : "border-gca-border"
+            }`}
             selectedId={programId}
             onSelect={(id) => setValue("program_id", id, { shouldValidate: true })}
           />
@@ -126,7 +134,10 @@ export function DetailsStep({
           <input
             type="date"
             {...register("expected_start_date")}
-            className="h-[42px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
+            aria-invalid={!!errors.expected_start_date}
+            className={`h-[42px] rounded-[8px] border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green ${
+              errors.expected_start_date ? "border-error-border" : "border-gca-border"
+            }`}
           />
         </Field>
         <Field label="Planned finish" className="w-1/2">

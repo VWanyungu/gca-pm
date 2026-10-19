@@ -30,22 +30,41 @@ interface RiskFormProps {
   /** Prefill for "new risk from X" flows (e.g. an overdue schedule task) — ignored when `editing` is set.
    *  `sourceTaskId` links the new risk back to the schedule task it came from, which is what
    *  lets the Overdue tab show that the task is already covered. */
-  initial?: { title: string; description?: string; stageNo?: number; subtitle?: string; sourceTaskId?: string };
+  initial?: {
+    title: string;
+    description?: string;
+    stageNo?: number;
+    subtitle?: string;
+    sourceTaskId?: string;
+  };
   onDone: () => void;
   onCancel: () => void;
 }
 
-export function RiskForm({ projectId, projectName, stages, team, editing, initial, onDone, onCancel }: RiskFormProps) {
+export function RiskForm({
+  projectId,
+  projectName,
+  stages,
+  team,
+  editing,
+  initial,
+  onDone,
+  onCancel,
+}: RiskFormProps) {
   const { data: categories = [] } = useRiskCategories(projectId);
   const invalidate = useRisksInvalidate(projectId);
 
   const [title, setTitle] = useState(editing?.title ?? initial?.title ?? "");
-  const [description, setDescription] = useState(editing?.description ?? initial?.description ?? "");
+  const [description, setDescription] = useState(
+    editing?.description ?? initial?.description ?? "",
+  );
   const [stageNo, setStageNo] = useState(
     editing?.stage_no ? String(editing.stage_no) : initial?.stageNo ? String(initial.stageNo) : "",
   );
   const [ownerId, setOwnerId] = useState(editing?.owner_id ?? "");
-  const [categoryId, setCategoryId] = useState(editing?.category_id ? String(editing.category_id) : "");
+  const [categoryId, setCategoryId] = useState(
+    editing?.category_id ? String(editing.category_id) : "",
+  );
   const [reviewBy, setReviewBy] = useState(editing?.review_by?.slice(0, 10) ?? "");
   const [likelihood, setLikelihood] = useState(editing?.likelihood ?? 3);
   const [impact, setImpact] = useState(editing?.impact ?? 3);
@@ -53,12 +72,23 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
   const [status, setStatus] = useState<RiskStatus>(editing?.status ?? "open");
   const [dismissalReason, setDismissalReason] = useState(editing?.dismissal_reason ?? "");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+    title?: string;
+    stageNo?: string;
+    ownerId?: string;
+    categoryId?: string;
+    dismissalReason?: string;
+  }>({});
   const [deleting, setDeleting] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
 
-  const stageOptions = stages.filter((s) => s.in_scope).map((s) => ({ id: String(s.stage_no), name: s.stage_name }));
-  const ownerOptions = uniquePeople(team).map((m) => ({ id: m.user_id, name: `${m.first_name} ${m.last_name}` }));
+  const stageOptions = stages
+    .filter((s) => s.in_scope)
+    .map((s) => ({ id: String(s.stage_no), name: s.stage_name }));
+  const ownerOptions = uniquePeople(team).map((m) => ({
+    id: m.user_id,
+    name: `${m.first_name} ${m.last_name}`,
+  }));
   const categoryOptions = categories.map((c) => ({ id: String(c.risk_category_id), name: c.name }));
   const statusOptions = editing
     ? [editing.status, ...STATUS_TRANSITIONS[editing.status]].map((s) => ({
@@ -70,16 +100,21 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
   const rating = ratingFromScore(likelihood * impact);
 
   async function submit() {
-    if (!title.trim() || !stageNo || !ownerId || !categoryId) {
-      setError("Title, stage, owner and category are required");
-      return;
-    }
-    if (status === "dismissed" && !dismissalReason.trim()) {
-      setError("A reason is required to dismiss a risk");
+    const nextErrors = {
+      title: title.trim() ? undefined : "Title is required",
+      stageNo: stageNo ? undefined : "Stage is required",
+      ownerId: ownerId ? undefined : "Owner is required",
+      categoryId: categoryId ? undefined : "Category is required",
+      dismissalReason:
+        status === "dismissed" && !dismissalReason.trim()
+          ? "A reason is required to dismiss a risk"
+          : undefined,
+    };
+    setFieldErrors(nextErrors);
+    if (Object.values(nextErrors).some(Boolean)) {
       return;
     }
     setSaving(true);
-    setError(null);
 
     const body: Record<string, unknown> = {
       title: title.trim(),
@@ -100,10 +135,7 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
       }
       const res = await api.patch(`/projects/${projectId}/risks/${editing.risk_id}`, body);
       setSaving(false);
-      if (res.status !== "success") {
-        setError(res.message || "Couldn't save the risk");
-        return;
-      }
+      if (res.status !== "success") return;
     } else {
       const res = await api.post(`/projects/${projectId}/risks`, {
         ...body,
@@ -111,10 +143,7 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
         source_task_id: initial?.sourceTaskId ?? null,
       });
       setSaving(false);
-      if (res.status !== "success") {
-        setError(res.message || "Couldn't create the risk");
-        return;
-      }
+      if (res.status !== "success") return;
     }
     invalidate();
     onDone();
@@ -127,10 +156,7 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
       reason: deleteReason.trim(),
     });
     setSaving(false);
-    if (res.status !== "success") {
-      setError(res.message || "Couldn't delete the risk");
-      return;
-    }
+    if (res.status !== "success") return;
     invalidate();
     onDone();
   }
@@ -146,7 +172,9 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
       </button>
 
       <div>
-        <h2 className="text-[20px] font-semibold text-gca-dark">{editing ? "Edit risk" : "New risk"}</h2>
+        <h2 className="text-[20px] font-semibold text-gca-dark">
+          {editing ? "Edit risk" : "New risk"}
+        </h2>
         <p className="mt-[2px] text-[13px] text-gca-show">
           {editing
             ? `Raised ${formatLongDate(editing.opened_at)} by ${creatorName(editing.created_by, team)}`
@@ -154,14 +182,12 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
         </p>
       </div>
 
-      {error && (
-        <p className="rounded-[8px] bg-error-bg px-[14px] py-[10px] text-[13px] text-error-text">{error}</p>
-      )}
-
       <div className="flex w-full items-start gap-[48px] border-t border-gca-border pt-[24px]">
         <div className="w-[280px] shrink-0">
           <p className="text-[14px] font-semibold text-gca-dark">What is the risk</p>
-          <p className="mt-[4px] text-[13px] text-gca-show">Name it so the team can find it later.</p>
+          <p className="mt-[4px] text-[13px] text-gca-show">
+            Name it so the team can find it later.
+          </p>
         </div>
         <div className="flex w-full max-w-[792px] flex-col gap-[16px]">
           <div className="flex flex-col gap-[6px]">
@@ -170,10 +196,19 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
             </label>
             <input
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setFieldErrors((current) => ({ ...current, title: undefined }));
+              }}
+              aria-invalid={!!fieldErrors.title}
               placeholder="e.g. Crane hire delay"
-              className="h-[40px] rounded-[8px] border border-gca-border px-[13px] text-[14px] outline-none focus:border-gca-green"
+              className={`h-[40px] rounded-[8px] border px-[13px] text-[14px] outline-none focus:border-gca-green ${
+                fieldErrors.title ? "border-error-border" : "border-gca-border"
+              }`}
             />
+            {fieldErrors.title && (
+              <span className="text-[12px] text-error-text">{fieldErrors.title}</span>
+            )}
           </div>
           <div className="flex flex-col gap-[6px]">
             <label className="text-[14px] text-gca-dark">Description</label>
@@ -191,7 +226,9 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
       <div className="flex w-full items-start gap-[48px] border-t border-gca-border pt-[24px]">
         <div className="w-[280px] shrink-0">
           <p className="text-[14px] font-semibold text-gca-dark">Where it sits</p>
-          <p className="mt-[4px] text-[13px] text-gca-show">Stage, owner and category decide who sees it.</p>
+          <p className="mt-[4px] text-[13px] text-gca-show">
+            Stage, owner and category decide who sees it.
+          </p>
         </div>
         <div className="flex w-full max-w-[792px] flex-col gap-[16px]">
           <div className="flex gap-[16px]">
@@ -204,9 +241,17 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
                 title="Choose stage"
                 data={stageOptions}
                 selectedId={stageNo}
-                style="h-[40px] w-full rounded-[8px] border border-gca-border px-[13px] text-[14px]"
-                onSelect={(id) => setStageNo(id)}
+                style={`h-[40px] w-full rounded-[8px] border px-[13px] text-[14px] ${
+                  fieldErrors.stageNo ? "border-error-border" : "border-gca-border"
+                }`}
+                onSelect={(id) => {
+                  setStageNo(id);
+                  setFieldErrors((current) => ({ ...current, stageNo: undefined }));
+                }}
               />
+              {fieldErrors.stageNo && (
+                <span className="text-[12px] text-error-text">{fieldErrors.stageNo}</span>
+              )}
             </div>
             <div className="flex w-full flex-col gap-[6px]">
               <label className="text-[14px] text-gca-dark">
@@ -217,9 +262,17 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
                 title="Choose owner"
                 data={ownerOptions}
                 selectedId={ownerId}
-                style="h-[40px] w-full rounded-[8px] border border-gca-border px-[13px] text-[14px]"
-                onSelect={(id) => setOwnerId(id)}
+                style={`h-[40px] w-full rounded-[8px] border px-[13px] text-[14px] ${
+                  fieldErrors.ownerId ? "border-error-border" : "border-gca-border"
+                }`}
+                onSelect={(id) => {
+                  setOwnerId(id);
+                  setFieldErrors((current) => ({ ...current, ownerId: undefined }));
+                }}
               />
+              {fieldErrors.ownerId && (
+                <span className="text-[12px] text-error-text">{fieldErrors.ownerId}</span>
+              )}
             </div>
           </div>
           <div className="flex gap-[16px]">
@@ -232,9 +285,17 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
                 title="Choose category"
                 data={categoryOptions}
                 selectedId={categoryId}
-                style="h-[40px] w-full rounded-[8px] border border-gca-border px-[13px] text-[14px]"
-                onSelect={(id) => setCategoryId(id)}
+                style={`h-[40px] w-full rounded-[8px] border px-[13px] text-[14px] ${
+                  fieldErrors.categoryId ? "border-error-border" : "border-gca-border"
+                }`}
+                onSelect={(id) => {
+                  setCategoryId(id);
+                  setFieldErrors((current) => ({ ...current, categoryId: undefined }));
+                }}
               />
+              {fieldErrors.categoryId && (
+                <span className="text-[12px] text-error-text">{fieldErrors.categoryId}</span>
+              )}
             </div>
             <div className="flex w-full flex-col gap-[6px]">
               <label className="text-[14px] text-gca-dark">Review by</label>
@@ -253,7 +314,9 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
         <div className="flex w-full items-start gap-[48px] border-t border-gca-border pt-[24px]">
           <div className="w-[280px] shrink-0">
             <p className="text-[14px] font-semibold text-gca-dark">Status</p>
-            <p className="mt-[4px] text-[13px] text-gca-show">Addressed risks stay visible until closed.</p>
+            <p className="mt-[4px] text-[13px] text-gca-show">
+              Addressed risks stay visible until closed.
+            </p>
           </div>
           <div className="flex w-full max-w-[792px] flex-col gap-[16px]">
             <div className="flex w-full flex-col gap-[6px]">
@@ -275,10 +338,19 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
                 </label>
                 <textarea
                   value={dismissalReason}
-                  onChange={(e) => setDismissalReason(e.target.value)}
+                  onChange={(e) => {
+                    setDismissalReason(e.target.value);
+                    setFieldErrors((current) => ({ ...current, dismissalReason: undefined }));
+                  }}
                   rows={2}
-                  className="rounded-[8px] border border-gca-border px-[13px] py-[11px] text-[14px] outline-none focus:border-gca-green"
+                  aria-invalid={!!fieldErrors.dismissalReason}
+                  className={`rounded-[8px] border px-[13px] py-[11px] text-[14px] outline-none focus:border-gca-green ${
+                    fieldErrors.dismissalReason ? "border-error-border" : "border-gca-border"
+                  }`}
                 />
+                {fieldErrors.dismissalReason && (
+                  <span className="text-[12px] text-error-text">{fieldErrors.dismissalReason}</span>
+                )}
               </div>
             )}
           </div>
@@ -288,7 +360,9 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
       <div className="flex w-full items-start gap-[48px] border-t border-gca-border pt-[24px]">
         <div className="w-[280px] shrink-0">
           <p className="text-[14px] font-semibold text-gca-dark">Rating</p>
-          <p className="mt-[4px] text-[13px] text-gca-show">Likelihood and impact set the rating.</p>
+          <p className="mt-[4px] text-[13px] text-gca-show">
+            Likelihood and impact set the rating.
+          </p>
         </div>
         <div className="flex w-full max-w-[792px] flex-col gap-[16px]">
           <div className="flex gap-[16px]">
@@ -338,7 +412,9 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
       <div className="flex w-full items-start gap-[48px] border-t border-gca-border pt-[24px]">
         <div className="w-[280px] shrink-0">
           <p className="text-[14px] font-semibold text-gca-dark">Mitigation</p>
-          <p className="mt-[4px] text-[13px] text-gca-show">What will reduce it. You can update this any time.</p>
+          <p className="mt-[4px] text-[13px] text-gca-show">
+            What will reduce it. You can update this any time.
+          </p>
         </div>
         <div className="flex w-full max-w-[792px] flex-col gap-[6px]">
           <label className="text-[14px] text-gca-dark">Mitigation</label>
@@ -391,7 +467,10 @@ export function RiskForm({ projectId, projectName, stages, team, editing, initia
           <span />
         )}
         <div className="flex items-center gap-[16px]">
-          <button onClick={onCancel} className="cursor-pointer hover:text-red-500 text-[14px] font-medium text-gca-show">
+          <button
+            onClick={onCancel}
+            className="cursor-pointer hover:text-red-500 text-[14px] font-medium text-gca-show"
+          >
             Cancel
           </button>
           <button

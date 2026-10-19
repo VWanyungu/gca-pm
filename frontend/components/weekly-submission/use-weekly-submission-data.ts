@@ -96,9 +96,7 @@ export function useDpr(projectId: string, dprId: string | null | undefined) {
   return useQuery({
     queryKey: ["project", projectId, "dpr", dprId],
     queryFn: async () =>
-      unwrap(
-        await api.get<{ dpr: DprDetail }>(`/projects/${projectId}/dpr/${dprId}`),
-      ).dpr,
+      unwrap(await api.get<{ dpr: DprDetail }>(`/projects/${projectId}/dpr/${dprId}`)).dpr,
     enabled: !!dprId,
     staleTime: 10_000,
   });
@@ -171,6 +169,7 @@ export async function approveWeeklySubmission(
   const res = await api.post<{ submission: WeeklySubmission }>(
     `/projects/${projectId}/weekly-submission/${submissionId}/approve`,
     body,
+    { silent: true },
   );
   if (res.status !== "success" || !res.data) throw new Error(res.message);
   return res.data.submission;
@@ -183,7 +182,11 @@ export async function addAddressedRisk(
   submissionId: string,
   input: { risk_id: string; method: AddressedRiskMethod; dismissal_reason?: string | null },
 ) {
-  const res = await api.post(`/projects/${projectId}/weekly-submission/${submissionId}/addressed-risks`, input);
+  const res = await api.post(
+    `/projects/${projectId}/weekly-submission/${submissionId}/addressed-risks`,
+    input,
+    { silent: true },
+  );
   if (res.status !== "success") throw new Error(res.message);
 }
 
@@ -194,7 +197,11 @@ export async function removeAddressedRisk(projectId: string, submissionId: strin
   if (res.status !== "success") throw new Error(res.message);
 }
 
-export async function setSubmissionPhotos(projectId: string, submissionId: string, photoIds: string[]) {
+export async function setSubmissionPhotos(
+  projectId: string,
+  submissionId: string,
+  photoIds: string[],
+) {
   const res = await api.put<{ photos: SubmissionPhoto[] }>(
     `/projects/${projectId}/weekly-submission/${submissionId}/photos`,
     { photo_ids: photoIds },

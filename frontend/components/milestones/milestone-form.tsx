@@ -45,15 +45,12 @@ export function MilestoneForm({
   const [plannedDate, setPlannedDate] = useState(formatInputDate(editing?.planned_date ?? null));
   const [actualDate, setActualDate] = useState(formatInputDate(editing?.actual_date ?? null));
   const [stageNo, setStageNo] = useState(() => {
-    const initialStageNo =
-      editing?.stage_no != null ? String(editing.stage_no) : "";
-    return stageOptions.some((option) => option.id === initialStageNo)
-      ? initialStageNo
-      : "";
+    const initialStageNo = editing?.stage_no != null ? String(editing.stage_no) : "";
+    return stageOptions.some((option) => option.id === initialStageNo) ? initialStageNo : "";
   });
   const [notes, setNotes] = useState(editing?.notes ?? "");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ title?: string; plannedDate?: string }>({});
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -63,12 +60,15 @@ export function MilestoneForm({
   }, [stageNo, stageOptions]);
 
   async function submit() {
-    if (!title.trim() || !plannedDate) {
-      setError("Name and date are required");
+    const nextErrors = {
+      title: title.trim() ? undefined : "Name is required",
+      plannedDate: plannedDate ? undefined : "Planned date is required",
+    };
+    setFieldErrors(nextErrors);
+    if (nextErrors.title || nextErrors.plannedDate) {
       return;
     }
     setSaving(true);
-    setError(null);
 
     const body = {
       title: title.trim(),
@@ -85,10 +85,7 @@ export function MilestoneForm({
       : await api.post(`/projects/${projectId}/custom-milestones`, body);
 
     setSaving(false);
-    if (res.status !== "success") {
-      setError(res.message || `Couldn't ${editing ? "save" : "add"} the milestone`);
-      return;
-    }
+    if (res.status !== "success") return;
     invalidate();
     onDone();
   }
@@ -100,10 +97,7 @@ export function MilestoneForm({
       `/projects/${projectId}/custom-milestones/${editing.milestone_id}`,
     );
     setSaving(false);
-    if (res.status !== "success") {
-      setError(res.message || "Couldn't delete the milestone");
-      return;
-    }
+    if (res.status !== "success") return;
     invalidate();
     onDone();
   }
@@ -129,12 +123,6 @@ export function MilestoneForm({
         </p>
       </div>
 
-      {error && (
-        <p className="rounded-[8px] bg-error-bg px-[14px] py-[10px] text-[13px] text-error-text">
-          {error}
-        </p>
-      )}
-
       <div className="flex w-full items-start gap-[48px] border-t border-gca-border pt-[24px]">
         <div className="w-[280px] shrink-0">
           <p className="text-[14px] font-semibold text-gca-dark">Milestone</p>
@@ -147,10 +135,19 @@ export function MilestoneForm({
             </label>
             <input
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setFieldErrors((current) => ({ ...current, title: undefined }));
+              }}
+              aria-invalid={!!fieldErrors.title}
               placeholder="e.g. Client walkthrough"
-              className="h-[40px] rounded-[8px] border border-gca-border px-[13px] text-[14px] outline-none focus:border-gca-green"
+              className={`h-[40px] rounded-[8px] border px-[13px] text-[14px] outline-none focus:border-gca-green ${
+                fieldErrors.title ? "border-error-border" : "border-gca-border"
+              }`}
             />
+            {fieldErrors.title && (
+              <span className="text-[12px] text-error-text">{fieldErrors.title}</span>
+            )}
           </div>
           <div className="flex gap-[16px]">
             <div className="flex w-full flex-col gap-[6px]">
@@ -160,9 +157,18 @@ export function MilestoneForm({
               <input
                 type="date"
                 value={plannedDate}
-                onChange={(e) => setPlannedDate(e.target.value)}
-                className="h-[40px] rounded-[8px] border border-gca-border px-[13px] text-[14px] outline-none focus:border-gca-green"
+                onChange={(e) => {
+                  setPlannedDate(e.target.value);
+                  setFieldErrors((current) => ({ ...current, plannedDate: undefined }));
+                }}
+                aria-invalid={!!fieldErrors.plannedDate}
+                className={`h-[40px] rounded-[8px] border px-[13px] text-[14px] outline-none focus:border-gca-green ${
+                  fieldErrors.plannedDate ? "border-error-border" : "border-gca-border"
+                }`}
               />
+              {fieldErrors.plannedDate && (
+                <span className="text-[12px] text-error-text">{fieldErrors.plannedDate}</span>
+              )}
             </div>
             {editing && (
               <div className="flex w-full flex-col gap-[6px]">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { reportError } from "@/lib/toast";
 import { createDraftDpr, patchDpr } from "./use-dpr-wizard-data";
 import { emptyDprDraft, type DprDraftInput } from "./types";
 
@@ -70,8 +71,8 @@ export function useDprDraft(projectId: string, reportDate: string) {
     if (!projectId || !draft.site_location.trim()) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      save().catch(() => {
-        // surfaced to the user via the explicit "Save draft" button instead
+      save().catch((error: unknown) => {
+        reportError(error instanceof Error ? error.message : "Could not save draft");
       });
     }, 1500);
     return () => {

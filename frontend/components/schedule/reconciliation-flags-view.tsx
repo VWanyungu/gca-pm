@@ -22,25 +22,25 @@ interface ReconciliationFlagsViewProps {
   team: TeamMember[];
 }
 
-export function ReconciliationFlagsView({ projectId, flags, allTasks, team }: ReconciliationFlagsViewProps) {
+export function ReconciliationFlagsView({
+  projectId,
+  flags,
+  allTasks,
+  team,
+}: ReconciliationFlagsViewProps) {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(PER_PAGE);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const invalidate = useScheduleInvalidate(projectId);
 
   async function acknowledge(flagIds: string[]) {
     setSaving(true);
-    setError(null);
     const res = await api.post(`/projects/${projectId}/schedule/reconciliation-flags/acknowledge`, {
       flag_ids: flagIds,
     });
     setSaving(false);
-    if (res.status !== "success") {
-      setError(res.message || "Couldn't acknowledge the flag(s)");
-      return;
-    }
+    if (res.status !== "success") return;
     setSelected((prev) => {
       const next = new Set(prev);
       flagIds.forEach((id) => next.delete(id));
@@ -73,16 +73,16 @@ export function ReconciliationFlagsView({ projectId, flags, allTasks, team }: Re
   }
 
   if (flags.length === 0) {
-    return <p className="py-[56px] text-center text-[13px] text-gca-show">No reconciliation flags.</p>;
+    return (
+      <p className="py-[56px] text-center text-[13px] text-gca-show">No reconciliation flags.</p>
+    );
   }
 
   return (
     <div className="flex w-full flex-col gap-[16px]">
-      <p className="text-[13px] text-gca-show">DPR progress that disagrees with the schedule. Acknowledge once you have checked it.</p>
-
-      {error && (
-        <p className="rounded-[8px] bg-error-bg px-[14px] py-[10px] text-[13px] text-error-text">{error}</p>
-      )}
+      <p className="text-[13px] text-gca-show">
+        DPR progress that disagrees with the schedule. Acknowledge once you have checked it.
+      </p>
 
       {selected.size > 0 && (
         <div className="flex items-center justify-between rounded-[8px] bg-gca-badge-bg px-[16px] py-[10px]">
@@ -115,7 +115,9 @@ export function ReconciliationFlagsView({ projectId, flags, allTasks, team }: Re
 
         {groups.map(({ group, items }, gi) => (
           <div key={group ?? "ungrouped"}>
-            <div className={`bg-gca-badge-bg px-[4px] py-[8px] ${gi > 0 ? "border-t border-gca-border" : ""}`}>
+            <div
+              className={`bg-gca-badge-bg px-[4px] py-[8px] ${gi > 0 ? "border-t border-gca-border" : ""}`}
+            >
               <p className="text-[12px] font-semibold text-gca-badge-text">{group ?? "Other"}</p>
             </div>
             {items.map((f, i) => (
@@ -124,11 +126,21 @@ export function ReconciliationFlagsView({ projectId, flags, allTasks, team }: Re
                 className={`flex w-full items-center gap-[10px] py-[12px] ${i > 0 ? "border-t border-gca-border" : ""}`}
               >
                 <span className="flex w-[4%] items-center">
-                  <input type="checkbox" checked={selected.has(f.flag_id)} onChange={() => toggle(f.flag_id)} />
+                  <input
+                    type="checkbox"
+                    checked={selected.has(f.flag_id)}
+                    onChange={() => toggle(f.flag_id)}
+                  />
                 </span>
-                <p className="w-[31%] truncate text-[13px] font-medium text-gca-dark">{f.task_name}</p>
-                <p className="w-[15%] font-mono text-[13px] font-semibold text-gca-warning">{Math.round(Number(f.dpr_pct))}%</p>
-                <p className="w-[15%] font-mono text-[13px] text-gca-dark">{Math.round(Number(f.schedule_pct))}%</p>
+                <p className="w-[31%] truncate text-[13px] font-medium text-gca-dark">
+                  {f.task_name}
+                </p>
+                <p className="w-[15%] font-mono text-[13px] font-semibold text-gca-warning">
+                  {Math.round(Number(f.dpr_pct))}%
+                </p>
+                <p className="w-[15%] font-mono text-[13px] text-gca-dark">
+                  {Math.round(Number(f.schedule_pct))}%
+                </p>
                 <p className="w-[20%] text-[13px] text-gca-show">
                   {reporterName(f.reported_by, team)} · {formatShortDate(f.reported_at)}
                 </p>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Search } from "lucide-react";
+import { reportError } from "@/lib/toast";
 import { useRisks, useRiskCategories } from "@/components/risks/use-risks-data";
 import { ratingFromScore } from "@/components/risks/types";
 import type { TeamMember } from "@/components/project-overview/types";
@@ -38,7 +39,6 @@ export function AddFromRegisterForm({
   const [severity, setSeverity] = useState<SeverityFilter>("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const addressedIds = new Set(alreadyAddressed.map((r) => r.risk_id));
   const withRating = (data?.riskIssues ?? []).map((risk) => ({
@@ -74,7 +74,6 @@ export function AddFromRegisterForm({
   async function submit() {
     if (selected.size === 0) return;
     setSaving(true);
-    setError(null);
     try {
       for (const riskId of selected) {
         await addAddressedRisk(projectId, submissionId, { risk_id: riskId, method: "commentary" });
@@ -82,7 +81,7 @@ export function AddFromRegisterForm({
       invalidate();
       onDone();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't add the selected risks");
+      reportError(err instanceof Error ? err.message : "Couldn't add the selected risks");
     } finally {
       setSaving(false);
     }
@@ -158,8 +157,6 @@ export function AddFromRegisterForm({
           })
         )}
       </div>
-
-      {error && <p className="text-[13px] text-error-text">{error}</p>}
 
       <div className="flex items-center justify-between border-t border-gca-border pt-[16px]">
         <p className="text-[13px] text-gca-show">{selected.size} selected</p>

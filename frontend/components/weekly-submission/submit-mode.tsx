@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Check, Percent, Shield, Trophy, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
+import { reportError } from "@/lib/toast";
 import type { TeamMember, MetricRow, Milestone } from "@/components/project-overview/types";
 import type { ScheduleVersion } from "@/components/schedule/types";
 import { AddressedRiskRow } from "./addressed-risk-row";
@@ -71,7 +72,6 @@ export function SubmitMode({
   const [commentary, setCommentary] = useState(submission.pm_commentary ?? "");
   const [addingRisk, setAddingRisk] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   async function saveCommentary() {
     if (commentary === (submission.pm_commentary ?? "")) return;
@@ -124,7 +124,6 @@ export function SubmitMode({
 
   async function submit() {
     setSubmitting(true);
-    setSubmitError(null);
     try {
       const approved = await approveWeeklySubmission(projectId, submission.submission_id, {
         planned_pct: latestMetric?.planned_pct,
@@ -148,7 +147,7 @@ export function SubmitMode({
         window.location.href = mailto;
       }
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Couldn't submit");
+      reportError(err instanceof Error ? err.message : "Couldn't submit");
     } finally {
       setSubmitting(false);
     }
@@ -283,7 +282,10 @@ export function SubmitMode({
                 Mark one addressed risk as this week&apos;s top risk — its title and mitigation
                 become the top risk and action required to submit.{" "}
                 {!submission.top_risk_text && (
-                  <button onClick={markNoRisksThisWeek} className="cursor-pointer font-medium text-gca-green">
+                  <button
+                    onClick={markNoRisksThisWeek}
+                    className="cursor-pointer font-medium text-gca-green"
+                  >
                     No risks this week
                   </button>
                 )}
@@ -391,8 +393,10 @@ export function SubmitMode({
                   <h3 className="text-[16px] font-semibold text-gca-dark">Ready to submit?</h3>
                   <ChecklistItem ok={checks.progress} label="Progress from this week's schedule" />
                   <ChecklistItem ok={checks.commentary} label="Commentary written" />
-                  <ChecklistItem ok={checks.topRiskText && checks.topAction} label="Top risk marked" />
-                  {submitError && <p className="text-[13px] text-error-text">{submitError}</p>}
+                  <ChecklistItem
+                    ok={checks.topRiskText && checks.topAction}
+                    label="Top risk marked"
+                  />
                   <button
                     onClick={submit}
                     disabled={!ready || submitting}
@@ -400,7 +404,7 @@ export function SubmitMode({
                   >
                     Submit
                   </button>
-                  {!ready && !submitError && (
+                  {!ready && (
                     <p className="text-[12px] text-error-text">
                       {!checks.commentary
                         ? "Write a commentary to submit."

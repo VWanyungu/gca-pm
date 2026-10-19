@@ -35,13 +35,8 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
   const [step, setStep] = useState("details");
   const [draftDetails, setDraftDetails] = useState<DetailsFormValues | null>(null);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const {
-    data: details,
-    isLoading,
-    error: projectError,
-  } = useQuery({
+  const { data: details, isLoading } = useQuery({
     queryKey: ["project", projectId, "edit"],
     queryFn: async () => {
       const res = await api.get<ProjectResponse>(`/projects/${projectId}`);
@@ -63,7 +58,6 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
 
   async function save(values: DetailsFormValues) {
     setSaving(true);
-    setError(null);
     const res = await api.patch(`/projects/${projectId}`, {
       name: values.name,
       client_name: values.client_name,
@@ -76,80 +70,71 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
       is_electrical: values.is_electrical,
     });
     setSaving(false);
-    if (res.status !== "success") {
-      setError(res.message);
-      return;
-    }
+    if (res.status !== "success") return;
     setDraftDetails(values);
     queryClient.setQueryData(["project", projectId, "edit"], values);
   }
 
   if (isLoading) return <p className="p-[40px] text-[14px] text-gca-muted">Loading project…</p>;
-  if (!details) {
-    return (
-      <p className="p-[40px] text-[14px] text-error-text">
-        {projectError?.message ?? "Project not found"}
-      </p>
-    );
-  }
+  if (!details) return null;
 
   return (
-    <main className="flex flex-col gap-[40px] px-[120px] pb-[48px] pt-[40px]">
-      <div className="flex flex-col gap-[8px]">
-        <Link
-          // href={`/projects/${projectId}`}
-          href={`/`}
-          className="flex gap-[6px] items-center text-[14px] font-medium text-gca-show"
-        >
-          <ArrowLeft className="size-[14px]" /> {details.name}
-        </Link>
-        <h1 className="text-[28px] font-semibold tracking-[-0.7px] text-gca-dark">Edit project</h1>
-      </div>
-
-      {(error || projectError) && (
-        <div className="rounded-[8px] bg-error-bg px-[14px] py-[12px] text-[14px] font-medium text-error-text">
-          {error ?? projectError?.message}
+    <main className="flex w-full justify-center">
+      <div className="flex flex-col gap-[40px] px-[120px] pb-[48px] pt-[40px]">
+        <div className="flex flex-col gap-[8px]">
+          <Link
+            // href={`/projects/${projectId}`}
+            href={`/`}
+            className="flex gap-[6px] items-center text-[14px] font-medium text-gca-show"
+          >
+            <ArrowLeft className="size-[14px]" /> {details.name}
+          </Link>
+          <h1 className="text-[28px] font-semibold tracking-[-0.7px] text-gca-dark">
+            Edit project
+          </h1>
         </div>
-      )}
 
-      <div className="flex gap-[64px]">
-        <ProjectStepper
-          steps={STEPS}
-          currentKey={step}
-          mode="edit"
-          completedKeys={["details"]}
-          onStepClick={setStep}
-        />
-
-        {step === "details" && (
-          <DetailsStep
-            defaultValues={draftDetails ?? details}
-            onCancel={() => router.push(`/projects/${projectId}`)}
-            nextLabel="Next: People"
-            onNext={(values) => {
-              setDraftDetails(values);
-              setStep("people");
-            }}
-            onSave={save}
-            saving={saving}
+        <div className="flex gap-[64px]">
+          <ProjectStepper
+            steps={STEPS}
+            currentKey={step}
+            mode="edit"
+            completedKeys={["details"]}
+            onStepClick={setStep}
           />
-        )}
 
-        {step === "people" && (
-          <div className="flex w-[640px] flex-col gap-[16px]">
-            <h2 className="text-[22px] font-semibold tracking-[-0.4px] text-gca-dark">
-              Assign people
-            </h2>
-            <p className="text-[14px] text-gca-show">Contact Admin to manage project team</p>
-            <button
-              type="button"
-              onClick={() => setStep("details")}
-              className="flex gap-[6px] items-center cursor-pointer self-start text-[14px] font-medium text-gca-show"
-            >
-              <ArrowLeft className="size-[14px]" /> Back
-            </button>
-          </div>
-        )}
+          {step === "details" && (
+            <div className="w-[640px]">
+              <DetailsStep
+                defaultValues={draftDetails ?? details}
+                onCancel={() => router.push(`/projects/${projectId}`)}
+                nextLabel="Next: People"
+                onNext={(values) => {
+                  setDraftDetails(values);
+                  setStep("people");
+                }}
+                onSave={save}
+                saving={saving}
+              />
+            </div>
+          )}
+
+          {step === "people" && (
+            <div className="flex w-[640px] flex-col gap-[16px]">
+              <h2 className="text-[22px] font-semibold tracking-[-0.4px] text-gca-dark">
+                Assign people
+              </h2>
+              <p className="text-[14px] text-gca-show">Contact Admin to manage project team</p>
+              <button
+                type="button"
+                onClick={() => setStep("details")}
+                className="flex gap-[6px] items-center cursor-pointer self-start text-[14px] font-medium text-gca-show"
+              >
+                <ArrowLeft className="size-[14px]" /> Back
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );

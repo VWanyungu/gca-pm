@@ -19,7 +19,10 @@ const userFormSchema = z.object({
 
 type UserFormValues = z.infer<typeof userFormSchema>;
 
-const GLOBAL_ROLE_OPTIONS = [{ id: "none", name: "None" }, ...ROLE_NAMES.map((r) => ({ id: r, name: r }))];
+const GLOBAL_ROLE_OPTIONS = [
+  { id: "none", name: "None" },
+  ...ROLE_NAMES.map((r) => ({ id: r, name: r })),
+];
 
 function splitName(fullName: string): { firstName: string; lastName: string } {
   const [firstName, ...rest] = fullName.trim().split(/\s+/);
@@ -53,13 +56,25 @@ export function UserForm({ editing }: UserFormProps) {
   const saving = createUser.isPending || updateUser.isPending;
 
   async function onSubmit(values: UserFormValues) {
-    const globalRole = values.globalRole && values.globalRole !== "none" ? (values.globalRole as RoleName) : null;
+    const globalRole =
+      values.globalRole && values.globalRole !== "none" ? (values.globalRole as RoleName) : null;
     const { firstName, lastName } = splitName(values.fullName);
     if (editing) {
-      await updateUser.mutateAsync({ firstName, lastName, phone: values.phone || null, globalRole });
+      await updateUser.mutateAsync({
+        firstName,
+        lastName,
+        phone: values.phone || null,
+        globalRole,
+      });
       router.push("/admin/users");
     } else {
-      await createUser.mutateAsync({ firstName, lastName, email: values.email, phone: values.phone || null, globalRole });
+      await createUser.mutateAsync({
+        firstName,
+        lastName,
+        email: values.email,
+        phone: values.phone || null,
+        globalRole,
+      });
       router.push("/admin/users");
     }
   }
@@ -77,13 +92,16 @@ export function UserForm({ editing }: UserFormProps) {
         {editing ? `${editing.first_name} ${editing.last_name}` : "Add user"}
       </h1>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex gap-[24px]">
+      <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex gap-[24px]">
         <div className="flex flex-1 flex-col gap-[16px]">
           <Field label="Full name" required error={errors.fullName?.message}>
             <input
               {...register("fullName")}
+              aria-invalid={!!errors.fullName}
               placeholder="e.g. Jane Wanjiru"
-              className="h-[42px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
+              className={`h-[42px] rounded-[8px] border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green ${
+                errors.fullName ? "border-error-border" : "border-gca-border"
+              }`}
             />
           </Field>
 
@@ -91,9 +109,12 @@ export function UserForm({ editing }: UserFormProps) {
             <input
               type="email"
               {...register("email")}
+              aria-invalid={!!errors.email}
               disabled={!!editing}
               placeholder="name@gca.co.ke"
-              className="h-[42px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green disabled:bg-gca-page-bg disabled:text-gca-muted"
+              className={`h-[42px] rounded-[8px] border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green disabled:bg-gca-page-bg disabled:text-gca-muted ${
+                errors.email ? "border-error-border" : "border-gca-border"
+              }`}
             />
           </Field>
 

@@ -168,12 +168,6 @@ export default function Home() {
         {/* Loading state */}
         {loading && <LoadingSkeleton />}
 
-        {error && (
-          <div className="rounded-[8px] bg-error-bg px-[14px] py-[12px] text-[14px] font-medium text-error-text">
-            {error}
-          </div>
-        )}
-
         {/* Content */}
         {!loading && !error && (
           <>
