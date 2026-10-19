@@ -33,7 +33,15 @@ interface ProjectSidebarProps {
   stages: StageRow[];
   counts?: { submit: number; risks: number; changeRequests: number };
   percentByStage?: Record<number, number>;
-  active: "overview" | "team" | "stages" | "risks" | "change-requests" | "milestones" | "schedule" | "submit";
+  active:
+    | "overview"
+    | "team"
+    | "stages"
+    | "risks"
+    | "change-requests"
+    | "milestones"
+    | "schedule"
+    | "submit";
   activeStageNo?: number;
 }
 
@@ -47,6 +55,7 @@ export function ProjectSidebar({
 }: ProjectSidebarProps) {
   const { user } = useAuth();
   const [stagesOpen, setStagesOpen] = useState(true);
+  const [allStagesOpen, setAllStagesOpen] = useState(true);
 
   const myRole = user?.role.find(
     (r) => r.scope_type === "project" && r.project_id === projectId,
@@ -81,14 +90,16 @@ export function ProjectSidebar({
     { key: "team", label: "Team", icon: Users, href: `${base}/team` },
   ] as const;
 
-  const inScopeStages = stages.filter((s) => s.in_scope).sort((a, b) => b.stage_no - a.stage_no);
+  const inScopeStages = stages.filter((s) => s.in_scope).sort((a, b) => a.stage_no - b.stage_no);
   const topStages = inScopeStages.filter((s) => s.state !== "complete").slice(0, 3);
+  const visibleStages = allStagesOpen ? inScopeStages : topStages;
+  const stageListHeight = visibleStages.length * 34;
 
   return (
     <aside className="sticky top-[64px] flex h-[calc(100vh-64px)] w-[240px] shrink-0 flex-col justify-between overflow-y-auto border-r border-gca-border bg-gca-page-bg">
-      <div className="flex flex-col gap-[2px] px-[12px] pt-[40px]">
+      <div className="flex flex-col gap-[2px] px-[12px] pt-[0px]">
         {myRole && (
-          <div className="mb-[8px] flex flex-col gap-[2px] rounded-[10px] px-[12px] py-[10px]">
+          <div className="mb-[0px] flex flex-col gap-[2px] rounded-[10px] px-[12px] pt-[10px] pb-[8px] text-gca-show">
             <p className="text-[14px] font-semibold text-gca-dark">
               {myRole === "PM" ? "Main PM" : myRole === "Planner" ? "Main Planner" : myRole}
             </p>
@@ -123,7 +134,7 @@ export function ProjectSidebar({
         })}
 
         {/* Stages */}
-        {/* <button
+        <button
           onClick={() => setStagesOpen((o) => !o)}
           className="flex items-center justify-between rounded-[8px] px-[12px] py-[8px] hover:bg-white"
         >
@@ -140,19 +151,36 @@ export function ProjectSidebar({
 
         {stagesOpen && (
           <div className="relative flex flex-col gap-[2px] py-[4px] pl-[20px]">
-            <svg
-              className="pointer-events-none absolute left-[20px] top-0"
-              width={9}
-              height={113}
-              viewBox="0 0 10.4 113.4"
-              fill="none"
-            >
-              <path d="M0.7 0.7 V105.7 C0.7 110.7 3.7 112.7 9.7 112.7" stroke="#C9D3CB" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M0.7 9.7 C0.7 14.7 3.7 16.7 9.7 16.7" stroke="#C9D3CB" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M0.7 41.7 C0.7 46.7 3.7 48.7 9.7 48.7" stroke="#C9D3CB" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M0.7 73.7 C0.7 78.7 3.7 80.7 9.7 80.7" stroke="#C9D3CB" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            {topStages.map((s) => {
+            {visibleStages.length > 0 && (
+              <svg
+                className="pointer-events-none absolute left-[20px] top-0"
+                width={9}
+                height={stageListHeight}
+                viewBox={`0 0 10.4 ${stageListHeight}`}
+                fill="none"
+              >
+                <path
+                  d={`M0.7 0.7 V${visibleStages.length * 34}`}
+                  stroke="#C9D3CB"
+                  strokeWidth={1.4}
+                  strokeLinecap="round"
+                />
+                {/* {visibleStages.map((stage, index) => {
+                  const y = index * 34 + 16;
+                  return (
+                    <path
+                      key={stage.stage_no}
+                      d={`M0.7 ${y - 7} C0.7 ${y - 2} 3.7 ${y} 9.7 ${y}`}
+                      stroke="#C9D3CB"
+                      strokeWidth={1.4}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  );
+                })} */}
+              </svg>
+            )}
+            {visibleStages.map((s) => {
               const viewing = s.stage_no === activeStageNo;
               return (
                 <Link
@@ -162,28 +190,34 @@ export function ProjectSidebar({
                     viewing ? "bg-gca-badge-bg" : "hover:bg-white"
                   }`}
                 >
-                  <span className={viewing ? "font-semibold text-gca-badge-text" : "font-normal text-gca-show"}>
+                  <span
+                    className={
+                      viewing ? "font-semibold text-gca-badge-text" : "font-normal text-gca-show"
+                    }
+                  >
                     {STAGE_SHORT_NAME[s.stage_no]}
                   </span>
                   <span className="font-mono text-[12px] text-gca-muted">
-                    {s.state === "complete"
-                      ? "Done"
-                      : s.state === "active"
-                        ? `${percentByStage?.[s.stage_no] ?? 0}%`
-                        : "Not started"}
+                    {s.state === "complete" ? "Done" : `${percentByStage?.[s.stage_no] ?? 0}%`}
                   </span>
                 </Link>
               );
             })}
-            <Link
-              href={`${base}/stages`}
-              className="flex h-[32px] items-center gap-[8px] pl-[26px] text-[13px] font-medium text-gca-green"
-            >
-              All 10 stages
-              <ChevronRight className="size-[10px]" />
-            </Link>
+            {inScopeStages.length > topStages.length && (
+              <button
+                type="button"
+                aria-expanded={allStagesOpen}
+                onClick={() => setAllStagesOpen((open) => !open)}
+                className="flex h-[32px] cursor-pointer items-center gap-[8px] pl-[26px] text-[13px] font-medium text-gca-green"
+              >
+                {allStagesOpen ? "Show fewer stages" : `All ${inScopeStages.length} stages`}
+                <ChevronRight
+                  className={`size-[18] transition-transform ${allStagesOpen ? "rotate-270" : "rotate-90"}`}
+                />
+              </button>
+            )}
           </div>
-        )} */}
+        )}
       </div>
 
       <div className="flex flex-col gap-[2px] border-t border-gca-border px-[12px] py-[8px]">
