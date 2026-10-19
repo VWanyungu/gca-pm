@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
@@ -16,9 +16,18 @@ export const detailsSchema = z.object({
   expected_start_date: z.string().min(1, "Start date is required"),
   expected_end_date: z.string().optional(),
   site_location: z.string().optional(),
+  is_mechanical: z.boolean(),
+  is_civil: z.boolean(),
+  is_electrical: z.boolean(),
 });
 
 export type DetailsFormValues = z.infer<typeof detailsSchema>;
+
+const WORK_TYPES = [
+  { field: "is_mechanical", label: "Mechanical" },
+  { field: "is_civil", label: "Civil" },
+  { field: "is_electrical", label: "Electrical" },
+] as const;
 
 interface ProgramsResponse {
   programs: Array<{ program_id: number; name: string }>;
@@ -46,7 +55,7 @@ export function DetailsStep({
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = useForm<DetailsFormValues>({ resolver: zodResolver(detailsSchema), defaultValues });
 
@@ -67,7 +76,11 @@ export function DetailsStep({
     },
   });
 
-  const programId = watch("program_id");
+  const programId = useWatch({ control, name: "program_id" });
+  const workTypes = useWatch({
+    control,
+    name: ["is_mechanical", "is_civil", "is_electrical"],
+  });
 
   return (
     <form onSubmit={handleSubmit(onNext)} className="flex w-full flex-col gap-[24px]">
@@ -133,6 +146,35 @@ export function DetailsStep({
         />
       </Field>
 
+      <fieldset className="flex flex-col gap-[10px]">
+        <legend className="pb-[6px] text-[13px] font-medium text-gca-dark">Works</legend>
+        <div className="flex flex-wrap items-center gap-[12px]">
+          {WORK_TYPES.map(({ field, label }, index) => {
+            const selected = workTypes[index];
+            return (
+              <button
+                key={field}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setValue(field, !selected, { shouldDirty: true })}
+                className={`flex w-[180px] flex-1 cursor-pointer items-center gap-[12px] rounded-[8px] border px-[14px] py-[12px] ${
+                  selected ? "border-gca-green bg-gca-badge-bg" : "border-gca-border"
+                }`}
+              >
+                <span
+                  className={`flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 ${
+                    selected ? "border-gca-green" : "border-gca-border"
+                  }`}
+                >
+                  {selected && <span className="size-[10px] rounded-full bg-gca-green" />}
+                </span>
+                <span className="text-[14px] font-medium text-gca-dark">{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+
       <div className="flex items-center justify-between pt-[24px]">
         <button
           type="button"
@@ -156,8 +198,9 @@ export function DetailsStep({
             type="submit"
             className="cursor-pointer flex items-center gap-[10px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
           >
-            {nextLabel}
-            <ArrowRight className="size-[13px]" />
+            {/* {nextLabel} */}
+            Next
+            {/* <ArrowRight className="size-[13px]" /> */}
           </button>
         </div>
       </div>

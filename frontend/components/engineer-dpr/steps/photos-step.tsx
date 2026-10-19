@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { LoaderCircle, Plus, X } from "lucide-react";
 import { uploadDprPhoto } from "../use-dpr-wizard-data";
 import type { DprDraftInput } from "../types";
 
@@ -90,12 +90,17 @@ export function PhotosStep({ draft, update, projectId }: StepProps) {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
+            aria-label={uploading ? "Uploading photo" : "Add photo"}
             className="flex h-[128px] w-full cursor-pointer flex-col items-center justify-center gap-[6px] rounded-[8px] border border-dashed border-gca-border disabled:opacity-50"
           >
-            <Plus className="size-[14px] text-gca-green" />
-            <p className="text-[13px] font-medium text-gca-green">
-              {uploading ? "Uploading…" : "Add photo"}
-            </p>
+            {uploading ? (
+              <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />
+            ) : (
+              <>
+                <Plus className="size-[14px] text-gca-green" />
+                <p className="text-[13px] font-medium text-gca-green">Add photo</p>
+              </>
+            )}
           </button>
         )}
       </div>

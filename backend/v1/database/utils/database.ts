@@ -1886,7 +1886,7 @@ export class Projects {
           site_lng: input.site_lng ?? null,
           timezone: input.timezone ?? 'Africa/Nairobi',
           is_civil: input.is_civil ?? false,
-          is_mechanical: input.is_mechanical ?? false,
+          is_mechanical: input.is_mechanical ?? true,
           is_electrical: input.is_electrical ?? false,
           expected_start_date: input.expected_start_date ?? null,
           expected_end_date: input.expected_end_date ?? null,

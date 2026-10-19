@@ -43,8 +43,12 @@ export function ScopeStep({ value, onChange, onBack, onNext, nextLabel }: ScopeS
   return (
     <div className="flex w-full flex-col gap-[32px]">
       <div>
-        <h2 className="text-[26px] font-semibold tracking-[-0.39px] text-gca-dark">Choose the stages</h2>
-        <p className="pt-[8px] text-[15px] text-gca-show">Start from a preset, then add or remove stages.</p>
+        <h2 className="text-[26px] font-semibold tracking-[-0.39px] text-gca-dark">
+          Choose the stages
+        </h2>
+        <p className="pt-[8px] text-[15px] text-gca-show">
+          Start from a preset, then add or remove stages.
+        </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-[16px]">
@@ -87,7 +91,9 @@ export function ScopeStep({ value, onChange, onBack, onNext, nextLabel }: ScopeS
                   <X className="size-[12] cursor-pointer" />
                 </button>
               ))}
-              {inScope.length === 0 && <p className="text-[13px] text-gca-muted">No stages selected yet.</p>}
+              {inScope.length === 0 && (
+                <p className="text-[13px] text-gca-muted">No stages selected yet.</p>
+              )}
             </div>
           </div>
 
@@ -111,8 +117,12 @@ export function ScopeStep({ value, onChange, onBack, onNext, nextLabel }: ScopeS
       )}
 
       <div className="flex items-center justify-between pt-[24px]">
-        <button type="button" onClick={onBack} className="cursor-pointer flex items-center gap-[8px] px-[4px] py-[11px] text-[14px] font-semibold text-gca-dark">
-          <ArrowLeft className="size-[13px]" />
+        <button
+          type="button"
+          onClick={onBack}
+          className="cursor-pointer flex items-center gap-[8px] px-[4px] py-[11px] text-[14px] font-semibold text-gca-dark"
+        >
+          {/* <ArrowLeft className="size-[13px]" /> */}
           Back
         </button>
         <button
@@ -121,8 +131,9 @@ export function ScopeStep({ value, onChange, onBack, onNext, nextLabel }: ScopeS
           onClick={onNext}
           className="cursor-pointer flex items-center gap-[10px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
         >
-          {nextLabel}
-          <ArrowRight className="size-[13px]" />
+          {/* {nextLabel} */}
+          Next
+          {/* <ArrowRight className="size-[13px]" /> */}
         </button>
       </div>
     </div>

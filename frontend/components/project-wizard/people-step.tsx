@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, Plus, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, LoaderCircle, Plus, X } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 import Dropdown from "@/components/Dropdown";
@@ -41,7 +41,14 @@ interface PeopleStepProps {
   submitting?: boolean;
 }
 
-export function PeopleStep({ value, onChange, onBack, onSubmit, submitLabel, submitting }: PeopleStepProps) {
+export function PeopleStep({
+  value,
+  onChange,
+  onBack,
+  onSubmit,
+  submitLabel,
+  submitting,
+}: PeopleStepProps) {
   const { user } = useAuth();
   const [draft, setDraft] = useState<ClientContact>({ name: "", role: "", email: "" });
 
@@ -56,7 +63,10 @@ export function PeopleStep({ value, onChange, onBack, onSubmit, submitLabel, sub
 
   const userOptions = users.map((u) => ({
     id: u.id,
-    name: u.id === user?.userId ? `${u.first_name} ${u.last_name} (you)` : `${u.first_name} ${u.last_name}`,
+    name:
+      u.id === user?.userId
+        ? `${u.first_name} ${u.last_name} (you)`
+        : `${u.first_name} ${u.last_name}`,
   }));
 
   function toggleEngineer(id: string) {
@@ -81,8 +91,12 @@ export function PeopleStep({ value, onChange, onBack, onSubmit, submitLabel, sub
   return (
     <div className="flex w-full flex-col gap-[28px]">
       <div>
-        <h2 className="text-[26px] font-semibold tracking-[-0.39px] text-gca-dark">Assign people</h2>
-        <p className="pt-[8px] text-[15px] text-gca-show">The main Planner gets Planner access to this project.</p>
+        <h2 className="text-[26px] font-semibold tracking-[-0.39px] text-gca-dark">
+          Assign people
+        </h2>
+        <p className="pt-[8px] text-[15px] text-gca-show">
+          The main Planner gets Planner access to this project.
+        </p>
       </div>
 
       <div className="flex gap-[16px]">
@@ -186,18 +200,27 @@ export function PeopleStep({ value, onChange, onBack, onSubmit, submitLabel, sub
       )}
 
       <div className="flex items-center justify-between pt-[24px]">
-        <button type="button" onClick={onBack} className="cursor-pointer flex items-center gap-[8px] px-[4px] py-[11px] text-[14px] font-semibold text-gca-dark">
-          <ArrowLeft className="size-[13px]" />
+        <button
+          type="button"
+          onClick={onBack}
+          className="cursor-pointer flex items-center gap-[8px] px-[4px] py-[11px] text-[14px] font-semibold text-gca-dark"
+        >
+          {/* <ArrowLeft className="size-[13px]" /> */}
           Back
         </button>
         <button
           type="button"
           disabled={!value.pmUserId || !value.plannerUserId || submitting}
           onClick={onSubmit}
-          className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
+          aria-label={submitting ? "Saving" : undefined}
+          className="cursor-pointer flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
         >
-          {submitting ? "Saving…" : submitLabel}
-          <ArrowRight className="size-[13px]" />
+          {submitting ? (
+            <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />
+          ) : (
+            submitLabel
+          )}
+          {/* <ArrowRight className="size-[13px]" /> */}
         </button>
       </div>
     </div>

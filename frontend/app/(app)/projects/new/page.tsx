@@ -24,6 +24,9 @@ const EMPTY_DETAILS: DetailsFormValues = {
   expected_start_date: "",
   expected_end_date: "",
   site_location: "",
+  is_mechanical: true,
+  is_civil: false,
+  is_electrical: false,
 };
 
 const EMPTY_PEOPLE: PeopleValues = {
@@ -69,6 +72,9 @@ export default function NewProjectPage() {
       expected_start_date: details.expected_start_date,
       expected_end_date: details.expected_end_date || null,
       site_location: details.site_location || null,
+      is_mechanical: details.is_mechanical,
+      is_civil: details.is_civil,
+      is_electrical: details.is_electrical,
       pm_user_id: people.pmUserId,
       planner_user_id: people.plannerUserId,
       scope_stages: scopeStages,
@@ -135,7 +141,7 @@ export default function NewProjectPage() {
             ← Projects
           </Link> */}
           <Link
-            href="/projects"
+            href="/"
             className="flex items-center gap-[6px] text-[13px] font-medium text-gca-green"
           >
             <ArrowLeft className="size-[14px]" />
@@ -189,7 +195,7 @@ export default function NewProjectPage() {
                 onBack={() => setStep("scope")}
                 onSubmit={handleSubmit}
                 submitting={submitting}
-                submitLabel="Create project"
+                submitLabel="Create"
               />
             )}
           </div>

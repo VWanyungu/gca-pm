@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { LoaderCircle } from "lucide-react";
 import { useProjectDetail } from "@/components/project-overview/use-project-data";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_CREATE_DPR } from "@/lib/access-control";
@@ -130,8 +131,14 @@ export function DprWizard({ projectId }: { projectId: string }) {
             </p>
           </div>
         </div>
-        <p className="text-[12px] text-gca-muted">
-          {saving ? "Saving…" : savedAt ? `Saved ${formatSavedTime(savedAt)}` : ""}
+        <p className="flex min-w-[96px] items-center justify-end text-[12px] text-gca-muted">
+          {saving ? (
+            <LoaderCircle className="size-[18px] animate-spin" aria-label="Saving" />
+          ) : savedAt ? (
+            `Saved ${formatSavedTime(savedAt)}`
+          ) : (
+            ""
+          )}
         </p>
       </div>
 
@@ -149,7 +156,11 @@ export function DprWizard({ projectId }: { projectId: string }) {
           disabled={saving}
           className="flex flex-1 items-center justify-center rounded-[8px] border border-gca-border bg-white py-[13px] disabled:opacity-60"
         >
-          <p className="text-[15px] font-semibold text-gca-dark">Save draft</p>
+          {saving ? (
+            <LoaderCircle className="size-[18px] animate-spin" aria-label="Saving draft" />
+          ) : (
+            <p className="text-[15px] font-semibold text-gca-dark">Save draft</p>
+          )}
         </button>
         <button
           onClick={handlePrimary}
@@ -157,7 +168,13 @@ export function DprWizard({ projectId }: { projectId: string }) {
           className="flex flex-1 items-center justify-center rounded-[8px] bg-gca-green py-[13px] disabled:opacity-60"
         >
           <p className="text-[15px] font-semibold text-white">
-            {isLastStep ? (submitting ? "Submitting…" : "Submit") : "Next"}
+            {isLastStep && submitting ? (
+              <LoaderCircle className="size-[18px] animate-spin" aria-label="Submitting" />
+            ) : isLastStep ? (
+              "Submit"
+            ) : (
+              "Next"
+            )}
           </p>
         </button>
       </div>
