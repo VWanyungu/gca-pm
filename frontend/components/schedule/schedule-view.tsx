@@ -381,7 +381,11 @@ export function ScheduleView({ projectId }: { projectId: string }) {
             <GanttChart tasks={filteredTasks} window={range === "lookahead" ? lookaheadWindow : undefined} />
           )}
           {tab === "table" && (
-            <ScheduleTable tasks={filteredTasks} window={range === "lookahead" ? lookaheadWindow : undefined} />
+            <ScheduleTable
+              key={`${range}:${search}`}
+              tasks={filteredTasks}
+              window={range === "lookahead" ? lookaheadWindow : undefined}
+            />
           )}
           {tab === "overdue" && (
             <OverdueTasksView

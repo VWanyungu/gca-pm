@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Pagination } from "@/components/pagination";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   formatShortDate,
   groupPlannedProgress,
@@ -15,7 +14,8 @@ import {
   type ScheduleTask,
 } from "./types";
 
-const PER_PAGE = 12;
+const INITIAL_ROWS = 24;
+const LOAD_MORE_ROWS = 24;
 const INDENT_PER_LEVEL = 16;
 
 interface ScheduleTableProps {
@@ -28,14 +28,14 @@ interface ScheduleTableProps {
  * The schedule as an indented tree, in the order the file lists it.
  *
  * A schedule is as deep as the planner made it — this file runs four levels — so rows are
- * rendered from one depth-first list rather than as groups-with-children. Pagination slices
- * that same list, which keeps every page a contiguous run of the schedule instead of a page
- * of headers whose children all landed on some other page.
+ * rendered from one depth-first list rather than as groups-with-children. Incremental loading
+ * slices that same list, so each newly shown batch stays in the schedule's original order.
  */
 export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(PER_PAGE);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_ROWS);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const byId = useMemo(() => new Map(tasks.map((t) => [t.task_id, t])), [tasks]);
   const level = useMemo(() => phaseLevel(tasks), [tasks]);
@@ -51,9 +51,26 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
   );
 
   const total = rows.length;
-  const pages = Math.max(Math.ceil(total / perPage), 1);
-  const currentPage = Math.min(page, pages);
-  const pageRows = rows.slice((currentPage - 1) * perPage, currentPage * perPage);
+  const visibleRows = rows.slice(0, visibleCount);
+
+  useEffect(() => {
+    const root = scrollContainerRef.current;
+    const target = loadMoreRef.current;
+    if (!root || !target || visibleCount >= total) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          observer.disconnect();
+          setVisibleCount((count) => Math.min(count + LOAD_MORE_ROWS, total));
+        }
+      },
+      { root, rootMargin: "0px 0px 200px 0px" },
+    );
+    observer.observe(target);
+
+    return () => observer.disconnect();
+  }, [total, visibleCount]);
 
   function toggleGroup(groupId: string) {
     setCollapsed((prev) => {
@@ -84,8 +101,8 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
           <p className="w-[15%]">Status</p>
         </div>
 
-        <div className="max-h-[520px] overflow-y-auto">
-          {pageRows.map((t, i) => {
+        <div ref={scrollContainerRef} className="max-h-[520px] overflow-y-auto">
+          {visibleRows.map((t, i) => {
             const isPhase = t.outline_level === level;
             const isGroup = t.is_summary;
             const status = taskStatusLabel(t);
@@ -157,23 +174,16 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
               </div>
             );
           })}
+          {visibleCount < total && (
+            <div ref={loadMoreRef} className="py-[12px] text-center text-[12px] text-gca-muted">
+              Scroll to load more tasks
+            </div>
+          )}
         </div>
       </div>
-
-      {pages > 1 && (
-        <Pagination
-          page={currentPage}
-          totalPages={pages}
-          perPage={perPage}
-          total={total}
-          onPageChange={setPage}
-          onPerPageChange={(n) => {
-            setPerPage(n);
-            setPage(1);
-          }}
-          label="rows"
-        />
-      )}
+      <p className="text-right text-[12px] text-gca-muted">
+        Showing {visibleRows.length} of {total} rows
+      </p>
     </div>
   );
 }
