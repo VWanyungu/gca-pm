@@ -10,7 +10,8 @@ import { canAccess, CAN_CREATE_DPR } from "@/lib/access-control";
 import { useDprDraft } from "./use-dpr-draft";
 import { StepNavigator } from "./step-navigator";
 import { WIZARD_STEPS } from "./types";
-import { submitDpr, useDprPrefill } from "./use-dpr-wizard-data";
+import { submitDpr, useDprPrefill, useWeatherCategories } from "./use-dpr-wizard-data";
+import { compassDirection, useCurrentWeather, weatherCategoryName } from "./use-weather-autofill";
 import { SiteConditionsStep } from "./steps/site-conditions-step";
 import { EffectsStep } from "./steps/effects-step";
 import { WorkProgressStep } from "./steps/work-progress-step";
@@ -73,6 +74,36 @@ export function DprWizard({ projectId, onClose, onSubmitted }: DprWizardProps) {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefill, dprId, draft.site_location]);
+
+  // Prefills weather from the project's site coordinates (a free API, no key needed) — once,
+  // and only while the engineer hasn't touched any weather field yet.
+  const { data: weather } = useCurrentWeather(project?.site_lat ?? null, project?.site_lng ?? null);
+  const { data: weatherCategories } = useWeatherCategories();
+  const appliedWeather = useRef(false);
+  useEffect(() => {
+    if (appliedWeather.current || !weather || !weatherCategories?.length) return;
+    const alreadySet =
+      draft.weather_category_id !== null ||
+      draft.temp_min_c !== null ||
+      draft.temp_max_c !== null ||
+      draft.humidity_pct !== null ||
+      draft.wind !== null;
+    if (alreadySet) {
+      appliedWeather.current = true;
+      return;
+    }
+    appliedWeather.current = true;
+    const categoryName = weatherCategoryName(weather.weather_code, weather.temp_max_c, weather.wind_kph);
+    const category = weatherCategories.find((c) => c.name === categoryName);
+    update({
+      weather_category_id: category?.weather_category_id ?? null,
+      temp_min_c: Math.round(weather.temp_min_c),
+      temp_max_c: Math.round(weather.temp_max_c),
+      humidity_pct: Math.round(weather.humidity_pct),
+      wind: `${Math.round(weather.wind_kph)} km/h ${compassDirection(weather.wind_direction_deg)}`,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weather, weatherCategories]);
 
   const StepComponent = STEP_COMPONENTS[currentStep];
   const isLastStep = currentStep === WIZARD_STEPS.length - 1;

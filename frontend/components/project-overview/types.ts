@@ -7,6 +7,8 @@ export interface ProjectDetail {
   program_id: number;
   client_name: string | null;
   site_location: string | null;
+  site_lat: number | null;
+  site_lng: number | null;
   expected_start_date: string | null;
   expected_end_date: string | null;
   status: ProjectStatus;
