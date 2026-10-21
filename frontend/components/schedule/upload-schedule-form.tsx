@@ -17,6 +17,7 @@ function formatSize(bytes: number): string {
 export interface UploadDraft {
   file: File;
   scopeMode: ScopeMode;
+  rebaseline: boolean;
   notes: string;
 }
 
@@ -41,8 +42,19 @@ interface UploadScheduleFormProps {
 export function UploadScheduleForm({ currentVersion, currentStageName, team, onCancel, onSubmit, submitting = false }: UploadScheduleFormProps) {
   const [file, setFile] = useState<File | null>(null);
   const [scopeMode, setScopeMode] = useState<ScopeMode>("every_task");
+  const [rebaseline, setRebaseline] = useState(false);
   const [notes, setNotes] = useState("");
+  const [confirmingRebaseline, setConfirmingRebaseline] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  function handleUploadClick() {
+    if (!file) return;
+    if (rebaseline) {
+      setConfirmingRebaseline(true);
+      return;
+    }
+    onSubmit({ file, scopeMode, rebaseline, notes: notes.trim() });
+  }
 
   return (
     <div className="flex w-full flex-col gap-[24px]">
@@ -131,10 +143,15 @@ export function UploadScheduleForm({ currentVersion, currentStageName, team, onC
       <div className="flex w-full items-start gap-[48px] border-t border-gca-border pt-[24px]">
         <div className="w-[280px] shrink-0">
           <p className="text-[14px] font-semibold text-gca-dark">Rebaseline</p>
-          <p className="mt-[4px] text-[13px] text-gca-show">Only offered when an approved change exists.</p>
+          <p className="mt-[4px] text-[13px] text-gca-show">Makes this version the new plan.</p>
         </div>
-        <label className="flex w-full max-w-[792px] cursor-not-allowed items-start gap-[10px] rounded-[8px] bg-gca-page-bg px-[16px] py-[14px] opacity-60">
-          <input type="checkbox" disabled className="mt-[3px]" />
+        <label className="flex w-full max-w-[792px] cursor-pointer items-start gap-[10px] rounded-[8px] bg-gca-page-bg px-[16px] py-[14px]">
+          <input
+            type="checkbox"
+            checked={rebaseline}
+            onChange={(e) => setRebaseline(e.target.checked)}
+            className="mt-[3px]"
+          />
           <div>
             <p className="text-[14px] font-medium text-gca-dark">Rebaseline with this upload</p>
             <p className="mt-[2px] text-[13px] text-gca-show">Rebaselining makes this version the new plan.</p>
@@ -163,7 +180,7 @@ export function UploadScheduleForm({ currentVersion, currentStageName, team, onC
             Cancel
           </button>
           <button
-            onClick={() => file && onSubmit({ file, scopeMode, notes: notes.trim() })}
+            onClick={handleUploadClick}
             disabled={!file || submitting}
             aria-label={submitting ? "Uploading" : undefined}
             className="cursor-pointer flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:cursor-not-allowed disabled:opacity-50"
@@ -179,6 +196,33 @@ export function UploadScheduleForm({ currentVersion, currentStageName, team, onC
           </button>
         </div>
       </div>
+
+      {confirmingRebaseline && file && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-[rgba(24,48,31,0.45)]" onClick={() => setConfirmingRebaseline(false)} />
+          <div className="relative m-6 md:m-0 w-[392px] max-w-full rounded-[12px] bg-white p-[24px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
+            <h2 className="text-[18px] font-semibold text-gca-dark">Are you sure you want to rebaseline?</h2>
+            <p className="mt-[8px] text-[14px] text-gca-muted">Rebaselining makes this version the new plan.</p>
+            <div className="mt-[24px] flex justify-end gap-[12px]">
+              <button
+                onClick={() => setConfirmingRebaseline(false)}
+                className="rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setConfirmingRebaseline(false);
+                  onSubmit({ file, scopeMode, rebaseline, notes: notes.trim() });
+                }}
+                className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-medium text-white"
+              >
+                Rebaseline
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

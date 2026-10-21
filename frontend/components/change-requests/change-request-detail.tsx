@@ -209,7 +209,7 @@ export function ChangeRequestDetail({
         </div>
 
         {cr.status === "pending" && (
-          <p className="text-[13px] text-gca-muted">If approved, the Planner can rebaseline on the next upload.</p>
+          <p className="text-[13px] text-gca-muted">The Planner can link this to a rebaseline on the next upload.</p>
         )}
       </div>
 
