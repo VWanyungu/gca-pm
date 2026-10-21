@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useProjectDetail } from "@/components/project-overview/use-project-data";
 import { useDpr } from "@/components/weekly-submission/use-weekly-submission-data";
@@ -18,6 +18,17 @@ const SECTIONS = [
 
 type SectionId = (typeof SECTIONS)[number]["id"];
 type ViewMode = "section" | "full";
+
+// Hoisted function declarations, so this is safe to evaluate here.
+const SECTION_RENDERERS: Record<SectionId, (dpr: DprDetail) => React.ReactNode> = {
+  conditions: (dpr) => <ConditionsSection dpr={dpr} />,
+  effects: (dpr) => <EffectsSection dpr={dpr} />,
+  "work-progress": (dpr) => <WorkProgressSection dpr={dpr} />,
+  personnel: (dpr) => <PersonnelSection dpr={dpr} />,
+  equipment: (dpr) => <EquipmentSection dpr={dpr} />,
+  photos: (dpr) => <PhotosSection dpr={dpr} />,
+  "sign-off": (dpr) => <SignOffSection dpr={dpr} />,
+};
 
 function formatDate(iso: string, opts: Intl.DateTimeFormatOptions) {
   return new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-GB", {
@@ -131,22 +142,15 @@ export function DprDetailView({ projectId, dprId }: { projectId: string; dprId: 
     );
   }
 
-  const sections: Record<SectionId, React.ReactNode> = {
-    conditions: <ConditionsSection dpr={dpr} />,
-    effects: <EffectsSection dpr={dpr} />,
-    "work-progress": <WorkProgressSection dpr={dpr} />,
-    personnel: <PersonnelSection dpr={dpr} />,
-    equipment: <EquipmentSection dpr={dpr} />,
-    photos: <PhotosSection dpr={dpr} />,
-    "sign-off": <SignOffSection dpr={dpr} />,
-  };
-
   return (
     <div className="flex w-full justify-center bg-white p-[40px]">
       <div className="flex w-full max-w-[1084px] flex-col gap-[24px]">
         <div className="flex items-end justify-between">
           <div className="flex flex-col gap-[16px]">
-            <Link href={`/projects/${projectId}/weekly-submission`} className="text-[13px] font-medium text-gca-green">
+            <Link
+              href={`/projects/${projectId}/weekly-submission`}
+              className="text-[13px] font-medium text-gca-green"
+            >
               ← Submit
             </Link>
             <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">
@@ -244,7 +248,15 @@ export function DprDetailView({ projectId, dprId }: { projectId: string; dprId: 
               <p className="text-[14px] font-semibold text-gca-dark">DPR details</p>
               {detail("Project", project.project.name)}
               {detail("Site", dpr.site_location)}
-              {detail("Date", formatDate(dpr.report_date, { weekday: "long", day: "numeric", month: "short", year: "numeric" }))}
+              {detail(
+                "Date",
+                formatDate(dpr.report_date, {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                }),
+              )}
               {detail("Submitted by", dpr.author_name)}
               {dpr.submitted_at && detail("Submitted", formatDateTime(dpr.submitted_at))}
             </div>
@@ -252,7 +264,7 @@ export function DprDetailView({ projectId, dprId }: { projectId: string; dprId: 
 
           {mode === "section" ? (
             <div className="flex w-[800px] flex-col gap-[16px] pb-[24px]">
-              {sections[activeSection]}
+              {SECTION_RENDERERS[activeSection](dpr)}
               <div className="flex items-center justify-between border-t border-gca-border pt-[16px] text-[13px] font-medium text-gca-green">
                 <button
                   onClick={() => prevSection && goToSection(prevSection.id)}
@@ -279,7 +291,7 @@ export function DprDetailView({ projectId, dprId }: { projectId: string; dprId: 
                   }}
                   className="flex flex-col gap-[16px] scroll-mt-[96px]"
                 >
-                  {sections[s.id]}
+                  {SECTION_RENDERERS[s.id](dpr)}
                 </div>
               ))}
             </div>
@@ -290,8 +302,81 @@ export function DprDetailView({ projectId, dprId }: { projectId: string; dprId: 
   );
 }
 
+/** Sections worth reading mid-submission. Sign-off is omitted: the strip row already
+ * carries the site, engineer, submitted time and timeliness. */
+const INLINE_SECTIONS = SECTIONS.filter((s) => s.id !== "sign-off");
+
+/**
+ * One day's report opened in place, inside the week strip. Height is capped so the
+ * commentary below it does not get pushed off the screen.
+ */
+export function DprInlineReport({ projectId, dprId }: { projectId: string; dprId: string }) {
+  const { data: dpr } = useDpr(projectId, dprId);
+
+  if (!dpr) return <InlineReportSkeleton />;
+
+  return (
+    <CompactSectionTitles.Provider value={true}>
+      {/* Indented, so the report reads as a child of the row rather than a continuation
+          of its columns. No room for the step at phone width. */}
+      <div className="dpr-reveal flex flex-col gap-[16px] pt-[20px] pb-[8px] md:pl-[24px]">
+        <div className="dpr-scroll flex max-h-[min(560px,60vh)] flex-col gap-[32px] overflow-y-auto pr-[12px]">
+          {INLINE_SECTIONS.map((s) => (
+            <div key={s.id} className="flex flex-col gap-[16px]">
+              {SECTION_RENDERERS[s.id](dpr)}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between gap-[16px] border-t border-gca-border pt-[12px]">
+          <p className="font-mono text-[12px] text-gca-muted">{dpr.dpr_ref ?? "No reference"}</p>
+          <Link
+            href={`/projects/${projectId}/dpr/${dprId}`}
+            className="rounded-[6px] text-[13px] font-medium text-gca-green focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gca-green hover:underline hover:underline-offset-[3px]"
+          >
+            Open full report →
+          </Link>
+        </div>
+      </div>
+    </CompactSectionTitles.Provider>
+  );
+}
+
+function InlineReportSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading report" className="animate-pulse pt-[20px]">
+      <div className="flex flex-col gap-[16px]">
+        <div className="h-[20px] w-[180px] rounded-[6px] bg-gca-page-bg" />
+        <div className="grid grid-cols-2 gap-x-[24px] gap-y-[20px] sm:grid-cols-3">
+          {[0, 1, 2, 3, 4, 5].map((field) => (
+            <div key={field} className="flex flex-col gap-[6px]">
+              <div className="h-[11px] w-[64px] rounded-[4px] bg-gca-page-bg" />
+              <div className="h-[14px] w-[96px] rounded-[4px] bg-gca-page-bg" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Inside the week strip these titles sit below the submission's own 16px headings,
+ * so they are a level quieter than on the full report page. */
+const CompactSectionTitles = createContext(false);
+
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <p className="text-[18px] font-semibold tracking-[-0.27px] text-gca-dark">{children}</p>;
+  const compact = useContext(CompactSectionTitles);
+  return (
+    <p
+      className={
+        compact
+          ? "text-[14px] font-semibold text-gca-dark"
+          : "text-[18px] font-semibold tracking-[-0.27px] text-gca-dark"
+      }
+    >
+      {children}
+    </p>
+  );
 }
 
 function ConditionsSection({ dpr }: { dpr: DprDetail }) {
@@ -312,7 +397,7 @@ function ConditionsSection({ dpr }: { dpr: DprDetail }) {
       {fields.length === 0 ? (
         <p className="text-[13px] text-gca-muted">No conditions recorded for this day.</p>
       ) : (
-        <div className="grid grid-cols-3 gap-x-[24px] gap-y-[20px]">{fields}</div>
+        <div className="grid grid-cols-2 gap-x-[24px] gap-y-[20px] sm:grid-cols-3">{fields}</div>
       )}
     </>
   );
@@ -350,7 +435,10 @@ function WorkProgressSection({ dpr }: { dpr: DprDetail }) {
         <div className="flex flex-col gap-[8px]">
           <p className="text-[12px] font-medium text-gca-muted">Work carried out</p>
           {dpr.work_items.map((w) => (
-            <div key={w.work_item_id} className="flex gap-[12px] border-t border-gca-border py-[8px] text-[13px]">
+            <div
+              key={w.work_item_id}
+              className="flex gap-[12px] border-t border-gca-border py-[8px] text-[13px]"
+            >
               <span className="w-[120px] shrink-0 font-medium text-gca-dark">{w.work_area}</span>
               <span className="text-gca-dark">{w.work_carried_out}</span>
             </div>
@@ -359,9 +447,9 @@ function WorkProgressSection({ dpr }: { dpr: DprDetail }) {
       )}
 
       <div className="flex flex-col">
-        <div className="flex items-center py-[8px] text-[12px] font-medium text-gca-muted">
-          <p className="w-[320px]">Schedule task</p>
-          <p className="w-[224px]">Completion</p>
+        <div className="flex items-center gap-[12px] py-[8px] text-[12px] font-medium text-gca-muted">
+          <p className="min-w-0 flex-1">Schedule task</p>
+          <p className="w-[124px] shrink-0">Completion</p>
         </div>
         {dpr.activity_progress.length === 0 ? (
           <p className="border-t border-gca-border py-[12px] text-[13px] text-gca-muted">
@@ -373,15 +461,17 @@ function WorkProgressSection({ dpr }: { dpr: DprDetail }) {
               key={a.dpr_activity_progress_id}
               className="flex items-start gap-[12px] border-t border-gca-border py-[12px]"
             >
-              <div className="flex w-[320px] flex-col gap-[6px]">
-                <p className="text-[13px] font-medium text-gca-dark">{a.task_name ?? a.free_text}</p>
+              <div className="flex min-w-0 flex-1 flex-col gap-[6px]">
+                <p className="text-[13px] font-medium text-gca-dark">
+                  {a.task_name ?? a.free_text}
+                </p>
                 {a.source === "free_text" && (
                   <span className="w-fit rounded-full bg-[#fdf6ea] px-[8px] py-[2px] text-[13px] font-semibold text-gca-warning">
                     Not in schedule
                   </span>
                 )}
               </div>
-              <p className="w-[224px] font-mono text-[13px] text-gca-dark">
+              <p className="w-[124px] shrink-0 font-mono text-[13px] text-gca-dark tabular-nums">
                 {a.today_pct}% → {a.total_pct}%
               </p>
             </div>
@@ -401,7 +491,10 @@ function PersonnelSection({ dpr }: { dpr: DprDetail }) {
       ) : (
         <div className="flex flex-col gap-[12px]">
           {dpr.personnel_groups.map((g) => (
-            <div key={g.personnel_group_id} className="rounded-[8px] border border-gca-border p-[16px]">
+            <div
+              key={g.personnel_group_id}
+              className="rounded-[8px] border border-gca-border p-[16px]"
+            >
               <div className="flex items-center justify-between">
                 <p className="text-[14px] font-semibold text-gca-dark">{g.contractor_name}</p>
                 <p className="font-mono text-[13px] text-gca-dark">{g.total_headcount} on site</p>
@@ -453,14 +546,19 @@ function PhotosSection({ dpr }: { dpr: DprDetail }) {
       {dpr.photos.length === 0 ? (
         <p className="text-[13px] text-gca-muted">No photos attached to this DPR.</p>
       ) : (
-        <div className="grid grid-cols-2 gap-[16px]">
+        <div className="grid grid-cols-1 gap-[16px] sm:grid-cols-2">
           {dpr.photos.map((p) => (
             <div key={p.photo_id} className="flex flex-col gap-[6px]">
               {/* eslint-disable-next-line @next/next/no-img-element -- external, unconfigured image hosts */}
-              <img src={p.url} alt={p.caption ?? "Site photo"} className="h-[240px] w-full rounded-[8px] object-cover" />
+              <img
+                src={p.url}
+                alt={p.caption ?? "Site photo"}
+                className="h-[240px] w-full rounded-[8px] object-cover"
+              />
               <p className="text-[13px] text-gca-show">
                 {p.caption ?? "Untitled"}
-                {p.taken_at && ` · ${new Date(p.taken_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`}
+                {p.taken_at &&
+                  ` · ${new Date(p.taken_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`}
               </p>
             </div>
           ))}
@@ -474,13 +572,12 @@ function SignOffSection({ dpr }: { dpr: DprDetail }) {
   return (
     <>
       <SectionTitle>Sign-off</SectionTitle>
-      <div className="grid grid-cols-3 gap-x-[24px] gap-y-[20px]">
+      <div className="grid grid-cols-2 gap-x-[24px] gap-y-[20px] sm:grid-cols-3">
         {detail("DPR reference", dpr.dpr_ref)}
         {detail("Status", dpr.status === "submitted" ? "Submitted" : "Draft")}
         {detail("Submitted by", dpr.submitted_by_name)}
         {dpr.submitted_at && detail("Submitted", formatDateTime(dpr.submitted_at))}
-        {dpr.status === "submitted" &&
-          detail("Timeliness", dpr.is_late ? "Late" : "On time")}
+        {dpr.status === "submitted" && detail("Timeliness", dpr.is_late ? "Late" : "On time")}
       </div>
     </>
   );
