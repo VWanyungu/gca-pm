@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ClipboardList, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_CREATE_DPR } from "@/lib/access-control";
+import { Pagination } from "@/components/pagination";
 import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
 import {
   useProjectDetail,
@@ -38,10 +39,14 @@ export function DprListView({ projectId }: { projectId: string }) {
   const { data: project } = useProjectDetail(projectId);
   const { data: counts } = useSidebarCounts(projectId);
   const [subView, setSubView] = useState<SubView>({ mode: "list" });
-  const { data } = useDprs({ projectId, limit: 50 });
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  const { data } = useDprs({ projectId, page, limit: perPage });
 
   const canCreate = canAccess(user?.role, CAN_CREATE_DPR, { projectId });
   const dprs = data?.dprs ?? [];
+  const total = data?.pagination.total ?? 0;
+  const totalPages = data?.pagination.totalPages ?? 1;
 
   if (!project) return null;
 
@@ -116,6 +121,21 @@ export function DprListView({ projectId }: { projectId: string }) {
                     );
                   })}
                 </div>
+              )}
+
+              {totalPages > 1 && (
+                <Pagination
+                  page={page}
+                  totalPages={totalPages}
+                  perPage={perPage}
+                  total={total}
+                  onPageChange={setPage}
+                  onPerPageChange={(n) => {
+                    setPerPage(n);
+                    setPage(1);
+                  }}
+                  label="DPRs"
+                />
               )}
             </>
           )}
