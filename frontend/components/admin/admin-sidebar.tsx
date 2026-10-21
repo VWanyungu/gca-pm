@@ -1,7 +1,9 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useMobileNavigation } from "@/components/mobile-navigation-context";
 
 const NAV_ITEMS = [
   { label: "Users", href: "/admin/users", active: true },
@@ -14,11 +16,9 @@ const NAV_ITEMS = [
   { label: "Legacy import", href: "#", active: false },
 ];
 
-export function AdminSidebar() {
-  const pathname = usePathname();
-
+function AdminSidebarLinks({ pathname, onNavigate }: { pathname: string; onNavigate: () => void }) {
   return (
-    <aside className="sticky top-[64px] flex h-[calc(100vh-64px)] w-[240px] shrink-0 flex-col gap-[4px] overflow-y-auto border-r border-gca-border bg-gca-page-bg p-[16px]">
+    <>
       <p className="px-[12px] pb-[8px] text-[12px] font-semibold tracking-[0.4px] text-gca-muted">
         Admin
       </p>
@@ -44,6 +44,7 @@ export function AdminSidebar() {
           <Link
             key={item.label}
             href={item.href}
+            onClick={onNavigate}
             className={`flex items-center justify-between rounded-[8px] px-[12px] py-[8px] text-[14px] ${
               isActive
                 ? "bg-gca-badge-bg font-semibold text-gca-badge-text"
@@ -54,6 +55,30 @@ export function AdminSidebar() {
           </Link>
         );
       })}
-    </aside>
+    </>
+  );
+}
+
+export function AdminSidebar() {
+  const pathname = usePathname();
+  const { isOpen, activeTab, setIsOpen } = useMobileNavigation();
+  const mobileSidebarTarget =
+    typeof document === "undefined" ? null : document.getElementById("mobile-sidebar-content");
+
+  return (
+    <>
+      <aside className="sticky top-[64px] hidden h-[calc(100vh-64px)] w-[240px] shrink-0 flex-col gap-[4px] overflow-y-auto border-r border-gca-border bg-gca-page-bg p-[16px] md:flex">
+        <AdminSidebarLinks pathname={pathname} onNavigate={() => setIsOpen(false)} />
+      </aside>
+      {isOpen &&
+        activeTab === "sidebar" &&
+        mobileSidebarTarget &&
+        createPortal(
+          <aside className="flex h-full flex-col gap-[4px] overflow-y-auto bg-gca-page-bg p-[16px]">
+            <AdminSidebarLinks pathname={pathname} onNavigate={() => setIsOpen(false)} />
+          </aside>,
+          mobileSidebarTarget,
+        )}
+    </>
   );
 }

@@ -117,7 +117,11 @@ export function UserForm({ editing }: UserFormProps) {
         {currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : "Add user"}
       </h1>
 
-      <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex gap-[24px]">
+      <form
+        noValidate
+        onSubmit={handleSubmit(onSubmit)}
+        className={`flex ${editing && "flex-wrap"}  gap-[24px]`}
+      >
         <div className="flex flex-1 flex-col gap-[16px]">
           <Field
             label="Full name"
@@ -211,7 +215,9 @@ export function UserForm({ editing }: UserFormProps) {
           </div>
         </div>
 
-        <div className="w-[320px] shrink-0 rounded-[12px] bg-gca-page-bg p-[20px]">
+        <div
+          className={`${!editing && "hidden md:block"} w-full md:w-[320px] shrink-0 rounded-[12px] bg-gca-page-bg p-[20px]`}
+        >
           <h2 className="text-[14px] font-semibold text-gca-dark">Project access</h2>
           {currentUser ? (
             <div className="mt-[16px] h-[440px]">

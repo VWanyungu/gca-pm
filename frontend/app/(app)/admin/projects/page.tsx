@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import Dropdown from "@/components/Dropdown";
 import { Pagination } from "@/components/pagination";
@@ -60,15 +60,16 @@ export default function AdminProjectsPage() {
   const activeCount = projects.filter((p) => p.status === "active").length;
 
   return (
-    <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[40px]">
+    <main className="flex w-full overflow-hidden flex-col gap-[20px] p-[20px] md:max-w-[1200px] md:p-[40px]">
       <div>
         <h1 className="text-[24px] font-semibold text-gca-dark">Projects</h1>
         <p className="text-[14px] text-gca-muted">
-          {data?.total ?? 0} projects · {activeCount} active
+          {data?.total ?? 0} projects
+          {/* · {activeCount} active */}
         </p>
       </div>
 
-      <div className="flex items-center justify-between gap-[12px]">
+      <div className="flex flex-wrap items-center justify-between gap-[12px] w-full">
         <input
           value={search}
           onChange={(e) => {
@@ -76,44 +77,48 @@ export default function AdminProjectsPage() {
             setPage(1);
           }}
           placeholder="Search projects"
-          className="h-[40px] w-[320px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
+          className="h-[40px] w-full rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none placeholder:text-gca-muted md:w-[320px]"
         />
-        <div className="flex items-center gap-[12px]">
-          <Dropdown
-            id="status-filter"
-            title="All statuses"
-            data={STATUS_OPTIONS}
-            selectedId={statusFilter ?? "all"}
-            style="h-[40px] w-[170px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
-            onSelect={(id) => {
-              setStatusFilter(id === "all" ? undefined : (id as ProjectStatus));
-              setPage(1);
-            }}
-          />
-          <Dropdown
-            id="program-filter"
-            title="All programs"
-            data={programOptions}
-            selectedId={programFilter != null ? String(programFilter) : "all"}
-            style="h-[40px] w-[190px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
-            onSelect={(id) => {
-              setProgramFilter(id === "all" ? undefined : Number(id));
-              setPage(1);
-            }}
-          />
+        <div className="flex w-full flex-nowrap items-center gap-[12px]">
+          <div className="min-w-0 flex-1 md:w-[170px] md:flex-none">
+            <Dropdown
+              id="status-filter"
+              title="All statuses"
+              data={STATUS_OPTIONS}
+              selectedId={statusFilter ?? "all"}
+              style="h-[40px] w-full rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
+              onSelect={(id) => {
+                setStatusFilter(id === "all" ? undefined : (id as ProjectStatus));
+                setPage(1);
+              }}
+            />
+          </div>
+          <div className="min-w-0 flex-1 md:w-[190px] md:flex-none">
+            <Dropdown
+              id="program-filter"
+              title="All programs"
+              data={programOptions}
+              selectedId={programFilter != null ? String(programFilter) : "all"}
+              style="h-[40px] w-full rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
+              onSelect={(id) => {
+                setProgramFilter(id === "all" ? undefined : Number(id));
+                setPage(1);
+              }}
+            />
+          </div>
         </div>
       </div>
 
-      <div className="overflow-hidden">
-        <table className="w-full text-left">
+      <div className="overflow-x-auto rounded-[12px]">
+        <table className="w-max text-left md:w-full">
           <thead>
             <tr className="border-b border-gca-border text-[12px] font-semibold tracking-[0.3px] text-gca-muted">
               <th className="flex-1 px-[16px] py-[10px]">Project</th>
-              <th className="w-[180px] px-[16px] py-[10px]">Program</th>
-              <th className="w-[170px] px-[16px] py-[10px]">PM</th>
-              <th className="w-[110px] px-[16px] py-[10px]">Status</th>
-              <th className="w-[140px] px-[16px] py-[10px]">Created</th>
-              <th className="w-[120px] px-[16px] py-[10px]" />
+              <th className="w-max px-[16px] py-[10px] md:w-[180px]">Program</th>
+              <th className="w-max px-[16px] py-[10px] md:w-[170px]">PM</th>
+              <th className="w-max px-[16px] py-[10px] md:w-[110px]">Status</th>
+              <th className="w-max px-[16px] py-[10px] md:w-[140px]">Created</th>
+              <th className="w-max px-[16px] py-[10px] md:w-[120px]" />
             </tr>
           </thead>
           <tbody>

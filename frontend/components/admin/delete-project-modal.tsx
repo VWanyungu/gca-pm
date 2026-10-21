@@ -23,7 +23,7 @@ export function DeleteProjectModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-[rgba(24,48,31,0.45)]" onClick={onClose} />
-      <div className="relative w-[392px] max-w-full rounded-[12px] bg-white p-[24px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
+      <div className="m-6 md:m-0 relative w-[392px] max-w-full rounded-[12px] bg-white p-[24px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
         <h2 className="text-[18px] font-semibold text-gca-dark">Delete {project.name}?</h2>
         <p className="mt-[8px] text-[14px] text-gca-muted">
           This permanently deletes the project and all its data. This cannot be undone.

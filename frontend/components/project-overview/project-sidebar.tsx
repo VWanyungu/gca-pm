@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   LayoutGrid,
@@ -12,12 +13,12 @@ import {
   Users,
   ListTree,
   Settings,
-  PanelLeftClose,
   ChevronDown,
   ChevronRight,
   ClipboardList,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useMobileNavigation } from "@/components/mobile-navigation-context";
 import { STAGE_SHORT_NAME, type StageRow } from "./types";
 
 const ROLE_BLURB: Record<string, string> = {
@@ -56,6 +57,7 @@ export function ProjectSidebar({
   activeStageNo,
 }: ProjectSidebarProps) {
   const { user } = useAuth();
+  const { isOpen, activeTab, setIsOpen } = useMobileNavigation();
   const [stagesOpen, setStagesOpen] = useState(true);
   const [allStagesOpen, setAllStagesOpen] = useState(true);
 
@@ -103,9 +105,11 @@ export function ProjectSidebar({
   const topStages = inScopeStages.filter((s) => s.state !== "complete").slice(0, 3);
   const visibleStages = allStagesOpen ? inScopeStages : topStages;
   const stageListHeight = visibleStages.length * 34;
+  const mobileSidebarTarget =
+    typeof document === "undefined" ? null : document.getElementById("mobile-sidebar-content");
 
-  return (
-    <aside className="sticky top-[64px] flex h-[calc(100vh-64px)] w-[240px] shrink-0 flex-col justify-between overflow-y-auto border-r border-gca-border bg-gca-page-bg">
+  const sidebarContent = (
+    <>
       <div className="flex flex-col gap-[2px] px-[12px] pt-[0px]">
         {myRole && (
           <div className="mb-[0px] flex flex-col gap-[2px] rounded-[10px] px-[12px] pt-[10px] pb-[8px] text-gca-show">
@@ -123,6 +127,7 @@ export function ProjectSidebar({
             <Link
               key={item.key}
               href={item.href}
+              onClick={() => setIsOpen(false)}
               className={`flex items-center justify-between rounded-[8px] px-[12px] py-[8px] ${
                 isActive ? "bg-gca-badge-bg" : "hover:bg-white"
               }`}
@@ -144,39 +149,39 @@ export function ProjectSidebar({
 
         {/* Stages — PM/Planner territory, not an engineer's */}
         {!isEngineer && (
-        <>
-        <button
-          onClick={() => setStagesOpen((o) => !o)}
-          className="flex items-center justify-between rounded-[8px] px-[12px] py-[8px] hover:bg-white"
-        >
-          <span className="flex items-center gap-[10px]">
-            <ListTree className="size-[16px] text-gca-show" />
-            <span className="text-[14px] font-medium text-gca-show">Stages</span>
-          </span>
-          {stagesOpen ? (
-            <ChevronDown className="size-[14px] text-gca-muted" />
-          ) : (
-            <ChevronRight className="size-[14px] text-gca-muted" />
-          )}
-        </button>
+          <>
+            <button
+              onClick={() => setStagesOpen((o) => !o)}
+              className="flex items-center justify-between rounded-[8px] px-[12px] py-[8px] hover:bg-white"
+            >
+              <span className="flex items-center gap-[10px]">
+                <ListTree className="size-[16px] text-gca-show" />
+                <span className="text-[14px] font-medium text-gca-show">Stages</span>
+              </span>
+              {stagesOpen ? (
+                <ChevronDown className="size-[14px] text-gca-muted" />
+              ) : (
+                <ChevronRight className="size-[14px] text-gca-muted" />
+              )}
+            </button>
 
-        {stagesOpen && (
-          <div className="relative flex flex-col gap-[2px] py-[4px] pl-[20px]">
-            {visibleStages.length > 0 && (
-              <svg
-                className="pointer-events-none absolute left-[20px] top-0"
-                width={9}
-                height={stageListHeight}
-                viewBox={`0 0 10.4 ${stageListHeight}`}
-                fill="none"
-              >
-                <path
-                  d={`M0.7 0.7 V${visibleStages.length * 34}`}
-                  stroke="#C9D3CB"
-                  strokeWidth={1.4}
-                  strokeLinecap="round"
-                />
-                {/* {visibleStages.map((stage, index) => {
+            {stagesOpen && (
+              <div className="relative flex flex-col gap-[2px] py-[4px] pl-[20px]">
+                {visibleStages.length > 0 && (
+                  <svg
+                    className="pointer-events-none absolute left-[20px] top-0"
+                    width={9}
+                    height={stageListHeight}
+                    viewBox={`0 0 10.4 ${stageListHeight}`}
+                    fill="none"
+                  >
+                    <path
+                      d={`M0.7 0.7 V${visibleStages.length * 34}`}
+                      stroke="#C9D3CB"
+                      strokeWidth={1.4}
+                      strokeLinecap="round"
+                    />
+                    {/* {visibleStages.map((stage, index) => {
                   const y = index * 34 + 16;
                   return (
                     <path
@@ -189,63 +194,80 @@ export function ProjectSidebar({
                     />
                   );
                 })} */}
-              </svg>
-            )}
-            {visibleStages.map((s) => {
-              const viewing = s.stage_no === activeStageNo;
-              return (
-                <Link
-                  key={s.stage_no}
-                  href={`${base}/stages/${s.stage_no}`}
-                  className={`flex h-[32px] items-center justify-between rounded-[6px] pl-[26px] pr-[12px] text-[13px] ${
-                    viewing ? "bg-gca-badge-bg" : "hover:bg-white"
-                  }`}
-                >
-                  <span
-                    className={
-                      viewing ? "font-semibold text-gca-badge-text" : "font-normal text-gca-show"
-                    }
+                  </svg>
+                )}
+                {visibleStages.map((s) => {
+                  const viewing = s.stage_no === activeStageNo;
+                  return (
+                    <Link
+                      key={s.stage_no}
+                      href={`${base}/stages/${s.stage_no}`}
+                      onClick={() => setIsOpen(false)}
+                      className={`flex h-[32px] items-center justify-between rounded-[6px] pl-[26px] pr-[12px] text-[13px] ${
+                        viewing ? "bg-gca-badge-bg" : "hover:bg-white"
+                      }`}
+                    >
+                      <span
+                        className={
+                          viewing
+                            ? "font-semibold text-gca-badge-text"
+                            : "font-normal text-gca-show"
+                        }
+                      >
+                        {STAGE_SHORT_NAME[s.stage_no]}
+                      </span>
+                      <span className="font-mono text-[12px] text-gca-muted">
+                        {s.state === "complete" ? "Done" : `${percentByStage?.[s.stage_no] ?? 0}%`}
+                      </span>
+                    </Link>
+                  );
+                })}
+                {inScopeStages.length > topStages.length && (
+                  <button
+                    type="button"
+                    aria-expanded={allStagesOpen}
+                    onClick={() => setAllStagesOpen((open) => !open)}
+                    className="flex h-[32px] cursor-pointer items-center gap-[8px] pl-[26px] text-[13px] font-medium text-gca-green"
                   >
-                    {STAGE_SHORT_NAME[s.stage_no]}
-                  </span>
-                  <span className="font-mono text-[12px] text-gca-muted">
-                    {s.state === "complete" ? "Done" : `${percentByStage?.[s.stage_no] ?? 0}%`}
-                  </span>
-                </Link>
-              );
-            })}
-            {inScopeStages.length > topStages.length && (
-              <button
-                type="button"
-                aria-expanded={allStagesOpen}
-                onClick={() => setAllStagesOpen((open) => !open)}
-                className="flex h-[32px] cursor-pointer items-center gap-[8px] pl-[26px] text-[13px] font-medium text-gca-green"
-              >
-                {allStagesOpen ? "Show fewer stages" : `All ${inScopeStages.length} stages`}
-                <ChevronRight
-                  className={`size-[18] transition-transform ${allStagesOpen ? "rotate-270" : "rotate-90"}`}
-                />
-              </button>
+                    {allStagesOpen ? "Show fewer stages" : `All ${inScopeStages.length} stages`}
+                    <ChevronRight
+                      className={`size-[18] transition-transform ${allStagesOpen ? "rotate-270" : "rotate-90"}`}
+                    />
+                  </button>
+                )}
+              </div>
             )}
-          </div>
-        )}
-        </>
+          </>
         )}
       </div>
 
       <div className="flex flex-col gap-[2px] border-t border-gca-border px-[12px] py-[8px]">
         <Link
           href={`${base}/settings`}
+          onClick={() => setIsOpen(false)}
           className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] hover:bg-white"
         >
           <Settings className="size-[16px] text-gca-show" />
           <span className="text-[14px] font-medium text-gca-show">Project settings</span>
         </Link>
-        <button className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] hover:bg-white">
-          <PanelLeftClose className="size-[16px] text-gca-show" />
-          <span className="text-[14px] font-medium text-gca-show">Collapse</span>
-        </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      <aside className="sticky top-[64px] hidden h-[calc(100vh-64px)] w-[240px] shrink-0 flex-col justify-between overflow-y-auto border-r border-gca-border bg-gca-page-bg md:flex">
+        {sidebarContent}
+      </aside>
+      {isOpen &&
+        activeTab === "sidebar" &&
+        mobileSidebarTarget &&
+        createPortal(
+          <aside className="flex h-full flex-col justify-between overflow-y-auto bg-gca-page-bg">
+            {sidebarContent}
+          </aside>,
+          mobileSidebarTarget,
+        )}
+    </>
   );
 }

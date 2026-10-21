@@ -57,7 +57,7 @@ export function Pagination({
     // <div className="flex items-center justify-between rounded-[12px] border border-gca-border px-[16px] py-[12px]">
     <div className="flex items-center justify-between rounded-[12px]">
       {/* Left: showing count */}
-      <div className="flex items-center gap-[10px] text-[13px] text-gca-show font-light">
+      <div className="md:flex items-center gap-[10px] text-[13px] text-gca-show font-light hidden">
         <span>Showing</span>
         <input
           type="number"
@@ -79,7 +79,30 @@ export function Pagination({
       </div>
 
       {/* Right: page buttons */}
-      <div className="flex items-center gap-[6px]">
+      <div className="md:flex items-center gap-[6px] hidden">
+        <PageButton onClick={() => onPageChange(1)} disabled={page === 1}>
+          <ChevronsLeft className="size-[14px]" />
+        </PageButton>
+        <PageButton onClick={() => onPageChange(page - 1)} disabled={page === 1}>
+          <ChevronLeft className="size-[14px]" />
+        </PageButton>
+        {visiblePages.map(renderPageButton)}
+        {lastVisiblePage < lastPage - 1 && (
+          <span className="px-[4px] text-[13px] text-gca-muted" aria-hidden="true">
+            …
+          </span>
+        )}
+        {lastVisiblePage < lastPage && renderPageButton(lastPage)}
+        <PageButton onClick={() => onPageChange(page + 1)} disabled={page === totalPages}>
+          <ChevronRight className="size-[14px]" />
+        </PageButton>
+        <PageButton onClick={() => onPageChange(totalPages)} disabled={page === totalPages}>
+          <ChevronsRight className="size-[14px]" />
+        </PageButton>
+      </div>
+
+      {/* Mobile pagination */}
+      <div className="flex items-center gap-[6px] w-full justify-between md:hidden">
         <PageButton onClick={() => onPageChange(1)} disabled={page === 1}>
           <ChevronsLeft className="size-[14px]" />
         </PageButton>

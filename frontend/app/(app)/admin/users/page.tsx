@@ -39,7 +39,7 @@ export default function AdminUsersPage() {
   const pagination = data?.pagination;
 
   return (
-    <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[40px]">
+    <main className="flex w-full overflow-hidden md:max-w-[1200px] flex-col gap-[20px] p-[20px] md:p-[40px]">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[24px] font-semibold text-gca-dark">Users</h1>
@@ -56,7 +56,7 @@ export default function AdminUsersPage() {
         </button>
       </div>
 
-      <div className="flex items-center justify-between gap-[12px]">
+      <div className="flex flex-wrap items-center justify-between gap-[12px]">
         <input
           value={search}
           onChange={(e) => {
@@ -64,9 +64,9 @@ export default function AdminUsersPage() {
             setPage(1);
           }}
           placeholder="Search name or email"
-          className="h-[40px] w-[320px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
+          className="h-[40px] w-full md:w-[320px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
         />
-        <div className="flex items-center gap-[12px]">
+        <div className="flex flex-wrap items-center gap-[12px]">
           <Dropdown
             id="role-filter"
             title="All roles"
@@ -92,14 +92,14 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-[12px]">
-        <table className="w-full text-left">
+      <div className="overflow-hidden rounded-[12px] overflow-scroll">
+        <table className="w-max md:w-full text-left">
           <thead>
             <tr className="border-b border-gca-border text-[12px] font-medium  tracking-[0.3px] text-gca-muted">
               <th className="flex-1 px-[16px] py-[10px]">Name</th>
-              <th className="w-[140px] px-[16px] py-[10px]">Global role</th>
-              <th className="w-[360px] px-[16px] py-[10px]">Project access</th>
-              <th className="w-[140px] px-[16px] py-[10px]">Status</th>
+              <th className="w-max md:w-[140px] px-[16px] py-[10px]">Global role</th>
+              <th className="w-max md:w-[360px] px-[16px] py-[10px]">Project access</th>
+              <th className="w-max md:w-[140px] px-[16px] py-[10px]">Status</th>
             </tr>
           </thead>
           <tbody>

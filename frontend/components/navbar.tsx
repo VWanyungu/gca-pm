@@ -1,16 +1,28 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Sun, Moon, HelpCircle, Bell, ChevronDown, FolderKanban, Plus } from "lucide-react";
+import {
+  Search,
+  Sun,
+  Moon,
+  HelpCircle,
+  Bell,
+  ChevronDown,
+  FolderKanban,
+  Plus,
+  Menu,
+  X,
+} from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
 import { canAccess, CAN_MANAGE_USERS, CAN_VIEW_REPORTS } from "@/lib/access-control";
 import useOutsideClick from "@/hooks/use-outside-click";
 import { useUnreadCount } from "@/components/notifications/use-notifications";
+import { useMobileNavigation } from "@/components/mobile-navigation-context";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/" },
@@ -35,13 +47,31 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuth();
+  const {
+    isOpen: mobileMenuOpen,
+    setIsOpen: setMobileMenuOpen,
+    activeTab,
+    setActiveTab,
+  } = useMobileNavigation();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [mobileProjectsOpen, setMobileProjectsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
 
   useOutsideClick({ ref: dropdownRef, handler: () => setOpenDropdown(null) });
   useOutsideClick({ ref: accountMenuRef, handler: () => setAccountMenuOpen(false) });
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [mobileMenuOpen, setMobileMenuOpen]);
 
   async function handleSignOut() {
     setAccountMenuOpen(false);
@@ -56,7 +86,8 @@ export function Navbar() {
       if (res.status !== "success" || !res.data) throw new Error(res.message);
       return res.data.projects;
     },
-    enabled: isAuthenticated && openDropdown === "Projects",
+    enabled:
+      isAuthenticated && (openDropdown === "Projects" || (mobileMenuOpen && mobileProjectsOpen)),
   });
 
   const { data: unreadCount = 0 } = useUnreadCount();
@@ -83,15 +114,148 @@ export function Navbar() {
     return pathname.startsWith(href);
   }
 
+  const pathSegments = pathname.split("/").filter(Boolean);
+  const hasSidebar =
+    pathname.startsWith("/admin") ||
+    (pathSegments[0] === "projects" && pathSegments.length >= 2 && pathSegments[1] !== "new");
+
   return (
-    <header className="sticky top-0 z-40 flex h-[64px] shrink-0 items-center justify-between border-b border-gca-border bg-white px-[24px]">
+    <header className="sticky top-0 z-40 flex h-[64px] shrink-0 items-center justify-between border-b border-gca-border bg-white px-[12px] sm:px-[24px]">
       {/* Left: logo + nav */}
-      <div className="flex items-center gap-[20px]">
-        <Link href="/">
+      <div className="flex min-w-0 items-center gap-[20px]">
+        <Link href="/" onClick={() => setMobileMenuOpen(false)} className="hidden md:block">
           <Image src="/GCA Logo.svg" alt="Gas Connect Africa" width={89} height={32} priority />
         </Link>
-        <div className="h-[20px] w-px bg-gca-border" />
-        <nav className="flex items-center gap-[4px]" ref={dropdownRef}>
+        <div className="md:hidden">
+          <div className="flex gap-[12px] items-center justify-start">
+            <button
+              type="button"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => {
+                setActiveTab("navigation");
+                setMobileMenuOpen(!mobileMenuOpen);
+              }}
+              className="flex size-[36px] items-center justify-center rounded-[8px] text-gca-dark hover:bg-gca-page-bg"
+            >
+              {mobileMenuOpen ? <X className="size-[18]" /> : <Menu className="size-[18]" />}
+            </button>
+
+            <Link href="/" onClick={() => setMobileMenuOpen(false)}>
+              <Image src="/GCA Logo.svg" alt="Gas Connect Africa" width={89} height={32} priority />
+            </Link>
+          </div>
+
+          <div
+            className={`fixed inset-x-0 bottom-0 top-[64px] z-[70] flex-col bg-white md:hidden ${
+              mobileMenuOpen ? "flex" : "hidden"
+            }`}
+          >
+            <div
+              role="tablist"
+              aria-label="Mobile menu sections"
+              className={`grid border-b border-gca-border px-[16px] ${
+                hasSidebar ? "grid-cols-2" : "grid-cols-1"
+              }`}
+            >
+              {(["navigation", "sidebar"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === tab}
+                  hidden={tab === "sidebar" && !hasSidebar}
+                  onClick={() => setActiveTab(tab)}
+                  className={`border-b-2 px-[12px] py-[14px] text-[14px] font-medium ${
+                    activeTab === tab
+                      ? "border-gca-green text-gca-green"
+                      : "border-transparent text-gca-muted"
+                  }`}
+                >
+                  {tab === "navigation" ? "Navigation" : "Sidebar"}
+                </button>
+              ))}
+            </div>
+            <div className="flex-1 overflow-y-auto p-[16px]">
+              {activeTab === "navigation" && (
+                <nav aria-label="Main navigation" className="flex flex-col gap-[4px]">
+                  {navItems.map((item) =>
+                    item.hasDropdown ? (
+                      <div key={item.label}>
+                        <button
+                          type="button"
+                          aria-expanded={mobileProjectsOpen}
+                          onClick={() => setMobileProjectsOpen((open) => !open)}
+                          className="flex w-full items-center justify-between rounded-[6px] px-[10px] py-[9px] text-left text-[14px] font-medium text-gca-dark hover:bg-gca-page-bg"
+                        >
+                          {item.label}
+                          <ChevronDown
+                            className={`size-[16px] transition-transform ${mobileProjectsOpen ? "rotate-180" : ""}`}
+                          />
+                        </button>
+                        {mobileProjectsOpen && (
+                          <div className="ml-[8px] flex flex-col border-l border-gca-border pl-[8px]">
+                            {recentProjects.map((project) => (
+                              <Link
+                                key={project.project_id}
+                                href={`/projects/${project.project_id}`}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="rounded-[6px] px-[10px] py-[8px] hover:bg-gca-page-bg"
+                              >
+                                <span className="block text-[13px] font-medium text-gca-dark">
+                                  {project.name}
+                                </span>
+                                <span className="block text-[11px] text-gca-muted">
+                                  {project.current_stage_name ?? "—"} ·{" "}
+                                  {STATUS_LABELS[project.status] ?? project.status}
+                                </span>
+                              </Link>
+                            ))}
+                            <Link
+                              href="/"
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="flex items-center gap-[10px] rounded-[6px] px-[10px] py-[9px] text-[14px] text-gca-dark hover:bg-gca-page-bg"
+                            >
+                              <FolderKanban className="size-[14px] text-gca-show" />
+                              All projects
+                            </Link>
+                            <Link
+                              href="/projects/new"
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="flex items-center gap-[10px] rounded-[6px] px-[10px] py-[9px] text-[14px] text-gca-dark hover:bg-gca-page-bg"
+                            >
+                              <Plus className="size-[14px] text-gca-show" />
+                              New project
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <Link
+                        key={item.label}
+                        href={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`rounded-[6px] px-[10px] py-[9px] text-[14px] ${
+                          isActive(item.href)
+                            ? "bg-gca-badge-bg font-semibold text-gca-badge-text"
+                            : "font-medium text-gca-dark hover:bg-gca-page-bg"
+                        }`}
+                      >
+                        {item.label}
+                      </Link>
+                    ),
+                  )}
+                </nav>
+              )}
+              <div
+                id="mobile-sidebar-content"
+                className={`h-full ${activeTab === "sidebar" ? "block" : "hidden"}`}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="hidden h-[20px] w-px bg-gca-border md:block" />
+        <nav className="hidden items-center gap-[4px] md:flex" ref={dropdownRef}>
           {navItems.map((item) => {
             const active = isActive(item.href);
             return (
@@ -181,9 +345,9 @@ export function Navbar() {
       </div>
 
       {/* Right: search + actions */}
-      <div className="flex items-center gap-[8px]">
+      <div className="flex shrink-0 items-center gap-[2px] sm:gap-[8px]">
         {/* Global search */}
-        <div className="flex w-[300px] items-center justify-between rounded-[8px] bg-gca-page-bg px-[12px] py-[8px]">
+        <div className="hidden w-[300px] items-center justify-between rounded-[8px] bg-gca-page-bg px-[12px] py-[8px] lg:flex">
           <Search className="size-[16px] text-gca-muted" />
           <span className="text-[14px] text-gca-muted">Search projects, DPRs, risks</span>
           <kbd className="rounded-[4px] border border-gca-border bg-white px-[6px] py-[2px] text-[11px] font-medium text-gca-show">
@@ -202,7 +366,7 @@ export function Navbar() {
         </div>
 
         {/* Help */}
-        <button className="flex size-[36px] items-center justify-center rounded-[8px]">
+        <button className="hidden size-[36px] items-center justify-center rounded-[8px] md:flex">
           <HelpCircle className="size-[18px] text-gca-show" />
         </button>
 
@@ -228,7 +392,7 @@ export function Navbar() {
             <div className="flex size-[32px] items-center justify-center rounded-[8px] bg-gca-badge-bg">
               <span className="text-[12px] font-semibold text-gca-badge-text">{initials}</span>
             </div>
-            <ChevronDown className="size-[8px] text-gca-show" />
+            <ChevronDown className="hidden size-[8px] text-gca-show sm:block" />
           </button>
 
           {accountMenuOpen && (

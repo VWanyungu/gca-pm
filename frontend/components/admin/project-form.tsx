@@ -146,8 +146,12 @@ export function ProjectForm({
 
       <h1 className="mb-[24px] text-[24px] font-semibold text-gca-dark">Edit project</h1>
 
-      <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex gap-[24px]">
-        <div className="flex flex-1 flex-col gap-[16px]">
+      <form
+        noValidate
+        onSubmit={handleSubmit(onSubmit)}
+        className="flex flex-col gap-[24px] md:flex-row"
+      >
+        <div className="flex min-w-0 flex-1 flex-col gap-[16px]">
           <Field label="Project name" required error={errors.name?.message}>
             <input
               {...register("name")}
@@ -158,7 +162,7 @@ export function ProjectForm({
             />
           </Field>
 
-          <div className="flex gap-[16px]">
+          <div className="flex flex-col gap-[16px] md:flex-row">
             <div className="flex-1">
               <Field label="Client">
                 <input
@@ -187,7 +191,7 @@ export function ProjectForm({
             </div>
           </div>
 
-          <div className="flex gap-[16px]">
+          <div className="flex flex-col gap-[16px] md:flex-row">
             <div className="flex-1">
               <Field label="Start date">
                 <input
@@ -215,7 +219,7 @@ export function ProjectForm({
             />
           </Field>
 
-          <div className="flex gap-[16px]">
+          <div className="flex flex-col gap-[16px] md:flex-row">
             <div className="flex-1">
               <p className="mb-[6px] text-[13px] font-medium text-gca-dark">Status</p>
               <StatusControl
@@ -242,7 +246,7 @@ export function ProjectForm({
             </div>
           </div>
 
-          <div className="w-[calc(50%-8px)]">
+          <div className="w-full md:w-[calc(50%-8px)]">
             <p className="mb-[6px] text-[13px] font-medium text-gca-dark">Main Planner</p>
             <div className={reassignMainRole.isPending ? "pointer-events-none opacity-60" : ""}>
               <Dropdown
@@ -257,7 +261,7 @@ export function ProjectForm({
             </div>
           </div>
 
-          <div className="mt-[8px] flex gap-[12px] justify-between items-center">
+          <div className="mt-[8px] flex items-center justify-between gap-[12px]">
             <button
               type="button"
               onClick={() => router.push("/admin/projects")}
@@ -275,7 +279,7 @@ export function ProjectForm({
           </div>
         </div>
 
-        <div className="flex w-[320px] shrink-0 flex-col gap-[16px]">
+        <div className="flex w-full shrink-0 flex-col gap-[16px] md:w-[320px]">
           <div className="rounded-[12px] bg-gca-page-bg p-[20px]">
             <h2 className="text-[14px] font-semibold text-gca-dark">Project summary</h2>
             <dl className="mt-[16px] flex flex-col gap-[12px] text-[13px]">

@@ -19,7 +19,7 @@ function NewUserPageContent() {
   const formKey = searchParams.get("fresh") ?? "new";
 
   return (
-    <main className="w-full max-w-[1200px] p-[40px]">
+    <main className="w-full max-w-[1200px] p-[20px] md:p-[40px]">
       <button
         onClick={() => router.push("/admin/users")}
         className="mb-[16px] text-[13px] font-medium text-gca-green flex gap-[6px] items-center hover: cursor-pointer"
