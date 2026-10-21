@@ -7,6 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Camera, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
+import { canAccess, CAN_LIST_PROJECTS } from "@/lib/access-control";
+import { useEngineerProjectSummaries } from "@/components/engineer-dpr/use-dpr-wizard-data";
 import type { RoleGrant, RoleName, ScopeType } from "@/contexts/auth-context";
 
 const ROLE_LABELS: Record<RoleName, string> = {
@@ -38,7 +40,12 @@ export default function ProfilePage() {
   const hasProjectScope = !!user?.role.some((r) => r.scope_type === "project");
   const hasProgramScope = !!user?.role.some((r) => r.scope_type === "program");
 
-  const { data: projects = [] } = useQuery({
+  // A project-scoped-only Site Engineer has no GET /projects access (same gap as the home
+  // page, see CAN_LIST_PROJECTS) — fall back to their own projects from their role grants.
+  const canListAll = canAccess(user?.role, CAN_LIST_PROJECTS);
+  const engineerProjects = useEngineerProjectSummaries();
+
+  const { data: bulkProjects = [] } = useQuery({
     queryKey: ["projects", "names-for-profile"],
     queryFn: async () => {
       const res = await api.get<{ projects: { project_id: string; name: string }[] }>(
@@ -47,8 +54,10 @@ export default function ProfilePage() {
       if (res.status !== "success" || !res.data) throw new Error(res.message);
       return res.data.projects;
     },
-    enabled: isAuthenticated && hasProjectScope,
+    enabled: isAuthenticated && hasProjectScope && canListAll,
   });
+
+  const projects = canListAll ? bulkProjects : engineerProjects.data;
 
   const { data: programs = [] } = useQuery({
     queryKey: ["programs", "names-for-profile"],
