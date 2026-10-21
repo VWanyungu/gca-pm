@@ -110,7 +110,8 @@ export default function Home() {
       if (res.status !== "success" || !res.data) throw new Error(res.message);
       return res.data.programs;
     },
-    enabled: isAuthenticated,
+    // Only the program filter (hidden for an engineer-only user, see canListAll) needs this.
+    enabled: isAuthenticated && canListAll,
   });
 
   const projectProgramOptions = [

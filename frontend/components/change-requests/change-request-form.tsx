@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowLeft, Upload } from "lucide-react";
 import { api } from "@/lib/api-client";
+import { useAuth } from "@/hooks/use-auth";
 import Dropdown from "@/components/Dropdown";
 import { useChangeRequestsInvalidate } from "./use-change-requests-data";
 import type { ChangeRequest, ChangeRequestType } from "./types";
@@ -34,6 +35,15 @@ export function ChangeRequestForm({
   onCancel,
 }: ChangeRequestFormProps) {
   const invalidate = useChangeRequestsInvalidate(projectId);
+  const { user } = useAuth();
+
+  // Mirrors the backend's skipApproval check (changeRequestRouter.ts): a Site Engineer's own
+  // change request is FYI only and never goes to ExCo, unlike a PM's or Admin's.
+  const isAdmin = user?.role.some((r) => r.role === "Admin" && r.scope_type === "global") ?? false;
+  const isPmForProject =
+    user?.role.some((r) => r.role === "PM" && (r.scope_type === "global" || r.project_id === projectId)) ??
+    false;
+  const skipsApproval = !isAdmin && !isPmForProject;
 
   const [title, setTitle] = useState(editing?.title ?? "");
   const [type, setType] = useState<ChangeRequestType>(editing?.type ?? "scope");
@@ -238,7 +248,9 @@ export function ChangeRequestForm({
       </div>
 
       <div className="flex w-full items-center justify-between gap-[16px] border-t border-gca-border pt-[20px]">
-        <p className="text-[13px] text-gca-muted">Goes to ExCo for the Tuesday review</p>
+        <p className="text-[13px] text-gca-muted">
+          {skipsApproval ? "FYI only — no ExCo approval needed" : "Goes to ExCo for the Tuesday review"}
+        </p>
         <div className="flex items-center gap-[16px]">
           <button
             onClick={onCancel}
