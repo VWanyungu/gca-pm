@@ -270,20 +270,12 @@ router.post('/upload', canUpload, async (req, res) => {
     const latestApplied = await ScheduleVersions.latestApplied(projectId);
 
     // AC-SCH-02: the first applied upload of a project is its baseline; a change request
-    // turns a later one into a rebaseline, and must be an approved CR of this project.
+    // turns a later one into a rebaseline. The CR does not need to be approved.
     let uploadKind: 'regular' | 'initial_baseline' | 'rebaseline';
     if (input.change_request_id) {
       const changeRequest = await ChangeRequests.getById(projectId, input.change_request_id);
       if (!changeRequest) {
         res.status(404).json({ status: 'error', data: null, message: 'Change request not found' });
-        return;
-      }
-      if (changeRequest.status !== 'approved') {
-        res.status(400).json({
-          status: 'error',
-          data: null,
-          message: 'A rebaseline needs an approved change request',
-        });
         return;
       }
       uploadKind = 'rebaseline';
