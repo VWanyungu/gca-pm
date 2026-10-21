@@ -54,6 +54,16 @@ router.post('/', canRaise, async (req, res) => {
   const input = body.value as CreateChangeRequestBody;
 
   try {
+    // A Site Engineer's own change requests are FYI records for the PM, not a request for
+    // ExCo approval — canRaise only admits Admin@global, PM (global or on this project) or
+    // SiteEngineer@project, so anyone here who is neither Admin nor a PM of this project must
+    // be a Site Engineer. A global grant satisfies a project scope too (authorize.ts's rule).
+    const isAdmin = req.user!.role.some((r) => r.role === 'Admin' && r.scope_type === 'global');
+    const isPmForProject = req.user!.role.some(
+      (r) => r.role === 'PM' && (r.scope_type === 'global' || r.project_id === projectId),
+    );
+    const skipApproval = !isAdmin && !isPmForProject;
+
     const created = await ChangeRequests.create({
       project_id: projectId,
       stage_no: input.stage_no ?? null,
@@ -66,6 +76,7 @@ router.post('/', canRaise, async (req, res) => {
       cost_currency: input.cost_currency ?? null,
       schedule_impact_days: input.schedule_impact_days ?? null,
       raised_by: req.user!.userId,
+      skipApproval,
     });
 
     res.status(201).json({ status: 'success', data: { changeRequest: created }, message: 'Change request raised' });

@@ -418,7 +418,7 @@ export const listChangeRequestsQuerySchema =
     stage_no: Joi.number().integer().min(1).max(10).optional(),
     type: Joi.string().valid("scope", "schedule", "cost").optional(),
     status: Joi.string()
-      .valid("pending", "approved", "rejected", "withdrawn")
+      .valid("pending", "approved", "rejected", "withdrawn", "noted")
       .optional(),
     search: Joi.string().trim().max(200).optional(),
     page: Joi.number().integer().min(1).default(1),

@@ -174,6 +174,8 @@ export function ChangeRequestDetail({
             <ProgressRow label="ExCo review" value={`Waiting ${daysSince(cr.raised_at)} days`} />
           ) : cr.status === "withdrawn" ? (
             <ProgressRow label="Withdrawn" value={formatLongDate(cr.withdrawn_at)} />
+          ) : cr.status === "noted" ? (
+            <ProgressRow label="Noted" value="FYI — no approval needed" />
           ) : (
             <ProgressRow label="Decision" value={`${status.label} · ${formatLongDate(cr.decided_at)}`} />
           )}

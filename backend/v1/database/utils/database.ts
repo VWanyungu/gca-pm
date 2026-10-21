@@ -5644,7 +5644,7 @@ export class SubmissionClientPhotos {
   }
 }
 
-export type ChangeRequestStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn';
+export type ChangeRequestStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn' | 'noted';
 export type ChangeRequestType = 'scope' | 'schedule' | 'cost';
 export type ChangeApproverRole = 'exco' | 'finance';
 export type ChangeDecision = 'approve' | 'reject';
@@ -5691,6 +5691,9 @@ export interface CreateChangeRequestInput {
   cost_currency: string | null;
   schedule_impact_days: number | null;
   raised_by: string;
+  /** A Site Engineer's own change requests are FYI only (no ExCo approval needed): they land
+   *  straight at `status = 'noted'` as a record for the project's PM, never 'pending'. */
+  skipApproval?: boolean;
 }
 
 export interface UpdateChangeRequestFields {
@@ -5744,7 +5747,7 @@ export class ChangeRequests {
           cost_impact: input.cost_impact,
           cost_currency: input.cost_currency,
           schedule_impact_days: input.schedule_impact_days,
-          status: 'pending',
+          status: input.skipApproval ? 'noted' : 'pending',
           raised_by: input.raised_by,
         })
         .returning(CHANGE_REQUEST_COLS);
