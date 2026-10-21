@@ -136,19 +136,55 @@ export function formatLongDateTime(iso: string): string {
   return `${date}, ${time}`;
 }
 
-/** A stage/topic's progress is the average of its direct tasks' progress, not a stored value. */
-export function groupProgress(group: ScheduleTask, allTasks: ScheduleTask[]): number {
-  const children = allTasks.filter((t) => t.parent_task_id === group.task_id);
-  if (children.length === 0) return Number(group.pct_work_complete);
-  return children.reduce((sum, c) => sum + Number(c.pct_work_complete), 0) / children.length;
+/** Every non-summary task under a group, at any depth — not just its direct children, so a
+ *  nested group's rollup reflects real work instead of a sub-group's own (possibly stale)
+ *  stored %. Mirrors refreshProjectMetrics' own leaf selection (AC-SCH-30/31). */
+function leafDescendants(group: ScheduleTask, allTasks: ScheduleTask[]): ScheduleTask[] {
+  const childrenByParent = new Map<string, ScheduleTask[]>();
+  for (const t of allTasks) {
+    if (!t.parent_task_id) continue;
+    const list = childrenByParent.get(t.parent_task_id);
+    if (list) list.push(t);
+    else childrenByParent.set(t.parent_task_id, [t]);
+  }
+  const leaves: ScheduleTask[] = [];
+  function walk(taskId: string) {
+    for (const child of childrenByParent.get(taskId) ?? []) {
+      if (child.is_summary) walk(child.task_id);
+      else leaves.push(child);
+    }
+  }
+  walk(group.task_id);
+  return leaves;
 }
 
-/** Symmetric with groupProgress: a stage's planned % is the average of its tasks' planned %. */
+/** A stage/topic's progress: the duration-weighted average of its leaf descendants' progress
+ *  (AC-SCH-31), never a stored value — so milestones (zero duration) don't skew it and a long
+ *  task barely started outweighs several short finished ones, same as the project-wide metric. */
+export function groupProgress(group: ScheduleTask, allTasks: ScheduleTask[]): number {
+  const leaves = leafDescendants(group, allTasks);
+  if (leaves.length === 0) return Number(group.pct_work_complete);
+  const totalWeight = leaves.reduce((sum, t) => sum + t.duration_minutes, 0);
+  if (totalWeight === 0) {
+    return leaves.reduce((sum, t) => sum + Number(t.pct_work_complete), 0) / leaves.length;
+  }
+  return (
+    leaves.reduce((sum, t) => sum + t.duration_minutes * Number(t.pct_work_complete), 0) / totalWeight
+  );
+}
+
+/** Symmetric with groupProgress: a stage's planned % is the duration-weighted average of its
+ *  leaf descendants' planned %. */
 export function groupPlannedProgress(group: ScheduleTask, allTasks: ScheduleTask[]): number | null {
-  const children = allTasks.filter((t) => t.parent_task_id === group.task_id);
-  const withPlanned = children.filter((c) => c.planned_pct !== null);
-  if (withPlanned.length === 0) return group.planned_pct !== null ? Number(group.planned_pct) : null;
-  return withPlanned.reduce((sum, c) => sum + Number(c.planned_pct), 0) / withPlanned.length;
+  const leaves = leafDescendants(group, allTasks).filter((t) => t.planned_pct !== null);
+  if (leaves.length === 0) return group.planned_pct !== null ? Number(group.planned_pct) : null;
+  const totalWeight = leaves.reduce((sum, t) => sum + t.duration_minutes, 0);
+  if (totalWeight === 0) {
+    return leaves.reduce((sum, t) => sum + Number(t.planned_pct), 0) / leaves.length;
+  }
+  return (
+    leaves.reduce((sum, t) => sum + t.duration_minutes * Number(t.planned_pct), 0) / totalWeight
+  );
 }
 
 /**
