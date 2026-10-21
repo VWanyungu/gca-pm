@@ -46,11 +46,15 @@ export const CAN_CREATE_PROJECT: Permission[] = [
   { role: "ExCo", scopeType: "global" },
 ];
 
+/** Mirrors the backend's canListProjects exactly (projectsRouter.ts) — note PM@project is
+ *  admitted here too, unlike most "global" lists, because a project-scoped PM can list via
+ *  GET /projects (it just isn't scoped to their projects — a separate, pre-existing gap). */
 export const CAN_LIST_PROJECTS: Permission[] = [
   { role: "Admin", scopeType: "global" },
   { role: "ExCo", scopeType: "global" },
   { role: "ProjectCreator", scopeType: "global" },
   { role: "PM", scopeType: "global" },
+  { role: "PM", scopeType: "project" },
   { role: "Planner", scopeType: "global" },
   { role: "SiteEngineer", scopeType: "global" },
 ];

@@ -32,7 +32,15 @@ function formatSavedTime(d: Date | null) {
   return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
-export function DprWizard({ projectId }: { projectId: string }) {
+interface DprWizardProps {
+  projectId: string;
+  /** Where "×" (close) goes. Defaults to the mobile engineer home. */
+  onClose?: () => void;
+  /** Where submitting lands. Defaults to the mobile confirmation screen. */
+  onSubmitted?: (dprId: string) => void;
+}
+
+export function DprWizard({ projectId, onClose, onSubmitted }: DprWizardProps) {
   const router = useRouter();
   const { user } = useAuth();
   const { data: projectDetail } = useProjectDetail(projectId);
@@ -122,7 +130,8 @@ export function DprWizard({ projectId }: { projectId: string }) {
       const id = dprId;
       if (!id) throw new Error("DPR draft was not saved — please try again");
       const submitted = await submitDpr(projectId, id);
-      router.push(`/engineer/dpr/${submitted.dpr_id}/confirmation?projectId=${projectId}`);
+      if (onSubmitted) onSubmitted(submitted.dpr_id);
+      else router.push(`/engineer/dpr/${submitted.dpr_id}/confirmation?projectId=${projectId}`);
     } catch (err) {
       reportError(err instanceof Error ? err.message : "Could not submit DPR");
     } finally {
@@ -134,7 +143,7 @@ export function DprWizard({ projectId }: { projectId: string }) {
     <div className="flex flex-1 flex-col">
       <div className="flex items-center justify-between bg-white px-[16px] py-[10px]">
         <div className="flex items-center gap-[14px]">
-          <button onClick={() => router.push("/engineer")} aria-label="Close">
+          <button onClick={() => (onClose ? onClose() : router.push("/engineer"))} aria-label="Close">
             <span className="text-[18px] text-gca-dark">×</span>
           </button>
           <div className="flex flex-col gap-[2px]">

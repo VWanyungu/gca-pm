@@ -92,6 +92,33 @@ export function useWeekDprs(projectId: string, weekStart: string) {
   });
 }
 
+export function useDprs({
+  projectId,
+  status,
+  page = 1,
+  limit = 25,
+}: {
+  projectId: string;
+  status?: "draft" | "submitted";
+  page?: number;
+  limit?: number;
+}) {
+  return useQuery({
+    queryKey: ["project", projectId, "dprs", { status, page, limit }],
+    queryFn: async () => {
+      const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+      if (status) params.set("status", status);
+      return unwrap(
+        await api.get<{
+          dprs: DprSummary[];
+          pagination: { page: number; limit: number; total: number; totalPages: number };
+        }>(`/projects/${projectId}/dpr?${params.toString()}`),
+      );
+    },
+    staleTime: 10_000,
+  });
+}
+
 export function useDpr(projectId: string, dprId: string | null | undefined) {
   return useQuery({
     queryKey: ["project", projectId, "dpr", dprId],

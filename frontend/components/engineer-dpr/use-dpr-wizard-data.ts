@@ -56,6 +56,60 @@ export function useEngineerProjects() {
   return { data: projects, isLoading };
 }
 
+export interface EngineerProjectSummary {
+  project_id: string;
+  name: string;
+  client_name: string | null;
+  current_stage_name: string | null;
+  status: string;
+  spi: number | null;
+  completed_pct: number | null;
+  planned_pct: number | null;
+}
+
+/** Same per-project fetch useEngineerProjects relies on (no GET /projects access for a
+ *  project-scoped SiteEngineer), mapped to the fuller shape the shared project list screen
+ *  needs — client, current stage, latest metrics — instead of the DPR flow's bare shape. */
+export function useEngineerProjectSummaries() {
+  const { user } = useAuth();
+  const projectIds = Array.from(
+    new Set(
+      (user?.role ?? [])
+        .filter((grant) => grant.role === "SiteEngineer" && grant.project_id)
+        .map((grant) => grant.project_id as string),
+    ),
+  );
+
+  const results = useQueries({
+    queries: projectIds.map((projectId) => ({
+      queryKey: ["project", projectId],
+      queryFn: async () => unwrap(await api.get<ProjectDetailResponse>(`/projects/${projectId}`)),
+      staleTime: 30_000,
+    })),
+  });
+
+  const isLoading = results.some((r) => r.isLoading);
+  const projects: EngineerProjectSummary[] = results
+    .filter((r) => r.data)
+    .map((r) => {
+      const { project, stages, metrics } = r.data!;
+      const latest = metrics[metrics.length - 1];
+      const activeStage = stages.find((s) => s.state === "active");
+      return {
+        project_id: project.project_id,
+        name: project.name,
+        client_name: project.client_name,
+        current_stage_name: activeStage?.stage_name ?? null,
+        status: project.status,
+        spi: latest?.spi ?? null,
+        completed_pct: latest?.actual_pct ?? null,
+        planned_pct: latest?.planned_pct ?? null,
+      };
+    });
+
+  return { data: projects, isLoading };
+}
+
 export function useWeatherCategories() {
   return useQuery({
     queryKey: ["weather-categories"],

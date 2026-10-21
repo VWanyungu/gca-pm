@@ -15,6 +15,7 @@ import {
   PanelLeftClose,
   ChevronDown,
   ChevronRight,
+  ClipboardList,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { STAGE_SHORT_NAME, type StageRow } from "./types";
@@ -41,7 +42,8 @@ interface ProjectSidebarProps {
     | "change-requests"
     | "milestones"
     | "schedule"
-    | "submit";
+    | "submit"
+    | "dpr";
   activeStageNo?: number;
 }
 
@@ -65,6 +67,7 @@ export function ProjectSidebar({
   const navItems = [
     { key: "overview", label: "Overview", icon: LayoutGrid, href: base },
     { key: "schedule", label: "Schedule", icon: CalendarRange, href: `${base}/schedule` },
+    { key: "dpr", label: "DPR", icon: ClipboardList, href: `${base}/dpr` },
     {
       key: "submit",
       label: "Submit",
