@@ -1,6 +1,7 @@
 import type { Knex } from 'knex';
 import { randomUUID } from 'crypto';
 import db from '../dbSetup.js';
+import { writebackDprActivityProgress } from '../../utils/scheduleWriteback.js';
 
 export interface Paginated<T> {
   users: T[];
@@ -4224,6 +4225,19 @@ export class Dprs {
         }
       }
 
+      // AC-DPR-08 / AC-SCH-16: a same-day edit to an already-submitted DPR writes back too,
+      // but only if the schedule hasn't moved on since the original submit.
+      if (patch.activity_progress !== undefined && existing.status === 'submitted' && existing.submitted_at) {
+        const project = await t('projects').where({ project_id: existing.project_id }).first('timezone');
+        await writebackDprActivityProgress(t, {
+          dprId,
+          projectId: existing.project_id,
+          dprSubmittedAt: new Date(existing.submitted_at),
+          timezone: project?.timezone ?? 'Africa/Nairobi',
+          enforceStaleRule: true,
+        });
+      }
+
       return await Dprs.getById(dprId, existing.project_id, t);
     };
 
@@ -4264,6 +4278,15 @@ export class Dprs {
           is_late: isLate,
           updated_at: t.fn.now(),
         });
+
+      // AC-SCH-15: the initial submit always writes back, no staleness check.
+      await writebackDprActivityProgress(t, {
+        dprId,
+        projectId: dpr.project_id,
+        dprSubmittedAt: submittedAt,
+        timezone: project?.timezone ?? 'Africa/Nairobi',
+        enforceStaleRule: false,
+      });
 
       return (await Dprs.getById(dprId, dpr.project_id, t))!;
     };
