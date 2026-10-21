@@ -1,17 +1,22 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Dropdown from "@/components/Dropdown";
 import { StatusControl } from "@/components/project-overview/status-control";
-import { useProgramsList, useProjectRoles } from "./use-admin-users-data";
+import {
+  useAssignableUsers,
+  useProgramsList,
+  useProjectRoles,
+  useReassignMainRole,
+} from "./use-admin-users-data";
 import { useUpdateProject, type AdminProjectStage } from "./use-admin-projects-data";
-import { ReassignMainRoleModal } from "./reassign-main-role-modal";
 import { DeleteProjectModal } from "./delete-project-modal";
 import type { AdminProjectDetail } from "./types";
+import { ArrowLeft } from "lucide-react";
 
 const projectFormSchema = z.object({
   name: z.string().trim().min(1, "Project name is required").max(500),
@@ -25,20 +30,36 @@ const projectFormSchema = z.object({
 type ProjectFormValues = z.infer<typeof projectFormSchema>;
 
 function mainHolderName(
-  roles: { role: string; user_id: string; granted_at: string; first_name: string; last_name: string }[],
+  roles: {
+    role: string;
+    user_id: string;
+    granted_at: string;
+    first_name: string;
+    last_name: string;
+  }[],
   role: "PM" | "Planner",
 ) {
   const holders = roles.filter((r) => r.role === role);
-  const main = [...holders].sort((a, b) => new Date(a.granted_at).getTime() - new Date(b.granted_at).getTime())[0];
+  const main = [...holders].sort(
+    (a, b) => new Date(a.granted_at).getTime() - new Date(b.granted_at).getTime(),
+  )[0];
   return main ? { id: main.user_id, name: `${main.first_name} ${main.last_name}` } : null;
 }
 
-export function ProjectForm({ project, stages }: { project: AdminProjectDetail; stages: AdminProjectStage[] }) {
+export function ProjectForm({
+  project,
+  stages,
+}: {
+  project: AdminProjectDetail;
+  stages: AdminProjectStage[];
+}) {
   const router = useRouter();
   const updateProject = useUpdateProject(project.project_id);
   const { data: programs = [] } = useProgramsList();
   const { data: projectRoles = [] } = useProjectRoles(project.project_id);
-  const [reassigning, setReassigning] = useState<"PM" | "Planner" | null>(null);
+  const { data: assignableUsers = [] } = useAssignableUsers();
+  const reassignMainRole = useReassignMainRole();
+  const [dropdownRevision, setDropdownRevision] = useState(0);
   const [deleting, setDeleting] = useState(false);
 
   const {
@@ -71,18 +92,56 @@ export function ProjectForm({ project, stages }: { project: AdminProjectDetail; 
   }
 
   const programOptions = programs.map((p) => ({ id: String(p.program_id), name: p.name }));
+  const userOptions = useMemo(
+    () =>
+      assignableUsers.map((user) => ({
+        id: user.id,
+        name: `${user.first_name} ${user.last_name}`,
+      })),
+    [assignableUsers],
+  );
   const mainPm = mainHolderName(projectRoles, "PM");
   const mainPlanner = mainHolderName(projectRoles, "Planner");
-  const currentStage = stages.find((s) => s.state === "active") ?? [...stages].reverse().find((s) => s.state === "complete");
+  const mainPmId = mainPm?.id;
+  const mainPmName = mainPm?.name;
+  const mainPlannerId = mainPlanner?.id;
+  const mainPlannerName = mainPlanner?.name;
+  const mainPmOptions = useMemo(
+    () =>
+      mainPmId && !userOptions.some((user) => user.id === mainPmId)
+        ? [{ id: mainPmId, name: mainPmName ?? "" }, ...userOptions]
+        : userOptions,
+    [mainPmId, mainPmName, userOptions],
+  );
+  const mainPlannerOptions = useMemo(
+    () =>
+      mainPlannerId && !userOptions.some((user) => user.id === mainPlannerId)
+        ? [{ id: mainPlannerId, name: mainPlannerName ?? "" }, ...userOptions]
+        : userOptions,
+    [mainPlannerId, mainPlannerName, userOptions],
+  );
+  const currentStage =
+    stages.find((s) => s.state === "active") ??
+    [...stages].reverse().find((s) => s.state === "complete");
   const teamCount = new Set(projectRoles.map((r) => r.user_id)).size;
+
+  function handleMainRoleChange(role: "PM" | "Planner", newUserId: string) {
+    const currentHolder = role === "PM" ? mainPm : mainPlanner;
+    if (newUserId === currentHolder?.id) return;
+
+    reassignMainRole.mutate(
+      { projectId: project.project_id, role, newUserId },
+      { onError: () => setDropdownRevision((revision) => revision + 1) },
+    );
+  }
 
   return (
     <div>
       <button
         onClick={() => router.push("/admin/projects")}
-        className="mb-[16px] text-[13px] font-medium text-gca-green"
+        className="mb-[16px] text-[13px] font-medium text-gca-green flex gap-[6px] items-center"
       >
-        ← Projects
+        <ArrowLeft size={18} /> Projects
       </button>
 
       <h1 className="mb-[24px] text-[24px] font-semibold text-gca-dark">Edit project</h1>
@@ -164,38 +223,41 @@ export function ProjectForm({ project, stages }: { project: AdminProjectDetail; 
                 status={project.status}
                 canManage
                 onChanged={() => router.refresh()}
+                classNames="w-full!"
               />
             </div>
             <div className="flex-1">
               <p className="mb-[6px] text-[13px] font-medium text-gca-dark">Main PM</p>
-              <div className="flex h-[42px] items-center justify-between rounded-[8px] border border-gca-border px-[12px]">
-                <span className="text-[14px] text-gca-dark">{mainPm?.name ?? "—"}</span>
-                <button
-                  type="button"
-                  onClick={() => setReassigning("PM")}
-                  className="text-[13px] font-semibold text-gca-green"
-                >
-                  Reassign
-                </button>
+              <div className={reassignMainRole.isPending ? "pointer-events-none opacity-60" : ""}>
+                <Dropdown
+                  key={`main-pm-${mainPm?.id ?? "none"}-${dropdownRevision}`}
+                  id="main-pm"
+                  title="Select PM"
+                  data={mainPmOptions}
+                  selectedId={mainPm?.id}
+                  style="h-[42px] w-full rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
+                  onSelect={(id) => handleMainRoleChange("PM", id)}
+                />
               </div>
             </div>
           </div>
 
           <div className="w-[calc(50%-8px)]">
             <p className="mb-[6px] text-[13px] font-medium text-gca-dark">Main Planner</p>
-            <div className="flex h-[42px] items-center justify-between rounded-[8px] border border-gca-border px-[12px]">
-              <span className="text-[14px] text-gca-dark">{mainPlanner?.name ?? "—"}</span>
-              <button
-                type="button"
-                onClick={() => setReassigning("Planner")}
-                className="text-[13px] font-semibold text-gca-green"
-              >
-                Reassign
-              </button>
+            <div className={reassignMainRole.isPending ? "pointer-events-none opacity-60" : ""}>
+              <Dropdown
+                key={`main-planner-${mainPlanner?.id ?? "none"}-${dropdownRevision}`}
+                id="main-planner"
+                title="Select Planner"
+                data={mainPlannerOptions}
+                selectedId={mainPlanner?.id}
+                style="h-[42px] w-full rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
+                onSelect={(id) => handleMainRoleChange("Planner", id)}
+              />
             </div>
           </div>
 
-          <div className="mt-[8px] flex gap-[12px]">
+          <div className="mt-[8px] flex gap-[12px] justify-between items-center">
             <button
               type="button"
               onClick={() => router.push("/admin/projects")}
@@ -253,17 +315,6 @@ export function ProjectForm({ project, stages }: { project: AdminProjectDetail; 
           </div>
         </div>
       </form>
-
-      {reassigning && (
-        <ReassignMainRoleModal
-          projectId={project.project_id}
-          projectName={project.name}
-          role={reassigning}
-          currentHolderId={(reassigning === "PM" ? mainPm?.id : mainPlanner?.id) ?? ""}
-          currentHolderName={(reassigning === "PM" ? mainPm?.name : mainPlanner?.name) ?? ""}
-          onClose={() => setReassigning(null)}
-        />
-      )}
 
       {deleting && (
         <DeleteProjectModal

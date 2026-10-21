@@ -47,9 +47,16 @@ interface StatusControlProps {
   status: ProjectStatus;
   canManage: boolean;
   onChanged: () => void;
+  classNames?: string;
 }
 
-export function StatusControl({ projectId, status, canManage, onChanged }: StatusControlProps) {
+export function StatusControl({
+  projectId,
+  status,
+  canManage,
+  onChanged,
+  classNames = "",
+}: StatusControlProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [target, setTarget] = useState<ProjectStatus | null>(null);
   const [reason, setReason] = useState("");
@@ -89,18 +96,20 @@ export function StatusControl({ projectId, status, canManage, onChanged }: Statu
 
   if (!canManage || options.length === 0) {
     return (
-      <span className="rounded-[8px] border border-gca-border px-[12px] py-[8px] text-[14px] font-medium">
+      <span
+        className={`rounded-[8px] border border-gca-border px-[12px] py-[8px] text-[14px] font-medium ${classNames}`}
+      >
         <span className={STATUS_COLOR[status]}>{LABELS[status]}</span>
       </span>
     );
   }
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className={`relative ${classNames}`}>
       <button
         type="button"
         onClick={() => setMenuOpen((o) => !o)}
-        className="flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-white py-[8px] pl-[12px] pr-[10px] shadow-[0px_1px_24px_0px_rgba(23,48,31,0.05)]"
+        className="w-full flex justify-between items-center gap-[8px] rounded-[8px] border border-gca-border bg-white py-[8px] pl-[12px] pr-[10px] shadow-[0px_1px_24px_0px_rgba(23,48,31,0.05)]"
       >
         <span className={`text-[14px] font-medium ${STATUS_COLOR[status]}`}>{LABELS[status]}</span>
         <ChevronDown className="size-[16px] text-gca-muted" />

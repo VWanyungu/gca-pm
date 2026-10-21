@@ -24,7 +24,7 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 300);
   const [roleFilter, setRoleFilter] = useState<RoleName | undefined>();
-  const [statusFilter, setStatusFilter] = useState<"active" | "deactivated" | undefined>();
+  const [statusFilter, setStatusFilter] = useState<"active" | "deactivated" | undefined>("active");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 

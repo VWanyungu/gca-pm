@@ -37,10 +37,10 @@ export default function AdminProjectsPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 300);
-  const [statusFilter, setStatusFilter] = useState<ProjectStatus | undefined>();
+  const [statusFilter, setStatusFilter] = useState<ProjectStatus | undefined>("active");
   const [programFilter, setProgramFilter] = useState<number | undefined>();
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(5);
   const [deleting, setDeleting] = useState<AdminProjectListItem | null>(null);
 
   const { data: programs = [] } = useProgramsList();
@@ -68,7 +68,7 @@ export default function AdminProjectsPage() {
         </p>
       </div>
 
-      <div className="flex items-center gap-[12px]">
+      <div className="flex items-center justify-between gap-[12px]">
         <input
           value={search}
           onChange={(e) => {
@@ -78,37 +78,39 @@ export default function AdminProjectsPage() {
           placeholder="Search projects"
           className="h-[40px] w-[320px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
         />
-        <Dropdown
-          id="status-filter"
-          title="All statuses"
-          data={STATUS_OPTIONS}
-          selectedId={statusFilter ?? "all"}
-          style="h-[40px] w-[170px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
-          onSelect={(id) => {
-            setStatusFilter(id === "all" ? undefined : (id as ProjectStatus));
-            setPage(1);
-          }}
-        />
-        <Dropdown
-          id="program-filter"
-          title="All programs"
-          data={programOptions}
-          selectedId={programFilter != null ? String(programFilter) : "all"}
-          style="h-[40px] w-[190px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
-          onSelect={(id) => {
-            setProgramFilter(id === "all" ? undefined : Number(id));
-            setPage(1);
-          }}
-        />
+        <div className="flex items-center gap-[12px]">
+          <Dropdown
+            id="status-filter"
+            title="All statuses"
+            data={STATUS_OPTIONS}
+            selectedId={statusFilter ?? "all"}
+            style="h-[40px] w-[170px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
+            onSelect={(id) => {
+              setStatusFilter(id === "all" ? undefined : (id as ProjectStatus));
+              setPage(1);
+            }}
+          />
+          <Dropdown
+            id="program-filter"
+            title="All programs"
+            data={programOptions}
+            selectedId={programFilter != null ? String(programFilter) : "all"}
+            style="h-[40px] w-[190px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
+            onSelect={(id) => {
+              setProgramFilter(id === "all" ? undefined : Number(id));
+              setPage(1);
+            }}
+          />
+        </div>
       </div>
 
-      <div className="overflow-hidden rounded-[12px] border border-gca-border">
+      <div className="overflow-hidden">
         <table className="w-full text-left">
           <thead>
-            <tr className="border-b border-gca-border bg-gca-page-bg text-[12px] font-semibold uppercase tracking-[0.3px] text-gca-muted">
+            <tr className="border-b border-gca-border text-[12px] font-semibold tracking-[0.3px] text-gca-muted">
               <th className="flex-1 px-[16px] py-[10px]">Project</th>
               <th className="w-[180px] px-[16px] py-[10px]">Program</th>
-              <th className="w-[170px] px-[16px] py-[10px]">Main PM</th>
+              <th className="w-[170px] px-[16px] py-[10px]">PM</th>
               <th className="w-[110px] px-[16px] py-[10px]">Status</th>
               <th className="w-[140px] px-[16px] py-[10px]">Created</th>
               <th className="w-[120px] px-[16px] py-[10px]" />
@@ -120,13 +122,22 @@ export default function AdminProjectsPage() {
                 key={p.project_id}
                 className="border-b border-gca-border last:border-b-0 hover:bg-gca-page-bg"
               >
-                <td className="px-[16px] py-[12px]">
+                <td
+                  className="px-[16px] py-[12px]"
+                  onClick={() => router.push(`/projects/${p.project_id}`)}
+                >
                   <p className="text-[13px] font-medium text-gca-dark">{p.name}</p>
                   <p className="text-[12px] text-gca-muted">{p.client_name ?? "—"}</p>
                 </td>
-                <td className="px-[16px] py-[12px] text-[13px] text-gca-dark">{p.program_name ?? "—"}</td>
-                <td className="px-[16px] py-[12px] text-[13px] text-gca-dark">{p.main_pm_name ?? "—"}</td>
-                <td className={`px-[16px] py-[12px] text-[13px] font-medium ${STATUS_STYLES[p.status]}`}>
+                <td className="px-[16px] py-[12px] text-[13px] text-gca-dark">
+                  {p.program_name ?? "—"}
+                </td>
+                <td className="px-[16px] py-[12px] text-[13px] text-gca-dark">
+                  {p.main_pm_name ?? "—"}
+                </td>
+                <td
+                  className={`px-[16px] py-[12px] text-[13px] font-medium ${STATUS_STYLES[p.status]}`}
+                >
                   {STATUS_LABELS[p.status]}
                 </td>
                 <td className="px-[16px] py-[12px] text-[13px] text-gca-dark">
@@ -138,24 +149,24 @@ export default function AdminProjectsPage() {
                 </td>
                 <td className="px-[16px] py-[12px]">
                   <div className="flex items-center gap-[8px]">
-                    <button
+                    {/* <button
                       onClick={() => router.push(`/projects/${p.project_id}`)}
                       title="View project"
                       className="flex size-[34px] items-center justify-center rounded-[8px] border border-gca-border text-gca-show hover:bg-white"
                     >
                       <Eye className="size-[16px]" />
-                    </button>
+                    </button> */}
                     <button
                       onClick={() => router.push(`/admin/projects/${p.project_id}/edit`)}
                       title="Edit project"
-                      className="flex size-[34px] items-center justify-center rounded-[8px] border border-gca-border text-gca-show hover:bg-white"
+                      className="flex size-[34px] items-center justify-center rounded-[8px] text-gca-show hover:bg-white"
                     >
                       <Pencil className="size-[14px]" />
                     </button>
                     <button
                       onClick={() => setDeleting(p)}
                       title="Delete project"
-                      className="flex size-[34px] items-center justify-center rounded-[8px] border border-error-border text-error-text hover:bg-error-bg"
+                      className="flex size-[34px] items-center justify-center rounded-[8px] text-error-text hover:bg-error-bg"
                     >
                       <Trash2 className="size-[14px]" />
                     </button>
@@ -165,7 +176,10 @@ export default function AdminProjectsPage() {
             ))}
             {projects.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-[16px] py-[24px] text-center text-[13px] text-gca-muted">
+                <td
+                  colSpan={6}
+                  className="px-[16px] py-[24px] text-center text-[13px] text-gca-muted"
+                >
                   No projects found
                 </td>
               </tr>
