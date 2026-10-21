@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, Plus, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { usePdmStages } from "@/hooks/use-pdm-stages";
 
 type Preset = "full" | "deliver" | "develop" | "custom";
@@ -18,10 +18,10 @@ interface ScopeStepProps {
   onChange: (stages: number[]) => void;
   onBack: () => void;
   onNext: () => void;
-  nextLabel: string;
+  singlePage?: boolean;
 }
 
-export function ScopeStep({ value, onChange, onBack, onNext, nextLabel }: ScopeStepProps) {
+export function ScopeStep({ value, onChange, onBack, onNext, singlePage = false }: ScopeStepProps) {
   const { data: stages = [], isLoading } = usePdmStages();
   const [preset, setPreset] = useState<Preset>("deliver");
 
@@ -42,7 +42,7 @@ export function ScopeStep({ value, onChange, onBack, onNext, nextLabel }: ScopeS
 
   return (
     <div className="flex w-full flex-col gap-[32px]">
-      <div>
+      <div className="hidden md:block">
         <h2 className="text-[26px] font-semibold tracking-[-0.39px] text-gca-dark">
           Choose the stages
         </h2>
@@ -51,26 +51,29 @@ export function ScopeStep({ value, onChange, onBack, onNext, nextLabel }: ScopeS
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-[16px]">
-        {PRESETS.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => applyPreset(p.id)}
-            className={`cursor-pointer flex w-[180px] items-center gap-[12px] rounded-[8px] border px-[14px] py-[12px] ${
-              preset === p.id ? "border-gca-green bg-gca-badge-bg" : "border-gca-border"
-            }`}
-          >
-            <span
-              className={`flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 ${
-                preset === p.id ? "border-gca-green" : "border-gca-border"
+      <div>
+        <p className="text-[13px] font-medium text-gca-show mb-[10px] md:hidden">PDM Stages</p>
+        <div className="flex flex-wrap items-center gap-[16px]">
+          {PRESETS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => applyPreset(p.id)}
+              className={`cursor-pointer flex flex-1 md:w-[180px] items-center gap-[12px] rounded-[8px] border px-[14px] py-[12px] ${
+                preset === p.id ? "border-gca-green bg-gca-badge-bg" : "border-gca-border"
               }`}
             >
-              {preset === p.id && <span className="size-[10px] rounded-full bg-gca-green" />}
-            </span>
-            <span className="text-[14px] font-medium text-gca-dark">{p.label}</span>
-          </button>
-        ))}
+              <span
+                className={`flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 ${
+                  preset === p.id ? "border-gca-green" : "border-gca-border"
+                }`}
+              >
+                {preset === p.id && <span className="size-[10px] rounded-full bg-gca-green" />}
+              </span>
+              <span className="text-[14px] font-medium text-gca-dark">{p.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (
@@ -116,7 +119,9 @@ export function ScopeStep({ value, onChange, onBack, onNext, nextLabel }: ScopeS
         </>
       )}
 
-      <div className="flex items-center justify-between pt-[24px]">
+      <div
+        className={`flex items-center justify-between pt-[24px] ${singlePage ? "hidden xl:flex" : ""}`}
+      >
         <button
           type="button"
           onClick={onBack}

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, LoaderCircle, Plus, X } from "lucide-react";
+import { LoaderCircle, Plus, X } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 import Dropdown from "@/components/Dropdown";
@@ -39,6 +39,7 @@ interface PeopleStepProps {
   onSubmit: () => void;
   submitLabel: string;
   submitting?: boolean;
+  singlePage?: boolean;
 }
 
 export function PeopleStep({
@@ -48,6 +49,7 @@ export function PeopleStep({
   onSubmit,
   submitLabel,
   submitting,
+  singlePage = false,
 }: PeopleStepProps) {
   const { user } = useAuth();
   const [draft, setDraft] = useState<ClientContact>({ name: "", role: "", email: "" });
@@ -98,7 +100,7 @@ export function PeopleStep({
 
   return (
     <div className="flex w-full flex-col gap-[28px]">
-      <div>
+      <div className="hidden md:block">
         <h2 className="text-[26px] font-semibold tracking-[-0.39px] text-gca-dark">
           Assign people
         </h2>
@@ -107,8 +109,8 @@ export function PeopleStep({
         </p>
       </div>
 
-      <div className="flex gap-[16px]">
-        <div className="flex w-1/2 flex-col gap-[6px]">
+      <div className="flex flex-col gap-[16px] sm:flex-row">
+        <div className="flex w-full flex-col gap-[6px] sm:w-1/2">
           <label className="flex items-center gap-[2px] text-[13px] font-medium text-gca-dark">
             Main PM <span className="text-error-text">*</span>
           </label>
@@ -121,7 +123,7 @@ export function PeopleStep({
             onSelect={(id) => onChange({ ...value, pmUserId: id })}
           />
         </div>
-        <div className="flex w-1/2 flex-col gap-[6px]">
+        <div className="flex w-full flex-col gap-[6px] sm:w-1/2">
           <label className="flex items-center gap-[2px] text-[13px] font-medium text-gca-dark">
             Main Planner <span className="text-error-text">*</span>
           </label>
@@ -147,8 +149,8 @@ export function PeopleStep({
         <p className="text-[13px] text-gca-show">Client contacts receive project reports.</p>
       </div>
 
-      <div className="flex items-start gap-[12px]">
-        <div className="flex w-[180px] flex-col gap-[4px]">
+      <div className="flex flex-col items-stretch gap-[12px] md:flex-row md:items-start">
+        <div className="flex w-full flex-col gap-[4px] md:w-[180px]">
           <input
             value={draft.name}
             onChange={(e) => {
@@ -169,9 +171,9 @@ export function PeopleStep({
           value={draft.role}
           onChange={(e) => setDraft({ ...draft, role: e.target.value })}
           placeholder="Role"
-          className="h-[42px] w-[140px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
+          className="h-[42px] w-full rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green md:w-[140px]"
         />
-        <div className="flex w-[196px] flex-col gap-[4px]">
+        <div className="flex w-full flex-col gap-[4px] md:w-[196px]">
           <input
             value={draft.email}
             onChange={(e) => {
@@ -191,7 +193,7 @@ export function PeopleStep({
         <button
           type="button"
           onClick={addContact}
-          className="flex w-[88px] items-center justify-center gap-[8px] rounded-[8px] border border-gca-border px-[18px] py-[11px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+          className="flex w-full items-center justify-center gap-[8px] rounded-[8px] border border-gca-border px-[18px] py-[11px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg md:w-[88px]"
         >
           <Plus className="size-[10px]" />
           Add
@@ -229,11 +231,13 @@ export function PeopleStep({
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-[24px]">
+      <div className="flex items-center justify-between gap-3 pt-[24px]">
         <button
           type="button"
           onClick={onBack}
-          className="cursor-pointer flex items-center gap-[8px] px-[4px] py-[11px] text-[14px] font-semibold text-gca-dark"
+          className={`cursor-pointer flex items-center gap-[8px] px-[4px] py-[11px] text-[14px] font-semibold text-gca-dark ${
+            singlePage ? "hidden xl:flex" : ""
+          }`}
         >
           {/* <ArrowLeft className="size-[13px]" /> */}
           Back
@@ -243,7 +247,7 @@ export function PeopleStep({
           disabled={!value.pmUserId || !value.plannerUserId || submitting}
           onClick={onSubmit}
           aria-label={submitting ? "Saving" : undefined}
-          className="cursor-pointer flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
+          className="cursor-pointer w-full md:w-auto flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
         >
           {submitting ? (
             <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />

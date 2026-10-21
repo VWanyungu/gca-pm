@@ -107,7 +107,8 @@ export default function Home() {
   // A project-scoped-only Site Engineer has no GET /projects access (canListProjects only
   // authorizes SiteEngineer@global) — fetch their own projects from their role grants instead.
   const canListAll =
-    hasAnyRole(user?.role, CAN_LIST_PROJECTS) || canAccess(user?.role, CAN_LIST_PROJECTS_GLOBAL_ONLY);
+    hasAnyRole(user?.role, CAN_LIST_PROJECTS) ||
+    canAccess(user?.role, CAN_LIST_PROJECTS_GLOBAL_ONLY);
   const engineerProjects = useEngineerProjectSummaries();
 
   const { data: programs = [] } = useQuery({
@@ -183,18 +184,18 @@ export default function Home() {
 
   return (
     <>
-      <main className="flex flex-col gap-[32px] px-[120px] pb-[48px] pt-[40px]">
+      <main className="flex flex-col gap-[32px] px-4 pb-[48px] pt-[20px] sm:px-8 md:pt-[40px] lg:px-10 xl:px-[120px]">
         {/* Header */}
-        <div className="flex items-end justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-[28px] font-semibold tracking-[-0.7px] text-gca-dark">
+            <h1 className="text-2xl font-semibold leading-tight tracking-[-0.7px] text-gca-dark sm:text-[28px]">
               {greeting}
             </h1>
           </div>
           {showCreate && (
             <Link
               href="/projects/new"
-              className="flex items-center justify-center rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
+              className="flex w-full items-center justify-center rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-white hover:bg-gca-green-hover sm:w-auto"
             >
               New project
             </Link>
@@ -208,9 +209,9 @@ export default function Home() {
         {!loading && !error && (
           <>
             {/* Toolbar */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-[12px] lg:flex-row lg:items-center lg:justify-between">
               {/* Search */}
-              <div className="flex w-[360px] items-center gap-[10px] rounded-[8px] border border-gca-border bg-white px-[12px] py-[11px]">
+              <div className="flex w-full items-center gap-[10px] rounded-[8px] border border-gca-border bg-white px-[12px] py-[11px] lg:w-[360px]">
                 <Search className="size-[14px] text-gca-muted" />
                 <input
                   type="text"
@@ -224,9 +225,9 @@ export default function Home() {
                 />
               </div>
 
-              <div className="flex items-center gap-[8px]">
+              <div className="grid grid-cols-2 gap-[8px] sm:flex sm:items-center">
                 {/* View switch */}
-                <div className="cursor-pointer flex gap-[4px] rounded-[10px] bg-gca-page-bg p-[4px]">
+                <div className="col-span-2 flex w-fit cursor-pointer gap-[4px] rounded-[10px] bg-gca-page-bg p-[4px] sm:col-span-auto">
                   <button
                     onClick={() => setView("card")}
                     className={`flex h-[32px] w-[36px] items-center justify-center rounded-[6px] cursor-pointer ${
@@ -250,55 +251,55 @@ export default function Home() {
                 {/* Status filter — server-side, so it's meaningless against the engineer's
                     client-side-only project list */}
                 {canListAll && (
-                <div className="relative">
-                  <Dropdown
-                    id="status-filter"
-                    title="Status"
-                    data={projectStatusOptions.map((status) => ({
-                      id: status.id,
-                      name: status.name,
-                      value: status.value,
-                    }))}
-                    style="h-[44px] w-[170px] appearance-none rounded-[8px] border border-gca-border bg-white px-[12px] text-[14px] text-gca-dark outline-none"
-                    selectedId={
-                      projectStatusOptions.find((s) => s.value === statusFilter)?.id ?? "all"
-                    }
-                    onSelect={(id, name, value) => {
-                      setStatusFilter(value);
-                      setPage(1);
-                    }}
-                  />
-                </div>
+                  <div className="relative min-w-0">
+                    <Dropdown
+                      id="status-filter"
+                      title="Status"
+                      data={projectStatusOptions.map((status) => ({
+                        id: status.id,
+                        name: status.name,
+                        value: status.value,
+                      }))}
+                      style="h-[44px] w-full appearance-none rounded-[8px] border border-gca-border bg-white px-[12px] text-[14px] text-gca-dark outline-none sm:w-[170px]"
+                      selectedId={
+                        projectStatusOptions.find((s) => s.value === statusFilter)?.id ?? "all"
+                      }
+                      onSelect={(id, name, value) => {
+                        setStatusFilter(value);
+                        setPage(1);
+                      }}
+                    />
+                  </div>
                 )}
 
                 {/* Program filter — same reason */}
                 {canListAll && (
-                <div className="relative">
-                  <Dropdown
-                    id="program-filter"
-                    title="Program"
-                    data={projectProgramOptions.map((program) => ({
-                      id: program.id.toString(),
-                      name: program.name,
-                    }))}
-                    style="h-[44px] w-[170px] appearance-none rounded-[8px] border border-gca-border bg-white px-[12px] text-[14px] text-gca-dark outline-none"
-                    selectedId={
-                      projectProgramOptions.find((p) => p.id.toString() === programFilter)?.id ??
-                      "all"
-                    }
-                    onSelect={(id) => {
-                      setProgramFilter(id);
-                      setPage(1);
-                    }}
-                  />
-                </div>
+                  <div className="relative min-w-0">
+                    <Dropdown
+                      id="program-filter"
+                      title="Program"
+                      data={projectProgramOptions.map((program) => ({
+                        id: program.id.toString(),
+                        name: program.name,
+                      }))}
+                      style="h-[44px] w-full appearance-none rounded-[8px] border border-gca-border bg-white px-[12px] text-[14px] text-gca-dark outline-none sm:w-[170px]"
+                      selectedId={
+                        projectProgramOptions.find((p) => p.id.toString() === programFilter)?.id ??
+                        "all"
+                      }
+                      onSelect={(id) => {
+                        setProgramFilter(id);
+                        setPage(1);
+                      }}
+                    />
+                  </div>
                 )}
               </div>
             </div>
 
             {/* Card or table view */}
             {view === "card" ? (
-              <div className="grid grid-cols-4 gap-[20px]">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-[20px]">
                 {projects.map((p) => (
                   <ProjectCard key={p.id} project={p} canEdit={canEdit} />
                 ))}
@@ -383,16 +384,16 @@ function LoadingSkeleton() {
   return (
     <>
       {/* Toolbar skeleton */}
-      <div className="flex items-center justify-between">
-        <div className="h-[44px] w-[360px] animate-pulse rounded-[8px] bg-gca-page-bg" />
-        <div className="flex items-center gap-[8px]">
-          <div className="h-[40px] w-[80px] animate-pulse rounded-[10px] bg-gca-page-bg" />
-          <div className="h-[44px] w-[170px] animate-pulse rounded-[8px] bg-gca-page-bg" />
-          <div className="h-[44px] w-[190px] animate-pulse rounded-[8px] bg-gca-page-bg" />
+      <div className="flex flex-col gap-[12px] lg:flex-row lg:items-center lg:justify-between">
+        <div className="h-[44px] w-full animate-pulse rounded-[8px] bg-gca-page-bg lg:w-[360px]" />
+        <div className="grid grid-cols-2 gap-[8px] sm:flex sm:items-center">
+          <div className="col-span-2 h-[40px] w-[80px] animate-pulse rounded-[10px] bg-gca-page-bg sm:col-span-auto" />
+          <div className="h-[44px] w-full animate-pulse rounded-[8px] bg-gca-page-bg sm:w-[170px]" />
+          <div className="h-[44px] w-full animate-pulse rounded-[8px] bg-gca-page-bg sm:w-[170px]" />
         </div>
       </div>
       {/* Card skeletons */}
-      <div className="grid grid-cols-3 gap-[20px]">
+      <div className="grid grid-cols-1 gap-[20px] md:grid-cols-4">
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}

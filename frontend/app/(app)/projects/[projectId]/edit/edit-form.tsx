@@ -79,8 +79,8 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
   if (!details) return null;
 
   return (
-    <main className="flex w-full justify-center">
-      <div className="flex flex-col gap-[40px] px-[120px] pb-[48px] pt-[40px]">
+    <main className="flex w-full justify-center px-4 pb-[48px] pt-[20px] sm:px-8 md:px-10 md:pt-[40px] 2xl:px-[120px]">
+      <div className="flex w-full max-w-[1200px] flex-col gap-[32px] md:gap-[40px]">
         <div className="flex flex-col gap-[8px]">
           <Link
             // href={`/projects/${projectId}`}
@@ -89,26 +89,29 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
           >
             <ArrowLeft className="size-[14px]" /> {details.name}
           </Link>
-          <h1 className="text-[28px] font-semibold tracking-[-0.7px] text-gca-dark">
+          <h1 className="text-2xl font-semibold tracking-[-0.7px] text-gca-dark sm:text-[28px]">
             Edit project
           </h1>
         </div>
 
-        <div className="flex gap-[64px]">
-          <ProjectStepper
-            steps={STEPS}
-            currentKey={step}
-            mode="edit"
-            completedKeys={["details"]}
-            onStepClick={setStep}
-          />
+        <div className="flex w-full gap-[64px]">
+          <div className="hidden xl:block">
+            <ProjectStepper
+              steps={STEPS}
+              currentKey={step}
+              mode="edit"
+              completedKeys={["details"]}
+              onStepClick={setStep}
+            />
+          </div>
 
-          {step === "details" && (
-            <div className="w-[640px]">
+          <div className="flex w-full flex-col gap-[40px] md:w-[640px]">
+            <section className={step === "details" ? "" : "xl:hidden"}>
               <DetailsStep
                 defaultValues={draftDetails ?? details}
                 onCancel={() => router.push(`/projects/${projectId}`)}
                 nextLabel="Next: People"
+                singlePage
                 onNext={(values) => {
                   setDraftDetails(values);
                   setStep("people");
@@ -116,11 +119,9 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
                 onSave={save}
                 saving={saving}
               />
-            </div>
-          )}
+            </section>
 
-          {step === "people" && (
-            <div className="flex w-[640px] flex-col gap-[16px]">
+            <section className={`flex flex-col gap-[16px] ${step === "people" ? "" : "xl:hidden"}`}>
               <h2 className="text-[22px] font-semibold tracking-[-0.4px] text-gca-dark">
                 Assign people
               </h2>
@@ -132,8 +133,8 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
               >
                 <ArrowLeft className="size-[14px]" /> Back
               </button>
-            </div>
-          )}
+            </section>
+          </div>
         </div>
       </div>
     </main>

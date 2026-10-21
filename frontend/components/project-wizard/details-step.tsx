@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { forwardRef, useEffect, useImperativeHandle } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -37,27 +37,40 @@ interface DetailsStepProps {
   defaultValues: DetailsFormValues;
   onCancel: () => void;
   onNext: (values: DetailsFormValues) => void;
+  singlePage?: boolean;
   /** Edit mode shows a secondary "Save changes" action next to "Next". */
   onSave?: (values: DetailsFormValues) => void;
   saving?: boolean;
   nextLabel: string;
 }
 
-export function DetailsStep({
-  defaultValues,
-  onCancel,
-  onNext,
-  onSave,
-  saving,
-  nextLabel,
-}: DetailsStepProps) {
+export interface DetailsStepHandle {
+  validate: () => Promise<DetailsFormValues | null>;
+}
+
+export const DetailsStep = forwardRef<DetailsStepHandle, DetailsStepProps>(function DetailsStep(
+  { defaultValues, onCancel, onNext, onSave, saving, nextLabel, singlePage = false },
+  ref,
+) {
   const {
     register,
     handleSubmit,
     setValue,
+    getValues,
+    trigger,
     control,
     formState: { errors },
   } = useForm<DetailsFormValues>({ resolver: zodResolver(detailsSchema), defaultValues });
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      async validate() {
+        return (await trigger()) ? getValues() : null;
+      },
+    }),
+    [getValues, trigger],
+  );
 
   useEffect(() => {
     // shortcut: re-syncs only when the prefilled name changes (edit mode's async load), not on every keystroke
@@ -84,7 +97,7 @@ export function DetailsStep({
 
   return (
     <form noValidate onSubmit={handleSubmit(onNext)} className="flex w-full flex-col gap-[24px]">
-      <h2 className="text-[26px] font-semibold tracking-[-0.39px] text-gca-dark">
+      <h2 className="text-[26px] font-semibold tracking-[-0.39px] text-gca-dark hidden md:hidden">
         Project details
       </h2>
 
@@ -99,8 +112,13 @@ export function DetailsStep({
         />
       </Field>
 
-      <div className="flex gap-[16px]">
-        <Field label="Client" required error={errors.client_name?.message} className="w-1/2">
+      <div className="flex flex-col gap-[16px] sm:flex-row">
+        <Field
+          label="Client"
+          required
+          error={errors.client_name?.message}
+          className="w-full sm:w-1/2"
+        >
           <input
             {...register("client_name")}
             aria-invalid={!!errors.client_name}
@@ -110,7 +128,12 @@ export function DetailsStep({
             }`}
           />
         </Field>
-        <Field label="Program" required error={errors.program_id?.message} className="w-1/2">
+        <Field
+          label="Program"
+          required
+          error={errors.program_id?.message}
+          className="w-full sm:w-1/2"
+        >
           <Dropdown
             id="program_id"
             title="Choose program"
@@ -124,12 +147,12 @@ export function DetailsStep({
         </Field>
       </div>
 
-      <div className="flex gap-[16px]">
+      <div className="flex flex-col gap-[16px] sm:flex-row">
         <Field
           label="Start date"
           required
           error={errors.expected_start_date?.message}
-          className="w-1/2"
+          className="w-full sm:w-1/2"
         >
           <input
             type="date"
@@ -140,7 +163,7 @@ export function DetailsStep({
             }`}
           />
         </Field>
-        <Field label="Planned finish" className="w-1/2">
+        <Field label="Planned finish" className="w-full sm:w-1/2">
           <input
             type="date"
             {...register("expected_end_date")}
@@ -186,11 +209,15 @@ export function DetailsStep({
         </div>
       </fieldset>
 
-      <div className="flex items-center justify-between pt-[24px]">
+      <div
+        className={`hidden md:flex items-center justify-between pt-[24px] ${singlePage ? "flex-wrap gap-3" : ""}`}
+      >
         <button
           type="button"
           onClick={onCancel}
-          className="px-[4px] py-[11px] text-[14px] font-semibold text-gca-show hover:text-red-500 cursor-pointer"
+          className={`cursor-pointer px-[4px] py-[11px] text-[14px] font-semibold text-gca-show hover:text-red-500 ${
+            singlePage ? "hidden xl:inline-flex" : ""
+          }`}
         >
           Cancel
         </button>
@@ -207,17 +234,18 @@ export function DetailsStep({
           )}
           <button
             type="submit"
-            className="cursor-pointer flex items-center gap-[10px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
+            className={`flex cursor-pointer items-center gap-[10px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-white hover:bg-gca-green-hover ${
+              singlePage ? "hidden xl:flex" : ""
+            }`}
           >
-            {/* {nextLabel} */}
-            Next
-            {/* <ArrowRight className="size-[13px]" /> */}
+            {nextLabel}
+            <ArrowRight className="size-[13px]" />
           </button>
         </div>
       </div>
     </form>
   );
-}
+});
 
 function Field({
   label,
