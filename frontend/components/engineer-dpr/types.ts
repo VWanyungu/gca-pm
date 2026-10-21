@@ -1,4 +1,4 @@
-import type { DprEffectsSeverity, DprProgressSource } from "@/components/weekly-submission/types";
+import type { DprDetail, DprEffectsSeverity, DprProgressSource } from "@/components/weekly-submission/types";
 
 export interface WeatherCategory {
   weather_category_id: number;
@@ -45,6 +45,9 @@ export interface DraftActivityProgress {
   free_text: string | null;
   today_pct: number;
   total_pct: number;
+  /** Schedule tasks only: the task's completion as of when it was picked — the "current" figure
+   *  shown next to the new-total input, so today_pct can be derived instead of typed. */
+  current_pct?: number;
 }
 
 export interface DraftRoleCount {
@@ -111,6 +114,60 @@ export function emptyDprDraft(reportDate: string, siteLocation = ""): DprDraftIn
     incidents_text: null,
     other_notes_text: null,
     photos: [],
+  };
+}
+
+/** Resuming an existing (unsubmitted) DPR: the wizard's draft shape is a subset of the full
+ *  server detail, so map it back down instead of starting from emptyDprDraft and losing it. */
+export function detailToDraftInput(detail: DprDetail): DprDraftInput {
+  return {
+    report_date: detail.report_date,
+    site_location: detail.site_location,
+    contract_no: detail.contract_no,
+    weather_category_id: detail.weather_category_id,
+    temp_min_c: detail.temp_min_c,
+    temp_max_c: detail.temp_max_c,
+    humidity_pct: detail.humidity_pct,
+    wind: detail.wind,
+    effects_text: detail.effects_text,
+    effects_severity: detail.effects_severity,
+    work_items: detail.work_items.map((w) => ({
+      work_item_id: w.work_item_id,
+      work_area: w.work_area,
+      work_carried_out: w.work_carried_out,
+    })),
+    activity_progress: detail.activity_progress.map((a) => ({
+      dpr_activity_progress_id: a.dpr_activity_progress_id,
+      source: a.source,
+      task_id: a.task_id,
+      task_name: a.task_name,
+      free_text: a.free_text,
+      today_pct: a.today_pct,
+      total_pct: a.total_pct,
+      // today_pct was saved as total_pct - current_pct at add-time, so this reconstructs it.
+      current_pct: a.source === "schedule_task" ? a.total_pct - a.today_pct : undefined,
+    })),
+    personnel_groups: detail.personnel_groups.map((g) => ({
+      personnel_group_id: g.personnel_group_id,
+      project_contractor_id: g.project_contractor_id,
+      contractor_name: g.contractor_name,
+      total_headcount: g.total_headcount,
+      role_counts: g.role_counts.map((r) => ({
+        personnel_role_id: r.personnel_role_id,
+        headcount: r.headcount,
+      })),
+    })),
+    equipment_text: detail.equipment_text,
+    visitors_text: detail.visitors_text,
+    delays_text: detail.delays_text,
+    incidents_text: detail.incidents_text,
+    other_notes_text: detail.other_notes_text,
+    photos: detail.photos.map((p) => ({
+      photo_id: p.photo_id,
+      file_id: p.file_id,
+      url: p.url,
+      caption: p.caption,
+    })),
   };
 }
 

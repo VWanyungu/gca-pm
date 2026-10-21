@@ -4,7 +4,7 @@ import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 import type { DprDetail, DprSummary } from "@/components/weekly-submission/types";
-import type { ProjectDetailResponse } from "@/components/project-overview/types";
+import type { Milestone, ProjectDetailResponse } from "@/components/project-overview/types";
 import type {
   DprDraftInput,
   EngineerProject,
@@ -52,6 +52,87 @@ export function useEngineerProjects() {
       current_stage_name: null,
       status: r.data!.project.status,
     }));
+
+  return { data: projects, isLoading };
+}
+
+export interface EngineerProjectSummary {
+  project_id: string;
+  name: string;
+  client_name: string | null;
+  current_stage_name: string | null;
+  status: string;
+  spi: number | null;
+  completed_pct: number | null;
+  planned_pct: number | null;
+  next_milestone: string | null;
+}
+
+/** Same per-project fetch useEngineerProjects relies on (no GET /projects access for a
+ *  project-scoped SiteEngineer), mapped to the fuller shape the shared project list screen
+ *  needs — client, current stage, latest metrics — instead of the DPR flow's bare shape. */
+export function useEngineerProjectSummaries() {
+  const { user } = useAuth();
+  const projectIds = Array.from(
+    new Set(
+      (user?.role ?? [])
+        .filter((grant) => grant.role === "SiteEngineer" && grant.project_id)
+        .map((grant) => grant.project_id as string),
+    ),
+  );
+
+  const results = useQueries({
+    queries: projectIds.map((projectId) => ({
+      queryKey: ["project", projectId],
+      queryFn: async () => unwrap(await api.get<ProjectDetailResponse>(`/projects/${projectId}`)),
+      staleTime: 30_000,
+    })),
+  });
+
+  // Same aggregate (schedule + custom) milestones the PM-style Milestones tab uses, fetched
+  // index-aligned with `results` above so the two zip back together by project below.
+  const milestoneResults = useQueries({
+    queries: projectIds.map((projectId) => ({
+      queryKey: ["project", projectId, "milestones", true],
+      queryFn: async () =>
+        unwrap(
+          await api.get<{ milestones: Milestone[] }>(
+            `/projects/${projectId}/milestones?limit=50&aggregate=true`,
+          ),
+        ).milestones,
+      staleTime: 30_000,
+    })),
+  });
+
+  const isLoading = results.some((r) => r.isLoading);
+  const projects: EngineerProjectSummary[] = projectIds
+    .map((_, i): EngineerProjectSummary | null => {
+      const detail = results[i]?.data;
+      if (!detail) return null;
+      const { project, stages, metrics } = detail;
+      const latest = metrics[metrics.length - 1];
+      const activeStage = stages.find((s) => s.state === "active");
+      // Mirrors nextMilestoneByProjectId (database.ts): not yet reached, soonest due date.
+      const nextMilestone = (milestoneResults[i]?.data ?? [])
+        .filter((m) => !m.actual_date)
+        .sort(
+          (a, b) =>
+            new Date(a.forecast_date ?? a.planned_date).getTime() -
+            new Date(b.forecast_date ?? b.planned_date).getTime(),
+        )[0];
+      return {
+        project_id: project.project_id,
+        name: project.name,
+        client_name: project.client_name,
+        current_stage_name: activeStage?.stage_name ?? null,
+        status: project.status,
+        spi: latest?.spi ?? null,
+        completed_pct: latest?.actual_pct ?? null,
+        planned_pct: latest?.planned_pct ?? null,
+        next_milestone: nextMilestone?.title ?? null,
+      };
+    })
+    .filter((p): p is EngineerProjectSummary => p !== null);
 
   return { data: projects, isLoading };
 }
@@ -163,6 +244,21 @@ function toCreateBody(draft: DprDraftInput) {
       caption: p.caption,
     })),
   };
+}
+
+/** AC-DPR-04: one DPR per project per date, drafts included — so a wizard opened for a date
+ *  that already has one (draft or submitted) must resume it, never try to create a second. */
+export async function findDprForDate(projectId: string, reportDate: string): Promise<DprSummary | null> {
+  const { dprs } = unwrap(
+    await api.get<{ dprs: DprSummary[] }>(
+      `/projects/${projectId}/dpr?from_date=${reportDate}&to_date=${reportDate}&limit=1`,
+    ),
+  );
+  return dprs[0] ?? null;
+}
+
+export async function getDprDetail(projectId: string, dprId: string): Promise<DprDetail> {
+  return unwrap(await api.get<{ dpr: DprDetail }>(`/projects/${projectId}/dpr/${dprId}`)).dpr;
 }
 
 export async function createDraftDpr(projectId: string, draft: DprDraftInput) {

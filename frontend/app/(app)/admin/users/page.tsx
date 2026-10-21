@@ -6,7 +6,7 @@ import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import Dropdown from "@/components/Dropdown";
 import { Pagination } from "@/components/pagination";
 import { useAdminUsers } from "@/components/admin/use-admin-users-data";
-import { humanizeLastActive, summarizeProjectAccess } from "@/components/admin/format";
+import { summarizeProjectAccess } from "@/components/admin/format";
 import { ROLE_NAMES, type RoleName } from "@/components/admin/types";
 
 const ROLE_OPTIONS = [{ id: "all", name: "All roles" }, ...ROLE_NAMES.map((r) => ({ id: r, name: r }))];
@@ -85,10 +85,9 @@ export default function AdminUsersPage() {
           <thead>
             <tr className="border-b border-gca-border bg-gca-page-bg text-[12px] font-semibold uppercase tracking-[0.3px] text-gca-muted">
               <th className="flex-1 px-[16px] py-[10px]">Name</th>
-              <th className="w-[160px] px-[16px] py-[10px]">Global role</th>
-              <th className="w-[260px] px-[16px] py-[10px]">Project access</th>
+              <th className="w-[140px] px-[16px] py-[10px]">Global role</th>
+              <th className="w-[360px] px-[16px] py-[10px]">Project access</th>
               <th className="w-[140px] px-[16px] py-[10px]">Status</th>
-              <th className="w-[224px] px-[16px] py-[10px]">Last active</th>
             </tr>
           </thead>
           <tbody>
@@ -115,14 +114,11 @@ export default function AdminUsersPage() {
                     <span className="text-gca-muted">Deactivated</span>
                   )}
                 </td>
-                <td className="px-[16px] py-[12px] text-[13px] text-gca-dark">
-                  {humanizeLastActive(u.last_login)}
-                </td>
               </tr>
             ))}
             {users.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-[16px] py-[24px] text-center text-[13px] text-gca-muted">
+                <td colSpan={4} className="px-[16px] py-[24px] text-center text-[13px] text-gca-muted">
                   No users found
                 </td>
               </tr>

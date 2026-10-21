@@ -40,20 +40,38 @@ function satisfies(
   return true;
 }
 
+/**
+ * For checks with no specific project/program in view (e.g. "can this user list projects at
+ * all"): a grant of any of these roles qualifies, at any scope. Mirrors the backend's
+ * authorizeAnyRole() — satisfies()'s scope matching would need a projectId/programId context
+ * that these checks don't have, so a scoped grant could never match there.
+ */
+export function hasAnyRole(userRoles: RoleGrant[] | undefined, roles: RoleName[]): boolean {
+  if (!userRoles?.length) return false;
+  return userRoles.some(
+    (grant) => (grant.role === "Admin" && grant.scope_type === "global") || roles.includes(grant.role),
+  );
+}
+
 export const CAN_CREATE_PROJECT: Permission[] = [
   { role: "ProjectCreator", scopeType: "global" },
   { role: "Admin", scopeType: "global" },
   { role: "ExCo", scopeType: "global" },
 ];
 
-export const CAN_LIST_PROJECTS: Permission[] = [
-  { role: "Admin", scopeType: "global" },
-  { role: "ExCo", scopeType: "global" },
-  { role: "ProjectCreator", scopeType: "global" },
-  { role: "PM", scopeType: "global" },
-  { role: "Planner", scopeType: "global" },
-  { role: "SiteEngineer", scopeType: "global" },
-];
+/**
+ * Who can call GET /projects (projectsRouter.ts's canListProjects), at any scope — use with
+ * hasAnyRole(), not canAccess(), since there's no projectId/programId to scope to.
+ *
+ * SiteEngineer is deliberately left out here even though the backend now permits it at any
+ * scope too: a project-scoped SiteEngineer has a better, actually-scoped data source
+ * (useEngineerProjectSummaries, see its callers) and GET /projects returns every project
+ * unscoped — routing them through it would be a downgrade, not a fix. A global SiteEngineer
+ * still gets canListAll via the separate CAN_LIST_PROJECTS_GLOBAL_ONLY check below.
+ */
+export const CAN_LIST_PROJECTS: RoleName[] = ["Admin", "ExCo", "ProjectCreator", "PM", "Planner"];
+
+export const CAN_LIST_PROJECTS_GLOBAL_ONLY: Permission[] = [{ role: "SiteEngineer", scopeType: "global" }];
 
 export const CAN_MANAGE_PROJECT: Permission[] = [
   { role: "Admin", scopeType: "global" },

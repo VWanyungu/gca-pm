@@ -7,7 +7,17 @@ import Link from "next/link";
 import { Search, LayoutGrid, List, Plus, FolderOpen, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
-import { canAccess, CAN_CREATE_PROJECT } from "@/lib/access-control";
+import {
+  canAccess,
+  hasAnyRole,
+  CAN_CREATE_PROJECT,
+  CAN_LIST_PROJECTS,
+  CAN_LIST_PROJECTS_GLOBAL_ONLY,
+} from "@/lib/access-control";
+import {
+  useEngineerProjectSummaries,
+  type EngineerProjectSummary,
+} from "@/components/engineer-dpr/use-dpr-wizard-data";
 import { ProjectCard } from "@/components/project-card";
 import { ProjectTable } from "@/components/project-table";
 import { Pagination } from "@/components/pagination";
@@ -61,6 +71,20 @@ function mapProject(row: ProjectsResponse["projects"][number]): Project {
   };
 }
 
+function mapEngineerProject(row: EngineerProjectSummary): Project {
+  return {
+    id: row.project_id,
+    name: row.name,
+    client: row.client_name ?? "—",
+    stage: row.current_stage_name ?? "—",
+    status: row.status,
+    spi: row.spi,
+    completed: row.completed_pct ?? 0,
+    planned: row.planned_pct ?? 0,
+    nextMilestone: row.next_milestone,
+  };
+}
+
 export default function Home() {
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const router = useRouter();
@@ -80,6 +104,12 @@ export default function Home() {
     { role: "PM", scopeType: "global" },
   ]);
 
+  // A project-scoped-only Site Engineer has no GET /projects access (canListProjects only
+  // authorizes SiteEngineer@global) — fetch their own projects from their role grants instead.
+  const canListAll =
+    hasAnyRole(user?.role, CAN_LIST_PROJECTS) || canAccess(user?.role, CAN_LIST_PROJECTS_GLOBAL_ONLY);
+  const engineerProjects = useEngineerProjectSummaries();
+
   const { data: programs = [] } = useQuery({
     queryKey: ["programs"],
     queryFn: async () => {
@@ -87,7 +117,8 @@ export default function Home() {
       if (res.status !== "success" || !res.data) throw new Error(res.message);
       return res.data.programs;
     },
-    enabled: isAuthenticated,
+    // Only the program filter (hidden for an engineer-only user, see canListAll) needs this.
+    enabled: isAuthenticated && canListAll,
   });
 
   const projectProgramOptions = [
@@ -127,13 +158,18 @@ export default function Home() {
         projects: res.data.projects.map(mapProject),
       };
     },
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && canListAll,
   });
-  const projects = projectsQuery.data?.projects ?? [];
-  const total = projectsQuery.data?.total ?? 0;
-  const totalPages = projectsQuery.data?.totalPages ?? 1;
-  const loading = projectsQuery.isLoading;
-  const error = projectsQuery.error?.message ?? null;
+
+  const engineerProjectList = engineerProjects.data
+    .map(mapEngineerProject)
+    .filter((p) => !search || p.name.toLowerCase().includes(search.toLowerCase()));
+
+  const projects = canListAll ? (projectsQuery.data?.projects ?? []) : engineerProjectList;
+  const total = canListAll ? (projectsQuery.data?.total ?? 0) : engineerProjectList.length;
+  const totalPages = canListAll ? (projectsQuery.data?.totalPages ?? 1) : 1;
+  const loading = canListAll ? projectsQuery.isLoading : engineerProjects.isLoading;
+  const error = canListAll ? (projectsQuery.error?.message ?? null) : null;
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -211,7 +247,9 @@ export default function Home() {
                   </button>
                 </div>
 
-                {/* Status filter */}
+                {/* Status filter — server-side, so it's meaningless against the engineer's
+                    client-side-only project list */}
+                {canListAll && (
                 <div className="relative">
                   <Dropdown
                     id="status-filter"
@@ -231,8 +269,10 @@ export default function Home() {
                     }}
                   />
                 </div>
+                )}
 
-                {/* Program filter */}
+                {/* Program filter — same reason */}
+                {canListAll && (
                 <div className="relative">
                   <Dropdown
                     id="program-filter"
@@ -252,6 +292,7 @@ export default function Home() {
                     }}
                   />
                 </div>
+                )}
               </div>
             </div>
 

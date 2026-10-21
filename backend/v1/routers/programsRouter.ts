@@ -1,6 +1,6 @@
 import express from 'express';
 import { Programs } from '../database/utils/database.js';
-import authorize from '../middlewares/authorize.js';
+import authorize, { authorizeAnyRole } from '../middlewares/authorize.js';
 import {
     createProgramSchema,
     updateProgramSchema,
@@ -18,14 +18,10 @@ const canManage = authorize([
     { role: 'Admin', scopeType: 'global' },
 ]);
 
-const canListPrograms = authorize([
-    { role: 'ExCo', scopeType: 'global' },
-    { role: 'Admin', scopeType: 'global' },
-    { role: 'PM', scopeType: 'global' },
-    { role: 'Planner', scopeType: 'global' },
-    { role: 'SiteEngineer', scopeType: 'global' },
-    { role: 'ProjectCreator', scopeType: 'global' },
-]);
+// GET /programs has no :programId param, so authorize()'s program-scope check can never match
+// a scoped grant (same gap as canListProjects in projectsRouter.ts) — any grant of these
+// roles, at any scope, qualifies to list.
+const canListPrograms = authorizeAnyRole(['ExCo', 'Admin', 'PM', 'Planner', 'SiteEngineer', 'ProjectCreator']);
 
 router.post('/', canManage, async (req, res) => {
     const { error, value } = createProgramSchema.validate(req.body, { abortEarly: false, stripUnknown: true });

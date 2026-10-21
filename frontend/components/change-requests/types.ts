@@ -1,5 +1,14 @@
-export type ChangeRequestStatus = "pending" | "approved" | "rejected" | "withdrawn";
+export type ChangeRequestStatus = "pending" | "approved" | "rejected" | "withdrawn" | "noted";
 export type ChangeRequestType = "scope" | "schedule" | "cost";
+
+export interface ChangeRequestAttachment {
+  attachment_id: string;
+  file_id: string;
+  original_filename: string;
+  url: string;
+  uploaded_by: string;
+  uploaded_at: string;
+}
 
 export interface ChangeRequest {
   change_id: string;
@@ -19,6 +28,8 @@ export interface ChangeRequest {
   raised_at: string;
   decided_at: string | null;
   withdrawn_at: string | null;
+  /** Only populated by the single-record fetch (GET /:changeId, and the create/update response) — not the list endpoint. */
+  attachments?: ChangeRequestAttachment[];
 }
 
 export const TYPE_LABEL: Record<ChangeRequestType, string> = {
@@ -37,6 +48,8 @@ export function statusInfo(status: ChangeRequestStatus): { label: string; classN
       return { label: "Rejected", className: "text-error-text" };
     case "withdrawn":
       return { label: "Withdrawn", className: "text-gca-muted" };
+    case "noted":
+      return { label: "Noted (FYI)", className: "text-gca-blue" };
   }
 }
 

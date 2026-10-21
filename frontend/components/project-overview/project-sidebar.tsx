@@ -15,6 +15,7 @@ import {
   PanelLeftClose,
   ChevronDown,
   ChevronRight,
+  ClipboardList,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { STAGE_SHORT_NAME, type StageRow } from "./types";
@@ -41,7 +42,8 @@ interface ProjectSidebarProps {
     | "change-requests"
     | "milestones"
     | "schedule"
-    | "submit";
+    | "submit"
+    | "dpr";
   activeStageNo?: number;
 }
 
@@ -61,34 +63,41 @@ export function ProjectSidebar({
     (r) => r.scope_type === "project" && r.project_id === projectId,
   )?.role;
 
+  const isEngineer = myRole === "SiteEngineer";
+
   const base = `/projects/${projectId}`;
-  const navItems = [
-    { key: "overview", label: "Overview", icon: LayoutGrid, href: base },
-    { key: "schedule", label: "Schedule", icon: CalendarRange, href: `${base}/schedule` },
-    {
-      key: "submit",
-      label: "Submit",
-      icon: Send,
-      href: `${base}/weekly-submission`,
-      count: counts?.submit,
-    },
-    {
-      key: "risks",
-      label: "Risks",
-      icon: AlertTriangle,
-      href: `${base}/risks`,
-      count: counts?.risks,
-    },
-    {
-      key: "change-requests",
-      label: "Change requests",
-      icon: GitPullRequest,
-      href: `${base}/change-requests`,
-      count: counts?.changeRequests,
-    },
-    { key: "milestones", label: "Milestones", icon: Flag, href: `${base}/milestones` },
-    { key: "team", label: "Team", icon: Users, href: `${base}/team` },
-  ] as const;
+  const navItems = (
+    [
+      { key: "overview", label: "Overview", icon: LayoutGrid, href: base },
+      { key: "schedule", label: "Schedule", icon: CalendarRange, href: `${base}/schedule` },
+      { key: "dpr", label: "DPR", icon: ClipboardList, href: `${base}/dpr` },
+      // Weekly submission is the PM's report to ExCo — not an engineer's concern.
+      {
+        key: "submit",
+        label: "Submit",
+        icon: Send,
+        href: `${base}/weekly-submission`,
+        count: counts?.submit,
+        hidden: isEngineer,
+      },
+      {
+        key: "risks",
+        label: "Risks",
+        icon: AlertTriangle,
+        href: `${base}/risks`,
+        count: counts?.risks,
+      },
+      {
+        key: "change-requests",
+        label: "Change requests",
+        icon: GitPullRequest,
+        href: `${base}/change-requests`,
+        count: counts?.changeRequests,
+      },
+      { key: "milestones", label: "Milestones", icon: Flag, href: `${base}/milestones` },
+      { key: "team", label: "Team", icon: Users, href: `${base}/team` },
+    ] as const
+  ).filter((item) => !("hidden" in item && item.hidden));
 
   const inScopeStages = stages.filter((s) => s.in_scope).sort((a, b) => a.stage_no - b.stage_no);
   const topStages = inScopeStages.filter((s) => s.state !== "complete").slice(0, 3);
@@ -133,7 +142,9 @@ export function ProjectSidebar({
           );
         })}
 
-        {/* Stages */}
+        {/* Stages — PM/Planner territory, not an engineer's */}
+        {!isEngineer && (
+        <>
         <button
           onClick={() => setStagesOpen((o) => !o)}
           className="flex items-center justify-between rounded-[8px] px-[12px] py-[8px] hover:bg-white"
@@ -217,6 +228,8 @@ export function ProjectSidebar({
               </button>
             )}
           </div>
+        )}
+        </>
         )}
       </div>
 

@@ -29,7 +29,13 @@ import {
   useScheduleVersions,
   useUploadSchedule,
 } from "./use-schedule-data";
-import { formatShortDate, taskInWindow, type OverdueTask, type ParseDiagnostic, type ScheduleVersion } from "./types";
+import {
+  formatShortDate,
+  taskInWindow,
+  type OverdueTask,
+  type ParseDiagnostic,
+  type ScheduleVersion,
+} from "./types";
 import type { TeamMember } from "@/components/project-overview/types";
 
 type Tab = "gantt" | "table" | "overdue" | "reconciliation";
@@ -40,7 +46,13 @@ type SubView =
   | { mode: "version-changes"; version: ScheduleVersion }
   | { mode: "upload-form" }
   | { mode: "upload-result"; fileName: string; uploadedAt: string; version: ScheduleVersion }
-  | { mode: "upload-failed"; fileName: string; fileSizeLabel: string; uploadedAt: string; problems: UploadProblem[] };
+  | {
+      mode: "upload-failed";
+      fileName: string;
+      fileSizeLabel: string;
+      uploadedAt: string;
+      problems: UploadProblem[];
+    };
 
 function uploaderName(userId: string | undefined, team: TeamMember[]) {
   const member = team.find((m) => m.user_id === userId);
@@ -50,6 +62,7 @@ function uploaderName(userId: string | undefined, team: TeamMember[]) {
 function twoWeeksFrom(date: Date) {
   const end = new Date(date);
   end.setDate(end.getDate() + 13);
+  end.setHours(23, 59, 59, 999);
   return end;
 }
 
@@ -71,7 +84,11 @@ function diagnosticsToProblems(diagnostics: ParseDiagnostic[]): UploadProblem[] 
 
 /** No report endpoint yet: hand the Planner the same list as a text file from the browser. */
 function downloadProblemReport(fileName: string, problems: UploadProblem[]) {
-  const lines = [`Upload problems for ${fileName}`, "", ...problems.map((p) => `- ${p.task}: ${p.problem} (${p.howToFix})`)];
+  const lines = [
+    `Upload problems for ${fileName}`,
+    "",
+    ...problems.map((p) => `- ${p.task}: ${p.problem} (${p.howToFix})`),
+  ];
   const url = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/plain" }));
   const link = document.createElement("a");
   link.href = url;
@@ -94,7 +111,11 @@ export function ScheduleView({ projectId }: { projectId: string }) {
   const [range, setRange] = useState<"full" | "lookahead">("full");
   const [search, setSearch] = useState("");
   const [subView, setSubView] = useState<SubView>({ mode: "list" });
-  const [uploadProcessing, setUploadProcessing] = useState<{ versionId: string; fileName: string; fileSizeLabel: string } | null>(null);
+  const [uploadProcessing, setUploadProcessing] = useState<{
+    versionId: string;
+    fileName: string;
+    fileSizeLabel: string;
+  } | null>(null);
   const uploadSchedule = useUploadSchedule(projectId);
   const invalidate = useScheduleInvalidate(projectId);
 
@@ -105,7 +126,9 @@ export function ScheduleView({ projectId }: { projectId: string }) {
   const filteredTasks = useMemo(() => {
     if (!search.trim()) return tasks;
     const q = search.trim().toLowerCase();
-    const matches = new Set(tasks.filter((t) => t.task_name.toLowerCase().includes(q)).map((t) => t.task_id));
+    const matches = new Set(
+      tasks.filter((t) => t.task_name.toLowerCase().includes(q)).map((t) => t.task_id),
+    );
     // Keep a matched task's ancestor groups so the hierarchy still makes sense.
     const byId = new Map(tasks.map((t) => [t.task_id, t]));
     for (const t of tasks) {
@@ -122,6 +145,7 @@ export function ScheduleView({ projectId }: { projectId: string }) {
   const lookaheadWindow = useMemo(() => {
     const start = new Date();
     start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
     return { start, end: twoWeeksFrom(start) };
   }, []);
 
@@ -141,7 +165,12 @@ export function ScheduleView({ projectId }: { projectId: string }) {
     const t = subView.task;
     return (
       <div className="flex min-h-[calc(100vh-64px)] w-full">
-        <ProjectSidebar projectId={projectId} stages={project.stages} counts={counts} active="schedule" />
+        <ProjectSidebar
+          projectId={projectId}
+          stages={project.stages}
+          counts={counts}
+          active="schedule"
+        />
         <div className="flex w-full justify-center">
           <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[40px]">
             <RiskForm
@@ -176,7 +205,12 @@ export function ScheduleView({ projectId }: { projectId: string }) {
   ) {
     return (
       <div className="flex min-h-[calc(100vh-64px)] w-full">
-        <ProjectSidebar projectId={projectId} stages={project.stages} counts={counts} active="schedule" />
+        <ProjectSidebar
+          projectId={projectId}
+          stages={project.stages}
+          counts={counts}
+          active="schedule"
+        />
         <div className="flex w-full justify-center">
           <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[40px]">
             {subView.mode === "history" && (
@@ -248,20 +282,29 @@ export function ScheduleView({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex min-h-[calc(100vh-64px)] w-full">
-      <ProjectSidebar projectId={projectId} stages={project.stages} counts={counts} active="schedule" />
+      <ProjectSidebar
+        projectId={projectId}
+        stages={project.stages}
+        counts={counts}
+        active="schedule"
+      />
 
       <div className="flex w-full justify-center">
         <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[40px]">
           <div className="flex w-full items-center justify-between">
             <div>
-              <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">Schedule</h1>
+              <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">
+                Schedule
+              </h1>
               {currentVersion ? (
                 <button
                   onClick={() => setSubView({ mode: "history" })}
                   className="mt-[2px] cursor-pointer text-[13px] text-gca-show hover:text-gca-green hover:underline"
                 >
-                  v{currentVersion.version_no} (current) · uploaded {formatShortDate(currentVersion.uploaded_at)} by{" "}
-                  {uploaderName(currentVersion.uploaded_by, team)} · {tasks.filter((t) => !t.is_summary).length} tasks
+                  {/* v{currentVersion.version_no} (current) ·  */}
+                  Uploaded on {formatShortDate(currentVersion.uploaded_at)} by{" "}
+                  {uploaderName(currentVersion.uploaded_by, team)}
+                  {/* · {tasks.filter((t) => !t.is_summary).length} tasks */}
                 </button>
               ) : (
                 <p className="mt-[2px] text-[13px] text-gca-show">No schedule uploaded yet</p>
@@ -299,7 +342,12 @@ export function ScheduleView({ projectId }: { projectId: string }) {
                 const fileName = uploadProcessing.fileName;
                 setUploadProcessing(null);
                 invalidate();
-                setSubView({ mode: "upload-result", fileName, uploadedAt: new Date().toISOString(), version });
+                setSubView({
+                  mode: "upload-result",
+                  fileName,
+                  uploadedAt: new Date().toISOString(),
+                  version,
+                });
               }}
               onFailed={(diagnostics) => {
                 const { fileName, fileSizeLabel } = uploadProcessing;
@@ -315,14 +363,20 @@ export function ScheduleView({ projectId }: { projectId: string }) {
             />
           )}
 
-          <div className="flex w-full items-center justify-between">
-            <div className="flex items-center gap-[4px] border-b border-gca-border">
-              {([
-                { id: "gantt", label: "Gantt" },
-                { id: "table", label: "Table" },
-                { id: "overdue", label: "Overdue", count: overdue.length },
-                { id: "reconciliation", label: "Reconciliation flags", count: flags.filter((f) => !f.acknowledged_at).length },
-              ] as const).map((t) => (
+          <div className="flex items-end w-full items-center justify-between border-b border-gca-border">
+            <div className="flex items-center gap-[4px]">
+              {(
+                [
+                  { id: "gantt", label: "Gantt" },
+                  { id: "table", label: "Table" },
+                  { id: "overdue", label: "Overdue", count: overdue.length },
+                  {
+                    id: "reconciliation",
+                    label: "Reconciliation flags",
+                    count: flags.filter((f) => !f.acknowledged_at).length,
+                  },
+                ] as const
+              ).map((t) => (
                 <button
                   key={t.id}
                   onClick={() => setTab(t.id)}
@@ -334,19 +388,24 @@ export function ScheduleView({ projectId }: { projectId: string }) {
                 >
                   {t.label}
                   {"count" in t && t.count > 0 && (
-                    <span className={tab === t.id ? "text-gca-dark" : "text-error-text"}>{t.count}</span>
+                    <span className={tab === t.id ? "text-gca-dark" : "text-error-text"}>
+                      {t.count}
+                    </span>
                   )}
                 </button>
               ))}
             </div>
 
-            <div className="flex items-center gap-[12px]">
+            <div className="flex items-center gap-[12px] pb-[10px]">
               {(tab === "gantt" || tab === "table") && (
                 <Dropdown
                   id="schedule-range"
                   data={[
                     { id: "full", name: "Full schedule" },
-                    { id: "lookahead", name: `Next 2 weeks · from ${formatShortDate(lookaheadWindow.start.toISOString())}` },
+                    {
+                      id: "lookahead",
+                      name: `Next 2 weeks · week of ${formatShortDate(lookaheadWindow.start.toISOString())}`,
+                    },
                   ]}
                   selectedId={range}
                   style="h-[36px] w-[220px] rounded-[8px] border border-gca-border px-[13px] text-[13px]"
@@ -370,15 +429,20 @@ export function ScheduleView({ projectId }: { projectId: string }) {
           {(tab === "gantt" || tab === "table") && lookaheadSummary && (
             <div className="rounded-[8px] bg-gca-badge-bg px-[16px] py-[12px] text-[13px] text-gca-badge-text">
               <span className="font-semibold">
-                Next 2 weeks · {formatShortDate(lookaheadWindow.start.toISOString())} – {formatShortDate(lookaheadWindow.end.toISOString())}
+                Next 2 weeks · {formatShortDate(lookaheadWindow.start.toISOString())} –{" "}
+                {formatShortDate(lookaheadWindow.end.toISOString())}
               </span>{" "}
               · {lookaheadSummary.tasks} tasks · {lookaheadSummary.milestones} milestone
-              {lookaheadSummary.milestones === 1 ? "" : "s"} · {lookaheadSummary.overdueCarried} overdue carried over
+              {lookaheadSummary.milestones === 1 ? "" : "s"} · {lookaheadSummary.overdueCarried}{" "}
+              overdue carried over
             </div>
           )}
 
           {tab === "gantt" && (
-            <GanttChart tasks={filteredTasks} window={range === "lookahead" ? lookaheadWindow : undefined} />
+            <GanttChart
+              tasks={filteredTasks}
+              window={range === "lookahead" ? lookaheadWindow : undefined}
+            />
           )}
           {tab === "table" && (
             <ScheduleTable
@@ -396,7 +460,12 @@ export function ScheduleView({ projectId }: { projectId: string }) {
             />
           )}
           {tab === "reconciliation" && (
-            <ReconciliationFlagsView projectId={projectId} flags={flags} allTasks={tasks} team={team} />
+            <ReconciliationFlagsView
+              projectId={projectId}
+              flags={flags}
+              allTasks={tasks}
+              team={team}
+            />
           )}
         </main>
       </div>

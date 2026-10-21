@@ -1,9 +1,8 @@
 import express from 'express';
-import { randomUUID } from 'crypto';
 import { Users } from '../database/utils/database.js';
 import type { AdminCreateUserInput, UpdateUserInput } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
-import hashPassword from '../utils/hashPassword.js';
+import { SEED_PASSWORD_HASH } from '../seeds/01_users.js';
 import {
   userIdParamSchema,
   listUsersQuerySchema,
@@ -101,8 +100,8 @@ router.get('/:id', canRead, async (req, res) => {
   }
 });
 
-// Admin-created user — no password field in the UI, so we mint a random one. The user resets
-// it via the existing forgot-password flow; a real "send invite email" is a follow-up (not built here).
+// Admin-created user — no password field in the UI, so we set the seed default password.
+// The user signs in with it and resets it via the existing forgot-password flow.
 router.post('/', canWrite, async (req, res) => {
   const { error, value } = adminCreateUserSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
   if (error) {
@@ -110,8 +109,7 @@ router.post('/', canWrite, async (req, res) => {
     return;
   }
   try {
-    const passwordHash = await hashPassword(randomUUID());
-    const user = await Users.createUserAdmin(value as AdminCreateUserInput, passwordHash, req.user!.userId);
+    const user = await Users.createUserAdmin(value as AdminCreateUserInput, SEED_PASSWORD_HASH, req.user!.userId);
     res.status(201).json({ status: 'success', data: { user }, message: 'User created' });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

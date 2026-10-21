@@ -57,6 +57,18 @@ export function useChangeRequest(projectId: string, changeId: string) {
   });
 }
 
+export async function uploadChangeRequestAttachment(
+  projectId: string,
+  input: { file: string; filename: string },
+) {
+  return unwrap(
+    await api.post<{ file_id: string; url: string; original_filename: string }>(
+      `/projects/${projectId}/change-requests/attachments/upload`,
+      input,
+    ),
+  );
+}
+
 export function useChangeRequestsInvalidate(projectId: string) {
   const queryClient = useQueryClient();
   return () => {

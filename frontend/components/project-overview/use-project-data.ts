@@ -83,7 +83,10 @@ export function useStageActivities(projectId: string) {
 
 export function useMilestones(projectId: string, options?: { aggregate: boolean }) {
   return useQuery({
-    queryKey: ["project", projectId, "milestones"],
+    // `aggregate` changes the URL (schedule+custom vs custom-only), so it must be part of the
+    // key too — otherwise Overview's aggregate=true call and Submit's aggregate=false call
+    // share a cache entry and whichever runs first "wins" for both.
+    queryKey: ["project", projectId, "milestones", options?.aggregate ?? false],
     queryFn: async () =>
       unwrap(
         await api.get<{ milestones: Milestone[] } & Pagination>(

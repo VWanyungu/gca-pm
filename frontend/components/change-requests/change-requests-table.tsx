@@ -34,6 +34,7 @@ const STATUS_OPTIONS = [
   { id: "approved", name: "Approved" },
   { id: "rejected", name: "Rejected" },
   { id: "withdrawn", name: "Withdrawn" },
+  { id: "noted", name: "Noted (FYI)" },
 ];
 
 interface ChangeRequestsTableProps {

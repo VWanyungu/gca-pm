@@ -57,6 +57,42 @@ body {
   font-family: "Geist", sans-serif;
 }
 
+.schedule-gantt .calendar {
+  border: 0 !important;
+}
+
+.schedule-gantt .calendar > rect {
+  stroke: none !important;
+}
+
+.schedule-gantt .calendar > text {
+  fill: var(--gca-muted);
+  font-size: 13px;
+}
+
+.schedule-gantt .calendar > g.calendarTop {
+  display: none;
+}
+
+.schedule-gantt .schedule-week-divider {
+  stroke: var(--gca-green);
+  stroke-width: 2.5;
+  pointer-events: none;
+}
+
+.schedule-gantt .schedule-week-label {
+  fill: var(--gca-green);
+  font-size: 10px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.schedule-gantt .schedule-calendar-bottom-border {
+  stroke: var(--gca-border);
+  stroke-width: 1;
+  pointer-events: none;
+}
+
 .dropdown-scrollbar {
   scrollbar-width: none;
   scrollbar-color: var(--gca-green) transparent;

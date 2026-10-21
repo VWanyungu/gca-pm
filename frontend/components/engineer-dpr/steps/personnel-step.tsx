@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Minus, Plus, Trash2 } from "lucide-react";
+import Dropdown from "@/components/Dropdown";
 import {
   createProjectContractor,
   usePersonnelRoles,
@@ -66,24 +67,29 @@ export function PersonnelStep({ draft, update, projectId }: StepProps) {
     });
   }
 
+  /** total_headcount is never typed in — it's always the sum of the roles below it. */
+  function setRoleCounts(groupIndex: number, roleCounts: DraftRoleCount[]) {
+    updateGroup(groupIndex, {
+      role_counts: roleCounts,
+      total_headcount: roleCounts.reduce((sum, r) => sum + r.headcount, 0),
+    });
+  }
+
   function updateRoleCount(groupIndex: number, roleIndex: number, patch: Partial<DraftRoleCount>) {
     const group = draft.personnel_groups[groupIndex];
-    const nextRoles = group.role_counts.map((r, i) => (i === roleIndex ? { ...r, ...patch } : r));
-    updateGroup(groupIndex, { role_counts: nextRoles });
+    setRoleCounts(groupIndex, group.role_counts.map((r, i) => (i === roleIndex ? { ...r, ...patch } : r)));
   }
 
   function removeRoleCount(groupIndex: number, roleIndex: number) {
     const group = draft.personnel_groups[groupIndex];
-    updateGroup(groupIndex, { role_counts: group.role_counts.filter((_, i) => i !== roleIndex) });
+    setRoleCounts(groupIndex, group.role_counts.filter((_, i) => i !== roleIndex));
   }
 
   function addRoleCount(groupIndex: number) {
     const group = draft.personnel_groups[groupIndex];
     const firstRole = roles[0];
     if (!firstRole) return;
-    updateGroup(groupIndex, {
-      role_counts: [...group.role_counts, { personnel_role_id: firstRole.personnel_role_id, headcount: 0 }],
-    });
+    setRoleCounts(groupIndex, [...group.role_counts, { personnel_role_id: firstRole.personnel_role_id, headcount: 0 }]);
   }
 
   async function confirmNewContractor(groupIndex: number) {
@@ -102,30 +108,19 @@ export function PersonnelStep({ draft, update, projectId }: StepProps) {
   return (
     <div className="flex flex-col gap-[16px]">
       {draft.personnel_groups.map((group, groupIndex) => {
-        const roleTotal = group.role_counts.reduce((sum, r) => sum + r.headcount, 0);
-        const overAllocated = roleTotal > group.total_headcount;
-
         return (
           <div key={groupIndex} className="flex flex-col gap-[12px] rounded-[12px] bg-white p-[16px]">
             <div className="flex items-center justify-between gap-[8px]">
-              <select
-                value={group.project_contractor_id}
-                onChange={(e) => {
-                  const contractor = contractors.find((c) => c.project_contractor_id === e.target.value);
-                  updateGroup(groupIndex, {
-                    project_contractor_id: e.target.value,
-                    contractor_name: contractor?.contractor_name ?? "",
-                  });
-                }}
-                className="h-[44px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green"
-              >
-                <option value="">Select contractor</option>
-                {contractors.map((c) => (
-                  <option key={c.project_contractor_id} value={c.project_contractor_id}>
-                    {c.contractor_name}
-                  </option>
-                ))}
-              </select>
+              <div className="w-full flex-1">
+                <Dropdown
+                  id={`contractor-${groupIndex}`}
+                  title="Select contractor"
+                  data={contractors.map((c) => ({ id: c.project_contractor_id, name: c.contractor_name }))}
+                  selectedId={group.project_contractor_id || undefined}
+                  style="h-[44px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[15px] text-gca-dark"
+                  onSelect={(id, name) => updateGroup(groupIndex, { project_contractor_id: id, contractor_name: name })}
+                />
+              </div>
               <button
                 type="button"
                 onClick={() => removeGroup(groupIndex)}
@@ -173,15 +168,11 @@ export function PersonnelStep({ draft, update, projectId }: StepProps) {
               </button>
             )}
 
-            <div className="flex flex-col gap-[4px]">
+            <div className="flex items-center justify-between">
               <span className="text-[13px] font-medium text-gca-dark">Total headcount</span>
-              <input
-                type="number"
-                min={0}
-                value={group.total_headcount}
-                onChange={(e) => updateGroup(groupIndex, { total_headcount: Number(e.target.value) })}
-                className="h-[44px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green"
-              />
+              <span className="font-mono text-[16px] font-semibold text-gca-dark">
+                {group.total_headcount}
+              </span>
             </div>
 
             <div className="flex flex-col gap-[4px]">
@@ -229,12 +220,6 @@ export function PersonnelStep({ draft, update, projectId }: StepProps) {
                 Add role
               </button>
             </div>
-
-            {overAllocated && (
-              <p className="text-[13px] text-error-text">
-                Role headcounts ({roleTotal}) exceed total headcount ({group.total_headcount}).
-              </p>
-            )}
           </div>
         );
       })}

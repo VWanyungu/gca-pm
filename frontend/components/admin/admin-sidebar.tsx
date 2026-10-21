@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
   { label: "Users", href: "/admin/users", active: true },
-  { label: "Projects", href: "#", active: false },
+  { label: "Projects", href: "/admin/projects", active: true },
   { label: "Reference data", href: "#", active: false },
   { label: "Stage checklists", href: "#", active: false },
   { label: "Approvals", href: "#", active: false, count: 2 },
@@ -18,7 +18,7 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex w-[240px] shrink-0 flex-col gap-[4px] border-r border-gca-border bg-gca-page-bg p-[16px]">
+    <aside className="sticky top-[64px] flex h-[calc(100vh-64px)] w-[240px] shrink-0 flex-col gap-[4px] overflow-y-auto border-r border-gca-border bg-gca-page-bg p-[16px]">
       <p className="px-[12px] pb-[8px] text-[12px] font-semibold uppercase tracking-[0.4px] text-gca-muted">
         Admin
       </p>

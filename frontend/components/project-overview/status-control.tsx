@@ -98,6 +98,7 @@ export function StatusControl({ projectId, status, canManage, onChanged }: Statu
   return (
     <div ref={ref} className="relative">
       <button
+        type="button"
         onClick={() => setMenuOpen((o) => !o)}
         className="flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-white py-[8px] pl-[12px] pr-[10px] shadow-[0px_1px_24px_0px_rgba(23,48,31,0.05)]"
       >
@@ -116,6 +117,7 @@ export function StatusControl({ projectId, status, canManage, onChanged }: Statu
               return (
                 <button
                   key={opt}
+                  type="button"
                   onClick={() => setTarget(selected ? null : opt)}
                   className={`flex w-full items-center gap-[10px] rounded-[8px] px-[12px] py-[9px] text-left ${
                     selected ? (danger ? "bg-error-bg" : "bg-gca-badge-bg") : "hover:bg-gca-page-bg"
@@ -177,12 +179,14 @@ export function StatusControl({ projectId, status, canManage, onChanged }: Statu
 
               <div className="flex justify-end gap-[8px]">
                 <button
+                  type="button"
                   onClick={() => setTarget(null)}
                   className="rounded-[8px] border border-gca-border px-[12px] py-[7px] text-[13px] font-semibold text-gca-dark"
                 >
                   Back
                 </button>
                 <button
+                  type="button"
                   onClick={confirmChange}
                   disabled={submitting}
                   className={`rounded-[8px] px-[12px] py-[7px] text-[13px] font-semibold text-white disabled:opacity-50 ${

@@ -19,7 +19,10 @@ interface UserOption {
   email: string;
 }
 
-function useAllUsers() {
+/** GET /users only authorizes Admin/ExCo/ProjectCreator/PM@global — a Site Engineer gets a
+ *  403. Only the "assignable users" dropdowns (add PM/engineer) need this, and those only
+ *  render for `canManage`, so there's nothing to fetch without it. */
+function useAllUsers(enabled: boolean) {
   return useQuery({
     queryKey: ["users", "assignable"],
     queryFn: async () => {
@@ -27,6 +30,7 @@ function useAllUsers() {
       if (res.status !== "success" || !res.data) throw new Error(res.message);
       return res.data.response.users;
     },
+    enabled,
   });
 }
 
@@ -40,7 +44,8 @@ export default function TeamView({ projectId }: { projectId: string }) {
   const { data: project } = useProjectDetail(projectId);
   const { data: team = [] } = useProjectTeam(projectId);
   const { data: clientContacts = [] } = useClientContacts(projectId);
-  const { data: users = [] } = useAllUsers();
+  const canManage = canAccess(user?.role, CAN_MANAGE_PROJECT, { projectId });
+  const { data: users = [] } = useAllUsers(canManage);
 
   const [editMode, setEditMode] = useState(false);
   const [addingEngineer, setAddingEngineer] = useState(false);
@@ -54,7 +59,6 @@ export default function TeamView({ projectId }: { projectId: string }) {
     queryClient.invalidateQueries({ queryKey: ["project", projectId] });
   }
 
-  const canManage = canAccess(user?.role, CAN_MANAGE_PROJECT, { projectId });
   const pms = team.filter((m) => m.role === "PM");
   const planners = team.filter((m) => m.role === "Planner");
   const engineers = team.filter((m) => m.role === "SiteEngineer");

@@ -13,6 +13,7 @@ import {
   type DateWindow,
   type ScheduleTask,
 } from "./types";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 const INITIAL_ROWS = 24;
 const LOAD_MORE_ROWS = 24;
@@ -82,15 +83,19 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
   }
 
   if (tasks.length === 0) {
-    return <p className="py-[56px] text-center text-[13px] text-gca-show">No schedule tasks to show.</p>;
+    return (
+      <p className="py-[56px] text-center text-[13px] text-gca-show">No schedule tasks to show.</p>
+    );
   }
   if (rows.length === 0) {
-    return <p className="py-[56px] text-center text-[13px] text-gca-show">No tasks in this window.</p>;
+    return (
+      <p className="py-[56px] text-center text-[13px] text-gca-show">No tasks in this window.</p>
+    );
   }
 
   return (
     <div className="flex w-full flex-col gap-[16px]">
-      <div className="flex w-full flex-col rounded-[12px] border border-gca-border">
+      <div className="flex w-full flex-col">
         <div className="sticky top-0 z-10 flex w-full items-center gap-[10px] border-b border-gca-border bg-white px-[16px] py-[8px] text-[12px] font-medium text-gca-muted">
           <p className="w-[28%]">Task</p>
           <p className="w-[11%]">Progress</p>
@@ -131,7 +136,11 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
                       className="cursor-pointer text-gca-muted"
                       aria-label={collapsed.has(t.task_id) ? "Expand" : "Collapse"}
                     >
-                      {collapsed.has(t.task_id) ? "▸" : "▾"}
+                      {collapsed.has(t.task_id) ? (
+                        <ChevronRight size={18} />
+                      ) : (
+                        <ChevronDown size={18} />
+                      )}
                     </button>
                   ) : (
                     <span className="w-[10px]" aria-hidden />
@@ -139,14 +148,18 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
                   {/* A milestone is a dated marker rather than work, and MS Project lets a summary
                       row carry the flag too, so the diamond is drawn independently of the row type. */}
                   {t.is_milestone && (
-                    <span className="shrink-0 text-[10px] text-gca-green" title="Milestone" aria-label="Milestone">
+                    <span
+                      className="shrink-0 text-[10px] text-gca-green"
+                      title="Milestone"
+                      aria-label="Milestone"
+                    >
                       ◆
                     </span>
                   )}
                   <span
                     className={`truncate text-[13px] ${
                       isPhase
-                        ? "font-semibold uppercase tracking-[0.04em] text-gca-badge-text"
+                        ? "font-medium tracking-[0.04em] text-gca-badge-text"
                         : isGroup
                           ? "font-semibold text-gca-dark"
                           : "font-medium text-gca-dark"
@@ -160,15 +173,25 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
                 <p className={`w-[11%] text-[13px] ${isGroup ? "font-medium" : ""} text-gca-dark`}>
                   {Math.round(progress)}%
                 </p>
-                <p className={`w-[11%] text-[13px] ${isGroup ? "font-medium text-gca-dark" : "text-gca-show"}`}>
+                <p
+                  className={`w-[11%] text-[13px] ${isGroup ? "font-medium text-gca-dark" : "text-gca-show"}`}
+                >
                   {planned !== null ? `${Math.round(planned)}%` : "—"}
                 </p>
-                <p className="w-[11%] font-mono text-[13px] text-gca-dark">{workDays(t.duration_minutes)}</p>
-                <p className="w-[12%] font-mono text-[13px] text-gca-dark">{formatShortDate(t.start)}</p>
-                <p className="w-[12%] font-mono text-[13px] text-gca-dark">{formatShortDate(t.expected_finish)}</p>
+                <p className="w-[11%] font-mono text-[13px] text-gca-dark">
+                  {workDays(t.duration_minutes)}
+                </p>
+                <p className="w-[12%] font-mono text-[13px] text-gca-dark">
+                  {formatShortDate(t.start)}
+                </p>
+                <p className="w-[12%] font-mono text-[13px] text-gca-dark">
+                  {formatShortDate(t.expected_finish)}
+                </p>
                 {/* A summary row's status is the roll-up of its children, which the Status column
                     cannot express, so only real work carries one. */}
-                <p className={`w-[15%] text-[13px] font-semibold ${isGroup ? "" : status.className}`}>
+                <p
+                  className={`w-[15%] text-[13px] font-semibold ${isGroup ? "" : status.className}`}
+                >
                   {isGroup ? "" : status.label}
                 </p>
               </div>

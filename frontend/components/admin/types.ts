@@ -15,7 +15,7 @@ export interface AdminUserListItem {
   last_login: string | null;
   created_at: string;
   global_role: RoleName | null;
-  project_access: { role: RoleName; count: number }[];
+  project_access: { role: RoleName; scopeName: string }[];
 }
 
 export interface RoleGrantDetail {
@@ -42,4 +42,31 @@ export interface AdminUserDetail {
   status: "active" | "deactivated";
   global_role: RoleName | null;
   roles: RoleGrantDetail[];
+}
+
+export type ProjectStatus = "active" | "on_hold" | "complete" | "cancelled";
+
+export interface AdminProjectListItem {
+  project_id: string;
+  project_code: string;
+  name: string;
+  client_name: string | null;
+  program_id: number;
+  program_name: string | null;
+  main_pm_name: string | null;
+  status: ProjectStatus;
+  created_at: string;
+}
+
+export interface AdminProjectDetail {
+  project_id: string;
+  project_code: string;
+  name: string;
+  client_name: string | null;
+  program_id: number;
+  site_location: string | null;
+  expected_start_date: string | null;
+  expected_end_date: string | null;
+  status: ProjectStatus;
+  created_at: string;
 }

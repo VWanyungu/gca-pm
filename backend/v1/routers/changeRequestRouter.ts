@@ -8,11 +8,14 @@ import {
   listChangeRequestsQuerySchema,
   changeRequestProjectParamsSchema,
   changeRequestParamsSchema,
+  uploadChangeRequestAttachmentSchema,
   type CreateChangeRequestBody,
   type UpdateChangeRequestBody,
   type DecideChangeRequestBody,
   type ListChangeRequestsQuery,
+  type UploadChangeRequestAttachmentBody,
 } from '../utils/validation.js';
+import { storeObject, FileValidationError, FileStorageError } from '../utils/objectStorage.js';
 
 // mergeParams so :projectId from the parent mount reaches authorize + handlers.
 const router = express.Router({ mergeParams: true });
@@ -39,6 +42,52 @@ const canDecide = authorize([
   { role: 'Admin', scopeType: 'global' },
 ]);
 
+// POST /projects/:projectId/change-requests/attachments/upload
+// Registered before /:changeId routes so "attachments" isn't captured as a changeId param.
+// Mirrors dprRouter.ts's /photos/upload: the change request may not exist yet (raised in the
+// same form submission), so this just stores the object and hands back a file_id to attach.
+router.post('/attachments/upload', canRaise, async (req, res) => {
+  const params = changeRequestProjectParamsSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const body = uploadChangeRequestAttachmentSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
+  if (body.error) {
+    res.status(400).json({ status: 'error', data: null, message: body.error.message });
+    return;
+  }
+  const { projectId } = params.value as { projectId: string };
+  const input = body.value as UploadChangeRequestAttachmentBody;
+
+  try {
+    const { fileObject, url } = await storeObject({
+      file: input.file,
+      purpose: 'change_request_attachment',
+      projectId,
+      uploadedBy: req.user!.userId,
+      originalFilename: input.filename,
+    });
+
+    res.status(201).json({
+      status: 'success',
+      data: { file_id: fileObject.file_id, url, original_filename: fileObject.original_filename },
+      message: 'File uploaded',
+    });
+  } catch (err) {
+    if (err instanceof FileValidationError) {
+      res.status(400).json({ status: 'error', data: null, message: err.message });
+      return;
+    }
+    if (err instanceof FileStorageError) {
+      res.status(502).json({ status: 'error', data: null, message: `Could not store the file: ${err.message}` });
+      return;
+    }
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({ status: 'error', data: null, message });
+  }
+});
+
 router.post('/', canRaise, async (req, res) => {
   const params = changeRequestProjectParamsSchema.validate(req.params);
   if (params.error) {
@@ -54,6 +103,16 @@ router.post('/', canRaise, async (req, res) => {
   const input = body.value as CreateChangeRequestBody;
 
   try {
+    // A Site Engineer's own change requests are FYI records for the PM, not a request for
+    // ExCo approval — canRaise only admits Admin@global, PM (global or on this project) or
+    // SiteEngineer@project, so anyone here who is neither Admin nor a PM of this project must
+    // be a Site Engineer. A global grant satisfies a project scope too (authorize.ts's rule).
+    const isAdmin = req.user!.role.some((r) => r.role === 'Admin' && r.scope_type === 'global');
+    const isPmForProject = req.user!.role.some(
+      (r) => r.role === 'PM' && (r.scope_type === 'global' || r.project_id === projectId),
+    );
+    const skipApproval = !isAdmin && !isPmForProject;
+
     const created = await ChangeRequests.create({
       project_id: projectId,
       stage_no: input.stage_no ?? null,
@@ -66,6 +125,8 @@ router.post('/', canRaise, async (req, res) => {
       cost_currency: input.cost_currency ?? null,
       schedule_impact_days: input.schedule_impact_days ?? null,
       raised_by: req.user!.userId,
+      attachmentFileIds: input.attachment_file_ids,
+      skipApproval,
     });
 
     res.status(201).json({ status: 'success', data: { changeRequest: created }, message: 'Change request raised' });
@@ -131,7 +192,7 @@ router.patch('/:changeId', canRaise, async (req, res) => {
     return;
   }
   const { projectId, changeId } = params.value as { projectId: string; changeId: string };
-  const patch = body.value as UpdateChangeRequestBody;
+  const { attachment_file_ids: attachmentFileIds, ...patch } = body.value as UpdateChangeRequestBody;
 
   try {
     const existing = await ChangeRequests.getById(projectId, changeId);
@@ -151,7 +212,7 @@ router.patch('/:changeId', canRaise, async (req, res) => {
       return;
     }
 
-    const updated = await ChangeRequests.update(projectId, changeId, patch);
+    const updated = await ChangeRequests.update(projectId, changeId, patch, attachmentFileIds, req.user!.userId);
     res.status(200).json({ status: 'success', data: { changeRequest: updated }, message: 'Change request updated' });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
