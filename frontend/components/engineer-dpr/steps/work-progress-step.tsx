@@ -47,6 +47,7 @@ export function WorkProgressStep({ draft, update, projectId }: StepProps) {
   }
 
   function addScheduleTaskActivity(task: ScheduleTask) {
+    const currentPct = Number(task.pct_work_complete);
     update({
       activity_progress: [
         ...draft.activity_progress,
@@ -56,10 +57,18 @@ export function WorkProgressStep({ draft, update, projectId }: StepProps) {
           task_name: task.task_name,
           free_text: null,
           today_pct: 0,
-          total_pct: Number(task.pct_work_complete),
+          total_pct: currentPct,
+          current_pct: currentPct,
         },
       ],
     });
+  }
+
+  /** Today's increment is derived from the gap to the new total, not typed in. */
+  function updateScheduleTaskTotal(index: number, newTotal: number) {
+    const row = draft.activity_progress[index];
+    const currentPct = row.current_pct ?? 0;
+    updateActivity(index, { total_pct: newTotal, today_pct: Math.max(0, newTotal - currentPct) });
   }
 
   return (
@@ -135,32 +144,54 @@ export function WorkProgressStep({ draft, update, projectId }: StepProps) {
               />
             ) : null}
 
-            <div className="flex gap-[16px]">
-              <div className="flex w-full flex-col gap-[4px]">
-                <span className="text-[13px] font-medium text-gca-dark">Today %</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={row.today_pct}
-                  onChange={(e) =>
-                    updateActivity(index, { today_pct: Math.min(Number(e.target.value), row.total_pct) })
-                  }
-                  className="h-[44px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green"
-                />
+            {row.source === "schedule_task" ? (
+              <div className="flex gap-[16px]">
+                <div className="flex w-full flex-col gap-[4px]">
+                  <span className="text-[13px] font-medium text-gca-dark">Current completion</span>
+                  <p className="flex h-[44px] w-full items-center rounded-[8px] bg-gca-page-bg px-[12px] text-[15px] text-gca-show">
+                    {row.current_pct ?? 0}%
+                  </p>
+                </div>
+                <div className="flex w-full flex-col gap-[4px]">
+                  <span className="text-[13px] font-medium text-gca-dark">New total completion</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={row.total_pct}
+                    onChange={(e) => updateScheduleTaskTotal(index, Number(e.target.value))}
+                    className="h-[44px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green"
+                  />
+                </div>
               </div>
-              <div className="flex w-full flex-col gap-[4px]">
-                <span className="text-[13px] font-medium text-gca-dark">Total %</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={row.total_pct}
-                  onChange={(e) => updateActivity(index, { total_pct: Number(e.target.value) })}
-                  className="h-[44px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green"
-                />
+            ) : (
+              <div className="flex gap-[16px]">
+                <div className="flex w-full flex-col gap-[4px]">
+                  <span className="text-[13px] font-medium text-gca-dark">Today %</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={row.today_pct}
+                    onChange={(e) =>
+                      updateActivity(index, { today_pct: Math.min(Number(e.target.value), row.total_pct) })
+                    }
+                    className="h-[44px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green"
+                  />
+                </div>
+                <div className="flex w-full flex-col gap-[4px]">
+                  <span className="text-[13px] font-medium text-gca-dark">Total %</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={row.total_pct}
+                    onChange={(e) => updateActivity(index, { total_pct: Number(e.target.value) })}
+                    className="h-[44px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green"
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
         ))}
 

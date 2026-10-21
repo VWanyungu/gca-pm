@@ -45,6 +45,9 @@ export interface DraftActivityProgress {
   free_text: string | null;
   today_pct: number;
   total_pct: number;
+  /** Schedule tasks only: the task's completion as of when it was picked — the "current" figure
+   *  shown next to the new-total input, so today_pct can be derived instead of typed. */
+  current_pct?: number;
 }
 
 export interface DraftRoleCount {
