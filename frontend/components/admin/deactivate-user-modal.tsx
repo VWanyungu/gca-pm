@@ -6,7 +6,13 @@ import { useSetUserStatus } from "./use-admin-users-data";
 import { mainRoleWarning } from "./format";
 import { ReassignMainRoleModal } from "./reassign-main-role-modal";
 
-export function DeactivateUserModal({ user, onClose }: { user: AdminUserDetail; onClose: () => void }) {
+export function DeactivateUserModal({
+  user,
+  onClose,
+}: {
+  user: AdminUserDetail;
+  onClose: () => void;
+}) {
   const setStatus = useSetUserStatus(user.id);
   const deactivating = user.status === "active";
   const [reassigning, setReassigning] = useState<RoleGrantDetail | null>(null);
@@ -27,7 +33,9 @@ export function DeactivateUserModal({ user, onClose }: { user: AdminUserDetail; 
       <div className="absolute inset-0 bg-[rgba(24,48,31,0.45)]" onClick={onClose} />
       <div className="relative w-[392px] max-w-full rounded-[12px] bg-white p-[24px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
         <h2 className="text-[18px] font-semibold text-gca-dark">
-          {deactivating ? `Deactivate ${user.first_name} ${user.last_name}?` : `Reactivate ${user.first_name} ${user.last_name}?`}
+          {deactivating
+            ? `Deactivate ${user.first_name} ${user.last_name}?`
+            : `Reactivate ${user.first_name} ${user.last_name}?`}
         </h2>
         <p className="mt-[8px] text-[14px] text-gca-muted">
           {deactivating
@@ -39,7 +47,9 @@ export function DeactivateUserModal({ user, onClose }: { user: AdminUserDetail; 
           <div className="mt-[16px] flex flex-col gap-[8px]">
             {pmCount > 0 && (
               <div className="flex items-center justify-between rounded-[8px] bg-[#fff4e5] px-[12px] py-[10px]">
-                <p className="text-[13px] font-medium text-gca-warning">{mainRoleWarning("PM", pmCount)}</p>
+                <p className="text-[13px] font-medium text-gca-warning">
+                  {mainRoleWarning("PM", pmCount)}
+                </p>
                 <button
                   onClick={() => setReassigning(mainGrants.find((r) => r.role === "PM") ?? null)}
                   className="text-[13px] font-semibold text-gca-green"
@@ -50,9 +60,13 @@ export function DeactivateUserModal({ user, onClose }: { user: AdminUserDetail; 
             )}
             {plannerCount > 0 && (
               <div className="flex items-center justify-between rounded-[8px] bg-[#fff4e5] px-[12px] py-[10px]">
-                <p className="text-[13px] font-medium text-gca-warning">{mainRoleWarning("Planner", plannerCount)}</p>
+                <p className="text-[13px] font-medium text-gca-warning">
+                  {mainRoleWarning("Planner", plannerCount)}
+                </p>
                 <button
-                  onClick={() => setReassigning(mainGrants.find((r) => r.role === "Planner") ?? null)}
+                  onClick={() =>
+                    setReassigning(mainGrants.find((r) => r.role === "Planner") ?? null)
+                  }
                   className="text-[13px] font-semibold text-gca-green"
                 >
                   Reassign
