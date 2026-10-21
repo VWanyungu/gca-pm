@@ -219,6 +219,21 @@ function toCreateBody(draft: DprDraftInput) {
   };
 }
 
+/** AC-DPR-04: one DPR per project per date, drafts included — so a wizard opened for a date
+ *  that already has one (draft or submitted) must resume it, never try to create a second. */
+export async function findDprForDate(projectId: string, reportDate: string): Promise<DprSummary | null> {
+  const { dprs } = unwrap(
+    await api.get<{ dprs: DprSummary[] }>(
+      `/projects/${projectId}/dpr?from_date=${reportDate}&to_date=${reportDate}&limit=1`,
+    ),
+  );
+  return dprs[0] ?? null;
+}
+
+export async function getDprDetail(projectId: string, dprId: string): Promise<DprDetail> {
+  return unwrap(await api.get<{ dpr: DprDetail }>(`/projects/${projectId}/dpr/${dprId}`)).dpr;
+}
+
 export async function createDraftDpr(projectId: string, draft: DprDraftInput) {
   return unwrap(
     await api.post<{ dpr: DprDetail }>(`/projects/${projectId}/dpr`, toCreateBody(draft), {

@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { reportError } from "@/lib/toast";
-import { createDraftDpr, patchDpr } from "./use-dpr-wizard-data";
-import { emptyDprDraft, type DprDraftInput } from "./types";
+import { createDraftDpr, findDprForDate, getDprDetail, patchDpr } from "./use-dpr-wizard-data";
+import { detailToDraftInput, emptyDprDraft, type DprDraftInput } from "./types";
 
 function storageKey(projectId: string, reportDate: string) {
   return `engineer-dpr-draft:${projectId}:${reportDate}`;
@@ -26,6 +26,8 @@ export function useDprDraft(projectId: string, reportDate: string) {
     }
   });
   const [dprId, setDprId] = useState<string | null>(null);
+  const [existingStatus, setExistingStatus] = useState<"draft" | "submitted" | null>(null);
+  const [checkedServer, setCheckedServer] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [saving, setSaving] = useState(false);
@@ -34,6 +36,38 @@ export function useDprDraft(projectId: string, reportDate: string) {
   useEffect(() => {
     dprIdRef.current = dprId;
   }, [dprId]);
+
+  // AC-DPR-04: one DPR per project per date. localStorage only remembers what THIS device
+  // typed, not whether a draft already exists server-side (a different device, or this one
+  // after the tab closed) — so ask the server first. Getting this wrong means a doomed second
+  // POST that the unique constraint rejects every 1.5s until the page is refreshed.
+  useEffect(() => {
+    let cancelled = false;
+    setCheckedServer(false);
+    (async () => {
+      try {
+        const existing = await findDprForDate(projectId, reportDate);
+        if (cancelled) return;
+        if (existing) {
+          const full = await getDprDetail(projectId, existing.dpr_id);
+          if (cancelled) return;
+          setDprId(existing.dpr_id);
+          setExistingStatus(existing.status);
+          if (existing.status === "draft") {
+            setDraft(detailToDraftInput(full));
+          }
+        }
+      } catch (error) {
+        reportError(error instanceof Error ? error.message : "Could not check for an existing DPR");
+      } finally {
+        if (!cancelled) setCheckedServer(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, reportDate]);
 
   useEffect(() => {
     try {
@@ -66,9 +100,11 @@ export function useDprDraft(projectId: string, reportDate: string) {
 
   // Debounced autosave whenever the draft changes. Skipped until `site_location` is filled in —
   // the only field `createDprSchema` requires non-empty — so opening the wizard and not typing
-  // anything yet doesn't fire a doomed create attempt every 1.5s.
+  // anything yet doesn't fire a doomed create attempt every 1.5s. Also skipped until the
+  // server check above has resolved (never race it into creating a duplicate) and entirely
+  // while today's DPR is already submitted (editing that is a separate, same-day-edit flow).
   useEffect(() => {
-    if (!projectId || !draft.site_location.trim()) return;
+    if (!projectId || !draft.site_location.trim() || !checkedServer || existingStatus === "submitted") return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       save().catch((error: unknown) => {
@@ -79,7 +115,18 @@ export function useDprDraft(projectId: string, reportDate: string) {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft, projectId]);
+  }, [draft, projectId, checkedServer, existingStatus]);
 
-  return { draft, update, dprId, currentStep, setCurrentStep, save, saving, savedAt };
+  return {
+    draft,
+    update,
+    dprId,
+    currentStep,
+    setCurrentStep,
+    save,
+    saving,
+    savedAt,
+    checkingExisting: !checkedServer,
+    alreadySubmitted: existingStatus === "submitted",
+  };
 }
