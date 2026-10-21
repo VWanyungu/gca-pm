@@ -83,6 +83,7 @@ function toBase64(file: File): Promise<string> {
 export interface UploadScheduleInput {
   file: File;
   scopeMode: ScopeMode;
+  rebaseline: boolean;
   notes: string;
 }
 
@@ -98,6 +99,7 @@ export function useUploadSchedule(projectId: string) {
             file: await toBase64(input.file),
             filename: input.file.name,
             scope_mode: input.scopeMode,
+            rebaseline: input.rebaseline,
             notes: input.notes || undefined,
           },
         ),

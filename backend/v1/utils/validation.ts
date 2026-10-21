@@ -1222,19 +1222,21 @@ export interface UploadScheduleBody {
   file: string;
   filename: string;
   scope_mode: "milestones_only" | "current_stage" | "every_task";
+  rebaseline?: boolean;
   change_request_id?: string | null;
   notes?: string | null;
 }
 
 /** AC-SCH-01/02. `file` is the .mpp as base64 or a data URI; size and type are checked
- *  against the bytes in utils/objectStorage.ts, not here. Supplying `change_request_id`
- *  is what makes an upload a rebaseline. */
+ *  against the bytes in utils/objectStorage.ts, not here. `rebaseline: true` is what makes
+ *  an upload a rebaseline; `change_request_id` is an optional link to a CR, not a requirement. */
 export const uploadScheduleSchema = Joi.object<UploadScheduleBody>({
   file: Joi.string().required(),
   filename: Joi.string().max(500).required(),
   scope_mode: Joi.string()
     .valid("milestones_only", "current_stage", "every_task")
     .default("every_task"),
+  rebaseline: Joi.boolean().default(false),
   change_request_id: Joi.string().uuid().allow(null).optional(),
   notes: Joi.string().max(2000).allow("", null).optional(),
 });
