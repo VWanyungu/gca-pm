@@ -67,6 +67,14 @@ const PURPOSE_RULES: Record<FilePurpose, PurposeRule> = {
     resourceType: 'raw',
     folder: 'client-reports',
   },
+  // Supporting documents for a change request: PDFs, Office docs, images — same "any type"
+  // approach as activity_attachment, since sniffMimeType doesn't recognize DOCX/XLSX yet.
+  change_request_attachment: {
+    maxBytes: 25 * MB,
+    mimeTypes: null,
+    resourceType: 'raw',
+    folder: 'change-request-attachments',
+  },
 };
 
 /** Images get the tighter cap even where the purpose allows more (AC-FIL-02). */

@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Camera, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
-import { canAccess, CAN_LIST_PROJECTS } from "@/lib/access-control";
+import { canAccess, hasAnyRole, CAN_LIST_PROJECTS, CAN_LIST_PROJECTS_GLOBAL_ONLY } from "@/lib/access-control";
 import { useEngineerProjectSummaries } from "@/components/engineer-dpr/use-dpr-wizard-data";
 import type { RoleGrant, RoleName, ScopeType } from "@/contexts/auth-context";
 
@@ -42,7 +42,8 @@ export default function ProfilePage() {
 
   // A project-scoped-only Site Engineer has no GET /projects access (same gap as the home
   // page, see CAN_LIST_PROJECTS) — fall back to their own projects from their role grants.
-  const canListAll = canAccess(user?.role, CAN_LIST_PROJECTS);
+  const canListAll =
+    hasAnyRole(user?.role, CAN_LIST_PROJECTS) || canAccess(user?.role, CAN_LIST_PROJECTS_GLOBAL_ONLY);
   const engineerProjects = useEngineerProjectSummaries();
 
   const { data: bulkProjects = [] } = useQuery({

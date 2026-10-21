@@ -2,6 +2,7 @@ import type { Knex } from 'knex';
 import { randomUUID } from 'crypto';
 import db from '../dbSetup.js';
 import { writebackDprActivityProgress } from '../../utils/scheduleWriteback.js';
+import { objectUrl } from '../../utils/objectStorage.js';
 
 export interface Paginated<T> {
   users: T[];
@@ -20,7 +21,7 @@ export interface UserListItem {
   last_login: Date | null;
   created_at: Date;
   global_role: RoleName | null;
-  project_access: { role: RoleName; count: number }[];
+  project_access: { role: RoleName; scopeName: string }[];
 }
 
 export interface UserDetail {
@@ -130,7 +131,19 @@ export class Users {
 
     const ids = rows.map((r) => r.id);
     const roleRows = ids.length
-      ? await db('roles').select('user_id', 'role', 'scope_type').whereIn('user_id', ids).whereNull('revoked_at')
+      ? await db('roles')
+          .select('user_id', 'role', 'scope_type', 'program_id', 'project_id')
+          .whereIn('user_id', ids)
+          .whereNull('revoked_at')
+      : [];
+
+    const programIds = [...new Set(roleRows.filter((r) => r.program_id != null).map((r) => r.program_id))];
+    const projectIds = [...new Set(roleRows.filter((r) => r.project_id != null).map((r) => r.project_id))];
+    const programs = programIds.length
+      ? await db('programs').select('program_id', 'name').whereIn('program_id', programIds)
+      : [];
+    const projects = projectIds.length
+      ? await db('projects').select('project_id', 'name').whereIn('project_id', projectIds)
       : [];
 
     const users: UserListItem[] = rows.map((row) => {
@@ -138,13 +151,17 @@ export class Users {
       const globalRoleRow = ownRoles.find((r) => r.scope_type === 'global' && r.role !== 'Admin') ??
         ownRoles.find((r) => r.scope_type === 'global');
       const scoped = ownRoles.filter((r) => r.scope_type !== 'global');
-      const counts = new Map<RoleName, number>();
-      for (const r of scoped) counts.set(r.role, (counts.get(r.role) ?? 0) + 1);
 
       return {
         ...row,
         global_role: globalRoleRow ? globalRoleRow.role : null,
-        project_access: Array.from(counts.entries()).map(([role, count]) => ({ role, count })),
+        project_access: scoped.map((r) => ({
+          role: r.role,
+          scopeName:
+            r.scope_type === 'project'
+              ? projects.find((p) => p.project_id === r.project_id)?.name ?? 'Unknown project'
+              : programs.find((p) => p.program_id === r.program_id)?.name ?? 'Unknown program',
+        })),
       };
     });
 
@@ -1594,6 +1611,8 @@ export interface ProjectListRow extends ProjectRow {
   completed_pct: number | null;
   planned_pct: number | null;
   next_milestone: string | null;
+  program_name: string | null;
+  main_pm_name: string | null;
 }
 
 export interface CreateProjectInput {
@@ -2099,10 +2118,12 @@ export class Projects {
       .limit(limit);
 
     const projectIds = projects.map((p) => p.project_id);
-    const [stageByProject, metricsByProject, milestoneByProject] = await Promise.all([
+    const [stageByProject, metricsByProject, milestoneByProject, programById, mainPmByProject] = await Promise.all([
       Projects.currentStageByProjectId(projectIds),
       Projects.latestMetricsByProjectId(projectIds),
       Projects.nextMilestoneByProjectId(projectIds),
+      Projects.programNameById([...new Set(projects.map((p) => p.program_id))]),
+      Projects.mainPmByProjectId(projectIds),
     ]);
 
     return {
@@ -2113,9 +2134,38 @@ export class Projects {
         completed_pct: metricsByProject.get(p.project_id)?.actual_pct ?? null,
         planned_pct: metricsByProject.get(p.project_id)?.planned_pct ?? null,
         next_milestone: milestoneByProject.get(p.project_id)?.title ?? null,
+        program_name: programById.get(p.program_id) ?? null,
+        main_pm_name: mainPmByProject.get(p.project_id) ?? null,
       })),
       pagination: { page, limit, total, totalPages },
     };
+  }
+
+  static async programNameById(programIds: number[]): Promise<Map<number, string>> {
+    const map = new Map<number, string>();
+    if (programIds.length === 0) return map;
+    const rows = await db('programs').whereIn('program_id', programIds).select('program_id', 'name');
+    for (const row of rows) map.set(row.program_id, row.name);
+    return map;
+  }
+
+  /** Main PM per project: the earliest-granted active PM@project holder (see getUserById). */
+  static async mainPmByProjectId(projectIds: string[]): Promise<Map<string, string>> {
+    const map = new Map<string, string>();
+    if (projectIds.length === 0) return map;
+
+    const rows = await db('roles')
+      .join('users', 'users.id', 'roles.user_id')
+      .whereIn('roles.project_id', projectIds)
+      .where({ 'roles.role': 'PM', 'roles.scope_type': 'project' })
+      .whereNull('roles.revoked_at')
+      .select('roles.project_id', 'users.first_name', 'users.last_name', 'roles.granted_at')
+      .orderBy('roles.granted_at', 'asc');
+
+    for (const row of rows) {
+      if (!map.has(row.project_id)) map.set(row.project_id, `${row.first_name} ${row.last_name}`);
+    }
+    return map;
   }
 
   static async currentStageByProjectId(
@@ -4001,7 +4051,7 @@ export class Dprs {
       t('dpr_photo as dp')
         .join('file_object as fo', 'fo.file_id', 'dp.file_id')
         .where({ 'dp.dpr_id': dprId })
-        .select('dp.*', 'fo.storage_key as url')
+        .select('dp.*', 'fo.storage_key', 'fo.mime_type')
         .orderBy('dp.sort_order', 'asc'),
       t('users')
         .whereIn('id', [dpr.author_id, dpr.submitted_by].filter(Boolean))
@@ -4028,12 +4078,17 @@ export class Dprs {
 
     const nameById = new Map(users.map((u: any) => [u.id, u.name]));
 
+    const photosWithUrls = photos.map((p: any) => ({
+      ...p,
+      url: objectUrl({ storage_key: p.storage_key, mime_type: p.mime_type } as FileObjectRow),
+    }));
+
     return {
       ...dpr,
       work_items: workItems,
       activity_progress: activityProgress,
       personnel_groups: groupsWithRoles,
-      photos,
+      photos: photosWithUrls,
       weather_category_name: weatherCategory?.name ?? null,
       author_name: nameById.get(dpr.author_id),
       submitted_by_name: dpr.submitted_by ? nameById.get(dpr.submitted_by) ?? null : null,
@@ -5606,13 +5661,17 @@ export class SubmissionClientPhotos {
         'p.taken_at',
         'd.report_date',
         'd.site_location',
-        'fo.storage_key as url',
+        'fo.storage_key',
+        'fo.mime_type',
         db.raw('(scp.photo_id IS NOT NULL) as selected'),
       )
       .orderBy('d.report_date', 'asc')
       .orderBy('p.sort_order', 'asc');
 
-    return rows as SubmissionClientPhotoRow[];
+    return rows.map((row: any) => ({
+      ...row,
+      url: objectUrl({ storage_key: row.storage_key, mime_type: row.mime_type } as FileObjectRow),
+    })) as SubmissionClientPhotoRow[];
   }
 
   static async setSelected(
@@ -5669,6 +5728,15 @@ export interface ChangeRequestRow {
   withdrawn_at: Date | null;
 }
 
+export interface ChangeRequestAttachmentRow {
+  attachment_id: string;
+  file_id: string;
+  original_filename: string;
+  url: string;
+  uploaded_by: string;
+  uploaded_at: Date;
+}
+
 export interface ChangeApprovalRow {
   approval_id: string;
   change_id: string;
@@ -5694,6 +5762,8 @@ export interface CreateChangeRequestInput {
   /** A Site Engineer's own change requests are FYI only (no ExCo approval needed): they land
    *  straight at `status = 'noted'` as a record for the project's PM, never 'pending'. */
   skipApproval?: boolean;
+  /** file_object ids from a prior /attachments/upload call, to attach at creation. */
+  attachmentFileIds?: string[];
 }
 
 export interface UpdateChangeRequestFields {
@@ -5719,7 +5789,40 @@ const CHANGE_REQUEST_COLS = [
 const REQUIRED_APPROVER_ROLES: ChangeApproverRole[] = ['exco'];
 
 export class ChangeRequests {
-  static async create(input: CreateChangeRequestInput): Promise<ChangeRequestRow> {
+  /** Attachments on a change request, with Cloudinary delivery URLs (never the raw storage_key —
+   *  see objectStorage.ts's assertStorageKeyIsHandle comment). */
+  static async attachmentsFor(
+    changeId: string,
+    trx?: Knex.Transaction,
+  ): Promise<ChangeRequestAttachmentRow[]> {
+    const t = trx ?? db;
+    const rows = await t('change_request_attachment as a')
+      .join('file_object as fo', 'fo.file_id', 'a.file_id')
+      .where({ 'a.change_id': changeId })
+      .select(
+        'a.attachment_id',
+        'a.file_id',
+        'a.uploaded_by',
+        'a.uploaded_at',
+        'fo.original_filename',
+        'fo.storage_key',
+        'fo.mime_type',
+      )
+      .orderBy('a.uploaded_at', 'asc');
+
+    return rows.map((r: any) => ({
+      attachment_id: r.attachment_id,
+      file_id: r.file_id,
+      original_filename: r.original_filename,
+      uploaded_by: r.uploaded_by,
+      uploaded_at: r.uploaded_at,
+      url: objectUrl({ storage_key: r.storage_key, mime_type: r.mime_type } as FileObjectRow),
+    }));
+  }
+
+  static async create(
+    input: CreateChangeRequestInput,
+  ): Promise<ChangeRequestRow & { attachments: ChangeRequestAttachmentRow[] }> {
     return db.transaction(async (trx) => {
       // AC-CHG-01: change_no = max for project + 1. Row-locks existing rows of the
       // project to serialize concurrent raises; a project's first ever change request
@@ -5751,7 +5854,20 @@ export class ChangeRequests {
           raised_by: input.raised_by,
         })
         .returning(CHANGE_REQUEST_COLS);
-      return row;
+
+      if (input.attachmentFileIds && input.attachmentFileIds.length > 0) {
+        await trx('change_request_attachment').insert(
+          input.attachmentFileIds.map((fileId) => ({
+            attachment_id: randomUUID(),
+            change_id: row.change_id,
+            file_id: fileId,
+            uploaded_by: input.raised_by,
+          })),
+        );
+      }
+
+      const attachments = await ChangeRequests.attachmentsFor(row.change_id, trx);
+      return { ...row, attachments };
     });
   }
 
@@ -5794,21 +5910,52 @@ export class ChangeRequests {
     return { changeRequests, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
   }
 
-  static async getById(projectId: string, changeId: string): Promise<ChangeRequestRow | null> {
+  static async getById(
+    projectId: string,
+    changeId: string,
+  ): Promise<(ChangeRequestRow & { attachments: ChangeRequestAttachmentRow[] }) | null> {
     const row = await db('change_request').where({ project_id: projectId, change_id: changeId }).first();
-    return row ?? null;
+    if (!row) return null;
+    const attachments = await ChangeRequests.attachmentsFor(changeId);
+    return { ...row, attachments };
   }
 
   static async update(
     projectId: string,
     changeId: string,
     patch: UpdateChangeRequestFields,
-  ): Promise<ChangeRequestRow | null> {
-    const [row] = await db('change_request')
-      .where({ project_id: projectId, change_id: changeId })
-      .update(patch)
-      .returning(CHANGE_REQUEST_COLS);
-    return row ?? null;
+    /** file_object ids from a prior /attachments/upload call — appended, existing ones kept. */
+    newAttachmentFileIds?: string[],
+    uploadedBy?: string,
+  ): Promise<(ChangeRequestRow & { attachments: ChangeRequestAttachmentRow[] }) | null> {
+    return db.transaction(async (trx) => {
+      let row: ChangeRequestRow | undefined;
+      if (Object.keys(patch).length > 0) {
+        [row] = await trx('change_request')
+          .where({ project_id: projectId, change_id: changeId })
+          .update(patch)
+          .returning(CHANGE_REQUEST_COLS);
+      } else {
+        row = await trx('change_request')
+          .where({ project_id: projectId, change_id: changeId })
+          .first(CHANGE_REQUEST_COLS);
+      }
+      if (!row) return null;
+
+      if (newAttachmentFileIds && newAttachmentFileIds.length > 0 && uploadedBy) {
+        await trx('change_request_attachment').insert(
+          newAttachmentFileIds.map((fileId) => ({
+            attachment_id: randomUUID(),
+            change_id: changeId,
+            file_id: fileId,
+            uploaded_by: uploadedBy,
+          })),
+        );
+      }
+
+      const attachments = await ChangeRequests.attachmentsFor(changeId, trx);
+      return { ...row, attachments };
+    });
   }
 
   // AC-CHG-02: decide (ExCo only). Gated on status = 'pending' so a concurrent second
@@ -5965,7 +6112,12 @@ export class NotificationPreferences {
 
 
 
-export type FilePurpose = 'dpr_photo' | 'activity_attachment' | 'schedule_mpp' | 'client_report_pdf';
+export type FilePurpose =
+  | 'dpr_photo'
+  | 'activity_attachment'
+  | 'schedule_mpp'
+  | 'client_report_pdf'
+  | 'change_request_attachment';
 export type FileVariant = 'original' | 'thumbnail' | 'display';
 export type FileStatus = 'pending_upload' | 'scanning' | 'available' | 'rejected';
 

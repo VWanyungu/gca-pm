@@ -6,7 +6,7 @@ import {
   ProjectStatusHistory,
   ProjectMetrics,
 } from '../database/utils/database.js';
-import authorize from '../middlewares/authorize.js';
+import authorize, { authorizeAnyRole } from '../middlewares/authorize.js';
 import {
   createProjectSchema,
   updateProjectSchema,
@@ -26,15 +26,10 @@ const canCreate = authorize([
   { role: 'ExCo', scopeType: 'global' },
 ]);
 
-const canListProjects = authorize([
-  { role: 'Admin', scopeType: 'global' },
-  { role: 'ExCo', scopeType: 'global' },
-  { role: 'ProjectCreator', scopeType: 'global' },
-  { role: 'PM', scopeType: 'global' },
-  { role: 'PM', scopeType: 'project' },
-  { role: 'Planner', scopeType: 'global' },
-  { role: 'SiteEngineer', scopeType: 'global' },
-]);
+// GET /projects has no :projectId/:programId param, so authorize()'s project/program scope
+// check can never match a scoped grant (see authorizeAnyRole's doc comment) — any grant of
+// these roles, at any scope, qualifies to list.
+const canListProjects = authorizeAnyRole(['Admin', 'ExCo', 'ProjectCreator', 'PM', 'Planner', 'SiteEngineer']);
 
 const canViewProject = authorize([
   { role: 'Admin', scopeType: 'global' },

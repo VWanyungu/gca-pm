@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, Download, Paperclip, Pencil } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useChangeRequest, useChangeRequestsInvalidate } from "./use-change-requests-data";
 import {
@@ -166,6 +166,33 @@ export function ChangeRequestDetail({
           <p className="text-[14px] font-semibold text-gca-dark">Description</p>
           <p className="text-[14px] text-gca-dark">{cr.scope_description}</p>
         </div>
+
+        {!!cr.attachments?.length && (
+          <div className="flex flex-col gap-[8px] border-t border-gca-border pt-[16px]">
+            <p className="text-[14px] font-semibold text-gca-dark">Supporting files</p>
+            <ul className="flex flex-col gap-[6px]">
+              {cr.attachments.map((a) => (
+                <li
+                  key={a.attachment_id}
+                  className="flex items-center gap-[8px] rounded-[8px] border border-gca-border px-[12px] py-[8px] text-[13px]"
+                >
+                  <Paperclip className="size-[14px] shrink-0 text-gca-muted" />
+                  <span className="min-w-0 flex-1 truncate text-gca-dark">{a.original_filename}</span>
+                  <a
+                    href={a.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download={a.original_filename}
+                    aria-label={`Download ${a.original_filename}`}
+                    className="flex size-[28px] shrink-0 items-center justify-center rounded-[6px] text-gca-show hover:bg-gca-page-bg hover:text-gca-dark"
+                  >
+                    <Download className="size-[14px]" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="flex flex-col gap-[12px] border-t border-gca-border pt-[16px]">
           <p className="text-[14px] font-semibold text-gca-dark">Progress</p>

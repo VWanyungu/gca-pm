@@ -334,6 +334,7 @@ export interface CreateChangeRequestBody {
   cost_impact?: number | null;
   cost_currency?: string | null;
   schedule_impact_days?: number | null;
+  attachment_file_ids?: string[];
 }
 
 export interface UpdateChangeRequestBody {
@@ -346,6 +347,7 @@ export interface UpdateChangeRequestBody {
   cost_impact?: number | null;
   cost_currency?: string | null;
   schedule_impact_days?: number | null;
+  attachment_file_ids?: string[];
 }
 
 export interface DecideChangeRequestBody {
@@ -389,6 +391,7 @@ export const createChangeRequestSchema = Joi.object<CreateChangeRequestBody>({
   cost_impact: costImpactField,
   cost_currency: costCurrencyField,
   schedule_impact_days: Joi.number().integer().allow(null).optional(),
+  attachment_file_ids: Joi.array().items(Joi.string().uuid()).optional(),
 });
 
 export const updateChangeRequestSchema = Joi.object<UpdateChangeRequestBody>({
@@ -401,7 +404,18 @@ export const updateChangeRequestSchema = Joi.object<UpdateChangeRequestBody>({
   cost_impact: costImpactField,
   cost_currency: costCurrencyField,
   schedule_impact_days: Joi.number().integer().allow(null).optional(),
+  attachment_file_ids: Joi.array().items(Joi.string().uuid()).optional(),
 }).min(1);
+
+export interface UploadChangeRequestAttachmentBody {
+  file: string;
+  filename: string;
+}
+
+export const uploadChangeRequestAttachmentSchema = Joi.object<UploadChangeRequestAttachmentBody>({
+  file: Joi.string().required(),
+  filename: Joi.string().trim().max(500).required(),
+});
 
 export const decideChangeRequestSchema = Joi.object<DecideChangeRequestBody>({
   decision: Joi.string().valid("approve", "reject").required(),

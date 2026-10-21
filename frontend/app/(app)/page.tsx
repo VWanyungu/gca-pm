@@ -7,7 +7,13 @@ import Link from "next/link";
 import { Search, LayoutGrid, List, Plus, FolderOpen, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
-import { canAccess, CAN_CREATE_PROJECT, CAN_LIST_PROJECTS } from "@/lib/access-control";
+import {
+  canAccess,
+  hasAnyRole,
+  CAN_CREATE_PROJECT,
+  CAN_LIST_PROJECTS,
+  CAN_LIST_PROJECTS_GLOBAL_ONLY,
+} from "@/lib/access-control";
 import {
   useEngineerProjectSummaries,
   type EngineerProjectSummary,
@@ -100,7 +106,8 @@ export default function Home() {
 
   // A project-scoped-only Site Engineer has no GET /projects access (canListProjects only
   // authorizes SiteEngineer@global) — fetch their own projects from their role grants instead.
-  const canListAll = canAccess(user?.role, CAN_LIST_PROJECTS);
+  const canListAll =
+    hasAnyRole(user?.role, CAN_LIST_PROJECTS) || canAccess(user?.role, CAN_LIST_PROJECTS_GLOBAL_ONLY);
   const engineerProjects = useEngineerProjectSummaries();
 
   const { data: programs = [] } = useQuery({
