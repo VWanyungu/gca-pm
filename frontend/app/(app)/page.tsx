@@ -75,7 +75,7 @@ function mapEngineerProject(row: EngineerProjectSummary): Project {
     spi: row.spi,
     completed: row.completed_pct ?? 0,
     planned: row.planned_pct ?? 0,
-    nextMilestone: null,
+    nextMilestone: row.next_milestone,
   };
 }
 

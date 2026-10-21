@@ -4,7 +4,7 @@ import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 import type { DprDetail, DprSummary } from "@/components/weekly-submission/types";
-import type { ProjectDetailResponse } from "@/components/project-overview/types";
+import type { Milestone, ProjectDetailResponse } from "@/components/project-overview/types";
 import type {
   DprDraftInput,
   EngineerProject,
@@ -65,6 +65,7 @@ export interface EngineerProjectSummary {
   spi: number | null;
   completed_pct: number | null;
   planned_pct: number | null;
+  next_milestone: string | null;
 }
 
 /** Same per-project fetch useEngineerProjects relies on (no GET /projects access for a
@@ -88,13 +89,37 @@ export function useEngineerProjectSummaries() {
     })),
   });
 
+  // Same aggregate (schedule + custom) milestones the PM-style Milestones tab uses, fetched
+  // index-aligned with `results` above so the two zip back together by project below.
+  const milestoneResults = useQueries({
+    queries: projectIds.map((projectId) => ({
+      queryKey: ["project", projectId, "milestones", true],
+      queryFn: async () =>
+        unwrap(
+          await api.get<{ milestones: Milestone[] }>(
+            `/projects/${projectId}/milestones?limit=50&aggregate=true`,
+          ),
+        ).milestones,
+      staleTime: 30_000,
+    })),
+  });
+
   const isLoading = results.some((r) => r.isLoading);
-  const projects: EngineerProjectSummary[] = results
-    .filter((r) => r.data)
-    .map((r) => {
-      const { project, stages, metrics } = r.data!;
+  const projects: EngineerProjectSummary[] = projectIds
+    .map((_, i): EngineerProjectSummary | null => {
+      const detail = results[i]?.data;
+      if (!detail) return null;
+      const { project, stages, metrics } = detail;
       const latest = metrics[metrics.length - 1];
       const activeStage = stages.find((s) => s.state === "active");
+      // Mirrors nextMilestoneByProjectId (database.ts): not yet reached, soonest due date.
+      const nextMilestone = (milestoneResults[i]?.data ?? [])
+        .filter((m) => !m.actual_date)
+        .sort(
+          (a, b) =>
+            new Date(a.forecast_date ?? a.planned_date).getTime() -
+            new Date(b.forecast_date ?? b.planned_date).getTime(),
+        )[0];
       return {
         project_id: project.project_id,
         name: project.name,
@@ -104,8 +129,10 @@ export function useEngineerProjectSummaries() {
         spi: latest?.spi ?? null,
         completed_pct: latest?.actual_pct ?? null,
         planned_pct: latest?.planned_pct ?? null,
+        next_milestone: nextMilestone?.title ?? null,
       };
-    });
+    })
+    .filter((p): p is EngineerProjectSummary => p !== null);
 
   return { data: projects, isLoading };
 }
