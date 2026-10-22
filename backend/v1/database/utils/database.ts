@@ -3663,6 +3663,7 @@ export interface DprActivityProgressRow {
   today_pct: number;
   total_pct: number;
   task_name?: string | null;
+  removed_at?: Date | null;
 }
 
 export interface DprPersonnelRoleCountRow {
@@ -4036,6 +4037,7 @@ export class Dprs {
           this.on('str.task_id', '=', 'dap.task_id').andOnNull('str.valid_to');
         })
         .where({ 'dap.dpr_id': dprId })
+        .whereNull('dap.removed_at')
         .select('dap.*', 'str.task_name')
         .orderBy('dap.sort_order', 'asc'),
       t('dpr_personnel_group as dpg')
@@ -4174,6 +4176,29 @@ export class Dprs {
     };
   }
 
+  static async missingWeekdays(
+    projectId: string,
+    fromDate: string,
+    toDate: string,
+  ): Promise<string[]> {
+    const existingRows = await db('dpr')
+      .where({ project_id: projectId })
+      .andWhere('report_date', '>=', fromDate)
+      .andWhere('report_date', '<', toDate)
+      .select('report_date');
+    const existing = new Set(existingRows.map((row) => String(row.report_date).slice(0, 10)));
+    const dates: string[] = [];
+    const cursor = new Date(`${fromDate}T00:00:00Z`);
+    const end = new Date(`${toDate}T00:00:00Z`);
+    while (cursor < end) {
+      const weekday = cursor.getUTCDay();
+      const date = cursor.toISOString().slice(0, 10);
+      if (weekday !== 0 && weekday !== 6 && !existing.has(date)) dates.push(date);
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+    return dates;
+  }
+
   static async update(
     dprId: string,
     patch: UpdateDprFields,
@@ -4221,10 +4246,36 @@ export class Dprs {
       }
 
       if (patch.activity_progress !== undefined) {
-        await t('dpr_activity_progress').where({ dpr_id: dprId }).del();
+        const existingRows = await t('dpr_activity_progress')
+          .where({ dpr_id: dprId })
+          .whereNull('removed_at')
+          .select('dpr_activity_progress_id');
+        const existingIds = existingRows.map((row) => row.dpr_activity_progress_id);
+        const linkedIds = existingIds.length
+          ? (
+              await t('schedule_task_revision')
+                .whereIn('dpr_activity_progress_id', existingIds)
+                .whereNotNull('dpr_activity_progress_id')
+                .distinct('dpr_activity_progress_id')
+                .select('dpr_activity_progress_id')
+            ).map((row) => row.dpr_activity_progress_id)
+          : [];
+        const linkedSet = new Set<string>(linkedIds);
+        if (linkedIds.length > 0) {
+          await t('dpr_activity_progress')
+            .whereIn('dpr_activity_progress_id', linkedIds)
+            .update({ removed_at: t.fn.now() });
+        }
+        const removableIds = existingIds.filter((id) => !linkedSet.has(id));
+        if (removableIds.length > 0) {
+          await t('dpr_activity_progress').whereIn('dpr_activity_progress_id', removableIds).del();
+        }
         if (patch.activity_progress.length > 0) {
           const activities = patch.activity_progress.map((a, idx) => ({
-            dpr_activity_progress_id: a.dpr_activity_progress_id ?? randomUUID(),
+            dpr_activity_progress_id:
+              a.dpr_activity_progress_id && !linkedSet.has(a.dpr_activity_progress_id)
+                ? a.dpr_activity_progress_id
+                : randomUUID(),
             dpr_id: dprId,
             sort_order: a.sort_order ?? idx,
             source: a.source,
@@ -4389,6 +4440,230 @@ export class Dprs {
     const q = trx ? trx('dpr') : db('dpr');
     const count = await q.where({ dpr_id: dprId }).del();
     return count > 0;
+  }
+}
+
+export type DprAmendmentStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn';
+export type DprAmendmentWritebackOutcome = 'applied' | 'skipped_stale_schedule' | 'no_change';
+
+export interface DprAmendmentRow {
+  amendment_id: string;
+  dpr_id: string;
+  amendment_no: number;
+  reason: string;
+  proposed_document: UpdateDprFields;
+  status: DprAmendmentStatus;
+  requested_by: string;
+  requested_at: Date;
+  decided_by: string | null;
+  decided_at: Date | null;
+  decision_note: string | null;
+  before_snapshot: DprDetailsRow | null;
+  applied_at: Date | null;
+  writeback_outcome: DprAmendmentWritebackOutcome | null;
+  dpr_ref?: string | null;
+  report_date?: string;
+  site_location?: string;
+  requester_name?: string;
+}
+
+export class DprAmendments {
+  static async create(input: {
+    dprId: string;
+    reason: string;
+    proposedDocument: UpdateDprFields;
+    requestedBy: string;
+  }): Promise<DprAmendmentRow> {
+    return db.transaction(async (trx) => {
+      const dpr = await trx('dpr').where({ dpr_id: input.dprId }).forUpdate().first();
+      if (!dpr || dpr.status !== 'submitted') {
+        throw new Error('Amendments can only be requested for submitted DPRs');
+      }
+      const pending = await trx('dpr_amendment')
+        .where({ dpr_id: input.dprId, status: 'pending' })
+        .first('amendment_id');
+      if (pending) throw new Error('A pending amendment request already exists for this DPR');
+      const count = await trx('dpr_amendment')
+        .where({ dpr_id: input.dprId })
+        .max<{ max: number | null }[]>('amendment_no as max')
+        .first();
+      const amendmentId = randomUUID();
+      const [row] = await trx('dpr_amendment')
+        .insert({
+          amendment_id: amendmentId,
+          dpr_id: input.dprId,
+          amendment_no: Number(count?.max ?? 0) + 1,
+          reason: input.reason,
+          proposed_document: JSON.stringify(input.proposedDocument),
+          status: 'pending',
+          requested_by: input.requestedBy,
+        })
+        .returning('*');
+      await trx('audit_event').insert({
+        occurred_at: new Date(),
+        actor_id: input.requestedBy,
+        channel: 'web',
+        correlation_id: randomUUID(),
+        project_id: dpr.project_id,
+        entity_type: 'dpr_amendment',
+        entity_id: amendmentId,
+        action: 'dpr.amendment.requested',
+        after_json: JSON.stringify({ dpr_id: input.dprId, status: 'pending' }),
+        reason: input.reason,
+      });
+      return row;
+    });
+  }
+
+  static async list(
+    projectId: string,
+    options: { status?: DprAmendmentStatus; requestedBy?: string } = {},
+  ): Promise<DprAmendmentRow[]> {
+    const query = db('dpr_amendment as da')
+      .join('dpr as d', 'd.dpr_id', 'da.dpr_id')
+      .leftJoin('users as u', 'u.id', 'da.requested_by')
+      .where('d.project_id', projectId)
+      .select(
+        'da.*',
+        'd.dpr_ref',
+        'd.report_date',
+        'd.site_location',
+        db.raw("NULLIF(CONCAT(u.first_name, ' ', u.last_name), ' ') as requester_name"),
+      )
+      .orderBy('da.requested_at', 'desc');
+    if (options.status) query.andWhere('da.status', options.status);
+    if (options.requestedBy) query.andWhere('da.requested_by', options.requestedBy);
+    return query;
+  }
+
+  static async decide(input: {
+    projectId: string;
+    amendmentId: string;
+    decidedBy: string;
+    decision: 'approve' | 'reject';
+    decisionNote?: string;
+  }): Promise<DprAmendmentRow | null> {
+    return db.transaction(async (trx) => {
+      const amendment = await trx('dpr_amendment as da')
+        .join('dpr as d', 'd.dpr_id', 'da.dpr_id')
+        .where({ 'da.amendment_id': input.amendmentId, 'd.project_id': input.projectId })
+        .forUpdate()
+        .select('da.*', 'd.project_id', 'd.submitted_at')
+        .first();
+      if (!amendment || amendment.status !== 'pending') return null;
+
+      let beforeSnapshot: DprDetailsRow | null = null;
+      let appliedAt: Date | null = null;
+      let writebackOutcome: DprAmendmentWritebackOutcome | null = null;
+
+      if (input.decision === 'approve') {
+        const current = await Dprs.getById(amendment.dpr_id, input.projectId, trx);
+        if (!current) throw new Error('DPR not found');
+        beforeSnapshot = current;
+
+        const proposed = amendment.proposed_document as UpdateDprFields;
+        const { activity_progress: activityProgress, ...headerAndSections } = proposed;
+        await Dprs.update(amendment.dpr_id, headerAndSections, trx);
+
+        if (activityProgress !== undefined) {
+          const activeRows = await trx('dpr_activity_progress')
+            .where({ dpr_id: amendment.dpr_id })
+            .whereNull('removed_at')
+            .select('dpr_activity_progress_id');
+          const activeIds = activeRows.map((row) => row.dpr_activity_progress_id);
+          const linkedIds = activeIds.length
+            ? (
+                await trx('schedule_task_revision')
+                  .whereIn('dpr_activity_progress_id', activeIds)
+                  .whereNotNull('dpr_activity_progress_id')
+                  .distinct('dpr_activity_progress_id')
+                  .select('dpr_activity_progress_id')
+              ).map((row) => row.dpr_activity_progress_id)
+            : [];
+          const linkedSet = new Set<string>(linkedIds);
+          if (linkedIds.length > 0) {
+            await trx('dpr_activity_progress')
+              .whereIn('dpr_activity_progress_id', linkedIds)
+              .update({ removed_at: trx.fn.now() });
+          }
+          const removableIds = activeIds.filter((id) => !linkedSet.has(id));
+          if (removableIds.length > 0) {
+            await trx('dpr_activity_progress')
+              .whereIn('dpr_activity_progress_id', removableIds)
+              .del();
+          }
+          if (activityProgress.length > 0) {
+            await trx('dpr_activity_progress').insert(
+              activityProgress.map((activity, index) => ({
+                dpr_activity_progress_id: randomUUID(),
+                dpr_id: amendment.dpr_id,
+                sort_order: activity.sort_order ?? index,
+                source: activity.source,
+                task_id: activity.task_id ?? null,
+                free_text: activity.free_text ?? null,
+                today_pct: activity.today_pct,
+                total_pct: activity.total_pct,
+              })),
+            );
+          }
+
+          const project = await trx('projects')
+            .where({ project_id: input.projectId })
+            .first('timezone');
+          const staleUpload = amendment.submitted_at
+            ? await trx('schedule_version')
+                .where({ project_id: input.projectId, status: 'applied' })
+                .andWhere('applied_at', '>', amendment.submitted_at)
+                .first('schedule_version_id')
+            : null;
+          const { written } = await writebackDprActivityProgress(trx, {
+            dprId: amendment.dpr_id,
+            projectId: input.projectId,
+            dprSubmittedAt: new Date(amendment.submitted_at),
+            timezone: project?.timezone ?? 'Africa/Nairobi',
+            enforceStaleRule: true,
+          });
+          writebackOutcome = staleUpload
+            ? 'skipped_stale_schedule'
+            : written > 0
+              ? 'applied'
+              : 'no_change';
+        } else {
+          writebackOutcome = 'no_change';
+        }
+        appliedAt = new Date();
+      }
+
+      const status = input.decision === 'approve' ? 'approved' : 'rejected';
+      const [updated] = await trx('dpr_amendment')
+        .where({ amendment_id: input.amendmentId, status: 'pending' })
+        .update({
+          status,
+          decided_by: input.decidedBy,
+          decided_at: trx.fn.now(),
+          decision_note: input.decisionNote ?? null,
+          before_snapshot: beforeSnapshot ? JSON.stringify(beforeSnapshot) : null,
+          applied_at: appliedAt,
+          writeback_outcome: writebackOutcome,
+        })
+        .returning('*');
+      if (!updated) return null;
+
+      await trx('audit_event').insert({
+        occurred_at: new Date(),
+        actor_id: input.decidedBy,
+        channel: 'web',
+        correlation_id: randomUUID(),
+        project_id: input.projectId,
+        entity_type: 'dpr_amendment',
+        entity_id: input.amendmentId,
+        action: `dpr.amendment.${status}`,
+        before_json: JSON.stringify({ status: 'pending' }),
+        after_json: JSON.stringify({ status, writeback_outcome: writebackOutcome }),
+        reason: input.decisionNote ?? null,
+      });
+      return updated;
+    });
   }
 }
 

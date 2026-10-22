@@ -5,26 +5,18 @@ import { reportError } from "@/lib/toast";
 import { createDraftDpr, findDprForDate, getDprDetail, patchDpr } from "./use-dpr-wizard-data";
 import { detailToDraftInput, emptyDprDraft, type DprDraftInput } from "./types";
 
-function storageKey(projectId: string, reportDate: string) {
-  return `engineer-dpr-draft:${projectId}:${reportDate}`;
-}
-
 /**
- * Owns the in-memory DPR draft for the wizard: step index, field edits, and a debounced
- * save to the API (POST once, then PATCH). Mirrors `createDprSchema` exactly — see
- * `types.ts`. localStorage is a per-device convenience against a lost tab, not the source
- * of truth; the server draft (once created) is.
+ * Drives the "New DPR" form: starts from an empty draft and checks the server once for an
+ * existing DPR on this date (draft or submitted) so a second visit for the same day resumes
+ * it instead of racing the one-per-date constraint with a duplicate create.
+ *
+ * Deliberately has no localStorage cache. An earlier version read a cached draft back in on
+ * mount as a "lost tab" safety net, but that meant a stale draft from an already-deleted or
+ * -submitted DPR for the same date could silently resurface here and get autosaved as a new
+ * one — the server (checked below) is the only source of truth for "does one already exist".
  */
-export function useDprDraft(projectId: string, reportDate: string) {
-  const [draft, setDraft] = useState<DprDraftInput>(() => {
-    if (typeof window === "undefined") return emptyDprDraft(reportDate);
-    try {
-      const raw = window.localStorage.getItem(storageKey(projectId, reportDate));
-      return raw ? (JSON.parse(raw) as DprDraftInput) : emptyDprDraft(reportDate);
-    } catch {
-      return emptyDprDraft(reportDate);
-    }
-  });
+export function useNewDprDraft(projectId: string, reportDate: string) {
+  const [draft, setDraft] = useState<DprDraftInput>(() => emptyDprDraft(reportDate));
   const [dprId, setDprId] = useState<string | null>(null);
   const [existingStatus, setExistingStatus] = useState<"draft" | "submitted" | null>(null);
   const [checkedServer, setCheckedServer] = useState(false);
@@ -37,13 +29,15 @@ export function useDprDraft(projectId: string, reportDate: string) {
     dprIdRef.current = dprId;
   }, [dprId]);
 
-  // AC-DPR-04: one DPR per project per date. localStorage only remembers what THIS device
-  // typed, not whether a draft already exists server-side (a different device, or this one
-  // after the tab closed) — so ask the server first. Getting this wrong means a doomed second
-  // POST that the unique constraint rejects every 1.5s until the page is refreshed.
+  // AC-DPR-04: one DPR per project per date. Ask the server first — getting this wrong means
+  // a doomed second POST that the unique constraint rejects every 1.5s until refreshed.
   useEffect(() => {
     let cancelled = false;
     setCheckedServer(false);
+    setDprId(null);
+    setExistingStatus(null);
+    setCurrentStep(0);
+    setDraft(emptyDprDraft(reportDate));
     (async () => {
       try {
         const existing = await findDprForDate(projectId, reportDate);
@@ -53,9 +47,7 @@ export function useDprDraft(projectId: string, reportDate: string) {
           if (cancelled) return;
           setDprId(existing.dpr_id);
           setExistingStatus(existing.status);
-          if (existing.status === "draft") {
-            setDraft(detailToDraftInput(full));
-          }
+          if (existing.status === "draft") setDraft(detailToDraftInput(full));
         }
       } catch (error) {
         reportError(error instanceof Error ? error.message : "Could not check for an existing DPR");
@@ -66,16 +58,7 @@ export function useDprDraft(projectId: string, reportDate: string) {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, reportDate]);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(storageKey(projectId, reportDate), JSON.stringify(draft));
-    } catch {
-      // best-effort only
-    }
-  }, [draft, projectId, reportDate]);
 
   const update = useCallback((patch: Partial<DprDraftInput>) => {
     setDraft((prev) => ({ ...prev, ...patch }));
@@ -98,11 +81,9 @@ export function useDprDraft(projectId: string, reportDate: string) {
     }
   }, [projectId, draft]);
 
-  // Debounced autosave whenever the draft changes. Skipped until `site_location` is filled in —
-  // the only field `createDprSchema` requires non-empty — so opening the wizard and not typing
-  // anything yet doesn't fire a doomed create attempt every 1.5s. Also skipped until the
-  // server check above has resolved (never race it into creating a duplicate) and entirely
-  // while today's DPR is already submitted (editing that is a separate, same-day-edit flow).
+  // Debounced autosave whenever the draft changes. Skipped until `site_location` is filled in,
+  // until the server check above has resolved (never race it into creating a duplicate), and
+  // entirely while today's DPR is already submitted.
   useEffect(() => {
     if (!projectId || !draft.site_location.trim() || !checkedServer || existingStatus === "submitted") return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -129,4 +110,73 @@ export function useDprDraft(projectId: string, reportDate: string) {
     checkingExisting: !checkedServer,
     alreadySubmitted: existingStatus === "submitted",
   };
+}
+
+/**
+ * Drives editing one already-known DPR — its id comes from the list (or the "resume" check in
+ * `NewDprPage`), never guessed from a date. Always PATCHes, never creates, and only autosaves
+ * while the DPR is still a draft: editing a submitted one (amendment mode) is proposed
+ * explicitly via "Request amendment", never autosaved onto the live record.
+ */
+export function useEditDprDraft(projectId: string, dprId: string) {
+  const [draft, setDraft] = useState<DprDraftInput | null>(null);
+  const [status, setStatus] = useState<"draft" | "submitted" | null>(null);
+  const [reportDate, setReportDate] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      try {
+        const full = await getDprDetail(projectId, dprId);
+        if (cancelled) return;
+        setDraft(detailToDraftInput(full));
+        setStatus(full.status);
+        setReportDate(full.report_date);
+      } catch (error) {
+        reportError(error instanceof Error ? error.message : "Could not load this DPR");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, dprId]);
+
+  const update = useCallback((patch: Partial<DprDraftInput>) => {
+    setDraft((prev) => (prev ? { ...prev, ...patch } : prev));
+  }, []);
+
+  const save = useCallback(async () => {
+    if (!draft) return;
+    setSaving(true);
+    try {
+      await patchDpr(projectId, dprId, draft);
+      setSavedAt(new Date());
+    } finally {
+      setSaving(false);
+    }
+  }, [projectId, dprId, draft]);
+
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!draft || status !== "draft" || !draft.site_location.trim()) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      save().catch((error: unknown) => {
+        reportError(error instanceof Error ? error.message : "Could not save draft");
+      });
+    }, 1500);
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, status]);
+
+  return { draft, update, status, reportDate, currentStep, setCurrentStep, save, saving, savedAt, loading };
 }

@@ -40,7 +40,9 @@ export function NeedsAttentionCard({
   for (const esc of escalations) {
     const days = Math.max(0, Math.round((now - new Date(esc.created_at).getTime()) / 86400000));
     rows.push({
-      title: esc.escalation_reason ? esc.escalation_reason.slice(0, 60) : "Escalation awaiting ExCo",
+      title: esc.escalation_reason
+        ? esc.escalation_reason.slice(0, 60)
+        : "Escalation awaiting ExCo",
       subtitle: `Waiting ${days} day${days === 1 ? "" : "s"}`,
       href: `/projects/${projectId}/escalations`,
     });
@@ -71,7 +73,7 @@ export function NeedsAttentionCard({
                 <p className="w-[230px] text-[14px] font-medium text-gca-dark">{row.title}</p>
                 <p className="w-[230px] text-[12px] text-gca-muted">{row.subtitle}</p>
               </div>
-              <ChevronRight className="size-[14px] shrink-0 text-gca-muted" />
+              <ChevronRight className="size-[18] shrink-0 text-gca-muted" />
             </Link>
           ))}
         </div>

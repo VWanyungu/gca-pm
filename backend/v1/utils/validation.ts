@@ -16,6 +16,7 @@ import type {
   ChangeRequestType,
   ChangeRequestStatus,
   ChangeDecision,
+  DprAmendmentStatus,
 } from "../database/utils/database.js";
 
 export const createUserSchema = Joi.object<CreateUserInput>({
@@ -1366,9 +1367,24 @@ export interface ListDprsQuery {
   limit?: number;
 }
 
+export interface CreateDprAmendmentBody {
+  reason: string;
+  proposed_document: CreateDprBody;
+}
+
+export interface DecideDprAmendmentBody {
+  decision: "approve" | "reject";
+  decision_note?: string;
+}
+
 export const dprIdParamSchema = Joi.object({
   projectId: Joi.string().uuid().required(),
   dprId: Joi.string().uuid().required(),
+});
+
+export const dprAmendmentIdParamSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+  amendmentId: Joi.string().uuid().required(),
 });
 
 export const createDprSchema = Joi.object<CreateDprBody>({
@@ -1552,6 +1568,24 @@ export const listDprsQuerySchema = Joi.object<ListDprsQuery>({
   author_id: Joi.string().uuid().optional(),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(25),
+});
+
+export const createDprAmendmentSchema = Joi.object<CreateDprAmendmentBody>({
+  reason: Joi.string().trim().min(1).max(10000).required(),
+  proposed_document: createDprSchema.required(),
+});
+
+export const decideDprAmendmentSchema = Joi.object<DecideDprAmendmentBody>({
+  decision: Joi.string().valid("approve", "reject").required(),
+  decision_note: Joi.when("decision", {
+    is: "reject",
+    then: Joi.string().trim().min(1).max(10000).required(),
+    otherwise: Joi.string().trim().max(10000).optional().allow(""),
+  }),
+});
+
+export const listDprAmendmentsQuerySchema = Joi.object<{ status?: DprAmendmentStatus }>({
+  status: Joi.string().valid("pending", "approved", "rejected", "withdrawn").optional(),
 });
 
 export type EscalationStatusLiteral =

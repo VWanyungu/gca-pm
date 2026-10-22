@@ -148,13 +148,17 @@ export function StagePipeline({
                         </button>
                       );
                     })}
-                  <div className="my-[4px] h-px bg-gca-border" />
-                  <p className="px-[10px] pb-[2px] pt-[6px] text-[12px] text-gca-muted">
-                    {sorted
-                      .filter((s) => !s.in_scope)
-                      .map((s) => `${STAGE_SHORT_NAME[s.stage_no]}, `)}{" "}
-                    is out of scope
-                  </p>
+                  {stages.length - inScopeCount > 0 && (
+                    <>
+                      <div className="my-[4px] h-px bg-gca-border" />
+                      <p className="px-[10px] pb-[2px] pt-[6px] text-[12px] text-gca-muted">
+                        {sorted
+                          .filter((s) => !s.in_scope)
+                          .map((s) => `${STAGE_SHORT_NAME[s.stage_no]}, `)}{" "}
+                        is out of scope
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -184,7 +188,7 @@ export function StagePipeline({
               className="flex items-center gap-[6px] text-[13px] font-medium text-gca-green"
             >
               Edit scope
-              <ChevronDown className="size-[18] -rotate-90" />
+              {/* <ChevronDown className="size-[18] -rotate-90" /> */}
             </button>
           ))}
       </div>
@@ -219,21 +223,13 @@ export function StagePipeline({
                     {locked ? (
                       <Lock className="size-[14] text-gca-muted" />
                     ) : (
-                      <>
-                        {s.in_scope ? (
-                          <button
-                            onClick={() => toggleScope(s.stage_no, locked)}
-                            disabled={locked}
-                            className="flex size-[18px] items-center justify-center border-2 border-gca-border rounded-[4px] disabled:cursor-not-allowed"
-                          >
-                            {checked && (
-                              <>{checked && <Check className="size-[12px] text-gca-green" />}</>
-                            )}
-                          </button>
-                        ) : (
-                          <></>
-                        )}
-                      </>
+                      <button
+                        onClick={() => toggleScope(s.stage_no, locked)}
+                        disabled={locked}
+                        className="flex size-[18px] items-center justify-center border-2 border-gca-border rounded-[4px] disabled:cursor-not-allowed"
+                      >
+                        {checked && <Check className="size-[12px] text-gca-green" />}
+                      </button>
                     )}
                   </>
                 )}

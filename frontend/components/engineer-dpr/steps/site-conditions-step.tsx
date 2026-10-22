@@ -1,6 +1,9 @@
 "use client";
 
+import { LoaderCircle, Sparkles } from "lucide-react";
+import { useProjectDetail } from "@/components/project-overview/use-project-data";
 import { useWeatherCategories } from "../use-dpr-wizard-data";
+import { useAutoWeatherFill } from "../use-weather-autofill";
 import type { DprDraftInput } from "../types";
 
 interface StepProps {
@@ -10,8 +13,13 @@ interface StepProps {
   siteLocationError?: boolean;
 }
 
-export function SiteConditionsStep({ draft, update, siteLocationError = false }: StepProps) {
+export function SiteConditionsStep({ draft, update, projectId, siteLocationError = false }: StepProps) {
   const { data: weatherCategories = [] } = useWeatherCategories();
+  const { data: projectDetail } = useProjectDetail(projectId);
+  const { fill: fillWeather, loading: weatherLoading } = useAutoWeatherFill(
+    projectDetail?.project,
+    update,
+  );
 
   return (
     <div className="flex flex-col gap-[16px]">
@@ -36,6 +44,20 @@ export function SiteConditionsStep({ draft, update, siteLocationError = false }:
           Weather<span className="text-error-text">*</span>
         </label>
         <div className="flex flex-wrap items-center gap-[8px]">
+          <button
+            type="button"
+            onClick={() => void fillWeather()}
+            disabled={weatherLoading}
+            title="Fill weather, temperature, humidity and wind from today's forecast"
+            className="flex cursor-pointer items-center gap-[6px] rounded-[999px] border border-dashed border-gca-green px-[14px] py-[8px] text-[14px] font-medium text-gca-green disabled:opacity-60"
+          >
+            {weatherLoading ? (
+              <LoaderCircle className="size-[14px] animate-spin" />
+            ) : (
+              <Sparkles className="size-[14px]" />
+            )}
+            Auto
+          </button>
           {weatherCategories.map((category) => {
             const selected = draft.weather_category_id === category.weather_category_id;
             return (

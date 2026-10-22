@@ -1,4 +1,5 @@
 export type WeeklySubmissionStatus = "draft" | "approved" | "superseded";
+export type SubmitTab = "week" | "register";
 export type AddressedRiskMethod = "top_risk" | "top_action" | "commentary" | "dismissed";
 export type ProjectRag = "green" | "amber" | "red";
 
@@ -77,6 +78,26 @@ export interface DprSummary {
   author_id: string;
   submitted_at: string | null;
   is_late: boolean | null;
+}
+
+export interface DprAmendment {
+  amendment_id: string;
+  dpr_id: string;
+  amendment_no: number;
+  reason: string;
+  proposed_document: Record<string, unknown>;
+  status: "pending" | "approved" | "rejected" | "withdrawn";
+  requested_by: string;
+  requested_at: string;
+  decided_by: string | null;
+  decided_at: string | null;
+  decision_note: string | null;
+  applied_at: string | null;
+  writeback_outcome: "applied" | "skipped_stale_schedule" | "no_change" | null;
+  dpr_ref?: string | null;
+  report_date?: string;
+  site_location?: string;
+  requester_name?: string;
 }
 
 export type DprEffectsSeverity = "none" | "minor" | "significant" | "stoppage";

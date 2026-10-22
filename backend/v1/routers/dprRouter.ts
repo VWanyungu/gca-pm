@@ -1,19 +1,28 @@
 import express from 'express';
 import {
+  DprAmendments,
   Dprs,
   Projects,
   ProjectStages,
   ProjectContractors,
+  type DprAmendmentStatus,
 } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import { globalAdministrators, notify, projectManagers } from '../utils/notifications.js';
 import {
   projectIdParamSchema,
   dprIdParamSchema,
+  dprAmendmentIdParamSchema,
   createDprSchema,
   updateDprSchema,
   listDprsQuerySchema,
   uploadDprPhotoSchema,
+  createDprAmendmentSchema,
+  decideDprAmendmentSchema,
+  listDprAmendmentsQuerySchema,
   type CreateDprBody,
+  type CreateDprAmendmentBody,
+  type DecideDprAmendmentBody,
   type UpdateDprBody,
   type ListDprsQuery,
   type UploadDprPhotoBody,
@@ -26,6 +35,17 @@ const router = express.Router({ mergeParams: true });
 // AC-DPR-01: Create/edit/submit requires SiteEngineer@project or Admin@global
 const canCreateOrEdit = authorize([
   { role: 'SiteEngineer', scopeType: 'project' },
+  { role: 'Admin', scopeType: 'global' },
+]);
+
+const canRequestAmendment = authorize([
+  { role: 'SiteEngineer', scopeType: 'project' },
+  { role: 'PM', scopeType: 'project' },
+  { role: 'Admin', scopeType: 'global' },
+]);
+
+const canDecideAmendment = authorize([
+  { role: 'PM', scopeType: 'project' },
   { role: 'Admin', scopeType: 'global' },
 ]);
 
@@ -105,6 +125,196 @@ router.get('/prefill', canCreateOrEdit, async (req, res) => {
       data: { prefill: prefillData },
       message: 'Prefill data retrieved',
     });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({ status: 'error', data: null, message });
+  }
+});
+
+router.get('/missed-dates', canCreateOrEdit, async (req, res) => {
+  const params = projectIdParamSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const { projectId } = params.value as { projectId: string };
+
+  try {
+    const project = await Projects.getById(projectId);
+    if (!project) {
+      res.status(404).json({ status: 'error', data: null, message: 'Project not found' });
+      return;
+    }
+    const today = getTodayInTimezone(project.timezone || 'Africa/Nairobi');
+    const start = String(project.expected_start_date ?? project.created_at).slice(0, 10);
+    const missedDates = start < today ? await Dprs.missingWeekdays(projectId, start, today) : [];
+    res.status(200).json({
+      status: 'success',
+      data: { missed_dates: missedDates },
+      message: 'Missed DPR dates retrieved',
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({ status: 'error', data: null, message });
+  }
+});
+
+router.get('/amendments', async (req, res) => {
+  const params = projectIdParamSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const query = listDprAmendmentsQuerySchema.validate(req.query, { abortEarly: false });
+  if (query.error) {
+    res.status(400).json({ status: 'error', data: null, message: query.error.message });
+    return;
+  }
+  const { projectId } = params.value as { projectId: string };
+  const status = (query.value as { status?: DprAmendmentStatus }).status;
+  const roles = req.user!.role;
+  const isAdmin = userIsAdmin(req);
+  const isPm = roles.some(
+    (grant) =>
+      grant.role === 'PM' &&
+      (grant.scope_type === 'global' || grant.project_id === projectId),
+  );
+  const isEngineer = roles.some(
+    (grant) =>
+      grant.role === 'SiteEngineer' &&
+      (grant.scope_type === 'global' || grant.project_id === projectId),
+  );
+  if (!isAdmin && !isPm && !isEngineer) {
+    res.status(403).json({ status: 'error', data: null, message: 'Not allowed to view DPR amendments' });
+    return;
+  }
+
+  try {
+    const amendments = await DprAmendments.list(projectId, {
+      status,
+      ...(!isAdmin && !isPm ? { requestedBy: req.user!.userId } : {}),
+    });
+    res.status(200).json({ status: 'success', data: { amendments }, message: 'DPR amendments retrieved' });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({ status: 'error', data: null, message });
+  }
+});
+
+router.post('/:dprId/amendments', canRequestAmendment, async (req, res) => {
+  const params = dprIdParamSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const body = createDprAmendmentSchema.validate(req.body, {
+    abortEarly: false,
+    stripUnknown: true,
+  });
+  if (body.error) {
+    res.status(400).json({ status: 'error', data: null, message: body.error.message });
+    return;
+  }
+  const { projectId, dprId } = params.value as { projectId: string; dprId: string };
+  const input = body.value as CreateDprAmendmentBody;
+
+  try {
+    const dpr = await Dprs.getById(dprId, projectId);
+    if (!dpr) {
+      res.status(404).json({ status: 'error', data: null, message: 'DPR not found' });
+      return;
+    }
+    const isAdmin = userIsAdmin(req);
+    const isAuthor = dpr.author_id === req.user!.userId;
+    const isPm = req.user!.role.some(
+      (grant) => grant.role === 'PM' && (grant.scope_type === 'global' || grant.project_id === projectId),
+    );
+    if (!isAdmin && !isAuthor && !isPm) {
+      res.status(403).json({ status: 'error', data: null, message: 'Only the author or project PM can request an amendment' });
+      return;
+    }
+    if (dpr.status !== 'submitted') {
+      res.status(400).json({ status: 'error', data: null, message: 'Only submitted DPRs can be amended' });
+      return;
+    }
+    if (input.proposed_document.report_date.slice(0, 10) !== dpr.report_date.slice(0, 10)) {
+      res.status(400).json({ status: 'error', data: null, message: 'An amendment cannot change the report date' });
+      return;
+    }
+
+    const { status: ignoredStatus, ...proposedDocument } = input.proposed_document;
+    void ignoredStatus;
+    const amendment = await DprAmendments.create({
+      dprId,
+      reason: input.reason,
+      proposedDocument,
+      requestedBy: req.user!.userId,
+    });
+    await notify({
+      typeCode: 'dpr_amendment_requested',
+      recipientIds: [...(await projectManagers(projectId)), ...(await globalAdministrators())],
+      projectId,
+      entityType: 'dpr_amendment',
+      entityId: amendment.amendment_id,
+      title: 'DPR amendment requested',
+      body: `An amendment was requested for ${dpr.dpr_ref ?? 'a DPR'} dated ${dpr.report_date}.`,
+      payload: { amendment_id: amendment.amendment_id, dpr_id: dprId, project_id: projectId },
+      dedupeKey: `dpr-amendment:${amendment.amendment_id}:requested`,
+    });
+    res.status(201).json({ status: 'success', data: { amendment }, message: 'DPR amendment requested' });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    const status = message.includes('pending amendment') ? 409 : 500;
+    res.status(status).json({ status: 'error', data: null, message });
+  }
+});
+
+router.post('/amendments/:amendmentId/decide', canDecideAmendment, async (req, res) => {
+  const params = dprAmendmentIdParamSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const body = decideDprAmendmentSchema.validate(req.body ?? {}, { abortEarly: false });
+  if (body.error) {
+    res.status(400).json({ status: 'error', data: null, message: body.error.message });
+    return;
+  }
+  const { projectId, amendmentId } = params.value as { projectId: string; amendmentId: string };
+  const { decision, decision_note: decisionNote } = body.value as DecideDprAmendmentBody;
+  const isAdmin = userIsAdmin(req);
+  const isPm = req.user!.role.some(
+    (grant) => grant.role === 'PM' && (grant.scope_type === 'global' || grant.project_id === projectId),
+  );
+  if (!isAdmin && !isPm) {
+    res.status(403).json({ status: 'error', data: null, message: 'Only the project PM or Admin can decide amendments' });
+    return;
+  }
+
+  try {
+    const amendment = await DprAmendments.decide({
+      projectId,
+      amendmentId,
+      decidedBy: req.user!.userId,
+      decision,
+      decisionNote,
+    });
+    if (!amendment) {
+      res.status(409).json({ status: 'error', data: null, message: 'Amendment is no longer pending' });
+      return;
+    }
+    await notify({
+      typeCode: 'dpr_amendment_decided',
+      recipientIds: [amendment.requested_by],
+      projectId,
+      entityType: 'dpr_amendment',
+      entityId: amendment.amendment_id,
+      title: `DPR amendment ${decision === 'approve' ? 'approved' : 'rejected'}`,
+      body: decisionNote ?? `Your amendment request was ${decision === 'approve' ? 'approved' : 'rejected'}.`,
+      payload: { amendment_id: amendment.amendment_id, dpr_id: amendment.dpr_id, project_id: projectId },
+      dedupeKey: `dpr-amendment:${amendment.amendment_id}:${decision}`,
+    });
+    res.status(200).json({ status: 'success', data: { amendment }, message: 'DPR amendment decided' });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     res.status(500).json({ status: 'error', data: null, message });

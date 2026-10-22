@@ -1,5 +1,23 @@
 import type { DprDetail, DprEffectsSeverity, DprProgressSource } from "@/components/weekly-submission/types";
 
+/**
+ * "Today" as a YYYY-MM-DD string in the given IANA timezone — mirrors the backend's
+ * `getTodayInTimezone`. Never use `new Date().toISOString().slice(0, 10)` for a DPR report
+ * date: that's UTC, which can land on the wrong calendar day versus the project's own
+ * timezone (e.g. Africa/Nairobi is UTC+3) and trips the "DPR already exists" conflict when
+ * client and server disagree on what day it is.
+ */
+export function todayInTimezone(timezone: string | null | undefined): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone || "Africa/Nairobi",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
 export interface WeatherCategory {
   weather_category_id: number;
   name: string;

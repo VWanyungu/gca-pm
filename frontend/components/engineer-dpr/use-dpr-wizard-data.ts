@@ -3,7 +3,7 @@
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
-import type { DprDetail, DprSummary } from "@/components/weekly-submission/types";
+import type { DprAmendment, DprDetail, DprSummary } from "@/components/weekly-submission/types";
 import type { Milestone, ProjectDetailResponse } from "@/components/project-overview/types";
 import type {
   DprDraftInput,
@@ -169,7 +169,7 @@ export function useProjectContractors(projectId: string) {
   });
 }
 
-export function useDprPrefill(projectId: string) {
+export function useDprPrefill(projectId: string, enabled = true) {
   return useQuery({
     queryKey: ["project", projectId, "dpr", "prefill"],
     queryFn: async () =>
@@ -187,7 +187,7 @@ export function useDprPrefill(projectId: string) {
           } | null;
         }>(`/projects/${projectId}/dpr/prefill`),
       ).prefill,
-    enabled: !!projectId,
+    enabled: !!projectId && enabled,
     staleTime: 30_000,
   });
 }
@@ -206,7 +206,7 @@ export function useEngineerWeekDprs(projectId: string, fromDate: string, toDate:
   });
 }
 
-function toCreateBody(draft: DprDraftInput) {
+export function toCreateBody(draft: DprDraftInput) {
   return {
     report_date: draft.report_date,
     site_location: draft.site_location,
@@ -289,6 +289,21 @@ export async function submitDpr(projectId: string, dprId: string) {
   ).dpr;
 }
 
+export async function requestDprAmendment(
+  projectId: string,
+  dprId: string,
+  draft: DprDraftInput,
+  reason: string,
+) {
+  return unwrap(
+    await api.post<{ amendment: DprAmendment }>(
+      `/projects/${projectId}/dpr/${dprId}/amendments`,
+      { reason, proposed_document: toCreateBody(draft) },
+      { silent: true },
+    ),
+  ).amendment;
+}
+
 export async function uploadDprPhoto(
   projectId: string,
   input: { file: string; filename: string; caption?: string | null },
@@ -318,5 +333,6 @@ export function useDprInvalidate(projectId: string) {
   return () => {
     queryClient.invalidateQueries({ queryKey: ["project", projectId, "dpr"] });
     queryClient.invalidateQueries({ queryKey: ["project", projectId, "dprs"] });
+    queryClient.invalidateQueries({ queryKey: ["project", projectId, "dpr-missed-dates"] });
   };
 }

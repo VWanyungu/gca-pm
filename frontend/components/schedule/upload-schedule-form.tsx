@@ -39,7 +39,14 @@ interface UploadScheduleFormProps {
   submitting?: boolean;
 }
 
-export function UploadScheduleForm({ currentVersion, currentStageName, team, onCancel, onSubmit, submitting = false }: UploadScheduleFormProps) {
+export function UploadScheduleForm({
+  currentVersion,
+  currentStageName,
+  team,
+  onCancel,
+  onSubmit,
+  submitting = false,
+}: UploadScheduleFormProps) {
   const [file, setFile] = useState<File | null>(null);
   const [scopeMode, setScopeMode] = useState<ScopeMode>("every_task");
   const [rebaseline, setRebaseline] = useState(false);
@@ -58,13 +65,18 @@ export function UploadScheduleForm({ currentVersion, currentStageName, team, onC
 
   return (
     <div className="flex w-full flex-col gap-[24px]">
-      <button onClick={onCancel} className="flex w-fit cursor-pointer items-center gap-[6px] text-[13px] font-medium text-gca-green">
+      <button
+        onClick={onCancel}
+        className="flex w-fit cursor-pointer items-center gap-[6px] text-[13px] font-medium text-gca-green"
+      >
         <ArrowLeft className="size-[16px]" />
         Schedule
       </button>
 
       <div>
-        <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">Upload schedule</h1>
+        <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">
+          Upload schedule
+        </h1>
         <p className="mt-[2px] text-[13px] text-gca-show">
           {currentVersion
             ? `Current version v${currentVersion.version_no} · uploaded ${formatLongDateTime(currentVersion.uploaded_at)} by ${uploaderName(currentVersion.uploaded_by, team)}`
@@ -75,7 +87,9 @@ export function UploadScheduleForm({ currentVersion, currentStageName, team, onC
       <div className="flex w-full items-start gap-[48px] border-t border-gca-border pt-[24px]">
         <div className="w-[280px] shrink-0">
           <p className="text-[14px] font-semibold text-gca-dark">File</p>
-          <p className="mt-[4px] text-[13px] text-gca-show">The latest MS Project schedule (.mpp).</p>
+          <p className="mt-[4px] text-[13px] text-gca-show">
+            The latest MS Project schedule (.mpp).
+          </p>
         </div>
         <div className="flex w-full max-w-[792px] flex-col gap-[8px]">
           <input
@@ -97,10 +111,16 @@ export function UploadScheduleForm({ currentVersion, currentStageName, team, onC
                 </div>
               </div>
               <div className="flex items-center gap-[16px] text-[13px] font-medium">
-                <button onClick={() => inputRef.current?.click()} className="cursor-pointer text-gca-green hover:underline">
+                <button
+                  onClick={() => inputRef.current?.click()}
+                  className="cursor-pointer text-gca-green hover:underline"
+                >
                   Replace
                 </button>
-                <button onClick={() => setFile(null)} className="cursor-pointer text-error-text hover:underline">
+                <button
+                  onClick={() => setFile(null)}
+                  className="cursor-pointer text-error-text hover:underline"
+                >
                   Remove
                 </button>
               </div>
@@ -111,7 +131,7 @@ export function UploadScheduleForm({ currentVersion, currentStageName, team, onC
               className="flex w-full cursor-pointer flex-col items-center justify-center gap-[8px] rounded-[8px] border border-dashed border-gca-border bg-gca-page-bg py-[32px] text-[14px] text-gca-show hover:border-gca-green"
             >
               <Upload className="size-[18px]" />
-              Click to choose a .mpp file
+              Click to choose a file
             </button>
           )}
         </div>
@@ -128,12 +148,16 @@ export function UploadScheduleForm({ currentVersion, currentStageName, team, onC
               key={option.value}
               onClick={() => setScopeMode(option.value)}
               className={`flex-1 cursor-pointer rounded-[8px] border px-[16px] py-[14px] text-left ${
-                scopeMode === option.value ? "border-gca-green bg-gca-badge-bg" : "border-gca-border"
+                scopeMode === option.value
+                  ? "border-gca-green bg-gca-badge-bg"
+                  : "border-gca-border"
               }`}
             >
               <p className="text-[14px] font-medium text-gca-dark">{option.label}</p>
               <p className="mt-[2px] text-[13px] text-gca-show">
-                {option.value === "current_stage" ? (currentStageName ?? "Active stage") + " tasks only" : option.hint}
+                {option.value === "current_stage"
+                  ? (currentStageName ?? "Active stage") + " tasks only"
+                  : option.hint}
               </p>
             </button>
           ))}
@@ -145,7 +169,7 @@ export function UploadScheduleForm({ currentVersion, currentStageName, team, onC
           <p className="text-[14px] font-semibold text-gca-dark">Rebaseline</p>
           <p className="mt-[4px] text-[13px] text-gca-show">Makes this version the new plan.</p>
         </div>
-        <label className="flex w-full max-w-[792px] cursor-pointer items-start gap-[10px] rounded-[8px] bg-gca-page-bg px-[16px] py-[14px]">
+        {/* <label className="flex w-full max-w-[792px] cursor-pointer items-start gap-[10px] rounded-[8px] bg-gca-page-bg px-[16px] py-[14px]">
           <input
             type="checkbox"
             checked={rebaseline}
@@ -154,55 +178,89 @@ export function UploadScheduleForm({ currentVersion, currentStageName, team, onC
           />
           <div>
             <p className="text-[14px] font-medium text-gca-dark">Rebaseline with this upload</p>
-            <p className="mt-[2px] text-[13px] text-gca-show">Rebaselining makes this version the new plan.</p>
           </div>
-        </label>
+        </label> */}
+        <button
+          onClick={() => setRebaseline(!rebaseline)}
+          className="flex gap-[10px] text-left disabled:cursor-default w-full max-w-[792px] cursor-pointer items-start gap-[10px] rounded-[8px] bg-gca-page-bg px-[16px] py-[14px]"
+        >
+          <span
+            className={`flex size-[18px] shrink-0 items-center justify-center rounded-[4px] border-[1.5px] ${
+              rebaseline ? "border-gca-green bg-gca-green" : "border-[#c9d3cb] bg-white"
+            }`}
+          >
+            {rebaseline && (
+              <svg viewBox="0 0 10 8" className="size-[10px]" fill="none">
+                <path
+                  d="M1 4L3.5 6.5L9 1"
+                  stroke="white"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
+          </span>
+          <span className={`text-[13px] ${rebaseline ? "text-gca-show" : "text-gca-dark"}`}>
+            Rebaseline with this upload
+          </span>
+        </button>
       </div>
 
       <div className="flex w-full items-start gap-[48px] border-t border-gca-border pt-[24px]">
         <div className="w-[280px] shrink-0">
           <p className="text-[14px] font-semibold text-gca-dark">Notes</p>
-          <p className="mt-[4px] text-[13px] text-gca-show">Shown in schedule history.</p>
+          <p className="mt-[4px] text-[13px] text-gca-show">Optional commentary</p>
         </div>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="What changed this week (optional)"
+          // placeholder="Optional"
           rows={4}
           className="w-full max-w-[792px] rounded-[8px] border border-gca-border px-[13px] py-[11px] text-[14px] outline-none focus:border-gca-green"
         />
       </div>
 
-      <div className="flex w-full items-center justify-between border-t border-gca-border pt-[20px]">
-        <p className="text-[13px] text-gca-show">Processing usually takes under a minute.</p>
-        <div className="flex items-center gap-[16px]">
-          <button onClick={onCancel} className="cursor-pointer text-[14px] font-medium text-gca-show hover:text-red-500">
-            Cancel
-          </button>
-          <button
-            onClick={handleUploadClick}
-            disabled={!file || submitting}
-            aria-label={submitting ? "Uploading" : undefined}
-            className="cursor-pointer flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {submitting ? (
-              <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />
-            ) : (
-              <>
-                <Upload className="size-[14px]" />
-                Upload
-              </>
-            )}
-          </button>
-        </div>
+      <div className="flex w-full items-center justify-between pt-[20px]">
+        {/* <p className="text-[13px] text-gca-show">Processing usually takes under a minute.</p> */}
+        {/* <div className="flex items-center justify-between gap-[16px]"> */}
+        <button
+          onClick={onCancel}
+          className="cursor-pointer text-[14px] font-medium text-gca-show hover:text-red-500"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleUploadClick}
+          disabled={!file || submitting}
+          aria-label={submitting ? "Uploading" : undefined}
+          className="cursor-pointer flex min-w-[80px] items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {submitting ? (
+            <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />
+          ) : (
+            <>
+              {/* <Upload className="size-[14px]" /> */}
+              Upload
+            </>
+          )}
+        </button>
+        {/* </div> */}
       </div>
 
       {confirmingRebaseline && file && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-[rgba(24,48,31,0.45)]" onClick={() => setConfirmingRebaseline(false)} />
+          <div
+            className="absolute inset-0 bg-[rgba(24,48,31,0.45)]"
+            onClick={() => setConfirmingRebaseline(false)}
+          />
           <div className="relative m-6 md:m-0 w-[392px] max-w-full rounded-[12px] bg-white p-[24px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
-            <h2 className="text-[18px] font-semibold text-gca-dark">Are you sure you want to rebaseline?</h2>
-            <p className="mt-[8px] text-[14px] text-gca-muted">Rebaselining makes this version the new plan.</p>
+            <h2 className="text-[18px] font-semibold text-gca-dark">
+              Are you sure you want to rebaseline?
+            </h2>
+            <p className="mt-[8px] text-[14px] text-gca-muted">
+              Rebaselining makes this version the new plan.
+            </p>
             <div className="mt-[24px] flex justify-end gap-[12px]">
               <button
                 onClick={() => setConfirmingRebaseline(false)}

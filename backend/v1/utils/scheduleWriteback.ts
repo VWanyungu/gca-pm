@@ -42,6 +42,7 @@ export async function writebackDprActivityProgress(
   const activityRows: { dpr_activity_progress_id: string; task_id: string; total_pct: string }[] =
     await trx('dpr_activity_progress')
       .where({ dpr_id: dprId, source: 'schedule_task' })
+      .whereNull('removed_at')
       .whereNotNull('task_id')
       .select('dpr_activity_progress_id', 'task_id', 'total_pct');
 

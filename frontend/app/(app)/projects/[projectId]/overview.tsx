@@ -23,6 +23,12 @@ import {
   useSidebarCounts,
   ApiError,
 } from "@/components/project-overview/use-project-data";
+import {
+  mondayOf,
+  addDays,
+  formatWeekPeriod,
+  weekNumber,
+} from "../../../../components/weekly-submission/types";
 
 export default function ProjectOverview({ projectId }: { projectId: string }) {
   const { user } = useAuth();
@@ -88,9 +94,10 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
 
   const today = new Date();
 
-  const weekNumber = Math.ceil(
-    (today.getTime() - new Date(data.project.created_at).getTime()) / (7 * 24 * 60 * 60 * 1000),
-  );
+  // const weekNumber = Math.ceil(
+  //   (today.getTime() - new Date(data.project.created_at).getTime()) / (7 * 24 * 60 * 60 * 1000),
+  // );
+  const weekStart = addDays(mondayOf(new Date()), 0 * 7);
 
   return (
     <div className="flex min-h-[calc(100vh-64px)] w-full">
@@ -110,7 +117,7 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
                 {data.project.name}
               </h1>
               <p className="text-[14px] text-gca-show">
-                {data.project.client_name ?? "—"} · Week {weekNumber}
+                {data.project.client_name ?? "—"} · Week {weekNumber(weekStart)}
               </p>
             </div>
             <StatusControl

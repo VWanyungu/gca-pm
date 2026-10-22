@@ -86,6 +86,11 @@ const TYPE_META: Record<string, TypeMeta> = {
     iconBg: "bg-error-bg",
     iconColor: "text-error-text",
   },
+  dpr_amendment_decided: {
+    icon: CheckCircle2,
+    iconBg: "bg-[#e8f1ea]",
+    iconColor: "text-gca-green",
+  },
   change_request_decision: {
     icon: Hourglass,
     iconBg: "bg-[#f3f6f3]",
@@ -120,6 +125,7 @@ export const PREFERENCE_GROUPS: PreferenceGroup[] = [
       { type_code: "dpr_missing", label: "DPR missing" },
       { type_code: "dpr_submitted_late", label: "DPR submitted late" },
       { type_code: "dpr_amendment_requested", label: "DPR amendment requested" },
+      { type_code: "dpr_amendment_decided", label: "DPR amendment decision" },
     ],
   },
   {
