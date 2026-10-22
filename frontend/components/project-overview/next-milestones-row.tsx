@@ -27,7 +27,7 @@ export function NextMilestonesRow({
           className="flex items-center gap-[6px] text-[13px] font-medium text-gca-green"
         >
           Timeline
-          <ChevronRight className="size-[10px]" />
+          <ChevronRight className="size-[18]" />
         </Link>
       </div>
 

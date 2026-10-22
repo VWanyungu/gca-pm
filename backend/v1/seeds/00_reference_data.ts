@@ -48,6 +48,13 @@ const notificationTypes = [
     can_opt_out: true,
   },
   {
+    type_code: 'dpr_amendment_decided',
+    description: 'DPR amendment decision',
+    default_in_app: true,
+    default_email: true,
+    can_opt_out: true,
+  },
+  {
     type_code: 'weekly_submission_due',
     description: 'Submission due',
     default_in_app: true,

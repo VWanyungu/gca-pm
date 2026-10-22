@@ -1,6 +1,10 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { reportError } from "@/lib/toast";
+import { useWeatherCategories } from "./use-dpr-wizard-data";
+import type { DprDraftInput } from "./types";
 
 export interface CurrentWeather {
   temp_min_c: number;
@@ -44,13 +48,90 @@ export function compassDirection(deg: number): string {
   return COMPASS[Math.round(deg / 22.5) % 16];
 }
 
+type WeatherCategoryOption = { weather_category_id: number; name: string };
+
+/** The full weather/temp/humidity/wind patch for a live forecast reading — every field,
+ *  regardless of what the draft already has. */
+function buildWeatherPatch(
+  weather: CurrentWeather,
+  weatherCategories: WeatherCategoryOption[],
+): Partial<DprDraftInput> {
+  const categoryName = weatherCategoryName(weather.weather_code, weather.temp_max_c, weather.wind_kph);
+  const category = weatherCategories.find((c) => c.name === categoryName);
+  return {
+    weather_category_id: category?.weather_category_id ?? null,
+    temp_min_c: Math.round(weather.temp_min_c),
+    temp_max_c: Math.round(weather.temp_max_c),
+    humidity_pct: Math.round(weather.humidity_pct),
+    wind: `${Math.round(weather.wind_kph)} km/h ${compassDirection(weather.wind_direction_deg)}`,
+  };
+}
+
 /**
- * shortcut: maps a WMO weather code to one of this app's fixed weather_category names
- * (Clear, Partly cloudy, Overcast, Light rain, Heavy rain, Thunderstorm, Fog, Windy,
- * Dust / haze, Extreme heat). There is no snow category since projects run in Kenya; upgrade
- * this if that ever changes. Temperature/wind overrides take priority over the sky code,
- * since "extreme heat" and "windy" are observed conditions rather than WMO codes.
+ * Fills in whichever of weather/temp/humidity/wind the draft is still missing, from the live
+ * forecast for the project's site — once per mount, and only the fields that are actually
+ * empty, so a DPR that already has some of these (its own saved reading, or a partial manual
+ * entry) never gets a field overwritten. Shared by the new and edit wizards: a resumed draft
+ * missing weather because it was started before the location loaded (or saved before this
+ * feature existed) gets it filled in just the same as a brand-new one.
  */
+export function useAutofillWeather(
+  project: { site_lat: number | null; site_lng: number | null } | null | undefined,
+  draft: Pick<DprDraftInput, "weather_category_id" | "temp_min_c" | "temp_max_c" | "humidity_pct" | "wind">,
+  update: (patch: Partial<DprDraftInput>) => void,
+  enabled: boolean,
+) {
+  const { data: weather } = useCurrentWeather(project?.site_lat ?? null, project?.site_lng ?? null);
+  const { data: weatherCategories } = useWeatherCategories();
+  const applied = useRef(false);
+
+  useEffect(() => {
+    if (applied.current || !enabled || !weather || !weatherCategories?.length) return;
+    const full = buildWeatherPatch(weather, weatherCategories);
+    const patch: Partial<DprDraftInput> = {};
+    if (draft.weather_category_id === null) patch.weather_category_id = full.weather_category_id;
+    if (draft.temp_min_c === null) patch.temp_min_c = full.temp_min_c;
+    if (draft.temp_max_c === null) patch.temp_max_c = full.temp_max_c;
+    if (draft.humidity_pct === null) patch.humidity_pct = full.humidity_pct;
+    if (draft.wind === null) patch.wind = full.wind;
+    applied.current = true;
+    if (Object.keys(patch).length > 0) update(patch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weather, weatherCategories, enabled]);
+}
+
+/**
+ * The "Auto" weather option: fetches the live forecast for the project's site and fills
+ * weather/temp/humidity/wind — overwriting whatever's there, since picking it is an explicit
+ * request to replace the reading, unlike the passive fill-if-missing above.
+ */
+export function useAutoWeatherFill(
+  project: { site_lat: number | null; site_lng: number | null } | null | undefined,
+  update: (patch: Partial<DprDraftInput>) => void,
+) {
+  const hasCoords = project?.site_lat != null && project?.site_lng != null;
+  const { data: weather, isFetching, refetch } = useCurrentWeather(
+    project?.site_lat ?? null,
+    project?.site_lng ?? null,
+  );
+  const { data: weatherCategories } = useWeatherCategories();
+
+  async function fill() {
+    if (!hasCoords) {
+      reportError("This project has no site location set, so weather can't be looked up.");
+      return;
+    }
+    const result = weather ? { data: weather } : await refetch();
+    if (!result.data || !weatherCategories?.length) {
+      reportError("Could not load today's weather");
+      return;
+    }
+    update(buildWeatherPatch(result.data, weatherCategories));
+  }
+
+  return { fill, loading: isFetching, hasCoords };
+}
+
 export function weatherCategoryName(code: number, tempC: number, windKph: number): string {
   if (tempC >= 35) return "Extreme heat";
   if (windKph >= 30) return "Windy";

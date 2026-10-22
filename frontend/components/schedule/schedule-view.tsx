@@ -107,7 +107,7 @@ export function ScheduleView({ projectId }: { projectId: string }) {
   const { data: overdue = [] } = useOverdueTasks(projectId);
   const { data: flags = [] } = useReconciliationFlags(projectId);
 
-  const [tab, setTab] = useState<Tab>("gantt");
+  const [tab, setTab] = useState<Tab>("table");
   const [range, setRange] = useState<"full" | "lookahead">("full");
   const [search, setSearch] = useState("");
   const [subView, setSubView] = useState<SubView>({ mode: "list" });
@@ -367,8 +367,8 @@ export function ScheduleView({ projectId }: { projectId: string }) {
             <div className="flex items-center gap-[4px]">
               {(
                 [
-                  { id: "gantt", label: "Gantt" },
                   { id: "table", label: "Table" },
+                  { id: "gantt", label: "Gantt" },
                   { id: "overdue", label: "Overdue", count: overdue.length },
                   {
                     id: "reconciliation",
@@ -404,7 +404,7 @@ export function ScheduleView({ projectId }: { projectId: string }) {
                     { id: "full", name: "Full schedule" },
                     {
                       id: "lookahead",
-                      name: `Next 2 weeks · week of ${formatShortDate(lookaheadWindow.start.toISOString())}`,
+                      name: `Next 2 weeks`,
                     },
                   ]}
                   selectedId={range}
@@ -427,14 +427,17 @@ export function ScheduleView({ projectId }: { projectId: string }) {
           </div>
 
           {(tab === "gantt" || tab === "table") && lookaheadSummary && (
-            <div className="rounded-[8px] bg-gca-badge-bg px-[16px] py-[12px] text-[13px] text-gca-badge-text">
+            <div className="rounded-[8px] bg-gca-badge-bg px-[16px] py-[12px] text-[13px] text-gca-badge-text flex justify-between items-center">
               <span className="font-semibold">
-                Next 2 weeks · {formatShortDate(lookaheadWindow.start.toISOString())} –{" "}
+                {/* Next 2 weeks  ·*/} {formatShortDate(lookaheadWindow.start.toISOString())} –{" "}
                 {formatShortDate(lookaheadWindow.end.toISOString())}
-              </span>{" "}
-              · {lookaheadSummary.tasks} tasks · {lookaheadSummary.milestones} milestone
-              {lookaheadSummary.milestones === 1 ? "" : "s"} · {lookaheadSummary.overdueCarried}{" "}
-              overdue carried over
+              </span>
+
+              <span>
+                {lookaheadSummary.tasks} tasks · {lookaheadSummary.milestones} milestone
+                {lookaheadSummary.milestones === 1 ? "" : "s"} · {lookaheadSummary.overdueCarried}{" "}
+                overdue carried over
+              </span>
             </div>
           )}
 

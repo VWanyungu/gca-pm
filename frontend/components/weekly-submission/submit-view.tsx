@@ -16,13 +16,13 @@ import {
 } from "./use-weekly-submission-data";
 import { SubmitMode } from "./submit-mode";
 import { WeeklyRegisterTable } from "./weekly-register-table";
-import { mondayOf, addDays, formatWeekPeriod, weekNumber } from "./types";
-
-type Tab = "week" | "register";
+import { mondayOf, addDays, formatWeekPeriod, weekNumber, type SubmitTab } from "./types";
 
 export function SubmitView({ projectId }: { projectId: string }) {
-  const [tab, setTab] = useState<Tab>("week");
+  const [tab, setTab] = useState<SubmitTab>("week");
   const [weekOffset, setWeekOffset] = useState(0);
+  const isWeekTab = String(tab) === "week";
+  const isRegisterTab = String(tab) === "register";
   const weekStart = addDays(mondayOf(new Date()), weekOffset * 7);
 
   const { data: project } = useProjectDetail(projectId);
@@ -59,7 +59,7 @@ export function SubmitView({ projectId }: { projectId: string }) {
 
       <div className="flex w-full justify-center">
         <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[40px]">
-          {tab === "register" && (
+          {isRegisterTab && (
             <WeeklyRegisterTable
               projectId={projectId}
               weekStart={weekStart}
@@ -68,7 +68,7 @@ export function SubmitView({ projectId }: { projectId: string }) {
             />
           )}
 
-          {tab === "week" && !isLoading && (
+          {isWeekTab && !isLoading && (
             <>
               {draft && (
                 <SubmitMode
@@ -120,7 +120,7 @@ export function SubmitView({ projectId }: { projectId: string }) {
                     <button
                       onClick={() => setTab("week")}
                       className={`cursor-pointer rounded-[6px] px-[12px] py-[6px] text-[13px] ${
-                        tab === "week"
+                        isWeekTab
                           ? "bg-white font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                           : "font-normal text-gca-show"
                       }`}
@@ -130,7 +130,7 @@ export function SubmitView({ projectId }: { projectId: string }) {
                     <button
                       onClick={() => setTab("register")}
                       className={`cursor-pointer rounded-[6px] px-[12px] py-[6px] text-[13px] ${
-                        tab === "register"
+                        isRegisterTab
                           ? "bg-white font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                           : "font-normal text-gca-show"
                       }`}

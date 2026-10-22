@@ -96,7 +96,7 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
   return (
     <div className="flex w-full flex-col gap-[16px]">
       <div className="flex w-full flex-col">
-        <div className="sticky top-0 z-10 flex w-full items-center gap-[10px] border-b border-gca-border bg-white px-[16px] py-[8px] text-[12px] font-medium text-gca-muted">
+        <div className="sticky top-0 z-9 flex w-full items-center gap-[10px] border-b border-gca-border bg-white px-[16px] py-[8px] text-[12px] font-medium text-gca-muted">
           <p className="w-[28%]">Task</p>
           <p className="w-[11%]">Progress</p>
           <p className="w-[11%]">Planned</p>

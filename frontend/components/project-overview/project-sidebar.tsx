@@ -58,7 +58,7 @@ export function ProjectSidebar({
 }: ProjectSidebarProps) {
   const { user } = useAuth();
   const { isOpen, activeTab, setIsOpen } = useMobileNavigation();
-  const [stagesOpen, setStagesOpen] = useState(true);
+  const [stagesOpen, setStagesOpen] = useState(false);
   const [allStagesOpen, setAllStagesOpen] = useState(true);
 
   const myRole = user?.role.find(

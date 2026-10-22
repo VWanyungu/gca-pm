@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Plus } from "lucide-react";
+import { Check, ClipboardList, FilePlus2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_CREATE_DPR } from "@/lib/access-control";
+import { reportError } from "@/lib/toast";
+import Dropdown from "@/components/Dropdown";
 import { Pagination } from "@/components/pagination";
 import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
 import {
@@ -12,10 +14,82 @@ import {
   useSidebarCounts,
 } from "@/components/project-overview/use-project-data";
 import { useDprs } from "@/components/weekly-submission/use-weekly-submission-data";
-import type { DprSummary } from "@/components/weekly-submission/types";
-import { DprWizard } from "@/components/engineer-dpr/dpr-wizard";
+import type { DprAmendment, DprSummary } from "@/components/weekly-submission/types";
+import { DprNewWizard } from "@/components/engineer-dpr/dpr-new-wizard";
+import { DprEditWizard } from "@/components/engineer-dpr/dpr-edit-wizard";
+import { useDprInvalidate } from "@/components/engineer-dpr/use-dpr-wizard-data";
+import { todayInTimezone } from "@/components/engineer-dpr/types";
+import {
+  useDecideDprAmendment,
+  useDeleteDpr,
+  useDprAmendments,
+  useMissedDprDates,
+} from "./use-dpr-actions";
 
-type SubView = { mode: "list" } | { mode: "new" };
+type SubView =
+  | { mode: "list" }
+  | { mode: "new"; reportDate: string }
+  | { mode: "edit"; dprId: string; amendmentMode?: boolean };
+
+type DprRow = { type: "dpr"; dpr: DprSummary } | { type: "missed"; date: string };
+
+const STATUS_FILTER_ALL = "all";
+const STATUS_OPTIONS = [
+  { id: STATUS_FILTER_ALL, name: "All status" },
+  { id: "draft", name: "Draft" },
+  { id: "submitted", name: "Submitted" },
+  { id: "missed", name: "Missed" },
+];
+
+function DprDeleteModal({
+  projectId,
+  dpr,
+  onClose,
+}: {
+  projectId: string;
+  dpr: DprSummary;
+  onClose: () => void;
+}) {
+  const deleteDpr = useDeleteDpr(projectId);
+
+  async function handleConfirm() {
+    try {
+      await deleteDpr.mutateAsync(dpr.dpr_id);
+      onClose();
+    } catch (error) {
+      reportError(error instanceof Error ? error.message : "Could not delete draft DPR");
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-[rgba(24,48,31,0.45)]" onClick={onClose} />
+      <div className="relative w-[392px] max-w-full rounded-[12px] bg-white p-[24px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
+        <h2 className="text-[18px] font-semibold text-gca-dark">Delete draft DPR?</h2>
+        <p className="mt-[8px] text-[14px] text-gca-muted">
+          This draft for {formatDate(dpr.report_date)} will be permanently removed. This cannot be undone.
+        </p>
+        <div className="mt-[24px] flex justify-end gap-[12px]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleConfirm()}
+            disabled={deleteDpr.isPending}
+            className="rounded-[8px] bg-error-border px-[16px] py-[10px] text-[14px] font-medium text-white disabled:opacity-40"
+          >
+            Delete draft
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function formatDate(iso: string) {
   return new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-GB", {
@@ -39,16 +113,88 @@ export function DprListView({ projectId }: { projectId: string }) {
   const { data: project } = useProjectDetail(projectId);
   const { data: counts } = useSidebarCounts(projectId);
   const [subView, setSubView] = useState<SubView>({ mode: "list" });
+  const invalidateDprs = useDprInvalidate(projectId);
+  function backToList() {
+    invalidateDprs();
+    setSubView({ mode: "list" });
+  }
+  const [dprToDelete, setDprToDelete] = useState<DprSummary | null>(null);
+  const [rejectingAmendmentId, setRejectingAmendmentId] = useState<string | null>(null);
+  const [decisionNote, setDecisionNote] = useState("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
-  const { data } = useDprs({ projectId, page, limit: perPage });
+  const [statusFilter, setStatusFilter] = useState(STATUS_FILTER_ALL);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const showRealDprs = statusFilter !== "missed";
+  const showMissed = statusFilter === STATUS_FILTER_ALL || statusFilter === "missed";
+  const { data } = useDprs({
+    projectId,
+    status: statusFilter === "draft" || statusFilter === "submitted" ? statusFilter : undefined,
+    fromDate: fromDate || undefined,
+    toDate: toDate || undefined,
+    page,
+    limit: perPage,
+  });
 
   const canCreate = canAccess(user?.role, CAN_CREATE_DPR, { projectId });
-  const dprs = data?.dprs ?? [];
+  const canRequestAsPm = canAccess(user?.role, [{ role: "PM", scopeType: "project" }], { projectId });
+  const isAdmin = !!user?.role.some((grant) => grant.role === "Admin" && grant.scope_type === "global");
+  const canDecideAmendments = canRequestAsPm || isAdmin;
+  const { data: allMissedDates = [] } = useMissedDprDates(projectId, canCreate);
+  const { data: amendments = [] } = useDprAmendments(projectId, canCreate || canDecideAmendments);
+  const deleteDpr = useDeleteDpr(projectId);
+  const decideAmendment = useDecideDprAmendment(projectId);
+  const dprs = showRealDprs ? data?.dprs ?? [] : [];
   const total = data?.pagination.total ?? 0;
   const totalPages = data?.pagination.totalPages ?? 1;
+  const pendingByDpr = new Map(amendments.map((amendment) => [amendment.dpr_id, amendment]));
+
+  // Missed dates aren't paginated server-side, so they're only merged into page 1 — otherwise
+  // they'd reappear identically on every page of the real DPR list.
+  const missedDates =
+    showMissed && page === 1
+      ? allMissedDates.filter((date) => (!fromDate || date >= fromDate) && (!toDate || date <= toDate))
+      : [];
+
+  const rows: DprRow[] = [
+    ...dprs.map((dpr): DprRow => ({ type: "dpr", dpr })),
+    ...missedDates.map((date): DprRow => ({ type: "missed", date })),
+  ].sort((a, b) => {
+    const dateA = a.type === "dpr" ? a.dpr.report_date.slice(0, 10) : a.date;
+    const dateB = b.type === "dpr" ? b.dpr.report_date.slice(0, 10) : b.date;
+    return dateB.localeCompare(dateA);
+  });
+  const hasActiveFilters = statusFilter !== STATUS_FILTER_ALL || !!fromDate || !!toDate;
 
   if (!project) return null;
+
+  function changeFilter<T>(setter: (v: T) => void, value: T) {
+    setter(value);
+    setPage(1);
+  }
+
+  async function deleteDraft(dpr: DprSummary) {
+    setDprToDelete(dpr);
+  }
+
+  async function decide(amendment: DprAmendment, decision: "approve" | "reject") {
+    if (decision === "reject" && !decisionNote.trim()) {
+      reportError("Please enter a reason for rejecting this amendment");
+      return;
+    }
+    try {
+      await decideAmendment.mutateAsync({
+        amendmentId: amendment.amendment_id,
+        decision,
+        decisionNote: decisionNote.trim() || undefined,
+      });
+      setRejectingAmendmentId(null);
+      setDecisionNote("");
+    } catch (error) {
+      reportError(error instanceof Error ? error.message : "Could not decide amendment");
+    }
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-64px)] w-full">
@@ -57,10 +203,24 @@ export function DprListView({ projectId }: { projectId: string }) {
       <div className="flex w-full justify-center">
         <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[40px]">
           {subView.mode === "new" ? (
-            <DprWizard
+            <DprNewWizard
+              key={subView.reportDate}
               projectId={projectId}
-              onClose={() => setSubView({ mode: "list" })}
+              reportDate={subView.reportDate}
+              layout="full"
+              onClose={backToList}
               onSubmitted={(dprId) => router.push(`/projects/${projectId}/dpr/${dprId}`)}
+            />
+          ) : subView.mode === "edit" ? (
+            <DprEditWizard
+              key={`${subView.dprId}:${subView.amendmentMode ?? false}`}
+              projectId={projectId}
+              dprId={subView.dprId}
+              amendmentMode={subView.amendmentMode}
+              layout="full"
+              onClose={backToList}
+              onSubmitted={(dprId) => router.push(`/projects/${projectId}/dpr/${dprId}`)}
+              onAmendmentRequested={backToList}
             />
           ) : (
             <>
@@ -70,7 +230,12 @@ export function DprListView({ projectId }: { projectId: string }) {
                 </h1>
                 {canCreate && (
                   <button
-                    onClick={() => setSubView({ mode: "new" })}
+                  onClick={() =>
+                    setSubView({
+                      mode: "new",
+                      reportDate: todayInTimezone(project.project.timezone),
+                    })
+                  }
                     className="flex cursor-pointer items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
                   >
                     <Plus className="size-[14px]" />
@@ -79,51 +244,276 @@ export function DprListView({ projectId }: { projectId: string }) {
                 )}
               </div>
 
-              {dprs.length === 0 ? (
+              <div className="flex flex-wrap items-center gap-[12px]">
+                <Dropdown
+                  id="dpr-filter-status"
+                  data={STATUS_OPTIONS}
+                  selectedId={statusFilter}
+                  style="h-[40px] rounded-[8px] border border-gca-border bg-white px-[13px] text-[14px] text-gca-dark"
+                  onSelect={(id) => changeFilter(setStatusFilter, id)}
+                />
+                <label className="flex h-[40px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[13px]">
+                  <span className="text-[13px] text-gca-muted">From</span>
+                  <input
+                    type="date"
+                    value={fromDate}
+                    onChange={(event) => {
+                      setFromDate(event.target.value);
+                      setToDate(event.target.value);
+                      setPage(1);
+                    }}
+                    className="bg-transparent text-[14px] text-gca-dark outline-none"
+                  />
+                </label>
+                <label className="flex h-[40px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[13px]">
+                  <span className="text-[13px] text-gca-muted">To</span>
+                  <input
+                    type="date"
+                    value={toDate}
+                    onChange={(event) => changeFilter(setToDate, event.target.value)}
+                    className="bg-transparent text-[14px] text-gca-dark outline-none"
+                  />
+                </label>
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      changeFilter(setStatusFilter, STATUS_FILTER_ALL);
+                      setFromDate("");
+                      setToDate("");
+                    }}
+                    className="cursor-pointer text-[13px] font-medium text-gca-green"
+                  >
+                    Clear filters
+                  </button>
+                )}
+              </div>
+
+              {canDecideAmendments && amendments.length > 0 && (
+                <section className="flex flex-col gap-[10px] rounded-[12px] border border-gca-border bg-white p-[16px]">
+                  <h2 className="text-[15px] font-semibold text-gca-dark">
+                    Amendment requests <span className="text-gca-warning">({amendments.length})</span>
+                  </h2>
+                  {amendments.map((amendment) => (
+                    <div
+                      key={amendment.amendment_id}
+                      className="flex flex-col gap-[10px] border-t border-gca-border pt-[12px]"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-[8px]">
+                        <div>
+                          <p className="text-[13px] font-semibold text-gca-dark">
+                            {amendment.dpr_ref ?? "DPR"} · {formatDate(amendment.report_date ?? "")}
+                          </p>
+                          <p className="text-[12px] text-gca-muted">
+                            Requested by {amendment.requester_name ?? "Engineer"} ·{" "}
+                            {new Date(amendment.requested_at).toLocaleDateString("en-GB")}
+                          </p>
+                        </div>
+                        <div className="flex gap-[8px]">
+                          <button
+                            type="button"
+                            onClick={() => setRejectingAmendmentId(
+                              rejectingAmendmentId === amendment.amendment_id ? null : amendment.amendment_id,
+                            )}
+                            className="flex cursor-pointer items-center gap-[6px] rounded-[8px] border border-gca-border px-[12px] py-[8px] text-[13px] font-semibold text-gca-dark"
+                          >
+                            <X className="size-[14px]" />
+                            Reject
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void decide(amendment, "approve")}
+                            disabled={decideAmendment.isPending}
+                            className="flex cursor-pointer items-center gap-[6px] rounded-[8px] bg-gca-green px-[12px] py-[8px] text-[13px] font-semibold text-white disabled:opacity-50"
+                          >
+                            <Check className="size-[14px]" />
+                            Approve
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-[13px] text-gca-dark">{amendment.reason}</p>
+                      <details className="text-[13px] text-gca-show">
+                        <summary className="cursor-pointer font-medium">Review proposed DPR</summary>
+                        <pre className="mt-[8px] max-h-[280px] overflow-auto rounded-[8px] bg-gca-page-bg p-[12px] text-[11px]">
+                          {JSON.stringify(amendment.proposed_document, null, 2)}
+                        </pre>
+                      </details>
+                      {rejectingAmendmentId === amendment.amendment_id && (
+                        <div className="flex flex-col gap-[8px] rounded-[8px] bg-gca-page-bg p-[12px]">
+                          <label
+                            htmlFor={`amendment-decision-note-${amendment.amendment_id}`}
+                            className="text-[13px] font-medium text-gca-dark"
+                          >
+                            Reason for rejection
+                          </label>
+                          <textarea
+                            id={`amendment-decision-note-${amendment.amendment_id}`}
+                            value={decisionNote}
+                            onChange={(event) => setDecisionNote(event.target.value)}
+                            rows={2}
+                            maxLength={10000}
+                            className="rounded-[8px] border border-gca-border bg-white px-[10px] py-[8px] text-[13px] outline-none focus:border-gca-green"
+                          />
+                          <div className="flex justify-end gap-[8px]">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRejectingAmendmentId(null);
+                                setDecisionNote("");
+                              }}
+                              className="cursor-pointer px-[10px] py-[6px] text-[13px] text-gca-show"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void decide(amendment, "reject")}
+                              disabled={!decisionNote.trim() || decideAmendment.isPending}
+                              className="cursor-pointer rounded-[6px] bg-error-text px-[12px] py-[7px] text-[13px] font-semibold text-white disabled:opacity-50"
+                            >
+                              Confirm rejection
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </section>
+              )}
+
+              {rows.length === 0 ? (
                 <div className="flex flex-col items-center gap-[16px] py-[56px]">
                   <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-gca-page-bg">
                     <ClipboardList className="size-[18px] text-gca-green" />
                   </span>
                   <div className="flex flex-col items-center gap-[4px] text-center">
-                    <p className="text-[14px] font-semibold text-gca-dark">No DPRs yet</p>
+                    <p className="text-[14px] font-semibold text-gca-dark">
+                      {hasActiveFilters ? "No DPRs match these filters" : "No DPRs yet"}
+                    </p>
                     <p className="max-w-[420px] text-[13px] text-gca-show">
-                      Daily progress reports submitted for this project will show up here.
+                      {hasActiveFilters
+                        ? "Try a different status or date range."
+                        : "Daily progress reports submitted for this project will show up here."}
                     </p>
                   </div>
                 </div>
               ) : (
                 <div className="flex w-full flex-col">
                   <div className="flex w-full items-center gap-[10px] border-b border-gca-border py-[8px] text-[12px] font-medium text-gca-muted">
-                    <p className="w-[20%]">Reference</p>
-                    <p className="w-[28%]">Date</p>
+                    <p className="w-[18%]">Reference</p>
+                    <p className="w-[24%]">Date</p>
                     <p className="w-[22%]">Site</p>
-                    <p className="w-[15%]">Status</p>
+                    <p className="w-[16%]">Status</p>
+                    <p className="flex-1 text-right">Actions</p>
                   </div>
-                  {dprs.map((dpr, i) => {
+                  {rows.map((row, i) => {
+                    if (row.type === "missed") {
+                      return (
+                        <div key={row.date} className={i > 0 ? "border-t border-gca-border" : ""}>
+                          <div className="flex w-full items-center gap-[10px] py-[12px]">
+                            <button
+                              type="button"
+                              onClick={() => setSubView({ mode: "new", reportDate: row.date })}
+                              className="flex min-w-0 w-[80%] cursor-pointer items-center gap-[10px] text-left"
+                            >
+                              <span className="w-[18%] truncate text-[13px] font-medium text-gca-dark">—</span>
+                              <span className="w-[24%] text-[13px] text-gca-dark">{formatDate(row.date)}</span>
+                              <span className="w-[22%] truncate text-[13px] text-gca-dark">—</span>
+                              <span className="w-[16%] text-[13px] font-semibold text-error-text">Missed</span>
+                            </button>
+                            <div className="flex flex-1 justify-end gap-[6px]">
+                              <button
+                                type="button"
+                                aria-label={`Submit DPR for ${formatDate(row.date)}`}
+                                title="Submit"
+                                onClick={() => setSubView({ mode: "new", reportDate: row.date })}
+                                className="flex cursor-pointer items-center gap-[6px] rounded-[8px] border border-gca-border px-[10px] py-[6px] text-[12px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+                              >
+                                <FilePlus2 className="size-[13px]" />
+                                Submit
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    const dpr = row.dpr;
                     const status = statusInfo(dpr);
+                    const isAuthor = dpr.author_id === user?.userId;
+                    const canEditDraft = dpr.status === "draft" && (isAuthor || isAdmin);
+                    const canRequestEdit =
+                      dpr.status === "submitted" &&
+                      (isAuthor || canRequestAsPm || isAdmin) &&
+                      !pendingByDpr.has(dpr.dpr_id);
+                    const pending = pendingByDpr.get(dpr.dpr_id);
                     return (
-                      <button
-                        key={dpr.dpr_id}
-                        onClick={() => router.push(`/projects/${projectId}/dpr/${dpr.dpr_id}`)}
-                        className={`flex w-full cursor-pointer items-center gap-[10px] py-[12px] text-left ${
-                          i > 0 ? "border-t border-gca-border" : ""
-                        }`}
-                      >
-                        <p className="w-[20%] truncate text-[13px] font-medium text-gca-dark">
-                          {dpr.dpr_ref ?? "—"}
-                        </p>
-                        <p className="w-[28%] text-[13px] text-gca-dark">{formatDate(dpr.report_date)}</p>
-                        <p className="w-[22%] truncate text-[13px] text-gca-dark">{dpr.site_location}</p>
-                        <p className={`w-[15%] text-[13px] font-semibold ${status.className}`}>
-                          {status.label}
-                        </p>
-                      </button>
+                      <div key={dpr.dpr_id} className={i > 0 ? "border-t border-gca-border" : ""}>
+                        <div className="flex w-full items-center gap-[10px] py-[12px]">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              dpr.status === "draft"
+                                ? setSubView({ mode: "edit", dprId: dpr.dpr_id })
+                                : router.push(`/projects/${projectId}/dpr/${dpr.dpr_id}`)
+                            }
+                            className="flex min-w-0 w-[80%] cursor-pointer items-center gap-[10px] text-left"
+                          >
+                            <span className="w-[18%] truncate text-[13px] font-medium text-gca-dark">
+                              {dpr.dpr_ref ?? "—"}
+                            </span>
+                            <span className="w-[24%] text-[13px] text-gca-dark">{formatDate(dpr.report_date)}</span>
+                            <span className="w-[22%] truncate text-[13px] text-gca-dark">{dpr.site_location}</span>
+                            <span className={`w-[16%] text-[13px] font-semibold ${status.className}`}>
+                              {pending ? "Amendment pending" : status.label}
+                            </span>
+                          </button>
+                          <div className="flex flex-1 justify-end gap-[6px]">
+                            {canEditDraft && (
+                              <>
+                                <button
+                                  type="button"
+                                  aria-label={`Edit draft DPR for ${formatDate(dpr.report_date)}`}
+                                  title="Edit draft"
+                                  onClick={() => setSubView({ mode: "edit", dprId: dpr.dpr_id })}
+                                  className="flex size-[32px] cursor-pointer items-center justify-center rounded-[6px] text-gca-show hover:bg-gca-page-bg"
+                                >
+                                  <Pencil className="size-[15px]" />
+                                </button>
+                                <button
+                                  type="button"
+                                  aria-label={`Delete draft DPR for ${formatDate(dpr.report_date)}`}
+                                  title="Delete draft"
+                                  disabled={deleteDpr.isPending}
+                                  onClick={() => void deleteDraft(dpr)}
+                                  className="flex size-[32px] cursor-pointer items-center justify-center rounded-[6px] text-error-text hover:bg-error-bg disabled:opacity-50"
+                                >
+                                  <Trash2 className="size-[15px]" />
+                                </button>
+                              </>
+                            )}
+                            {canRequestEdit && (
+                              <button
+                                type="button"
+                                aria-label={`Request edit for ${formatDate(dpr.report_date)}`}
+                                title="Request amendment"
+                                onClick={() =>
+                                  setSubView({ mode: "edit", dprId: dpr.dpr_id, amendmentMode: true })
+                                }
+                                className="flex size-[32px] cursor-pointer items-center justify-center rounded-[6px] text-gca-show hover:bg-gca-page-bg"
+                              >
+                                <Pencil className="size-[15px]" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
               )}
 
-              {totalPages > 1 && (
+              {showRealDprs && totalPages > 1 && (
                 <Pagination
                   page={page}
                   totalPages={totalPages}
@@ -138,6 +528,16 @@ export function DprListView({ projectId }: { projectId: string }) {
                 />
               )}
             </>
+          )}
+
+          {dprToDelete && (
+            <DprDeleteModal
+              projectId={projectId}
+              dpr={dprToDelete}
+              onClose={() => {
+                setDprToDelete(null);
+              }}
+            />
           )}
         </main>
       </div>

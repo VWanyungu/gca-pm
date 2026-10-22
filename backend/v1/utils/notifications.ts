@@ -103,9 +103,20 @@ export async function notify(input: NotificationInput): Promise<number> {
  *  told what happened. */
 export async function projectManagers(projectId: string): Promise<string[]> {
   const rows = await db('roles')
-    .where({ project_id: projectId, role: 'PM', scope_type: 'project' })
+    .where({ role: 'PM' })
+    .andWhere((query) => {
+      query.where({ scope_type: 'global' }).orWhere({ scope_type: 'project', project_id: projectId });
+    })
     .whereNull('revoked_at')
     .orderBy('granted_at', 'asc')
+    .select('user_id');
+  return [...new Set(rows.map((r) => r.user_id))];
+}
+
+export async function globalAdministrators(): Promise<string[]> {
+  const rows = await db('roles')
+    .where({ role: 'Admin', scope_type: 'global' })
+    .whereNull('revoked_at')
     .select('user_id');
   return [...new Set(rows.map((r) => r.user_id))];
 }

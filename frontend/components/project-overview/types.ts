@@ -13,6 +13,7 @@ export interface ProjectDetail {
   expected_end_date: string | null;
   status: ProjectStatus;
   created_at: string;
+  timezone: string | null;
 }
 
 export interface StageRow {

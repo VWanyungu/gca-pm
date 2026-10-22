@@ -2,17 +2,58 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useEngineerProjects } from "@/components/engineer-dpr/use-dpr-wizard-data";
-import { DprWizard } from "@/components/engineer-dpr/dpr-wizard";
+import { useQuery } from "@tanstack/react-query";
+import { LoaderCircle } from "lucide-react";
+import { useEngineerProjects, findDprForDate } from "@/components/engineer-dpr/use-dpr-wizard-data";
+import { todayInTimezone } from "@/components/engineer-dpr/types";
+import { DprNewWizard } from "@/components/engineer-dpr/dpr-new-wizard";
+import { DprEditWizard } from "@/components/engineer-dpr/dpr-edit-wizard";
 
 export default function NewDprPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const projectId = searchParams.get("projectId");
+  const reportDate = searchParams.get("reportDate") ?? undefined;
+  const amendmentMode = searchParams.get("amendment") === "true";
   const { data: projects, isLoading } = useEngineerProjects();
 
+  // "Request amendment" needs a specific DPR id, which this route is only ever given a date
+  // for — resolve the submitted DPR for that date once, then hand off to the edit wizard.
+  const { data: existingForAmendment, isLoading: resolvingAmendment } = useQuery({
+    queryKey: ["dpr-for-date", projectId, reportDate ?? todayInTimezone(undefined)],
+    queryFn: () => findDprForDate(projectId!, reportDate ?? todayInTimezone(undefined)),
+    enabled: !!projectId && amendmentMode,
+  });
+
   if (projectId) {
-    return <DprWizard projectId={projectId} />;
+    if (amendmentMode) {
+      if (resolvingAmendment) {
+        return (
+          <div className="flex flex-1 items-center justify-center p-[40px]">
+            <LoaderCircle className="size-[24px] animate-spin text-gca-muted" />
+          </div>
+        );
+      }
+      if (!existingForAmendment) {
+        return (
+          <div className="flex flex-1 items-center justify-center p-[40px] text-center">
+            <p className="text-[14px] text-gca-muted">No submitted DPR found for this date.</p>
+          </div>
+        );
+      }
+      return (
+        <DprEditWizard
+          key={existingForAmendment.dpr_id}
+          projectId={projectId}
+          dprId={existingForAmendment.dpr_id}
+          amendmentMode
+        />
+      );
+    }
+
+    return (
+      <DprNewWizard key={`${projectId}:${reportDate ?? "today"}`} projectId={projectId} reportDate={reportDate} />
+    );
   }
 
   if (isLoading) return null;

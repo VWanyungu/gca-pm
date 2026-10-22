@@ -95,19 +95,25 @@ export function useWeekDprs(projectId: string, weekStart: string) {
 export function useDprs({
   projectId,
   status,
+  fromDate,
+  toDate,
   page = 1,
   limit = 25,
 }: {
   projectId: string;
   status?: "draft" | "submitted";
+  fromDate?: string;
+  toDate?: string;
   page?: number;
   limit?: number;
 }) {
   return useQuery({
-    queryKey: ["project", projectId, "dprs", { status, page, limit }],
+    queryKey: ["project", projectId, "dprs", { status, fromDate, toDate, page, limit }],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (status) params.set("status", status);
+      if (fromDate) params.set("from_date", fromDate);
+      if (toDate) params.set("to_date", toDate);
       return unwrap(
         await api.get<{
           dprs: DprSummary[];
