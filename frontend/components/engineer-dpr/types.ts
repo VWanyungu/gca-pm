@@ -1,4 +1,8 @@
-import type { DprDetail, DprEffectsSeverity, DprProgressSource } from "@/components/weekly-submission/types";
+import type {
+  DprDetail,
+  DprEffectsSeverity,
+  DprProgressSource,
+} from "@/components/weekly-submission/types";
 
 /**
  * "Today" as a YYYY-MM-DD string in the given IANA timezone — mirrors the backend's
@@ -196,9 +200,59 @@ export interface WizardStepDef {
 
 export const WIZARD_STEPS: WizardStepDef[] = [
   { key: "site-conditions", label: "Site & conditions" },
+  { key: "personnel", label: "Personnel" },
   { key: "effects", label: "Effects on work" },
   { key: "work-progress", label: "Work & progress" },
-  { key: "personnel", label: "Personnel" },
   { key: "equipment-notes", label: "Equipment & notes" },
   { key: "photos", label: "Photos" },
 ];
+
+export const AMENDMENT_REASON_STEP: WizardStepDef = {
+  key: "amendment-reason",
+  label: "Reason for amendment",
+};
+
+// !!! Note that changing the return array order will break the application
+export function getWizardSteps(amendmentMode: boolean): WizardStepDef[] {
+  return amendmentMode ? [AMENDMENT_REASON_STEP, ...WIZARD_STEPS] : WIZARD_STEPS;
+}
+
+export interface DprValidationErrors {
+  workItems: Record<number, { work_area?: boolean; work_carried_out?: boolean }>;
+  personnelGroups: Record<
+    number,
+    { project_contractor_id?: boolean; role_counts?: Record<number, boolean> }
+  >;
+}
+
+export function getDprValidationErrors(draft: DprDraftInput): DprValidationErrors {
+  const workItems: DprValidationErrors["workItems"] = {};
+  draft.work_items.forEach((item, i) => {
+    const errors: { work_area?: boolean; work_carried_out?: boolean } = {};
+    if (!item.work_area.trim()) errors.work_area = true;
+    if (!item.work_carried_out.trim()) errors.work_carried_out = true;
+    if (Object.keys(errors).length) workItems[i] = errors;
+  });
+
+  const personnelGroups: DprValidationErrors["personnelGroups"] = {};
+  draft.personnel_groups.forEach((group, i) => {
+    const errors: { project_contractor_id?: boolean; role_counts?: Record<number, boolean> } = {};
+    if (!group.project_contractor_id) errors.project_contractor_id = true;
+    const roleErrors: Record<number, boolean> = {};
+    group.role_counts.forEach((role, j) => {
+      if (role.headcount < 1) roleErrors[j] = true;
+    });
+    if (Object.keys(roleErrors).length) errors.role_counts = roleErrors;
+    if (Object.keys(errors).length) personnelGroups[i] = errors;
+  });
+
+  return { workItems, personnelGroups };
+}
+
+export function isDprDraftValid(draft: DprDraftInput): boolean {
+  if (!draft.site_location.trim()) return false;
+  const errors = getDprValidationErrors(draft);
+  return (
+    Object.keys(errors.workItems).length === 0 && Object.keys(errors.personnelGroups).length === 0
+  );
+}

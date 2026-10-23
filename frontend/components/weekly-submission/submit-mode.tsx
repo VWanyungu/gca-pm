@@ -156,26 +156,6 @@ export function SubmitMode({
   return (
     <div className="flex w-full gap-[32px]">
       <div className="flex w-full flex-col gap-[28px]">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-[20px] font-semibold tracking-[-0.3px] text-gca-dark">
-              Week {weekNumber(submission.week_start)} submission
-            </h1>
-            <p className="mt-[2px] text-[13px] text-gca-show">
-              {formatWeekPeriod(submission.week_start)}
-            </p>
-          </div>
-          {submission.status === "draft" ? (
-            <span className="rounded-[999px] px-[10px] py-[3px] text-[12px] font-medium text-gca-warning">
-              Draft
-            </span>
-          ) : (
-            <span className="rounded-[999px] px-[10px] py-[3px] text-[12px] font-medium text-gca-green">
-              Submitted
-            </span>
-          )}
-        </div>
-
         <div className="flex w-fit gap-[2px] rounded-[8px] bg-gca-page-bg p-[3px]">
           <button
             onClick={() => setTab("week")}
@@ -197,6 +177,26 @@ export function SubmitMode({
           >
             Register
           </button>
+        </div>
+
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-[20px] font-semibold tracking-[-0.3px] text-gca-dark">
+              Week {weekNumber(submission.week_start)} submission
+            </h1>
+            <p className="mt-[2px] text-[13px] text-gca-show">
+              {formatWeekPeriod(submission.week_start)}
+            </p>
+          </div>
+          {submission.status === "draft" ? (
+            <span className="rounded-[999px] px-[10px] py-[3px] text-[12px] font-medium text-gca-warning">
+              Draft
+            </span>
+          ) : (
+            <span className="rounded-[999px] px-[10px] py-[3px] text-[12px] font-medium text-gca-green">
+              Submitted
+            </span>
+          )}
         </div>
 
         <WeekDprStrip
@@ -278,7 +278,7 @@ export function SubmitMode({
                   </button>
                 )}
               </div>
-              <p className="pb-[8px] text-[13px] text-gca-show">
+              {/* <p className="pb-[8px] text-[13px] text-gca-show">
                 Mark one addressed risk as this week&apos;s top risk — its title and mitigation
                 become the top risk and action required to submit.{" "}
                 {!submission.top_risk_text && (
@@ -289,7 +289,7 @@ export function SubmitMode({
                     No risks this week
                   </button>
                 )}
-              </p>
+              </p> */}
 
               {addingRisk && (
                 <div className="pb-[16px]">
@@ -305,16 +305,24 @@ export function SubmitMode({
               )}
 
               {addressedRisks.length === 0
-                ? !addingRisk && (
+                ? !addingRisk &&
+                  (!submission.top_risk_id && submission.top_risk_text ? (
+                    <div className="flex items-center justify-between rounded-[8px] bg-gca-badge-bg px-[14px] py-[10px] text-[13px]">
+                      <span className="font-medium text-gca-green">{submission.top_risk_text}</span>
+                      <button onClick={clearTopRisk} className="cursor-pointer text-gca-muted">
+                        Clear
+                      </button>
+                    </div>
+                  ) : (
                     <div className="flex flex-col items-center gap-[8px] rounded-[12px] bg-[#f7f9f7] py-[32px]">
                       <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-white">
                         <Shield className="size-[18px] text-gca-green" />
                       </span>
                       <div className="flex flex-col items-center gap-[4px] text-center">
                         <p className="text-[15px] font-semibold text-gca-dark">No top risks yet</p>
-                        <p className="text-[13px] text-gca-show">
+                        {/* <p className="text-[13px] text-gca-show">
                           Pick this week&apos;s top risks from the risk register
-                        </p>
+                        </p> */}
                       </div>
                       <div className="mt-[8px] flex items-center gap-[12px]">
                         <button
@@ -333,7 +341,7 @@ export function SubmitMode({
                         )}
                       </div>
                     </div>
-                  )
+                  ))
                 : addressedRisks.map((risk, i) => (
                     <AddressedRiskRow
                       key={risk.risk_id}
@@ -355,17 +363,6 @@ export function SubmitMode({
                       }}
                     />
                   ))}
-
-              {!submission.top_risk_id && submission.top_risk_text && (
-                <div className="flex items-center justify-between rounded-[8px] bg-gca-badge-bg px-[14px] py-[10px] text-[13px]">
-                  <span className="font-medium text-gca-green">
-                    Top risk: {submission.top_risk_text}
-                  </span>
-                  <button onClick={clearTopRisk} className="cursor-pointer text-gca-muted">
-                    Clear
-                  </button>
-                </div>
-              )}
             </div>
 
             <DprPhotosSection projectId={projectId} submissionId={submission.submission_id} />

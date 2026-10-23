@@ -8,9 +8,9 @@ import { useProjectDetail } from "@/components/project-overview/use-project-data
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_CREATE_DPR } from "@/lib/access-control";
 import { useEditDprDraft } from "./use-dpr-draft";
+import { getWizardSteps } from "./types";
 import { submitDpr } from "./use-dpr-wizard-data";
 import { useRequestDprAmendment } from "@/components/dpr/use-dpr-actions";
-import { useAutofillWeather } from "./use-weather-autofill";
 import { DprWizardForm } from "./dpr-wizard-form";
 
 interface DprEditWizardProps {
@@ -46,14 +46,18 @@ export function DprEditWizard({
   const [amendmentReason, setAmendmentReason] = useState("");
   const [siteLocationError, setSiteLocationError] = useState(false);
   const requestAmendment = useRequestDprAmendment(projectId);
-
-  useAutofillWeather(project, draft ?? {
-    weather_category_id: null, temp_min_c: null, temp_max_c: null, humidity_pct: null, wind: null,
-  }, update, !loading);
+  const steps = getWizardSteps(amendmentMode);
+  const totalSteps = steps.length;
 
   function updateDraft(patch: Partial<NonNullable<typeof draft>>) {
     if (patch.site_location?.trim()) setSiteLocationError(false);
     update(patch);
+  }
+
+  function getStepIndex(key: string) {
+    const index = steps.findIndex((step) => step.key === key);
+    if (index === -1) throw new Error(`Missing DPR wizard step: ${key}`);
+    return index;
   }
 
   const canEditDpr = canAccess(user?.role, CAN_CREATE_DPR, { projectId });
@@ -70,7 +74,7 @@ export function DprEditWizard({
 
   function goToSiteConditions() {
     setSiteLocationError(true);
-    setCurrentStep(0);
+    setCurrentStep(getStepIndex("site-conditions"));
   }
 
   async function handleSaveDraft() {
@@ -87,7 +91,7 @@ export function DprEditWizard({
 
   async function handlePrimary() {
     if (!draft) return;
-    const isFinal = layout === "full" || currentStep === 5;
+    const isFinal = layout === "full" || currentStep === totalSteps - 1;
     if (!isFinal) {
       if (!amendmentMode && draft.site_location.trim()) {
         try {
@@ -107,6 +111,7 @@ export function DprEditWizard({
 
     if (amendmentMode && !amendmentReason.trim()) {
       reportError("Please explain why this DPR needs to be amended");
+      setCurrentStep(getStepIndex("amendment-reason"));
       return;
     }
 

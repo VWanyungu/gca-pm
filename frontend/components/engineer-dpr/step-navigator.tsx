@@ -1,18 +1,19 @@
 "use client";
 
-import { WIZARD_STEPS } from "./types";
+import type { WizardStepDef } from "./types";
 
 interface StepNavigatorProps {
+  steps: WizardStepDef[];
   currentStep: number;
   onStepClick: (index: number) => void;
 }
 
 /** Every bar is clickable and jumps straight to that step — no completion gating. */
-export function StepNavigator({ currentStep, onStepClick }: StepNavigatorProps) {
+export function StepNavigator({ steps, currentStep, onStepClick }: StepNavigatorProps) {
   return (
     <div className="flex flex-col gap-[8px] border-t border-gca-border bg-white px-[16px] py-[12px]">
       <div className="flex gap-[4px]">
-        {WIZARD_STEPS.map((step, i) => (
+        {steps.map((step, i) => (
           <button
             key={step.key}
             type="button"
@@ -24,7 +25,7 @@ export function StepNavigator({ currentStep, onStepClick }: StepNavigatorProps) 
         ))}
       </div>
       <p className="text-[12px] font-medium text-gca-show">
-        {currentStep + 1} of {WIZARD_STEPS.length} · {WIZARD_STEPS[currentStep].label}
+        {currentStep + 1} of {steps.length} · {steps[currentStep].label}
       </p>
     </div>
   );

@@ -18,12 +18,19 @@ import { SubmitMode } from "./submit-mode";
 import { WeeklyRegisterTable } from "./weekly-register-table";
 import { mondayOf, addDays, formatWeekPeriod, weekNumber, type SubmitTab } from "./types";
 
-export function SubmitView({ projectId }: { projectId: string }) {
+export function SubmitView({
+  projectId,
+  initialWeekStart,
+}: {
+  projectId: string;
+  initialWeekStart?: string;
+}) {
   const [tab, setTab] = useState<SubmitTab>("week");
-  const [weekOffset, setWeekOffset] = useState(0);
+  const [weekStart, setWeekStart] = useState(() =>
+    initialWeekStart ? mondayOf(new Date(`${initialWeekStart}T12:00:00`)) : mondayOf(new Date()),
+  );
   const isWeekTab = String(tab) === "week";
   const isRegisterTab = String(tab) === "register";
-  const weekStart = addDays(mondayOf(new Date()), weekOffset * 7);
 
   const { data: project } = useProjectDetail(projectId);
   const { data: team = [] } = useProjectTeam(projectId);
@@ -81,8 +88,8 @@ export function SubmitView({ projectId }: { projectId: string }) {
                   metrics={project.metrics}
                   milestones={milestones}
                   team={team}
-                  onPrevWeek={() => setWeekOffset((o) => o - 1)}
-                  onNextWeek={() => setWeekOffset((o) => o + 1)}
+                  onPrevWeek={() => setWeekStart((current) => addDays(current, -7))}
+                  onNextWeek={() => setWeekStart((current) => addDays(current, 7))}
                 />
               )}
 
@@ -98,8 +105,8 @@ export function SubmitView({ projectId }: { projectId: string }) {
                   milestones={milestones}
                   team={team}
                   viewSubmissionHref={`/projects/${projectId}/weekly-submission/${weekSubmission.approved.submission_id}`}
-                  onPrevWeek={() => setWeekOffset((o) => o - 1)}
-                  onNextWeek={() => setWeekOffset((o) => o + 1)}
+                  onPrevWeek={() => setWeekStart((current) => addDays(current, -7))}
+                  onNextWeek={() => setWeekStart((current) => addDays(current, 7))}
                 />
               )}
 

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { LoaderCircle } from "lucide-react";
+import { LoaderCircle, ArrowLeft } from "lucide-react";
 import { reportError } from "@/lib/toast";
 import { useProjectDetail } from "@/components/project-overview/use-project-data";
 import { useAuth } from "@/hooks/use-auth";
@@ -10,7 +10,6 @@ import { canAccess, CAN_CREATE_DPR } from "@/lib/access-control";
 import { useNewDprDraft } from "./use-dpr-draft";
 import { todayInTimezone } from "./types";
 import { submitDpr, useDprPrefill } from "./use-dpr-wizard-data";
-import { useAutofillWeather } from "./use-weather-autofill";
 import { DprWizardForm } from "./dpr-wizard-form";
 
 interface DprNewWizardProps {
@@ -72,8 +71,6 @@ export function DprNewWizard({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefill, dprId, draft.site_location]);
-
-  useAutofillWeather(project, draft, update, !checkingExisting);
 
   function updateDraft(patch: Partial<typeof draft>) {
     if (patch.site_location?.trim()) setSiteLocationError(false);
@@ -155,24 +152,40 @@ export function DprNewWizard({
 
   if (alreadySubmitted) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-[12px] p-[40px] text-center">
-        <p className="text-[16px] font-semibold text-gca-dark">Today's DPR is already submitted</p>
-        <p className="text-[14px] text-gca-show">
-          {project ? project.name : "This project"} already has a submitted DPR for{" "}
-          {new Date(`${reportDate}T00:00:00Z`).toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "short",
-            timeZone: "UTC",
-          })}
-          .
-        </p>
-        <button
-          type="button"
-          onClick={() => (dprId ? router.push(`/projects/${projectId}/dpr/${dprId}`) : onClose?.())}
-          className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white"
-        >
-          View it
-        </button>
+      <div className="flex flex-col">
+        <div className="flex flex-col gap-[8px]">
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="flex gap-[6px] items-center text-[14px] font-medium text-gca-green cursor-pointer"
+          >
+            <ArrowLeft className="size-[14px]" /> DPR table
+          </button>
+        </div>
+
+        <div className="flex flex-1 flex-col items-center justify-center gap-[12px] p-[40px] mt-[40px] text-center">
+          <p className="text-[16px] font-semibold text-gca-dark">
+            Today's DPR is already submitted
+          </p>
+          <p className="text-[14px] text-gca-show">
+            {project ? project.name : "This project"} already has a submitted DPR for{" "}
+            {new Date(`${reportDate}T00:00:00Z`).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "short",
+              timeZone: "UTC",
+            })}
+            .
+          </p>
+          <button
+            type="button"
+            onClick={() =>
+              dprId ? router.push(`/projects/${projectId}/dpr/${dprId}`) : onClose?.()
+            }
+            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white"
+          >
+            View it
+          </button>
+        </div>
       </div>
     );
   }

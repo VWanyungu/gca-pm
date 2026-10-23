@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { reportError } from "@/lib/toast";
 import { createDraftDpr, findDprForDate, getDprDetail, patchDpr } from "./use-dpr-wizard-data";
-import { detailToDraftInput, emptyDprDraft, type DprDraftInput } from "./types";
+import { detailToDraftInput, emptyDprDraft, isDprDraftValid, type DprDraftInput } from "./types";
 
 /**
  * Drives the "New DPR" form: starts from an empty draft and checks the server once for an
@@ -81,11 +81,13 @@ export function useNewDprDraft(projectId: string, reportDate: string) {
     }
   }, [projectId, draft]);
 
-  // Debounced autosave whenever the draft changes. Skipped until `site_location` is filled in,
-  // until the server check above has resolved (never race it into creating a duplicate), and
-  // entirely while today's DPR is already submitted.
+  // Debounced autosave whenever the draft changes. Skipped until the draft passes the same
+  // required-field rules the server enforces (e.g. a just-added, still-empty work area) — so
+  // a doomed PATCH doesn't fire, and error-toast, on every edit — until the server check above
+  // has resolved (never race it into creating a duplicate), and entirely while today's DPR is
+  // already submitted.
   useEffect(() => {
-    if (!projectId || !draft.site_location.trim() || !checkedServer || existingStatus === "submitted") return;
+    if (!projectId || !isDprDraftValid(draft) || !checkedServer || existingStatus === "submitted") return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       save().catch((error: unknown) => {
@@ -165,7 +167,7 @@ export function useEditDprDraft(projectId: string, dprId: string) {
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (!draft || status !== "draft" || !draft.site_location.trim()) return;
+    if (!draft || status !== "draft" || !isDprDraftValid(draft)) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       save().catch((error: unknown) => {

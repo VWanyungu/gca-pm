@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { reportError } from "@/lib/toast";
 import { useWeatherCategories } from "./use-dpr-wizard-data";
 import type { DprDraftInput } from "./types";
@@ -16,26 +15,28 @@ export interface CurrentWeather {
 }
 
 /** Open-Meteo: free, no API key, CORS-enabled for direct browser calls. */
-export function useCurrentWeather(lat: number | null, lng: number | null) {
-  return useQuery({
-    queryKey: ["open-meteo", lat, lng],
-    queryFn: async (): Promise<CurrentWeather> => {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Could not load today's weather");
-      const data = await res.json();
-      return {
-        temp_min_c: data.daily.temperature_2m_min[0],
-        temp_max_c: data.daily.temperature_2m_max[0],
-        humidity_pct: data.current.relative_humidity_2m,
-        wind_kph: data.current.wind_speed_10m,
-        wind_direction_deg: data.current.wind_direction_10m,
-        weather_code: data.current.weather_code,
-      };
-    },
-    enabled: lat !== null && lng !== null,
-    staleTime: 10 * 60_000,
-    retry: 1,
+async function fetchCurrentWeather(lat: number, lng: number): Promise<CurrentWeather> {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Could not load today's weather");
+  const data = await res.json();
+  return {
+    temp_min_c: data.daily.temperature_2m_min[0],
+    temp_max_c: data.daily.temperature_2m_max[0],
+    humidity_pct: data.current.relative_humidity_2m,
+    wind_kph: data.current.wind_speed_10m,
+    wind_direction_deg: data.current.wind_direction_10m,
+    weather_code: data.current.weather_code,
+  };
+}
+
+function getCurrentPosition(): Promise<GeolocationPosition> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Location is not supported on this device"));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10_000 });
   });
 }
 
@@ -68,68 +69,33 @@ function buildWeatherPatch(
 }
 
 /**
- * Fills in whichever of weather/temp/humidity/wind the draft is still missing, from the live
- * forecast for the project's site — once per mount, and only the fields that are actually
- * empty, so a DPR that already has some of these (its own saved reading, or a partial manual
- * entry) never gets a field overwritten. Shared by the new and edit wizards: a resumed draft
- * missing weather because it was started before the location loaded (or saved before this
- * feature existed) gets it filled in just the same as a brand-new one.
+ * The "Auto" weather option: on click, reads the engineer's current device location (not the
+ * project's stored site coordinates) and fills weather/temp/humidity/wind from the live
+ * forecast there — overwriting whatever's already in the draft, since picking it is an explicit
+ * request to replace the reading. Nothing runs until the engineer clicks it.
  */
-export function useAutofillWeather(
-  project: { site_lat: number | null; site_lng: number | null } | null | undefined,
-  draft: Pick<DprDraftInput, "weather_category_id" | "temp_min_c" | "temp_max_c" | "humidity_pct" | "wind">,
-  update: (patch: Partial<DprDraftInput>) => void,
-  enabled: boolean,
-) {
-  const { data: weather } = useCurrentWeather(project?.site_lat ?? null, project?.site_lng ?? null);
-  const { data: weatherCategories } = useWeatherCategories();
-  const applied = useRef(false);
-
-  useEffect(() => {
-    if (applied.current || !enabled || !weather || !weatherCategories?.length) return;
-    const full = buildWeatherPatch(weather, weatherCategories);
-    const patch: Partial<DprDraftInput> = {};
-    if (draft.weather_category_id === null) patch.weather_category_id = full.weather_category_id;
-    if (draft.temp_min_c === null) patch.temp_min_c = full.temp_min_c;
-    if (draft.temp_max_c === null) patch.temp_max_c = full.temp_max_c;
-    if (draft.humidity_pct === null) patch.humidity_pct = full.humidity_pct;
-    if (draft.wind === null) patch.wind = full.wind;
-    applied.current = true;
-    if (Object.keys(patch).length > 0) update(patch);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weather, weatherCategories, enabled]);
-}
-
-/**
- * The "Auto" weather option: fetches the live forecast for the project's site and fills
- * weather/temp/humidity/wind — overwriting whatever's there, since picking it is an explicit
- * request to replace the reading, unlike the passive fill-if-missing above.
- */
-export function useAutoWeatherFill(
-  project: { site_lat: number | null; site_lng: number | null } | null | undefined,
-  update: (patch: Partial<DprDraftInput>) => void,
-) {
-  const hasCoords = project?.site_lat != null && project?.site_lng != null;
-  const { data: weather, isFetching, refetch } = useCurrentWeather(
-    project?.site_lat ?? null,
-    project?.site_lng ?? null,
-  );
+export function useAutoWeatherFill(update: (patch: Partial<DprDraftInput>) => void) {
+  const [loading, setLoading] = useState(false);
   const { data: weatherCategories } = useWeatherCategories();
 
   async function fill() {
-    if (!hasCoords) {
-      reportError("This project has no site location set, so weather can't be looked up.");
-      return;
+    setLoading(true);
+    try {
+      const position = await getCurrentPosition();
+      const weather = await fetchCurrentWeather(position.coords.latitude, position.coords.longitude);
+      if (!weatherCategories?.length) {
+        reportError("Could not load today's weather");
+        return;
+      }
+      update(buildWeatherPatch(weather, weatherCategories));
+    } catch (err) {
+      reportError(err instanceof Error ? err.message : "Could not load today's weather");
+    } finally {
+      setLoading(false);
     }
-    const result = weather ? { data: weather } : await refetch();
-    if (!result.data || !weatherCategories?.length) {
-      reportError("Could not load today's weather");
-      return;
-    }
-    update(buildWeatherPatch(result.data, weatherCategories));
   }
 
-  return { fill, loading: isFetching, hasCoords };
+  return { fill, loading };
 }
 
 export function weatherCategoryName(code: number, tempC: number, windKph: number): string {
