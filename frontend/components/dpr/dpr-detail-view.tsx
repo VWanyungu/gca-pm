@@ -2,9 +2,15 @@
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useProjectDetail } from "@/components/project-overview/use-project-data";
+import { useProjectDetail, useSidebarCounts } from "@/components/project-overview/use-project-data";
 import { useDpr } from "@/components/weekly-submission/use-weekly-submission-data";
-import { EFFECTS_SEVERITY_LABEL, type DprDetail } from "@/components/weekly-submission/types";
+import {
+  EFFECTS_SEVERITY_LABEL,
+  mondayOf,
+  type DprDetail,
+} from "@/components/weekly-submission/types";
+import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
+import { ArrowLeft, ChevronDown, ChevronUp, Download } from "lucide-react";
 
 const SECTIONS = [
   { id: "conditions", label: "Conditions & references" },
@@ -55,10 +61,19 @@ function detail(label: string, value: string | null | undefined) {
   );
 }
 
-export function DprDetailView({ projectId, dprId }: { projectId: string; dprId: string }) {
+export function DprDetailView({
+  projectId,
+  dprId,
+  backTo,
+}: {
+  projectId: string;
+  dprId: string;
+  backTo: "submit" | "dpr";
+}) {
   const { data: project } = useProjectDetail(projectId);
+  const { data: counts } = useSidebarCounts(projectId);
   const { data: dpr } = useDpr(projectId, dprId);
-  const [mode, setMode] = useState<ViewMode>("section");
+  const [mode, setMode] = useState<ViewMode>("full");
   const [activeSection, setActiveSection] = useState<SectionId>(SECTIONS[0].id);
   const [exportOpen, setExportOpen] = useState(false);
   const sectionRefs = useRef<Partial<Record<SectionId, HTMLDivElement | null>>>({});
@@ -86,6 +101,11 @@ export function DprDetailView({ projectId, dprId }: { projectId: string; dprId: 
   const activeIndex = SECTIONS.findIndex((s) => s.id === activeSection);
   const prevSection = activeIndex > 0 ? SECTIONS[activeIndex - 1] : null;
   const nextSection = activeIndex < SECTIONS.length - 1 ? SECTIONS[activeIndex + 1] : null;
+  const weekStart = mondayOf(new Date(`${dpr.report_date.slice(0, 10)}T12:00:00`));
+  const backHref =
+    backTo === "dpr"
+      ? `/projects/${projectId}/dpr`
+      : `/projects/${projectId}/weekly-submission?weekStart=${weekStart}`;
 
   function goToSection(id: SectionId) {
     setActiveSection(id);
@@ -143,22 +163,25 @@ export function DprDetailView({ projectId, dprId }: { projectId: string; dprId: 
   }
 
   return (
-    <div className="flex w-full justify-center bg-white p-[40px]">
-      <div className="flex w-full max-w-[1084px] flex-col gap-[24px]">
-        <div className="flex items-end justify-between">
-          <div className="flex flex-col gap-[16px]">
-            <Link
-              href={`/projects/${projectId}/weekly-submission`}
-              className="text-[13px] font-medium text-gca-green"
-            >
-              ← Submit
-            </Link>
-            <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">
-              {formatDate(dpr.report_date, { day: "numeric", month: "short", year: "numeric" })}
-            </h1>
-          </div>
+    <div className="flex w-full">
+      <ProjectSidebar projectId={projectId} stages={project.stages} counts={counts} active="dpr" />
 
-          <div className="flex items-center gap-[12px]">
+      <div className="flex justify-center w-full">
+        <div className="flex w-full max-w-[1200px] flex-col gap-[24px] p-[40px] bg-white">
+          <div className="flex items-end justify-between">
+            <div className="flex flex-col gap-[16px]">
+              <Link
+                href={backHref}
+                className="text-[13px] font-medium text-gca-green flex items-center gap-[6px]"
+              >
+                <ArrowLeft size={18} /> {backTo === "dpr" ? "DPRs" : "Submit"}
+              </Link>
+              <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">
+                {formatDate(dpr.report_date, { day: "numeric", month: "short", year: "numeric" })}
+              </h1>
+            </div>
+            <div className="flex items-end justify-between">
+              {/* <div className="flex items-center gap-[12px]">
             <div className="flex gap-[2px] rounded-[8px] bg-gca-page-bg p-[3px]">
               <button
                 onClick={() => setMode("section")}
@@ -180,28 +203,37 @@ export function DprDetailView({ projectId, dprId }: { projectId: string; dprId: 
               >
                 Full report
               </button>
-            </div>
+            </div> */}
 
-            <div className="relative">
-              <button
+              <div className="relative">
+                {/* <button
                 onClick={() => setExportOpen((o) => !o)}
                 className="flex cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[14px] py-[9px] text-[14px] font-semibold text-gca-dark"
               >
                 Export
-                <span className="text-[10px]">▾</span>
-              </button>
-              {exportOpen && (
-                <div className="absolute right-0 top-[44px] z-10 flex w-[238px] flex-col gap-[2px] rounded-[12px] border border-gca-border bg-white p-[6px] shadow-[0px_10px_28px_0px_rgba(23,48,31,0.08)]">
-                  <button
-                    onClick={() => exportDpr("pdf")}
-                    className="flex cursor-pointer items-center gap-[10px] rounded-[6px] px-[10px] py-[9px] text-left hover:bg-gca-page-bg"
-                  >
-                    <span className="rounded-[4px] bg-error-bg px-[6px] py-[4px] text-[11px] font-bold text-error-text">
-                      PDF
-                    </span>
-                    <span className="text-[14px] text-gca-dark">PDF document</span>
-                  </button>
-                  <button
+                {exportOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              </button> */}
+
+                <button
+                  onClick={() => exportDpr("pdf")}
+                  className="flex cursor-pointer items-center gap-[10px] rounded-[6px] px-[10px] py-[9px] text-left bg-gca-page-bg px-[6px] py-[4px] text-[13px]"
+                >
+                  {/* <span className="rounded-[4px] font-bold text-gca-green">PDF</span> */}
+                  <Download size={18} className="font-bold text-gca-green" />
+                </button>
+
+                {exportOpen && (
+                  <div className="absolute right-0 top-[44px] z-10 flex w-[238px] flex-col gap-[2px] rounded-[12px] border border-gca-border bg-white p-[6px] shadow-[0px_10px_28px_0px_rgba(23,48,31,0.08)]">
+                    <button
+                      onClick={() => exportDpr("pdf")}
+                      className="flex cursor-pointer items-center gap-[10px] rounded-[6px] px-[10px] py-[9px] text-left hover:bg-gca-page-bg"
+                    >
+                      <span className="rounded-[4px] bg-error-bg px-[6px] py-[4px] text-[11px] font-bold text-error-text">
+                        PDF
+                      </span>
+                      <span className="text-[14px] text-gca-dark">PDF document</span>
+                    </button>
+                    {/* <button
                     onClick={() => exportDpr("csv")}
                     className="flex cursor-pointer items-center gap-[10px] rounded-[6px] px-[10px] py-[9px] text-left hover:bg-gca-page-bg"
                   >
@@ -218,84 +250,85 @@ export function DprDetailView({ projectId, dprId }: { projectId: string; dprId: 
                       CSV
                     </span>
                     <span className="text-[14px] text-gca-dark">ExCo summary CSV</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-start gap-[24px]">
-          <div className="sticky top-[24px] flex max-h-[calc(100vh-48px)] w-[260px] shrink-0 flex-col gap-[16px] overflow-y-auto">
-            <div className="flex flex-col gap-[2px] rounded-[12px] bg-white px-[24px] py-[20px]">
-              <p className="mb-[14px] text-[12px] font-semibold text-gca-muted">Sections</p>
-              {SECTIONS.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => goToSection(s.id)}
-                  className={`w-[212px] cursor-pointer rounded-[6px] px-[10px] py-[7px] text-left text-[13px] ${
-                    activeSection === s.id
-                      ? "bg-gca-badge-bg font-semibold text-gca-green"
-                      : "font-normal text-gca-show hover:bg-gca-page-bg"
-                  }`}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex w-[260px] flex-col gap-[25px] rounded-[12px] border border-gca-border bg-white px-[24px] py-[20px]">
-              <p className="text-[14px] font-semibold text-gca-dark">DPR details</p>
-              {detail("Project", project.project.name)}
-              {detail("Site", dpr.site_location)}
-              {detail(
-                "Date",
-                formatDate(dpr.report_date, {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                }),
-              )}
-              {detail("Submitted by", dpr.author_name)}
-              {dpr.submitted_at && detail("Submitted", formatDateTime(dpr.submitted_at))}
-            </div>
-          </div>
-
-          {mode === "section" ? (
-            <div className="flex w-[800px] flex-col gap-[16px] pb-[24px]">
-              {SECTION_RENDERERS[activeSection](dpr)}
-              <div className="flex items-center justify-between border-t border-gca-border pt-[16px] text-[13px] font-medium text-gca-green">
-                <button
-                  onClick={() => prevSection && goToSection(prevSection.id)}
-                  className={`cursor-pointer ${!prevSection && "invisible"}`}
-                >
-                  ← {prevSection?.label}
-                </button>
-                <button
-                  onClick={() => nextSection && goToSection(nextSection.id)}
-                  className={`cursor-pointer ${!nextSection && "invisible"}`}
-                >
-                  {nextSection?.label} →
-                </button>
+                  </button> */}
+                  </div>
+                )}
               </div>
             </div>
-          ) : (
-            <div className="flex w-[800px] flex-col gap-[48px] pb-[24px]">
-              {SECTIONS.map((s) => (
-                <div
-                  key={s.id}
-                  id={`section-${s.id}`}
-                  ref={(el) => {
-                    sectionRefs.current[s.id] = el;
-                  }}
-                  className="flex flex-col gap-[16px] scroll-mt-[96px]"
-                >
-                  {SECTION_RENDERERS[s.id](dpr)}
-                </div>
-              ))}
+          </div>
+
+          <div className="flex items-start gap-[24px]">
+            <div className="sticky top-[24px] flex max-h-[calc(100vh-48px)] w-[260px] shrink-0 flex-col gap-[16px] overflow-y-auto">
+              <div className="flex flex-col gap-[2px] rounded-[12px] bg-white px-[24px] py-[20px]">
+                <p className="mb-[14px] text-[12px] font-semibold text-gca-muted">Sections</p>
+                {SECTIONS.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => goToSection(s.id)}
+                    className={`w-[212px] cursor-pointer rounded-[6px] px-[10px] py-[7px] text-left text-[13px] ${
+                      activeSection === s.id
+                        ? "bg-gca-badge-bg font-semibold text-gca-green"
+                        : "font-normal text-gca-show hover:bg-gca-page-bg"
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex w-[260px] flex-col gap-[25px] rounded-[12px] border border-gca-border bg-white px-[24px] py-[20px]">
+                <p className="text-[14px] font-semibold text-gca-dark">DPR details</p>
+                {detail("Project", project.project.name)}
+                {detail("Site", dpr.site_location)}
+                {detail(
+                  "Date",
+                  formatDate(dpr.report_date, {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  }),
+                )}
+                {detail("Submitted by", dpr.author_name)}
+                {dpr.submitted_at && detail("Submitted", formatDateTime(dpr.submitted_at))}
+              </div>
             </div>
-          )}
+
+            {mode === "section" ? (
+              <div className="flex w-[800px] flex-col gap-[16px] pb-[24px]">
+                {SECTION_RENDERERS[activeSection](dpr)}
+                <div className="flex items-center justify-between border-t border-gca-border pt-[16px] text-[13px] font-medium text-gca-green">
+                  <button
+                    onClick={() => prevSection && goToSection(prevSection.id)}
+                    className={`cursor-pointer ${!prevSection && "invisible"}`}
+                  >
+                    ← {prevSection?.label}
+                  </button>
+                  <button
+                    onClick={() => nextSection && goToSection(nextSection.id)}
+                    className={`cursor-pointer ${!nextSection && "invisible"}`}
+                  >
+                    {nextSection?.label} →
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex w-[800px] flex-col gap-[48px] pb-[24px]">
+                {SECTIONS.map((s) => (
+                  <div
+                    key={s.id}
+                    id={`section-${s.id}`}
+                    ref={(el) => {
+                      sectionRefs.current[s.id] = el;
+                    }}
+                    className="flex flex-col gap-[16px] scroll-mt-[96px]"
+                  >
+                    {SECTION_RENDERERS[s.id](dpr)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -331,10 +364,10 @@ export function DprInlineReport({ projectId, dprId }: { projectId: string; dprId
         <div className="flex items-center justify-between gap-[16px] border-t border-gca-border pt-[12px]">
           <p className="font-mono text-[12px] text-gca-muted">{dpr.dpr_ref ?? "No reference"}</p>
           <Link
-            href={`/projects/${projectId}/dpr/${dprId}`}
+            href={`/projects/${projectId}/dpr/${dprId}?back=submit`}
             className="rounded-[6px] text-[13px] font-medium text-gca-green focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gca-green hover:underline hover:underline-offset-[3px]"
           >
-            Open full report →
+            Open full report
           </Link>
         </div>
       </div>
@@ -414,11 +447,13 @@ function EffectsSection({ dpr }: { dpr: DprDetail }) {
   return (
     <>
       <SectionTitle>Effects on work</SectionTitle>
-      <span
-        className={`w-fit rounded-full px-[10px] py-[4px] text-[13px] font-semibold ${SEVERITY_STYLE[dpr.effects_severity]}`}
-      >
-        {EFFECTS_SEVERITY_LABEL[dpr.effects_severity]}
-      </span>
+      {dpr.effects_text && (
+        <span
+          className={`w-fit rounded-full px-[10px] py-[4px] text-[13px] font-semibold ${SEVERITY_STYLE[dpr.effects_severity]}`}
+        >
+          {EFFECTS_SEVERITY_LABEL[dpr.effects_severity]}
+        </span>
+      )}
       <p className="whitespace-pre-line text-[13px] text-gca-dark">
         {dpr.effects_text || "No effects on work reported."}
       </p>
@@ -529,7 +564,7 @@ function EquipmentSection({ dpr }: { dpr: DprDetail }) {
   ].filter(Boolean);
   return (
     <>
-      <SectionTitle>Equipment & noted on the day</SectionTitle>
+      <SectionTitle>Noted on the day</SectionTitle>
       {fields.length === 0 ? (
         <p className="text-[13px] text-gca-muted">Nothing noted for this day.</p>
       ) : (

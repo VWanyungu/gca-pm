@@ -9,10 +9,7 @@ import { reportError } from "@/lib/toast";
 import Dropdown from "@/components/Dropdown";
 import { Pagination } from "@/components/pagination";
 import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
-import {
-  useProjectDetail,
-  useSidebarCounts,
-} from "@/components/project-overview/use-project-data";
+import { useProjectDetail, useSidebarCounts } from "@/components/project-overview/use-project-data";
 import { useDprs } from "@/components/weekly-submission/use-weekly-submission-data";
 import type { DprAmendment, DprSummary } from "@/components/weekly-submission/types";
 import { DprNewWizard } from "@/components/engineer-dpr/dpr-new-wizard";
@@ -67,7 +64,8 @@ function DprDeleteModal({
       <div className="relative w-[392px] max-w-full rounded-[12px] bg-white p-[24px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
         <h2 className="text-[18px] font-semibold text-gca-dark">Delete draft DPR?</h2>
         <p className="mt-[8px] text-[14px] text-gca-muted">
-          This draft for {formatDate(dpr.report_date)} will be permanently removed. This cannot be undone.
+          This draft for {formatDate(dpr.report_date)} will be permanently removed. This cannot be
+          undone.
         </p>
         <div className="mt-[24px] flex justify-end gap-[12px]">
           <button
@@ -138,14 +136,18 @@ export function DprListView({ projectId }: { projectId: string }) {
   });
 
   const canCreate = canAccess(user?.role, CAN_CREATE_DPR, { projectId });
-  const canRequestAsPm = canAccess(user?.role, [{ role: "PM", scopeType: "project" }], { projectId });
-  const isAdmin = !!user?.role.some((grant) => grant.role === "Admin" && grant.scope_type === "global");
+  const canRequestAsPm = canAccess(user?.role, [{ role: "PM", scopeType: "project" }], {
+    projectId,
+  });
+  const isAdmin = !!user?.role.some(
+    (grant) => grant.role === "Admin" && grant.scope_type === "global",
+  );
   const canDecideAmendments = canRequestAsPm || isAdmin;
   const { data: allMissedDates = [] } = useMissedDprDates(projectId, canCreate);
   const { data: amendments = [] } = useDprAmendments(projectId, canCreate || canDecideAmendments);
   const deleteDpr = useDeleteDpr(projectId);
   const decideAmendment = useDecideDprAmendment(projectId);
-  const dprs = showRealDprs ? data?.dprs ?? [] : [];
+  const dprs = showRealDprs ? (data?.dprs ?? []) : [];
   const total = data?.pagination.total ?? 0;
   const totalPages = data?.pagination.totalPages ?? 1;
   const pendingByDpr = new Map(amendments.map((amendment) => [amendment.dpr_id, amendment]));
@@ -154,7 +156,9 @@ export function DprListView({ projectId }: { projectId: string }) {
   // they'd reappear identically on every page of the real DPR list.
   const missedDates =
     showMissed && page === 1
-      ? allMissedDates.filter((date) => (!fromDate || date >= fromDate) && (!toDate || date <= toDate))
+      ? allMissedDates.filter(
+          (date) => (!fromDate || date >= fromDate) && (!toDate || date <= toDate),
+        )
       : [];
 
   const rows: DprRow[] = [
@@ -209,7 +213,7 @@ export function DprListView({ projectId }: { projectId: string }) {
               reportDate={subView.reportDate}
               layout="full"
               onClose={backToList}
-              onSubmitted={(dprId) => router.push(`/projects/${projectId}/dpr/${dprId}`)}
+              onSubmitted={(dprId) => router.push(`/projects/${projectId}/dpr/${dprId}?back=dpr`)}
             />
           ) : subView.mode === "edit" ? (
             <DprEditWizard
@@ -219,7 +223,7 @@ export function DprListView({ projectId }: { projectId: string }) {
               amendmentMode={subView.amendmentMode}
               layout="full"
               onClose={backToList}
-              onSubmitted={(dprId) => router.push(`/projects/${projectId}/dpr/${dprId}`)}
+              onSubmitted={(dprId) => router.push(`/projects/${projectId}/dpr/${dprId}?back=dpr`)}
               onAmendmentRequested={backToList}
             />
           ) : (
@@ -230,12 +234,12 @@ export function DprListView({ projectId }: { projectId: string }) {
                 </h1>
                 {canCreate && (
                   <button
-                  onClick={() =>
-                    setSubView({
-                      mode: "new",
-                      reportDate: todayInTimezone(project.project.timezone),
-                    })
-                  }
+                    onClick={() =>
+                      setSubView({
+                        mode: "new",
+                        reportDate: todayInTimezone(project.project.timezone),
+                      })
+                    }
                     className="flex cursor-pointer items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
                   >
                     <Plus className="size-[14px]" />
@@ -290,9 +294,10 @@ export function DprListView({ projectId }: { projectId: string }) {
               </div>
 
               {canDecideAmendments && amendments.length > 0 && (
-                <section className="flex flex-col gap-[10px] rounded-[12px] border border-gca-border bg-white p-[16px]">
+                <section className="flex flex-col gap-[10px] rounded-[12px] bg-white">
                   <h2 className="text-[15px] font-semibold text-gca-dark">
-                    Amendment requests <span className="text-gca-warning">({amendments.length})</span>
+                    Amendment requests{" "}
+                    {/* <span className="text-gca-warning">({amendments.length})</span> */}
                   </h2>
                   {amendments.map((amendment) => (
                     <div
@@ -302,19 +307,24 @@ export function DprListView({ projectId }: { projectId: string }) {
                       <div className="flex flex-wrap items-center justify-between gap-[8px]">
                         <div>
                           <p className="text-[13px] font-semibold text-gca-dark">
-                            {amendment.dpr_ref ?? "DPR"} · {formatDate(amendment.report_date ?? "")}
+                            {/* {amendment.dpr_ref ?? "DPR"} · */}
+                            {formatDate(amendment.report_date ?? "")}
                           </p>
                           <p className="text-[12px] text-gca-muted">
-                            Requested by {amendment.requester_name ?? "Engineer"} ·{" "}
-                            {new Date(amendment.requested_at).toLocaleDateString("en-GB")}
+                            Requested by {amendment.requester_name ?? "Engineer"}
+                            {/* ·{" "} {new Date(amendment.requested_at).toLocaleDateString("en-GB")} */}
                           </p>
                         </div>
                         <div className="flex gap-[8px]">
                           <button
                             type="button"
-                            onClick={() => setRejectingAmendmentId(
-                              rejectingAmendmentId === amendment.amendment_id ? null : amendment.amendment_id,
-                            )}
+                            onClick={() =>
+                              setRejectingAmendmentId(
+                                rejectingAmendmentId === amendment.amendment_id
+                                  ? null
+                                  : amendment.amendment_id,
+                              )
+                            }
                             className="flex cursor-pointer items-center gap-[6px] rounded-[8px] border border-gca-border px-[12px] py-[8px] text-[13px] font-semibold text-gca-dark"
                           >
                             <X className="size-[14px]" />
@@ -332,14 +342,16 @@ export function DprListView({ projectId }: { projectId: string }) {
                         </div>
                       </div>
                       <p className="text-[13px] text-gca-dark">{amendment.reason}</p>
-                      <details className="text-[13px] text-gca-show">
-                        <summary className="cursor-pointer font-medium">Review proposed DPR</summary>
+                      {/* <details className="text-[13px] text-gca-show">
+                        <summary className="cursor-pointer font-medium">
+                          Review proposed DPR
+                        </summary>
                         <pre className="mt-[8px] max-h-[280px] overflow-auto rounded-[8px] bg-gca-page-bg p-[12px] text-[11px]">
                           {JSON.stringify(amendment.proposed_document, null, 2)}
                         </pre>
-                      </details>
+                      </details> */}
                       {rejectingAmendmentId === amendment.amendment_id && (
-                        <div className="flex flex-col gap-[8px] rounded-[8px] bg-gca-page-bg p-[12px]">
+                        <div className="flex flex-col gap-[8px] rounded-[8px]">
                           <label
                             htmlFor={`amendment-decision-note-${amendment.amendment_id}`}
                             className="text-[13px] font-medium text-gca-dark"
@@ -399,29 +411,38 @@ export function DprListView({ projectId }: { projectId: string }) {
                 </div>
               ) : (
                 <div className="flex w-full flex-col">
-                  <div className="flex w-full items-center gap-[10px] border-b border-gca-border py-[8px] text-[12px] font-medium text-gca-muted">
+                  <div className="flex w-full items-center justify-between gap-[10px] border-b border-gca-border py-[8px] text-[12px] font-medium text-gca-muted">
                     <p className="w-[18%]">Reference</p>
                     <p className="w-[24%]">Date</p>
                     <p className="w-[22%]">Site</p>
                     <p className="w-[16%]">Status</p>
-                    <p className="flex-1 text-right">Actions</p>
+                    <p className="w-[20%] text-center"></p>
                   </div>
                   {rows.map((row, i) => {
                     if (row.type === "missed") {
                       return (
                         <div key={row.date} className={i > 0 ? "border-t border-gca-border" : ""}>
                           <div className="flex w-full items-center gap-[10px] py-[12px]">
-                            <button
+                            {/* <button
                               type="button"
                               onClick={() => setSubView({ mode: "new", reportDate: row.date })}
                               className="flex min-w-0 w-[80%] cursor-pointer items-center gap-[10px] text-left"
+                            > */}
+                            <span className="w-[18%] truncate text-[13px] font-medium text-gca-dark">
+                              —
+                            </span>
+                            <span
+                              className="w-[24%] text-[13px] text-gca-dark"
+                              onClick={() => setSubView({ mode: "new", reportDate: row.date })}
                             >
-                              <span className="w-[18%] truncate text-[13px] font-medium text-gca-dark">—</span>
-                              <span className="w-[24%] text-[13px] text-gca-dark">{formatDate(row.date)}</span>
-                              <span className="w-[22%] truncate text-[13px] text-gca-dark">—</span>
-                              <span className="w-[16%] text-[13px] font-semibold text-error-text">Missed</span>
-                            </button>
-                            <div className="flex flex-1 justify-end gap-[6px]">
+                              {formatDate(row.date)}
+                            </span>
+                            <span className="w-[22%] truncate text-[13px] text-gca-dark">—</span>
+                            <span className="w-[16%] text-[13px] font-semibold text-error-text">
+                              Missed
+                            </span>
+                            {/* </button> */}
+                            <div className="flex w-[20%] justify-end gap-[6px]">
                               <button
                                 type="button"
                                 aria-label={`Submit DPR for ${formatDate(row.date)}`}
@@ -449,26 +470,37 @@ export function DprListView({ projectId }: { projectId: string }) {
                     const pending = pendingByDpr.get(dpr.dpr_id);
                     return (
                       <div key={dpr.dpr_id} className={i > 0 ? "border-t border-gca-border" : ""}>
-                        <div className="flex w-full items-center gap-[10px] py-[12px]">
-                          <button
+                        <div className="flex w-full items-center justify-between py-[12px] gap-[10px]">
+                          {/* <button
                             type="button"
                             onClick={() =>
                               dpr.status === "draft"
                                 ? setSubView({ mode: "edit", dprId: dpr.dpr_id })
-                                : router.push(`/projects/${projectId}/dpr/${dpr.dpr_id}`)
+                                : router.push(`/projects/${projectId}/dpr/${dpr.dpr_id}?back=dpr`)
                             }
-                            className="flex min-w-0 w-[80%] cursor-pointer items-center gap-[10px] text-left"
+                            className="flex min-w-0 w-full cursor-pointer items-center text-left border *:border"
+                          > */}
+                          <span className="w-[18%] truncate text-[13px] font-medium text-gca-dark">
+                            {dpr.dpr_ref ?? "—"}
+                          </span>
+                          <span
+                            className="w-[24%] text-[13px] text-gca-dark"
+                            onClick={() =>
+                              dpr.status === "draft"
+                                ? setSubView({ mode: "edit", dprId: dpr.dpr_id })
+                                : router.push(`/projects/${projectId}/dpr/${dpr.dpr_id}?back=dpr`)
+                            }
                           >
-                            <span className="w-[18%] truncate text-[13px] font-medium text-gca-dark">
-                              {dpr.dpr_ref ?? "—"}
-                            </span>
-                            <span className="w-[24%] text-[13px] text-gca-dark">{formatDate(dpr.report_date)}</span>
-                            <span className="w-[22%] truncate text-[13px] text-gca-dark">{dpr.site_location}</span>
-                            <span className={`w-[16%] text-[13px] font-semibold ${status.className}`}>
-                              {pending ? "Amendment pending" : status.label}
-                            </span>
-                          </button>
-                          <div className="flex flex-1 justify-end gap-[6px]">
+                            {formatDate(dpr.report_date)}
+                          </span>
+                          <span className="w-[22%] truncate text-[13px] text-gca-dark">
+                            {dpr.site_location}
+                          </span>
+                          <span className={`w-[16%] text-[13px] font-semibold ${status.className}`}>
+                            {pending ? "Amendment pending" : status.label}
+                          </span>
+                          {/* </button> */}
+                          <div className="flex w-[20%] justify-end gap-[6px]">
                             {canEditDraft && (
                               <>
                                 <button
@@ -498,7 +530,11 @@ export function DprListView({ projectId }: { projectId: string }) {
                                 aria-label={`Request edit for ${formatDate(dpr.report_date)}`}
                                 title="Request amendment"
                                 onClick={() =>
-                                  setSubView({ mode: "edit", dprId: dpr.dpr_id, amendmentMode: true })
+                                  setSubView({
+                                    mode: "edit",
+                                    dprId: dpr.dpr_id,
+                                    amendmentMode: true,
+                                  })
                                 }
                                 className="flex size-[32px] cursor-pointer items-center justify-center rounded-[6px] text-gca-show hover:bg-gca-page-bg"
                               >

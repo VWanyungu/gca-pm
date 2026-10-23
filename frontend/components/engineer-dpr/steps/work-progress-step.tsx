@@ -3,16 +3,17 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import type { ScheduleTask } from "@/components/schedule/types";
-import type { DprDraftInput, DraftActivityProgress, DraftWorkItem } from "../types";
+import type { DprDraftInput, DprValidationErrors, DraftActivityProgress, DraftWorkItem } from "../types";
 import { TaskPickerSheet } from "./task-picker-sheet";
 
 interface StepProps {
   draft: DprDraftInput;
   update: (patch: Partial<DprDraftInput>) => void;
   projectId: string;
+  errors?: DprValidationErrors["workItems"];
 }
 
-export function WorkProgressStep({ draft, update, projectId }: StepProps) {
+export function WorkProgressStep({ draft, update, projectId, errors = {} }: StepProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
 
   function updateWorkItem(index: number, patch: Partial<DraftWorkItem>) {
@@ -75,33 +76,52 @@ export function WorkProgressStep({ draft, update, projectId }: StepProps) {
     <div className="flex flex-col gap-[16px]">
       <div className="flex flex-col gap-[6px]">
         <p className="text-[14px] font-semibold text-gca-dark">Work items</p>
-        {draft.work_items.map((item, index) => (
-          <div key={index} className="flex flex-col gap-[10px] rounded-[12px] bg-white p-[16px]">
-            <div className="flex items-center justify-between gap-[8px]">
-              <input
-                value={item.work_area}
-                onChange={(e) => updateWorkItem(index, { work_area: e.target.value })}
-                placeholder="Work area"
-                className="h-[44px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green placeholder:text-gca-muted"
-              />
-              <button
-                type="button"
-                onClick={() => removeWorkItem(index)}
-                aria-label="Remove work item"
-                className="flex size-[44px] shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-gca-border"
-              >
-                <Trash2 className="size-[16px] text-error-text" />
-              </button>
+        {draft.work_items.map((item, index) => {
+          const itemErrors = errors[index];
+          return (
+            <div key={index} className="flex flex-col gap-[10px] rounded-[12px] bg-white p-[16px]">
+              <div className="flex items-center justify-between gap-[8px]">
+                <div className="flex w-full flex-col gap-[4px]">
+                  <input
+                    value={item.work_area}
+                    onChange={(e) => updateWorkItem(index, { work_area: e.target.value })}
+                    placeholder="Work area"
+                    aria-invalid={!!itemErrors?.work_area}
+                    className={`h-[44px] w-full rounded-[8px] border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green placeholder:text-gca-muted ${
+                      itemErrors?.work_area ? "border-error-border" : "border-gca-border"
+                    }`}
+                  />
+                  {itemErrors?.work_area && (
+                    <span className="text-[12px] text-error-text">Work area is required</span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeWorkItem(index)}
+                  aria-label="Remove work item"
+                  className="flex size-[44px] shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-gca-border"
+                >
+                  <Trash2 className="size-[16px] text-error-text" />
+                </button>
+              </div>
+              <div className="flex flex-col gap-[4px]">
+                <textarea
+                  value={item.work_carried_out}
+                  onChange={(e) => updateWorkItem(index, { work_carried_out: e.target.value })}
+                  placeholder="Work carried out"
+                  rows={3}
+                  aria-invalid={!!itemErrors?.work_carried_out}
+                  className={`w-full rounded-[8px] border bg-white p-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green placeholder:text-gca-muted ${
+                    itemErrors?.work_carried_out ? "border-error-border" : "border-gca-border"
+                  }`}
+                />
+                {itemErrors?.work_carried_out && (
+                  <span className="text-[12px] text-error-text">Work carried out is required</span>
+                )}
+              </div>
             </div>
-            <textarea
-              value={item.work_carried_out}
-              onChange={(e) => updateWorkItem(index, { work_carried_out: e.target.value })}
-              placeholder="Work carried out"
-              rows={3}
-              className="w-full rounded-[8px] border border-gca-border bg-white p-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green placeholder:text-gca-muted"
-            />
-          </div>
-        ))}
+          );
+        })}
         <button
           type="button"
           onClick={addWorkItem}

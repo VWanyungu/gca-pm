@@ -61,6 +61,7 @@ export function useWeekSubmission(projectId: string, weekStart: string) {
       const approved = submissions.find((s) => s.status === "approved");
       return { draft: draft ?? null, approved: approved ?? null };
     },
+    enabled: !!weekStart,
     staleTime: 10_000,
   });
 }

@@ -72,11 +72,11 @@ export function ProjectSidebar({
     [
       { key: "overview", label: "Overview", icon: LayoutGrid, href: base },
       { key: "schedule", label: "Schedule", icon: CalendarRange, href: `${base}/schedule` },
-      { key: "dpr", label: "DPR", icon: ClipboardList, href: `${base}/dpr` },
+      { key: "dpr", label: "Daily Report", icon: ClipboardList, href: `${base}/dpr` },
       // Weekly submission is the PM's report to ExCo — not an engineer's concern.
       {
         key: "submit",
-        label: "Submit",
+        label: "Weekly Report",
         icon: Send,
         href: `${base}/weekly-submission`,
         count: counts?.submit,

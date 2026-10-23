@@ -9,12 +9,13 @@ import {
   usePersonnelRoles,
   useProjectContractors,
 } from "../use-dpr-wizard-data";
-import type { DprDraftInput, DraftPersonnelGroup, DraftRoleCount } from "../types";
+import type { DprDraftInput, DprValidationErrors, DraftPersonnelGroup, DraftRoleCount } from "../types";
 
 interface StepProps {
   draft: DprDraftInput;
   update: (patch: Partial<DprDraftInput>) => void;
   projectId: string;
+  errors?: DprValidationErrors["personnelGroups"];
 }
 
 function Stepper({ value, onChange }: { value: number; onChange: (next: number) => void }) {
@@ -41,7 +42,7 @@ function Stepper({ value, onChange }: { value: number; onChange: (next: number) 
   );
 }
 
-export function PersonnelStep({ draft, update, projectId }: StepProps) {
+export function PersonnelStep({ draft, update, projectId, errors = {} }: StepProps) {
   const { data: contractors = [] } = useProjectContractors(projectId);
   const { data: roles = [] } = usePersonnelRoles();
   const queryClient = useQueryClient();
@@ -108,6 +109,7 @@ export function PersonnelStep({ draft, update, projectId }: StepProps) {
   return (
     <div className="flex flex-col gap-[16px]">
       {draft.personnel_groups.map((group, groupIndex) => {
+        const groupErrors = errors[groupIndex];
         return (
           <div key={groupIndex} className="flex flex-col gap-[12px] rounded-[12px] bg-white p-[16px]">
             <div className="flex items-center justify-between gap-[8px]">
@@ -117,9 +119,14 @@ export function PersonnelStep({ draft, update, projectId }: StepProps) {
                   title="Select contractor"
                   data={contractors.map((c) => ({ id: c.project_contractor_id, name: c.contractor_name }))}
                   selectedId={group.project_contractor_id || undefined}
-                  style="h-[44px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[15px] text-gca-dark"
+                  style={`h-[44px] w-full rounded-[8px] border bg-white px-[12px] text-[15px] text-gca-dark ${
+                    groupErrors?.project_contractor_id ? "border-error-border" : "border-gca-border"
+                  }`}
                   onSelect={(id, name) => updateGroup(groupIndex, { project_contractor_id: id, contractor_name: name })}
                 />
+                {groupErrors?.project_contractor_id && (
+                  <span className="text-[12px] text-error-text">Contractor is required</span>
+                )}
               </div>
               <button
                 type="button"
@@ -176,40 +183,48 @@ export function PersonnelStep({ draft, update, projectId }: StepProps) {
             </div>
 
             <div className="flex flex-col gap-[4px]">
-              {group.role_counts.map((roleCount, roleIndex) => (
-                <div
-                  key={roleIndex}
-                  className={`flex items-center justify-between gap-[8px] py-[10px] ${
-                    roleIndex > 0 ? "border-t border-gca-border" : ""
-                  }`}
-                >
-                  <select
-                    value={roleCount.personnel_role_id}
-                    onChange={(e) =>
-                      updateRoleCount(groupIndex, roleIndex, { personnel_role_id: Number(e.target.value) })
-                    }
-                    className="h-[40px] w-full max-w-[150px] rounded-[8px] border border-gca-border bg-white px-[10px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
+              {group.role_counts.map((roleCount, roleIndex) => {
+                const roleError = groupErrors?.role_counts?.[roleIndex];
+                return (
+                  <div
+                    key={roleIndex}
+                    className={`flex flex-col gap-[4px] py-[10px] ${
+                      roleIndex > 0 ? "border-t border-gca-border" : ""
+                    }`}
                   >
-                    {roles.map((role) => (
-                      <option key={role.personnel_role_id} value={role.personnel_role_id}>
-                        {role.name}
-                      </option>
-                    ))}
-                  </select>
-                  <Stepper
-                    value={roleCount.headcount}
-                    onChange={(next) => updateRoleCount(groupIndex, roleIndex, { headcount: next })}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeRoleCount(groupIndex, roleIndex)}
-                    aria-label="Remove role"
-                    className="flex size-[32px] shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-gca-border"
-                  >
-                    <Trash2 className="size-[13px] text-error-text" />
-                  </button>
-                </div>
-              ))}
+                    <div className="flex items-center justify-between gap-[8px]">
+                      <select
+                        value={roleCount.personnel_role_id}
+                        onChange={(e) =>
+                          updateRoleCount(groupIndex, roleIndex, { personnel_role_id: Number(e.target.value) })
+                        }
+                        className="h-[40px] w-full max-w-[150px] rounded-[8px] border border-gca-border bg-white px-[10px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
+                      >
+                        {roles.map((role) => (
+                          <option key={role.personnel_role_id} value={role.personnel_role_id}>
+                            {role.name}
+                          </option>
+                        ))}
+                      </select>
+                      <Stepper
+                        value={roleCount.headcount}
+                        onChange={(next) => updateRoleCount(groupIndex, roleIndex, { headcount: next })}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeRoleCount(groupIndex, roleIndex)}
+                        aria-label="Remove role"
+                        className="flex size-[32px] shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-gca-border"
+                      >
+                        <Trash2 className="size-[13px] text-error-text" />
+                      </button>
+                    </div>
+                    {roleError && (
+                      <span className="text-[12px] text-error-text">Headcount must be at least 1</span>
+                    )}
+                  </div>
+                );
+              })}
               <button
                 type="button"
                 onClick={() => addRoleCount(groupIndex)}

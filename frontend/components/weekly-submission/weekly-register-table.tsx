@@ -30,18 +30,6 @@ export function WeeklyRegisterTable({
         <p className="mt-[2px] text-[13px] text-gca-show">Submitted weeks for this project</p>
       </div> */}
 
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-[20px] font-semibold tracking-[-0.3px] text-gca-dark">
-            Weekly register
-          </h1>
-          <p className="mt-[2px] text-[13px] text-gca-show">Submitted weeks for this project</p>
-        </div>
-        <button className="rounded-[6px] bg-gca-green px-[12px] py-[6px] text-[13px] font-medium text-white">
-          Export
-        </button>
-      </div>
-
       <div className="flex w-fit gap-[2px] rounded-[8px] bg-gca-page-bg p-[3px]">
         <button
           onClick={() => setTab("week")}
@@ -62,6 +50,18 @@ export function WeeklyRegisterTable({
           }`}
         >
           Register
+        </button>
+      </div>
+
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-[20px] font-semibold tracking-[-0.3px] text-gca-dark">
+            Weekly register
+          </h1>
+          <p className="mt-[2px] text-[13px] text-gca-show">Submitted weeks for this project</p>
+        </div>
+        <button className="rounded-[6px] bg-gca-green px-[12px] py-[6px] text-[13px] font-medium text-white">
+          Export
         </button>
       </div>
 
