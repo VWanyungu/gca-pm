@@ -33,6 +33,14 @@ router.post('/', async (req, res) => {
 
     const user = decoded as JwtUserPayload;
 
+    // The expired access token on the request says who is asking; the refresh token says who
+    // may be issued a new one. A mismatch means the two came from different sessions, so
+    // neither one alone is grounds for minting a token.
+    if (req.user && req.user.userId !== user.userId) {
+      res.status(401).json({ status: 'error', data: null, message: 'Invalid refresh token' });
+      return;
+    }
+
     // Read the grants back from the database rather than copying them out of the old token.
     // Roles change while a session is open — creating a project makes you its PM and Planner,
     // an Admin can revoke access — and a token minted from a token would carry the stale set

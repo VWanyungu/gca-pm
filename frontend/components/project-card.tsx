@@ -18,10 +18,11 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export function ProjectCard({ project, canEdit }: { project: Project; canEdit: boolean }) {
-  const spiColor = project.spi !== null && project.spi < 0.95 ? "text-gca-warning" : "text-gca-dark";
+  const spiColor =
+    project.spi !== null && project.spi < 0.95 ? "text-gca-warning" : "text-gca-dark";
 
   return (
-    <div className="flex flex-col gap-[12px] rounded-[12px] border border-gca-border bg-white p-[24px]">
+    <div className="flex flex-col gap-[12px] rounded-[12px] border border-gca-border bg-gca-surface p-[24px]">
       {/* Title + status */}
       <div className="flex items-start justify-between">
         <Link
@@ -30,21 +31,25 @@ export function ProjectCard({ project, canEdit }: { project: Project; canEdit: b
         >
           {project.name}
         </Link>
-       {project.status != "active" && <span className={`text-[12px] ${STATUS_STYLES[project.status] ?? "text-gca-muted"}`}>
-          {STATUS_LABELS[project.status] ?? project.status}
-        </span>}
+        {project.status != "active" && (
+          <span className={`text-[12px] ${STATUS_STYLES[project.status] ?? "text-gca-muted"}`}>
+            {STATUS_LABELS[project.status] ?? project.status}
+          </span>
+        )}
       </div>
 
       {/* Client */}
       <p className="text-[13px] text-gca-show">{project.client}</p>
 
       {/* Stage pill + SPI */}
-      <div className="flex items-center gap-[12px]">
-        <span className="rounded-[6px] bg-gca-badge-bg px-[8px] py-[3px] text-[12px] font-medium text-gca-badge-text">
+      <div className="flex min-w-0 items-center gap-[12px]">
+        <span className="truncate whitespace-nowrap rounded-[6px] bg-gca-badge-bg px-[8px] py-[3px] text-[12px] font-medium text-gca-badge-text">
           {project.stage}
         </span>
-        <span className={`text-[13px] font-[500] uppercase ${spiColor}`}>
-          {project.spi !== null ? `SPI ${(project.completed / project.planned ).toFixed(2)}` : "SPI —"}
+        <span className={`shrink-0 text-[13px] font-[500] uppercase ${spiColor}`}>
+          {project.spi !== null
+            ? `SPI ${(project.completed / project.planned).toFixed(2)}`
+            : "SPI —"}
         </span>
       </div>
 
@@ -59,9 +64,14 @@ export function ProjectCard({ project, canEdit }: { project: Project; canEdit: b
 
       {/* Footer: next milestone + edit */}
       <div className="flex items-center justify-between border-t border-gca-border pt-[12px]">
-        <div className="flex flex-col gap-[2px]">
+        <div className="flex min-w-0 flex-col gap-[2px]">
           <span className="text-[12px] text-gca-muted">Next milestone</span>
-          <span className="text-[13px] font-medium text-gca-dark">
+          {/* One line: a long milestone title would otherwise push the card taller than its
+              neighbours in the grid. */}
+          <span
+            title={project.nextMilestone ?? undefined}
+            className="truncate text-[13px] font-medium text-gca-dark"
+          >
             {project.nextMilestone ?? "—"}
           </span>
         </div>

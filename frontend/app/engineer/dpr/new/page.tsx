@@ -66,7 +66,7 @@ export default function NewDprPage() {
   return (
     <div className="flex flex-1 flex-col gap-[12px] p-[16px]">
       <p className="text-[17px] font-semibold text-gca-dark">Choose a site</p>
-      <div className="flex flex-col rounded-[12px] bg-white px-[16px]">
+      <div className="flex flex-col rounded-[12px] bg-gca-surface px-[16px]">
         {(projects ?? []).map((p, i) => (
           <Link
             key={p.project_id}

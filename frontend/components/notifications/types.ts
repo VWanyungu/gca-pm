@@ -37,38 +37,38 @@ const DEFAULT_META: TypeMeta = {
 const TYPE_META: Record<string, TypeMeta> = {
   weekly_submission_approved: {
     icon: FileCheck,
-    iconBg: "bg-[#e8f1ea]",
+    iconBg: "bg-gca-badge-bg",
     iconColor: "text-gca-green",
   },
   weekly_submission_due: {
     icon: Hourglass,
-    iconBg: "bg-[#f3f6f3]",
+    iconBg: "bg-gca-page-bg",
     iconColor: "text-gca-show",
   },
   weekly_submission_superseded: {
     icon: Hourglass,
-    iconBg: "bg-[#f3f6f3]",
+    iconBg: "bg-gca-page-bg",
     iconColor: "text-gca-show",
   },
   task_overdue_risk: {
     icon: AlertTriangle,
-    iconBg: "bg-[#fff4e5]",
+    iconBg: "bg-gca-warning-bg",
     iconColor: "text-gca-warning",
-    pill: { label: "Unaddressed", bg: "bg-[#fff4e5]", text: "text-gca-warning" },
+    pill: { label: "Unaddressed", bg: "bg-gca-warning-bg", text: "text-gca-warning" },
   },
   reconciliation_flag_raised: {
     icon: AlertTriangle,
-    iconBg: "bg-[#fff4e5]",
+    iconBg: "bg-gca-warning-bg",
     iconColor: "text-gca-warning",
   },
   schedule_uploaded: {
     icon: FileCheck,
-    iconBg: "bg-[#e8f1ea]",
+    iconBg: "bg-gca-badge-bg",
     iconColor: "text-gca-green",
   },
   dpr_submitted: {
     icon: CheckCircle2,
-    iconBg: "bg-[#e8f1ea]",
+    iconBg: "bg-gca-badge-bg",
     iconColor: "text-gca-green",
   },
   dpr_missing: {
@@ -88,23 +88,23 @@ const TYPE_META: Record<string, TypeMeta> = {
   },
   dpr_amendment_decided: {
     icon: CheckCircle2,
-    iconBg: "bg-[#e8f1ea]",
+    iconBg: "bg-gca-badge-bg",
     iconColor: "text-gca-green",
   },
   change_request_decision: {
     icon: Hourglass,
-    iconBg: "bg-[#f3f6f3]",
+    iconBg: "bg-gca-page-bg",
     iconColor: "text-gca-show",
     pill: { label: "In review", bg: "bg-transparent", text: "text-gca-show" },
   },
   escalation_raised_or_answered: {
     icon: AlertTriangle,
-    iconBg: "bg-[#fff4e5]",
+    iconBg: "bg-gca-warning-bg",
     iconColor: "text-gca-warning",
   },
   risk_escalated: {
     icon: AlertTriangle,
-    iconBg: "bg-[#fff4e5]",
+    iconBg: "bg-gca-warning-bg",
     iconColor: "text-gca-warning",
   },
 };

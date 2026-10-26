@@ -84,7 +84,7 @@ export function MilestonesView({ projectId }: { projectId: string }) {
                       setTablePage(1);
                     }}
                   />
-                  <label className="flex h-[40px] w-[240px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[12px]">
+                  <label className="flex h-[40px] w-[240px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px]">
                     <Search className="size-[14px] shrink-0 text-gca-muted" />
                     <input
                       type="search"
@@ -101,7 +101,7 @@ export function MilestonesView({ projectId }: { projectId: string }) {
                   {canManage && (
                     <button
                       onClick={() => setSubView({ mode: "add" })}
-                      className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
+                      className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
                     >
                       <Plus className="size-[14px]" />
                       Add milestone
@@ -248,7 +248,7 @@ function SegmentedControl<T extends string>({
             aria-label={opt.label}
             className={`cursor-pointer rounded-[6px] text-[13px] ${Icon ? "flex size-[34px] items-center justify-center" : "px-[14px] py-[7px]"} ${
               selected === opt.id
-                ? "bg-white font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
+                ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                 : "font-normal text-gca-show"
             }`}
           >

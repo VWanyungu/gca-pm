@@ -39,7 +39,7 @@ function ProgressRing({ pct }: { pct: number }) {
         background: `conic-gradient(var(--gca-green) ${pct * 3.6}deg, var(--gca-border) 0deg)`,
       }}
     >
-      <span className="absolute inset-[2px] rounded-full bg-white" />
+      <span className="absolute inset-[2px] rounded-full bg-gca-surface" />
     </span>
   );
 }
@@ -302,7 +302,7 @@ export function GanttChart({ tasks, window }: GanttChartProps) {
           <button
             type="button"
             onClick={scrollToToday}
-            className="flex cursor-pointer items-center gap-[6px] rounded-[8px] border border-gca-border bg-white px-[12px] py-[7px] text-[13px] font-medium text-gca-dark hover:bg-gca-page-bg"
+            className="flex cursor-pointer items-center gap-[6px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[7px] text-[13px] font-medium text-gca-dark hover:bg-gca-page-bg"
           >
             <CalendarDays className="size-[14px] text-gca-green" />
             Today
@@ -311,7 +311,7 @@ export function GanttChart({ tasks, window }: GanttChartProps) {
       )}
       <div
         ref={containerRef}
-        className="schedule-gantt overflow-hidden bg-white [&_.gantt-task-react]:font-sans"
+        className="schedule-gantt overflow-hidden bg-gca-surface [&_.gantt-task-react]:font-sans"
         style={{
           maxHeight: HEADER_HEIGHT + chartHeight + 20,
           maxWidth: window ? LIST_WIDTH + (LOOKAHEAD_DAYS + 1) * COLUMN_WIDTH : undefined,
@@ -334,7 +334,7 @@ export function GanttChart({ tasks, window }: GanttChartProps) {
           onExpanderClick={handleExpanderClick}
           TaskListHeader={() => (
             <div
-              className="flex items-center border-b border-gca-border bg-white text-[12px] font-medium text-gca-muted"
+              className="flex items-center border-b border-gca-border bg-gca-surface text-[12px] font-medium text-gca-muted"
               style={{ height: HEADER_HEIGHT }}
             >
               <span style={{ width: TASK_COL }} className="px-[16px]">

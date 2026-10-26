@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import Dropdown from "@/components/Dropdown";
@@ -22,6 +22,9 @@ interface OverdueTasksViewProps {
   onAddAsRisk: (task: OverdueTask) => void;
 }
 
+const INITIAL_ROWS = 24;
+const LOAD_MORE_ROWS = 24;
+
 function groupFilterValue(group: string | null): string {
   return group === null ? "ungrouped" : `group:${group}`;
 }
@@ -33,13 +36,51 @@ export function OverdueTasksView({
   onAddAsRisk,
 }: OverdueTasksViewProps) {
   const [selectedGroup, setSelectedGroup] = useState("");
+  const [visibleCount, setVisibleCount] = useState(INITIAL_ROWS);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
   const groups = groupByTopic(tasks, (t) => t.task_id, allTasks);
   const activeGroup = groups.some(({ group }) => groupFilterValue(group) === selectedGroup)
     ? selectedGroup
     : "";
-  const visibleGroups = activeGroup
+  const matchingGroups = activeGroup
     ? groups.filter(({ group }) => groupFilterValue(group) === activeGroup)
     : groups;
+
+  // Rows are revealed in batches as the reader reaches the end, the same way the schedule
+  // table does it. Counting across groups keeps a group's heading with its first rows.
+  const total = useMemo(
+    () => matchingGroups.reduce((sum, g) => sum + g.items.length, 0),
+    [matchingGroups],
+  );
+  const visibleGroups = useMemo(() => {
+    let budget = visibleCount;
+    const shown: typeof matchingGroups = [];
+    for (const { group, items } of matchingGroups) {
+      if (budget <= 0) break;
+      shown.push({ group, items: items.slice(0, budget) });
+      budget -= Math.min(items.length, budget);
+    }
+    return shown;
+  }, [matchingGroups, visibleCount]);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || visibleCount >= total) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          observer.disconnect();
+          setVisibleCount((count) => Math.min(count + LOAD_MORE_ROWS, total));
+        }
+      },
+      { rootMargin: "0px 0px 200px 0px" },
+    );
+    observer.observe(target);
+
+    return () => observer.disconnect();
+  }, [total, visibleCount]);
 
   if (tasks.length === 0) {
     return (
@@ -58,7 +99,7 @@ export function OverdueTasksView({
   }
 
   return (
-    <div className="flex w-full flex-col bg-white">
+    <div className="flex w-full flex-col bg-gca-surface">
       {/* <div className="flex items-center gap-[8px] border-b border-gca-border px-[20px] py-[14px]">
         <p className="text-[14px] font-semibold text-gca-dark">Overdue tasks</p>
         <span className="text-[13px] font-semibold text-error-text">{tasks.length}</span>
@@ -81,8 +122,11 @@ export function OverdueTasksView({
               })),
             ]}
             selectedId={activeGroup || undefined}
-            onSelect={setSelectedGroup}
-            style="h-[36px] w-[200px]  rounded-[8px] border border-gca-border bg-white px-[10px] text-[13px] text-gca-dark"
+            onSelect={(id) => {
+              setSelectedGroup(id);
+              setVisibleCount(INITIAL_ROWS);
+            }}
+            style="h-[36px] w-[200px]  rounded-[8px] border border-gca-border bg-gca-surface px-[10px] text-[13px] text-gca-dark"
           />
         </div>
       )}
@@ -137,6 +181,12 @@ export function OverdueTasksView({
           ))}
         </div>
       ))}
+
+      {visibleCount < total && (
+        <div ref={loadMoreRef} className="py-[16px] text-center text-[13px] text-gca-muted">
+          Loading more…
+        </div>
+      )}
     </div>
   );
 }

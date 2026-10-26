@@ -95,7 +95,7 @@ function RangeToggle({ value, onChange }: { value: RangeMode; onChange: (v: Rang
           onClick={() => onChange(opt.key)}
           className={`rounded-full px-[12px] py-[4px] text-[12px] transition-colors ${
             value === opt.key
-              ? "bg-white text-gca-dark shadow-sm"
+              ? "bg-gca-surface text-gca-dark shadow-sm"
               : "text-gca-muted hover:text-gca-dark"
           }`}
         >
@@ -117,7 +117,7 @@ export function ProgressCard({ metrics }: { metrics: MetricRow[] }) {
 
   if (!latest) {
     return (
-      <div className="flex h-[415px] w-[700px] shrink-0 items-center justify-center rounded-[12px] border border-gca-border bg-white p-[24px]">
+      <div className="flex h-[415px] w-[700px] shrink-0 items-center justify-center rounded-[12px] border border-gca-border bg-gca-surface p-[24px]">
         <p className="text-[14px] text-gca-muted">No progress data yet.</p>
       </div>
     );
@@ -142,7 +142,7 @@ export function ProgressCard({ metrics }: { metrics: MetricRow[] }) {
   const lastActualY = lastFilled ? CHART_H - (lastFilled.actual_pct / 100) * CHART_H : CHART_H;
 
   return (
-    <div className="flex h-[415px] w-[700px] shrink-0 flex-col gap-[16px] rounded-[12px] border border-gca-border bg-white p-[24px] pb-[28px]">
+    <div className="flex h-[415px] w-[700px] shrink-0 flex-col gap-[16px] rounded-[12px] border border-gca-border bg-gca-surface p-[24px] pb-[28px]">
       <div className="flex w-full items-center justify-between">
         <h3 className="text-[16px] font-semibold text-gca-dark">Progress</h3>
         <div className="flex items-center gap-[6px] text-[12px] text-gca-show">

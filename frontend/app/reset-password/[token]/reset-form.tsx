@@ -51,7 +51,7 @@ export default function ResetPasswordPage({ token }: { token: string }) {
     return (
       <AuthLayout>
         <div className="flex flex-col items-center text-center gap-[24px]">
-          <div className="flex size-[48px] items-center justify-center rounded-full bg-[#e8f1ea]">
+          <div className="flex size-[48px] items-center justify-center rounded-full bg-gca-badge-bg">
             <CheckCircle className="size-[24px] text-gca-green" />
           </div>
           <h1 className="text-[32px] font-semibold tracking-[-0.8px] text-gca-dark">
@@ -60,7 +60,7 @@ export default function ResetPasswordPage({ token }: { token: string }) {
           <p className="text-[15px] text-gca-muted">Your password has been reset successfully.</p>
           <Link
             href="/login"
-            className="w-full rounded-[8px] bg-gca-green px-[16px] py-[14px] text-center text-[15px] font-semibold text-white hover:bg-gca-green-hover"
+            className="w-full rounded-[8px] bg-gca-green px-[16px] py-[14px] text-center text-[15px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
           >
             Sign in
           </Link>
@@ -103,7 +103,7 @@ export default function ResetPasswordPage({ token }: { token: string }) {
                   setFieldErrors((current) => ({ ...current, password: undefined }));
                 }}
                 aria-invalid={!!fieldErrors.password}
-                className={`w-full rounded-[8px] border bg-white px-[14px] py-[13px] pr-[70px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:border-gca-green focus:ring-1 focus:ring-gca-green ${
+                className={`w-full rounded-[8px] border bg-gca-surface px-[14px] py-[13px] pr-[70px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:border-gca-green focus:ring-1 focus:ring-gca-green ${
                   fieldErrors.password ? "border-error-border" : "border-gca-border"
                 }`}
               />
@@ -140,7 +140,7 @@ export default function ResetPasswordPage({ token }: { token: string }) {
                   setFieldErrors((current) => ({ ...current, confirmPassword: undefined }));
                 }}
                 aria-invalid={!!fieldErrors.confirmPassword}
-                className={`w-full rounded-[8px] border bg-white px-[14px] py-[13px] pr-[70px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:border-gca-green focus:ring-1 focus:ring-gca-green ${
+                className={`w-full rounded-[8px] border bg-gca-surface px-[14px] py-[13px] pr-[70px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:border-gca-green focus:ring-1 focus:ring-gca-green ${
                   fieldErrors.confirmPassword ? "border-error-border" : "border-gca-border"
                 }`}
               />
@@ -163,7 +163,7 @@ export default function ResetPasswordPage({ token }: { token: string }) {
           type="submit"
           disabled={submitting}
           onClick={handleSubmit}
-          className="w-full flex items-center justify-center rounded-[8px] bg-gca-green px-[16px] py-[14px] text-[15px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-60"
+          className="w-full flex items-center justify-center rounded-[8px] bg-gca-green px-[16px] py-[14px] text-[15px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-60"
         >
           {submitting ? (
             <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />

@@ -60,7 +60,7 @@ export function DprPhotosSection({
   }
 
   return (
-    <div className="flex w-full flex-col gap-[16px] rounded-[12px] bg-white py-[24px]">
+    <div className="flex w-full flex-col gap-[16px] rounded-[12px] bg-gca-surface py-[24px]">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-[16px] font-semibold text-gca-dark">DPR photos</h3>
@@ -84,8 +84,8 @@ export function DprPhotosSection({
       </div>
 
       {photos.length === 0 ? (
-        <div className="flex flex-col items-center gap-[8px] rounded-[12px] bg-[#f7f9f7] py-[64px]">
-          <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-white">
+        <div className="flex flex-col items-center gap-[8px] rounded-[12px] bg-gca-page-bg py-[64px]">
+          <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-gca-surface">
             <Camera className="size-[18px] text-gca-green" />
           </span>
           <div className="flex flex-col items-center gap-[4px] text-center">
@@ -114,10 +114,10 @@ export function DprPhotosSection({
                   />
                   <span
                     className={`absolute left-[8px] top-[8px] flex size-[20px] items-center justify-center rounded-[5px] border ${
-                      photo.selected ? "border-gca-green bg-gca-green" : "border-white bg-white/80"
+                      photo.selected ? "border-gca-green bg-gca-green" : "border-gca-surface bg-gca-surface/80"
                     }`}
                   >
-                    {photo.selected && <span className="size-[8px] rounded-[2px] bg-white" />}
+                    {photo.selected && <span className="size-[8px] rounded-[2px] bg-gca-surface" />}
                   </span>
                 </div>
                 <p className="text-[13px] font-medium text-gca-dark">

@@ -234,7 +234,7 @@ export const DetailsStep = forwardRef<DetailsStepHandle, DetailsStepProps>(funct
           )}
           <button
             type="submit"
-            className={`flex cursor-pointer items-center gap-[10px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-white hover:bg-gca-green-hover ${
+            className={`flex cursor-pointer items-center gap-[10px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover ${
               singlePage ? "hidden xl:flex" : ""
             }`}
           >

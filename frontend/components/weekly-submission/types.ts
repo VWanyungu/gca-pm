@@ -175,6 +175,7 @@ export interface DprDetail {
   visitors_text: string | null;
   delays_text: string | null;
   incidents_text: string | null;
+  materials_rejected_text: string | null;
   other_notes_text: string | null;
   status: "draft" | "submitted";
   author_id: string;

@@ -79,7 +79,7 @@ export function RisksTable({ projectId, team, canManage, onAddRisk, onOpenRisk }
         {canManage && (
           <button
             onClick={onAddRisk}
-            className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
+            className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
           >
             <Plus className="size-[14px]" />
             New risk
@@ -88,7 +88,7 @@ export function RisksTable({ projectId, team, canManage, onAddRisk, onOpenRisk }
       </div>
 
       <div className="flex flex-wrap items-center gap-[12px]">
-        <label className="flex h-[40px] w-[260px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[12px]">
+        <label className="flex h-[40px] w-[260px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px]">
           <Search className="size-[14px] shrink-0 text-gca-muted" />
           <input
             type="search"
@@ -106,14 +106,14 @@ export function RisksTable({ projectId, team, canManage, onAddRisk, onOpenRisk }
           id="risk-filter-status"
           data={STATUS_OPTIONS}
           selectedId={statusFilter}
-          style="h-[40px] rounded-[8px] border border-gca-border bg-white px-[13px] text-[14px] text-gca-dark"
+          style="h-[40px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
           onSelect={(id) => changeFilter(setStatusFilter, id)}
         />
         <Dropdown
           id="risk-filter-rating"
           data={RATING_OPTIONS}
           selectedId={ratingFilter}
-          style="h-[40px] rounded-[8px] border border-gca-border bg-white px-[13px] text-[14px] text-gca-dark"
+          style="h-[40px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
           onSelect={(id) => changeFilter(setRatingFilter, id)}
         />
       </div>

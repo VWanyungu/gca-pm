@@ -61,7 +61,7 @@ export function EngineerHome() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="flex w-full items-center justify-between bg-white px-[16px] py-[10px]">
+      <div className="flex w-full items-center justify-between bg-gca-surface px-[16px] py-[10px]">
         <div className="flex flex-col gap-[2px]">
           <p className="text-[17px] font-semibold text-gca-dark">
             {greeting}, {greetingName}
@@ -79,7 +79,7 @@ export function EngineerHome() {
 
       <div className="flex flex-1 flex-col gap-[12px] p-[16px]">
         {primaryProject && (
-          <div className="flex flex-col gap-[14px] rounded-[12px] bg-white px-[16px] pt-[18px] pb-[14px]">
+          <div className="flex flex-col gap-[14px] rounded-[12px] bg-gca-surface px-[16px] pt-[18px] pb-[14px]">
             <div className="flex items-center justify-between">
               <p className="text-[15px] font-semibold text-gca-dark">Today&apos;s DPR</p>
               {todaysDpr && (
@@ -104,7 +104,7 @@ export function EngineerHome() {
                 onClick={() => router.push(`/engineer/dpr/new?projectId=${primaryProject.project_id}`)}
                 className="flex w-full items-center justify-center rounded-[10px] bg-gca-green py-[14px]"
               >
-                <p className="text-[15px] font-semibold text-white">
+                <p className="text-[15px] font-semibold text-gca-on-accent">
                   {todaysDpr.status === "draft" ? "Resume draft" : "View today's DPR"}
                 </p>
               </button>
@@ -113,7 +113,7 @@ export function EngineerHome() {
                 onClick={() => startDpr(primaryProject.project_id)}
                 className="flex w-full items-center justify-center rounded-[10px] bg-gca-green py-[14px]"
               >
-                <p className="text-[15px] font-semibold text-white">Start today&apos;s DPR</p>
+                <p className="text-[15px] font-semibold text-gca-on-accent">Start today&apos;s DPR</p>
               </button>
             )}
             {projects && projects.length > 1 && (
@@ -132,7 +132,7 @@ export function EngineerHome() {
             <div className="flex items-center justify-between px-[4px]">
               <p className="text-[13px] font-semibold text-gca-show">Needs you</p>
             </div>
-            <div className="flex flex-col rounded-[12px] bg-white px-[16px]">
+            <div className="flex flex-col rounded-[12px] bg-gca-surface px-[16px]">
               <Link
                 href={primaryProject ? `/engineer/dpr/new?projectId=${primaryProject.project_id}` : "/engineer"}
                 className="flex items-center justify-between py-[12px]"
@@ -164,7 +164,7 @@ export function EngineerHome() {
           <p className="font-semibold text-gca-show">This week</p>
           <p className="text-gca-muted">Red days have a missing DPR</p>
         </div>
-        <div className="flex flex-col gap-[0px] rounded-[12px] bg-white px-[8px] pt-[12px] pb-[10px]">
+        <div className="flex flex-col gap-[0px] rounded-[12px] bg-gca-surface px-[8px] pt-[12px] pb-[10px]">
           <div className="flex items-center justify-between px-[4px]">
             {weekDays.map((day, i) => {
               const isToday = day === today;
@@ -199,7 +199,7 @@ export function EngineerHome() {
                 </Link>
               )}
             </div>
-            <div className="flex flex-col rounded-[12px] bg-white px-[16px]">
+            <div className="flex flex-col rounded-[12px] bg-gca-surface px-[16px]">
               {upcoming.map((task, i) => (
                 <div
                   key={task.task_id}

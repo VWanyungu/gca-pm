@@ -54,8 +54,10 @@ export function ChangeRequestDetail({
   const status = statusInfo(cr.status);
   const stageName = cr.stage_no ? stages.find((s) => s.stage_no === cr.stage_no)?.stage_name : null;
   const isRaiser = !!currentUserId && currentUserId === cr.raised_by;
-  const canEdit = canRaise && isRaiser && cr.status === "pending";
-  const canWithdraw = canEdit;
+  // Mirrors the server guard: anything not yet closed by a decision can still be edited.
+  const canEdit = canRaise && isRaiser && (cr.status === "pending" || cr.status === "approved");
+  // Withdrawing is still a pending-only action (AC-CHG-04).
+  const canWithdraw = canRaise && isRaiser && cr.status === "pending";
   const canAct = canDecide && cr.status === "pending";
 
   async function decide(decision: "approve" | "reject") {
@@ -82,7 +84,7 @@ export function ChangeRequestDetail({
 
   return (
     <div className="flex w-full items-start gap-[20px]">
-      <div className="flex min-w-0 flex-1 flex-col gap-[16px] rounded-[12px] bg-white p-[24px]">
+      <div className="flex min-w-0 flex-1 flex-col gap-[16px] rounded-[12px] bg-gca-surface p-[24px]">
         <button
           onClick={onBack}
           className="cursor-pointer flex items-center gap-[6px] text-[13px] font-medium text-gca-green"
@@ -103,7 +105,7 @@ export function ChangeRequestDetail({
             {canEdit && (
               <button
                 onClick={onEdit}
-                className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+                className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
               >
                 <Pencil className="size-[14px]" />
                 Edit
@@ -113,7 +115,7 @@ export function ChangeRequestDetail({
               <button
                 onClick={withdraw}
                 disabled={saving}
-                className="cursor-pointer rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
+                className="cursor-pointer rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
               >
                 Withdraw
               </button>
@@ -122,14 +124,14 @@ export function ChangeRequestDetail({
               <>
                 <button
                   onClick={() => setRejecting((r) => !r)}
-                  className="cursor-pointer rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+                  className="cursor-pointer rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
                 >
                   Reject
                 </button>
                 <button
                   onClick={() => decide("approve")}
                   disabled={saving}
-                  className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
+                  className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
                 >
                   Approve
                 </button>
@@ -145,7 +147,7 @@ export function ChangeRequestDetail({
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={2}
-              className="rounded-[8px] border border-gca-border bg-white px-[13px] py-[10px] text-[14px] outline-none focus:border-gca-green"
+              className="rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[10px] text-[14px] outline-none focus:border-gca-green"
             />
             <div className="flex justify-end gap-[12px]">
               <button onClick={() => setRejecting(false)} className="cursor-pointer text-[13px] font-medium text-gca-show">
@@ -154,7 +156,7 @@ export function ChangeRequestDetail({
               <button
                 onClick={() => decide("reject")}
                 disabled={saving || !comment.trim()}
-                className="cursor-pointer rounded-[8px] bg-error-text px-[14px] py-[8px] text-[13px] font-semibold text-white disabled:opacity-50"
+                className="cursor-pointer rounded-[8px] bg-error-text px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
               >
                 Confirm reject
               </button>
@@ -201,8 +203,6 @@ export function ChangeRequestDetail({
             <ProgressRow label="ExCo review" value={`Waiting ${daysSince(cr.raised_at)} days`} />
           ) : cr.status === "withdrawn" ? (
             <ProgressRow label="Withdrawn" value={formatLongDate(cr.withdrawn_at)} />
-          ) : cr.status === "noted" ? (
-            <ProgressRow label="Noted" value="FYI — no approval needed" />
           ) : (
             <ProgressRow label="Decision" value={`${status.label} · ${formatLongDate(cr.decided_at)}`} />
           )}

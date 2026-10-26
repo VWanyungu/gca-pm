@@ -11,7 +11,7 @@ interface StepNavigatorProps {
 /** Every bar is clickable and jumps straight to that step — no completion gating. */
 export function StepNavigator({ steps, currentStep, onStepClick }: StepNavigatorProps) {
   return (
-    <div className="flex flex-col gap-[8px] border-t border-gca-border bg-white px-[16px] py-[12px]">
+    <div className="flex flex-col gap-[8px] border-t border-gca-border bg-gca-surface px-[16px] py-[12px]">
       <div className="flex gap-[4px]">
         {steps.map((step, i) => (
           <button

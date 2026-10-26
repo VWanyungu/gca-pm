@@ -109,14 +109,14 @@ export function StatusControl({
       <button
         type="button"
         onClick={() => setMenuOpen((o) => !o)}
-        className="w-full flex justify-between items-center gap-[8px] rounded-[8px] border border-gca-border bg-white py-[8px] pl-[12px] pr-[10px] shadow-[0px_1px_24px_0px_rgba(23,48,31,0.05)]"
+        className="w-full flex justify-between items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface py-[8px] pl-[12px] pr-[10px] shadow-[0px_1px_24px_0px_rgba(23,48,31,0.05)]"
       >
         <span className={`text-[14px] font-medium ${STATUS_COLOR[status]}`}>{LABELS[status]}</span>
         <ChevronDown className="size-[16px] text-gca-muted" />
       </button>
 
       {menuOpen && (
-        <div className="absolute right-0 top-[48px] z-50 flex w-[382px] flex-col gap-[14px] rounded-[12px] border border-gca-border bg-white px-[24px] py-[20px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
+        <div className="absolute right-0 top-[48px] z-50 flex w-[382px] flex-col gap-[14px] rounded-[12px] border border-gca-border bg-gca-surface px-[24px] py-[20px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
           <p className="text-[16px] font-semibold text-gca-dark">Change status</p>
 
           <div className="flex flex-col gap-[2px]">
@@ -198,7 +198,7 @@ export function StatusControl({
                   type="button"
                   onClick={confirmChange}
                   disabled={submitting}
-                  className={`rounded-[8px] px-[12px] py-[7px] text-[13px] font-semibold text-white disabled:opacity-50 ${
+                  className={`rounded-[8px] px-[12px] py-[7px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50 ${
                     target === "cancelled"
                       ? "bg-error-text"
                       : "bg-gca-green hover:bg-gca-green-hover"

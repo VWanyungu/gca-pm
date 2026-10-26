@@ -67,7 +67,7 @@ const Dropdown = ({
   });
 
   const dropdownClass = classNames(
-    "dropdown-scrollbar absolute bg-white  max-w-max max-h-52 overflow-y-auto py-3 rounded-lg shadow-[0px_1px_10px_4px_rgba(23,48,31,0.08)] ring ring-gca-border z-10 text-[14px] text-gca-dark",
+    "dropdown-scrollbar absolute bg-gca-surface  max-w-max max-h-52 overflow-y-auto py-3 rounded-lg shadow-[0px_1px_10px_4px_rgba(23,48,31,0.08)] ring ring-gca-border z-10 text-[14px] text-gca-dark",
     {
       "top-full right-0 mt-2": position === "bottom-right",
       "top-full left-0 mt-2": position === "bottom-left",
@@ -102,7 +102,7 @@ const Dropdown = ({
       {/* Open */}
       {isOpen && (
         <div aria-label="Dropdown menu" className={dropdownClass}>
-          <div className="sticky top-0 flex items-center gap-2 bg-white px-3 pb-2">
+          <div className="sticky top-0 flex items-center gap-2 bg-gca-surface px-3 pb-2">
             <Search size={14} className="shrink-0 text-gca-muted" />
             <input
               ref={searchRef}

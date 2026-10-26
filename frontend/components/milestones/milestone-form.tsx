@@ -103,7 +103,7 @@ export function MilestoneForm({
   }
 
   return (
-    <div className="flex w-full flex-col gap-[24px] rounded-[12px] bg-white p-[24px]">
+    <div className="flex w-full flex-col gap-[24px] rounded-[12px] bg-gca-surface p-[24px]">
       <button
         onClick={onCancel}
         className="cursor-pointer flex items-center gap-[6px] text-[13px] font-medium text-gca-green"
@@ -228,7 +228,7 @@ export function MilestoneForm({
             <button
               onClick={deleteMilestone}
               disabled={saving}
-              className="cursor-pointer rounded-[8px] bg-error-text px-[14px] py-[8px] text-[13px] font-semibold text-white disabled:opacity-50"
+              className="cursor-pointer rounded-[8px] bg-error-text px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
             >
               Confirm delete
             </button>
@@ -257,7 +257,7 @@ export function MilestoneForm({
           <button
             onClick={submit}
             disabled={saving}
-            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
+            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
           >
             {editing ? "Save changes" : "Add milestone"}
           </button>

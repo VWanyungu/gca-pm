@@ -76,7 +76,7 @@ export function MilestoneChart({ milestones, sourceFilter, onSelect }: Milestone
   const rangeLabel = `${chart.months[0].toLocaleDateString("en-GB", { month: "short", year: "numeric" })} – ${chart.months[chart.months.length - 1].toLocaleDateString("en-GB", { month: "short", year: "numeric" })}`;
 
   return (
-    <div className="flex w-full flex-col gap-[16px] rounded-[12px] border border-gca-border bg-white p-[24px]">
+    <div className="flex w-full flex-col gap-[16px] rounded-[12px] border border-gca-border bg-gca-surface p-[24px]">
       <div className="flex w-full items-center justify-between">
         <p className="text-[14px] font-semibold text-gca-dark">{rangeLabel}</p>
         <div className="flex items-center gap-[14px]">

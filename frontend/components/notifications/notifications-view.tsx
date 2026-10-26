@@ -31,7 +31,7 @@ export function NotificationsView() {
   const groups = groupByDay(notifications);
 
   return (
-    <div className="flex w-full justify-center bg-white">
+    <div className="flex w-full justify-center bg-gca-surface">
       <main className="w-full max-w-[1200px] p-[40px]">
         <div className="flex items-center justify-between">
           <h1 className="text-[28px] font-semibold tracking-[-0.7px] text-gca-dark">Notification centre</h1>
@@ -109,7 +109,7 @@ function NotificationCard({ notification, onMarkRead }: { notification: Notifica
     <div
       onClick={unread ? onMarkRead : undefined}
       className={`flex items-start gap-[12px] rounded-[12px] border p-[16px] ${
-        unread ? "border-gca-border bg-white cursor-pointer" : "border-gca-border/60 bg-white"
+        unread ? "border-gca-border bg-gca-surface cursor-pointer" : "border-gca-border/60 bg-gca-surface"
       }`}
     >
       <div className={`flex size-[36px] shrink-0 items-center justify-center rounded-[8px] ${meta.iconBg}`}>
@@ -174,7 +174,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (checked: b
         checked ? "bg-gca-green justify-end" : "bg-gca-border justify-start"
       }`}
     >
-      <span className="size-[16px] rounded-full bg-white shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]" />
+      <span className="size-[16px] rounded-full bg-gca-surface shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]" />
     </button>
   );
 }

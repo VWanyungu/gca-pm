@@ -1,19 +1,20 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import type { StageActivity, EscalationRow } from "./types";
+import type { StageActivity } from "./types";
+// Escalations are paused until the module exists: see the commented block below.
+// import type { EscalationRow } from "./types";
 
 interface NeedsAttentionCardProps {
   projectId: string;
   overdueActivities: StageActivity[];
   draftWeekStart: string | null;
-  escalations: EscalationRow[];
+  // escalations: EscalationRow[];
 }
 
 export function NeedsAttentionCard({
   projectId,
   overdueActivities,
   draftWeekStart,
-  escalations,
 }: NeedsAttentionCardProps) {
   const rows: { title: string; subtitle: string; href: string }[] = [];
 
@@ -36,24 +37,26 @@ export function NeedsAttentionCard({
     });
   }
 
-  const now = new Date().getTime();
-  for (const esc of escalations) {
-    const days = Math.max(0, Math.round((now - new Date(esc.created_at).getTime()) / 86400000));
-    rows.push({
-      title: esc.escalation_reason
-        ? esc.escalation_reason.slice(0, 60)
-        : "Escalation awaiting ExCo",
-      subtitle: `Waiting ${days} day${days === 1 ? "" : "s"}`,
-      href: `/projects/${projectId}/escalations`,
-    });
-  }
+  // Paused: there is no escalations module yet, so these rows link nowhere. Restore this
+  // block, the `escalations` prop and the `useOpenEscalations` call in overview.tsx together.
+  // const now = new Date().getTime();
+  // for (const esc of escalations) {
+  //   const days = Math.max(0, Math.round((now - new Date(esc.created_at).getTime()) / 86400000));
+  //   rows.push({
+  //     title: esc.escalation_reason
+  //       ? esc.escalation_reason.slice(0, 60)
+  //       : "Escalation awaiting ExCo",
+  //     subtitle: `Waiting ${days} day${days === 1 ? "" : "s"}`,
+  //     href: `/projects/${projectId}/escalations`,
+  //   });
+  // }
 
   return (
-    <div className="min-h-[415px] flex min-w-0 flex-1 flex-col gap-[6px] rounded-[12px] border border-gca-border bg-white p-[24px]">
+    <div className="min-h-[415px] flex min-w-0 flex-1 flex-col gap-[6px] rounded-[12px] border border-gca-border bg-gca-surface p-[24px]">
       <div className="flex items-center gap-[8px]">
         <h3 className="text-[16px] font-semibold text-gca-dark">Needs attention</h3>
         {rows.length > 0 && (
-          <span className="rounded-[6px] bg-[#fff4e5] px-[7px] py-[2px] font-mono text-[12px] font-semibold text-gca-warning">
+          <span className="rounded-[6px] bg-gca-warning-bg px-[7px] py-[2px] font-mono text-[12px] font-semibold text-gca-warning">
             {rows.length}
           </span>
         )}

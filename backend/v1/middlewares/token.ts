@@ -4,7 +4,13 @@ import type { RequestHandler } from 'express';
 import type { JwtUserPayload } from '../../types.js';
 import { isTokenBlacklisted } from '../utils/checkCache.js';
 
-export default function authenticateToken(): RequestHandler {
+/**
+ * `allowExpired` is for /token only: refreshing happens precisely because the access token
+ * has expired, so rejecting it there makes the route unreachable. The signature and the
+ * blacklist are still enforced, so the bearer must still hold a token this server minted
+ * and did not log out — only the clock is forgiven.
+ */
+export default function authenticateToken({ allowExpired = false } = {}): RequestHandler {
   return (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader?.split(' ')[1];
@@ -20,7 +26,7 @@ export default function authenticateToken(): RequestHandler {
       return;
     }
 
-    jwt.verify(token, secret, async (err, decoded) => {
+    jwt.verify(token, secret, { ignoreExpiration: allowExpired }, async (err, decoded) => {
       if (err || !decoded || typeof decoded === 'string') {
         res.status(403).json({ status: 'error', data: null, message: 'Expired or invalid token' });
         return;

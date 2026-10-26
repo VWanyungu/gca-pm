@@ -60,6 +60,7 @@ export interface EngineerProjectSummary {
   project_id: string;
   name: string;
   client_name: string | null;
+  current_stage_no: number | null;
   current_stage_name: string | null;
   status: string;
   spi: number | null;
@@ -124,6 +125,7 @@ export function useEngineerProjectSummaries() {
         project_id: project.project_id,
         name: project.name,
         client_name: project.client_name,
+        current_stage_no: activeStage?.stage_no ?? null,
         current_stage_name: activeStage?.stage_name ?? null,
         status: project.status,
         spi: latest?.spi ?? null,
@@ -222,6 +224,7 @@ export function toCreateBody(draft: DprDraftInput) {
     visitors_text: draft.visitors_text,
     delays_text: draft.delays_text,
     incidents_text: draft.incidents_text,
+    materials_rejected_text: draft.materials_rejected_text,
     other_notes_text: draft.other_notes_text,
     work_items: draft.work_items,
     activity_progress: draft.activity_progress.map((a) => ({
@@ -326,6 +329,10 @@ export async function createProjectContractor(
       input,
     ),
   ).contractor;
+}
+
+export async function createPersonnelRole(name: string) {
+  return unwrap(await api.post<{ role: PersonnelRole }>("/personnel-roles", { name })).role;
 }
 
 export function useDprInvalidate(projectId: string) {

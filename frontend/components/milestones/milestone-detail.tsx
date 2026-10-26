@@ -29,7 +29,7 @@ export function MilestoneDetail({ projectId, milestone, team, canManage, onBack,
 
   return (
     <div className="flex w-full items-start gap-[20px]">
-      <div className="flex min-w-0 flex-1 flex-col gap-[16px] rounded-[12px] bg-white p-[24px]">
+      <div className="flex min-w-0 flex-1 flex-col gap-[16px] rounded-[12px] bg-gca-surface p-[24px]">
         <button
           onClick={onBack}
           className="cursor-pointer flex items-center gap-[6px] text-[13px] font-medium text-gca-green"
@@ -43,7 +43,7 @@ export function MilestoneDetail({ projectId, milestone, team, canManage, onBack,
           {canManage && isCustom && (
             <button
               onClick={onEdit}
-              className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+              className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
             >
               <Pencil className="size-[14px]" />
               Edit

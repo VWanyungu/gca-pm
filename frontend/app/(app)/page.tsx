@@ -18,6 +18,7 @@ import {
   useEngineerProjectSummaries,
   type EngineerProjectSummary,
 } from "@/components/engineer-dpr/use-dpr-wizard-data";
+import { STAGE_SHORT_NAME } from "@/components/project-overview/types";
 import { ProjectCard } from "@/components/project-card";
 import { ProjectTable } from "@/components/project-table";
 import { Pagination } from "@/components/pagination";
@@ -40,6 +41,7 @@ interface ProjectsResponse {
     project_id: string;
     name: string;
     client_name: string | null;
+    current_stage_no: number | null;
     current_stage_name: string | null;
     status: string;
     spi: number | null;
@@ -57,12 +59,19 @@ interface ProgramsResponse {
   programs: Array<{ program_id: number; name: string; is_active: boolean }>;
 }
 
+/** Cards and table rows give the stage one line, and "Planning, Monitoring & Controls (PMC)"
+ *  does not fit — so the home page shows the short label the pipeline already uses. */
+function shortStage(stageNo: number | null, stageName: string | null): string {
+  if (stageNo != null && STAGE_SHORT_NAME[stageNo]) return STAGE_SHORT_NAME[stageNo];
+  return stageName ?? "—";
+}
+
 function mapProject(row: ProjectsResponse["projects"][number]): Project {
   return {
     id: row.project_id,
     name: row.name,
     client: row.client_name ?? "—",
-    stage: row.current_stage_name ?? "—",
+    stage: shortStage(row.current_stage_no, row.current_stage_name),
     status: row.status,
     spi: row.spi ?? null,
     completed: row.completed_pct ?? 0,
@@ -76,7 +85,7 @@ function mapEngineerProject(row: EngineerProjectSummary): Project {
     id: row.project_id,
     name: row.name,
     client: row.client_name ?? "—",
-    stage: row.current_stage_name ?? "—",
+    stage: shortStage(row.current_stage_no, row.current_stage_name),
     status: row.status,
     spi: row.spi,
     completed: row.completed_pct ?? 0,
@@ -85,12 +94,17 @@ function mapEngineerProject(row: EngineerProjectSummary): Project {
   };
 }
 
+/** The card grid runs four across, the table is a list — so each view gets the page size that
+ *  fills it. Switching view resets the size, which the Pagination control can still override. */
+const CARD_PAGE_SIZE = 8;
+const TABLE_PAGE_SIZE = 20;
+
 export default function Home() {
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const router = useRouter();
 
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(6);
+  const [perPage, setPerPage] = useState(CARD_PAGE_SIZE);
   const [view, setView] = useState<"card" | "table">("card");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -180,6 +194,12 @@ export default function Home() {
 
   if (authLoading || !isAuthenticated) return null;
 
+  function changeView(next: "card" | "table") {
+    setView(next);
+    setPerPage(next === "table" ? TABLE_PAGE_SIZE : CARD_PAGE_SIZE);
+    setPage(1);
+  }
+
   const greeting = getGreeting(user?.email, user?.firstName);
 
   return (
@@ -195,7 +215,7 @@ export default function Home() {
           {showCreate && (
             <Link
               href="/projects/new"
-              className="flex w-full items-center justify-center rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-white hover:bg-gca-green-hover sm:w-auto"
+              className="flex w-full items-center justify-center rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover sm:w-auto"
             >
               New project
             </Link>
@@ -211,7 +231,7 @@ export default function Home() {
             {/* Toolbar */}
             <div className="flex flex-col gap-[12px] lg:flex-row lg:items-center lg:justify-between">
               {/* Search */}
-              <div className="flex w-full items-center gap-[10px] rounded-[8px] border border-gca-border bg-white px-[12px] py-[11px] lg:w-[360px]">
+              <div className="flex w-full items-center gap-[10px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[11px] lg:w-[360px]">
                 <Search className="size-[14px] text-gca-muted" />
                 <input
                   type="text"
@@ -229,18 +249,18 @@ export default function Home() {
                 {/* View switch */}
                 <div className="col-span-2 flex w-fit cursor-pointer gap-[4px] rounded-[10px] bg-gca-page-bg p-[4px] sm:col-span-auto">
                   <button
-                    onClick={() => setView("card")}
+                    onClick={() => changeView("card")}
                     className={`flex h-[32px] w-[36px] items-center justify-center rounded-[6px] cursor-pointer ${
-                      view === "card" ? "bg-white shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]" : ""
+                      view === "card" ? "bg-gca-surface shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]" : ""
                     }`}
                   >
                     <LayoutGrid className="size-[16px] text-gca-dark" />
                   </button>
                   <button
-                    onClick={() => setView("table")}
+                    onClick={() => changeView("table")}
                     className={`flex h-[32px] w-[36px] items-center justify-center rounded-[6px] cursor-pointer ${
                       view === "table"
-                        ? "bg-white shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]"
+                        ? "bg-gca-surface shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]"
                         : ""
                     }`}
                   >
@@ -260,7 +280,7 @@ export default function Home() {
                         name: status.name,
                         value: status.value,
                       }))}
-                      style="h-[44px] w-full appearance-none rounded-[8px] border border-gca-border bg-white px-[12px] text-[14px] text-gca-dark outline-none sm:w-[170px]"
+                      style="h-[44px] w-full appearance-none rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[14px] text-gca-dark outline-none sm:w-[170px]"
                       selectedId={
                         projectStatusOptions.find((s) => s.value === statusFilter)?.id ?? "all"
                       }
@@ -282,7 +302,7 @@ export default function Home() {
                         id: program.id.toString(),
                         name: program.name,
                       }))}
-                      style="h-[44px] w-full appearance-none rounded-[8px] border border-gca-border bg-white px-[12px] text-[14px] text-gca-dark outline-none sm:w-[170px]"
+                      style="h-[44px] w-full appearance-none rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[14px] text-gca-dark outline-none sm:w-[170px]"
                       selectedId={
                         projectProgramOptions.find((p) => p.id.toString() === programFilter)?.id ??
                         "all"
@@ -370,7 +390,7 @@ function EmptyState({ showCreate }: { showCreate: boolean }) {
       {showCreate && (
         <Link
           href="/projects/new"
-          className="flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
+          className="flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
         >
           <Plus className="size-[10px]" />
           New project

@@ -265,14 +265,14 @@ export function ProjectForm({
             <button
               type="button"
               onClick={() => router.push("/admin/projects")}
-              className="rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
+              className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={updateProject.isPending}
-              className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-medium text-white disabled:opacity-60"
+              className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-60"
             >
               Save changes
             </button>
@@ -298,7 +298,7 @@ export function ProjectForm({
             <button
               type="button"
               onClick={() => router.push(`/projects/${project.project_id}/team`)}
-              className="mt-[16px] w-full rounded-[8px] border border-gca-border bg-white px-[14px] py-[10px] text-[14px] font-medium text-gca-dark"
+              className="mt-[16px] w-full rounded-[8px] border border-gca-border bg-gca-surface px-[14px] py-[10px] text-[14px] font-medium text-gca-dark"
             >
               Manage team
             </button>
@@ -312,7 +312,7 @@ export function ProjectForm({
             <button
               type="button"
               onClick={() => setDeleting(true)}
-              className="mt-[16px] w-full rounded-[8px] border border-error-border bg-white px-[14px] py-[10px] text-[14px] font-medium text-error-text"
+              className="mt-[16px] w-full rounded-[8px] border border-error-border bg-gca-surface px-[14px] py-[10px] text-[14px] font-medium text-error-text"
             >
               Delete project
             </button>

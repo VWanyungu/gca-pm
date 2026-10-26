@@ -27,7 +27,7 @@ export function TeamSection({
             {uniquePeople(team).map((m) => (
               <div
                 key={m.attribute_id}
-                className="mr-[-8px] flex size-[36px] items-center justify-center rounded-[10px] border-2 border-white bg-gca-badge-bg"
+                className="mr-[-8px] flex size-[36px] items-center justify-center rounded-[10px] border-2 border-gca-surface bg-gca-badge-bg"
                 title={`${m.first_name} ${m.last_name}`}
               >
                 <span className="text-[12px] font-semibold text-gca-badge-text">
@@ -38,7 +38,7 @@ export function TeamSection({
             {clientContacts.map((c, i) => (
               <div
                 key={c.contact_id}
-                className={`flex size-[36px] items-center justify-center rounded-[10px] border-2 border-white bg-[#fff4e5] ${
+                className={`flex size-[36px] items-center justify-center rounded-[10px] border-2 border-gca-surface bg-gca-warning-bg ${
                   i < clientContacts.length - 1 ? "mr-[-8px]" : ""
                 }`}
                 title={c.name}

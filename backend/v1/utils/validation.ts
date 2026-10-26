@@ -527,6 +527,14 @@ export const listPersonnelRolesQuerySchema =
     include_inactive: Joi.boolean().default(false),
   });
 
+export interface CreatePersonnelRoleBody {
+  name: string;
+}
+
+export const createPersonnelRoleSchema = Joi.object<CreatePersonnelRoleBody>({
+  name: Joi.string().trim().min(1).max(100).required(),
+});
+
 export interface CreateStageStateHistoryBody {
   stage_no: number;
   event: StageEvent;
@@ -1326,6 +1334,7 @@ export interface CreateDprBody {
   visitors_text?: string | null;
   delays_text?: string | null;
   incidents_text?: string | null;
+  materials_rejected_text?: string | null;
   other_notes_text?: string | null;
   status?: DprStatus;
   work_items?: CreateDprWorkItemInput[];
@@ -1350,6 +1359,7 @@ export interface UpdateDprBody {
   visitors_text?: string | null;
   delays_text?: string | null;
   incidents_text?: string | null;
+  materials_rejected_text?: string | null;
   other_notes_text?: string | null;
   work_items?: CreateDprWorkItemInput[];
   activity_progress?: CreateDprActivityProgressInput[];
@@ -1410,6 +1420,7 @@ export const createDprSchema = Joi.object<CreateDprBody>({
   visitors_text: Joi.string().trim().max(10000).allow(null, "").optional(),
   delays_text: Joi.string().trim().max(10000).allow(null, "").optional(),
   incidents_text: Joi.string().trim().max(10000).allow(null, "").optional(),
+  materials_rejected_text: Joi.string().trim().max(10000).allow(null, "").optional(),
   other_notes_text: Joi.string().trim().max(10000).allow(null, "").optional(),
   status: Joi.string()
     .valid(...DPR_STATUSES)
@@ -1491,6 +1502,7 @@ export const updateDprSchema = Joi.object<UpdateDprBody>({
   visitors_text: Joi.string().trim().max(10000).allow(null, "").optional(),
   delays_text: Joi.string().trim().max(10000).allow(null, "").optional(),
   incidents_text: Joi.string().trim().max(10000).allow(null, "").optional(),
+  materials_rejected_text: Joi.string().trim().max(10000).allow(null, "").optional(),
   other_notes_text: Joi.string().trim().max(10000).allow(null, "").optional(),
   work_items: Joi.array()
     .items(
@@ -1908,3 +1920,13 @@ export const setSubmissionClientPhotosSchema =
   Joi.object<SetSubmissionClientPhotosBody>({
     photo_ids: Joi.array().items(Joi.string().uuid()).required(),
   });
+
+export interface SearchQuery {
+  q: string;
+  limit: number;
+}
+
+export const searchQuerySchema = Joi.object<SearchQuery>({
+  q: Joi.string().trim().min(2).max(100).required(),
+  limit: Joi.number().integer().min(1).max(10).default(5),
+});

@@ -115,7 +115,7 @@ export function DprWizardForm({
             maxLength={10000}
             rows={5}
             placeholder="Explain why this DPR needs to be amended"
-            className="w-full rounded-[8px] border border-gca-border bg-white p-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green placeholder:text-gca-muted"
+            className="w-full rounded-[8px] border border-gca-border bg-gca-surface p-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green placeholder:text-gca-muted"
           />
         </div>
       );
@@ -137,6 +137,7 @@ export function DprWizardForm({
           update={update}
           projectId={projectId}
           errors={validationErrors.workItems}
+          activityErrors={validationErrors.activityProgress}
         />
       );
     }
@@ -174,7 +175,7 @@ export function DprWizardForm({
         </button>
       </div>
 
-      <div className="flex items-center justify-between bg-white py-[10px]">
+      <div className="flex items-center justify-between bg-gca-surface py-[10px]">
         <div className="flex items-start gap-[14px]">
           <div className="flex flex-col gap-[2px]">
             <h1 className="text-2xl font-semibold tracking-[-0.7px] text-gca-dark sm:text-[28px] flex items-center gap-[10px]">
@@ -211,7 +212,7 @@ export function DprWizardForm({
         <button
           onClick={onPrimary}
           disabled={submitting}
-          className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
+          className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
         >
           {isFinalAction && submitting ? (
             <LoaderCircle
@@ -232,7 +233,7 @@ export function DprWizardForm({
 
       {isFullLayout ? (
         <div className="flex flex-1 items-start gap-[24px] py-[16px]">
-          <div className="sticky top-[80px] flex w-[220px] shrink-0 flex-col gap-[2px] rounded-[12px] bg-white">
+          <div className="sticky top-[80px] flex w-[220px] shrink-0 flex-col gap-[2px] rounded-[12px] bg-gca-surface">
             <p className="mb-[10px] text-[12px] font-semibold text-gca-muted">Sections</p>
             {steps.map((step) => (
               <button
@@ -278,12 +279,12 @@ export function DprWizardForm({
         </>
       )}
 
-      {/* <div className="sticky bottom-0 z-10 flex justify-between gap-[12px] border-t border-gca-border bg-white px-[16px] pt-[12px] pb-[30px]">
+      {/* <div className="sticky bottom-0 z-10 flex justify-between gap-[12px] border-t border-gca-border bg-gca-surface px-[16px] pt-[12px] pb-[30px]">
         {!amendmentMode && (
           <button
             onClick={onSaveDraft}
             disabled={saving}
-            className="flex w-[150px] items-center justify-center rounded-[8px] border border-gca-border bg-white py-[13px] disabled:opacity-60"
+            className="flex w-[150px] items-center justify-center rounded-[8px] border border-gca-border bg-gca-surface py-[13px] disabled:opacity-60"
           >
             {saving ? (
               <LoaderCircle className="size-[18px] animate-spin" aria-label="Saving draft" />
@@ -297,7 +298,7 @@ export function DprWizardForm({
           disabled={submitting}
           className="flex w-[150px] items-center justify-center rounded-[8px] bg-gca-green py-[13px] disabled:opacity-60"
         >
-          <p className="text-[15px] font-semibold text-white">
+          <p className="text-[15px] font-semibold text-gca-on-accent">
             {isFinalAction && submitting ? (
               <LoaderCircle
                 className="size-[18px] animate-spin"

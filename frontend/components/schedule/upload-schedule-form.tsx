@@ -186,7 +186,7 @@ export function UploadScheduleForm({
         >
           <span
             className={`flex size-[18px] shrink-0 items-center justify-center rounded-[4px] border-[1.5px] ${
-              rebaseline ? "border-gca-green bg-gca-green" : "border-[#c9d3cb] bg-white"
+              rebaseline ? "border-gca-green bg-gca-green" : "border-gca-border bg-gca-surface"
             }`}
           >
             {rebaseline && (
@@ -234,7 +234,7 @@ export function UploadScheduleForm({
           onClick={handleUploadClick}
           disabled={!file || submitting}
           aria-label={submitting ? "Uploading" : undefined}
-          className="cursor-pointer flex min-w-[80px] items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:cursor-not-allowed disabled:opacity-50"
+          className="cursor-pointer flex min-w-[80px] items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           {submitting ? (
             <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />
@@ -254,7 +254,7 @@ export function UploadScheduleForm({
             className="absolute inset-0 bg-[rgba(24,48,31,0.45)]"
             onClick={() => setConfirmingRebaseline(false)}
           />
-          <div className="relative m-6 md:m-0 w-[392px] max-w-full rounded-[12px] bg-white p-[24px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
+          <div className="relative m-6 md:m-0 w-[392px] max-w-full rounded-[12px] bg-gca-surface p-[24px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
             <h2 className="text-[18px] font-semibold text-gca-dark">
               Are you sure you want to rebaseline?
             </h2>
@@ -264,7 +264,7 @@ export function UploadScheduleForm({
             <div className="mt-[24px] flex justify-end gap-[12px]">
               <button
                 onClick={() => setConfirmingRebaseline(false)}
-                className="rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
+                className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
               >
                 Cancel
               </button>
@@ -273,7 +273,7 @@ export function UploadScheduleForm({
                   setConfirmingRebaseline(false);
                   onSubmit({ file, scopeMode, rebaseline, notes: notes.trim() });
                 }}
-                className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-medium text-white"
+                className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent"
               >
                 Rebaseline
               </button>

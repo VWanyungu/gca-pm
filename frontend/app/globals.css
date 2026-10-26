@@ -11,10 +11,16 @@
   --gca-show: #5e7264;
   --gca-border: #e2e8e3;
   --gca-page-bg: #f3f6f3;
+  /* Cards, sheets and table rows sit on this; the page sits on --gca-page-bg behind it. */
+  --gca-surface: #ffffff;
+  /* Text and icons on a filled green control, which stays light in both themes. */
+  --gca-on-accent: #ffffff;
   --error-bg: #fef3f2;
   --error-border: #b42318;
   --error-text: #b42318;
   --gca-warning: #b54708;
+  /* The tint behind a warning pill or banner, as --error-bg is for errors. */
+  --gca-warning-bg: #fff4e5;
   --gca-badge-bg: #e8f1ea;
   --gca-badge-text: #1f5530;
   --gca-stepper-from: #eef5f0;
@@ -35,10 +41,13 @@
   --color-gca-show: var(--gca-show);
   --color-gca-border: var(--gca-border);
   --color-gca-page-bg: var(--gca-page-bg);
+  --color-gca-surface: var(--gca-surface);
+  --color-gca-on-accent: var(--gca-on-accent);
   --color-error-bg: var(--error-bg);
   --color-error-border: var(--error-border);
   --color-error-text: var(--error-text);
   --color-gca-warning: var(--gca-warning);
+  --color-gca-warning-bg: var(--gca-warning-bg);
   --color-gca-badge-bg: var(--gca-badge-bg);
   --color-gca-badge-text: var(--gca-badge-text);
   --color-gca-stepper-from: var(--gca-stepper-from);
@@ -49,6 +58,120 @@
   --color-gca-slate: var(--gca-slate);
   --font-sans: var(--font-geist);
   --font-mono: "Geist Mono", monospace;
+}
+
+
+/* Dark theme. Only the variables above are redefined — every utility in the app resolves
+   through them, so nothing else has to know a second palette exists. Set on <html> by
+   ThemeProvider (and by THEME_INIT_SCRIPT before first paint). */
+:root[data-theme="dark"] {
+  --background: #0f1512;
+  --foreground: #e8efea;
+  --gca-green: #4caf6a;
+  --gca-green-hover: #3f9a5a;
+  /* Named for the light theme's dark-on-light text; in dark mode it is the light one. */
+  --gca-dark: #e8efea;
+  --gca-muted: #8a9a90;
+  --gca-show: #a9bbb0;
+  --gca-border: #26322b;
+  --gca-page-bg: #151d18;
+  --gca-surface: #1b241e;
+  --gca-on-accent: #0f1512;
+  --error-bg: #2a1614;
+  --error-border: #f0675a;
+  --error-text: #f0675a;
+  --gca-warning: #e9a23b;
+  --gca-warning-bg: #2e2213;
+  --gca-badge-bg: #1f3327;
+  --gca-badge-text: #8fd6a4;
+  --gca-stepper-from: #1a2821;
+  --gca-stepper-to: #151d18;
+  --gca-teal: #2dd4bf;
+  --gca-blue: #60a5fa;
+  --gca-purple: #a78bfa;
+  --gca-slate: #94a3b8;
+}
+
+/* The theme toggle shows one icon: the moon in light mode, the sun in dark. Both stay in the
+   DOM — the server cannot know the theme, so rendering only one would mismatch on hydration —
+   and CSS slides the current one into the window while the other leaves vertically. */
+.theme-icon-window {
+  position: relative;
+  display: block;
+  overflow: hidden;
+}
+
+.theme-icon {
+  position: absolute;
+  inset: 0;
+  transition:
+    transform 280ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 280ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Light: the moon is in the window, the sun waits above it. */
+.theme-icon-moon {
+  transform: translateY(0);
+  opacity: 1;
+}
+.theme-icon-sun {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+/* Dark: the moon drops out of the bottom, the sun comes down to take its place. */
+:root[data-theme="dark"] .theme-icon-moon {
+  transform: translateY(100%);
+  opacity: 0;
+}
+:root[data-theme="dark"] .theme-icon-sun {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-icon {
+    transition: none;
+  }
+}
+
+/* Form controls and scrollbars are painted by the browser, not by our utilities. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* The weekly and daily reports are printed on white paper by the browser's print engine, so
+   they must not follow the screen theme — dark-mode text would come out light on white.
+   This pins the light palette back on inside the report, whatever <html data-theme> says.
+   Keep in step with :root above. */
+.report-paper {
+  --background: #ffffff;
+  --foreground: #18301f;
+  --gca-green: #2e7d45;
+  --gca-green-hover: #267a3d;
+  --gca-dark: #18301f;
+  --gca-muted: #627469;
+  --gca-show: #5e7264;
+  --gca-border: #e2e8e3;
+  --gca-page-bg: #f3f6f3;
+  /* Cards, sheets and table rows sit on this; the page sits on --gca-page-bg behind it. */
+  --gca-surface: #ffffff;
+  /* Text and icons on a filled green control, which stays light in both themes. */
+  --gca-on-accent: #ffffff;
+  --error-bg: #fef3f2;
+  --error-border: #b42318;
+  --error-text: #b42318;
+  --gca-warning: #b54708;
+  /* The tint behind a warning pill or banner, as --error-bg is for errors. */
+  --gca-warning-bg: #fff4e5;
+  --gca-badge-bg: #e8f1ea;
+  --gca-badge-text: #1f5530;
+  --gca-stepper-from: #eef5f0;
+  --gca-stepper-to: #f8faf8;
+  --gca-teal: #0f766e;
+  --gca-blue: #2563eb;
+  --gca-purple: #7c3aed;
+  --gca-slate: #475569;
 }
 
 body {

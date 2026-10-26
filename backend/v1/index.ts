@@ -1,6 +1,7 @@
 import express from 'express';
 import authenticateToken from './middlewares/token.js';
 import authorize from './middlewares/authorize.js';
+import searchRouter from './routers/searchRouter.js';
 import usersRouter from './routers/usersRouter.js';
 import signUpRouter from './routers/signUpRouter.js';
 import loginRouter from './routers/loginRouter.js';
@@ -39,8 +40,13 @@ router.use('/login', loginRouter);
 router.use('/forgot-password', forgotPasswordRouter);
 router.use('/reset-password', resetUserPasswordRouter);
 
+// Ahead of the global guard: a refresh carries an access token that has, by definition,
+// already expired, so it needs the lenient check rather than the strict one.
+router.use('/token', authenticateToken({ allowExpired: true }), refreshTokenRouter);
+
 router.use(authenticateToken());
 
+router.use('/search', searchRouter);
 router.use('/users', usersRouter);
 router.use('/roles', rolesRouter);
 
@@ -78,7 +84,6 @@ router.use('/projects/:projectId/schedule', scheduleRouter);
 router.use('/notifications', notificationsRouter);
 
 router.use('/logout', logoutRouter);
-router.use('/token', refreshTokenRouter);
 
 
 export default router;

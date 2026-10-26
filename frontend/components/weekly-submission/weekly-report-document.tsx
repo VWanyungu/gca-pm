@@ -286,6 +286,7 @@ export const WeeklyReportDocument = forwardRef<HTMLDivElement, WeeklyReportDocum
         ["Visitors", "visitors_text"],
         ["Delays", "delays_text"],
         ["Incidents", "incidents_text"],
+        ["Materials rejected", "materials_rejected_text"],
       ] as const
     )
       .map(([label, field]) => ({
@@ -300,7 +301,7 @@ export const WeeklyReportDocument = forwardRef<HTMLDivElement, WeeklyReportDocum
       <div
         ref={ref}
         id="report-print-root"
-        className={`${jost.variable} ${cabin.variable} mx-auto w-full max-w-[800px] bg-white text-gca-dark`}
+        className={`report-paper ${jost.variable} ${cabin.variable} mx-auto w-full max-w-[800px] bg-white text-gca-dark`}
         style={{ fontFamily: "var(--font-cabin)" }}
       >
         {/* ===== Page 1 ===== */}
@@ -967,7 +968,7 @@ export const WeeklyReportDocument = forwardRef<HTMLDivElement, WeeklyReportDocum
   },
 );
 
-function SectionHeading({
+export function SectionHeading({
   children,
   first,
   aside,
@@ -987,7 +988,7 @@ function SectionHeading({
   );
 }
 
-function Th({ children, center }: { children: React.ReactNode; center?: boolean }) {
+export function Th({ children, center }: { children: React.ReactNode; center?: boolean }) {
   return (
     <th
       className={`border-[0.7px] border-gca-green bg-gca-badge-bg p-[4.5px_8px] text-[9.8px] font-bold tracking-[0.01em] text-gca-dark ${
@@ -999,11 +1000,11 @@ function Th({ children, center }: { children: React.ReactNode; center?: boolean 
   );
 }
 
-function Tr({ children, alt }: { children: React.ReactNode; alt?: boolean }) {
+export function Tr({ children, alt }: { children: React.ReactNode; alt?: boolean }) {
   return <tr className={alt ? "bg-gca-page-bg" : undefined}>{children}</tr>;
 }
 
-function Td({
+export function Td({
   children,
   center,
   num,
@@ -1050,7 +1051,7 @@ function Tag({ children, kind }: { children: React.ReactNode; kind?: "ok" | "war
   );
 }
 
-function RecordRow({
+export function RecordRow({
   label,
   value,
   label2,

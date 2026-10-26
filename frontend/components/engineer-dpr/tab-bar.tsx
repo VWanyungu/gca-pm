@@ -16,7 +16,7 @@ export function TabBar() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex w-full shrink-0 items-center border-t border-gca-border bg-white pt-[10px] pb-[28px]">
+    <nav className="flex w-full shrink-0 items-center border-t border-gca-border bg-gca-surface pt-[10px] pb-[28px]">
       {TABS.map(({ label, href, icon: Icon }) => {
         const isActive = href === "/engineer" ? pathname === href : pathname.startsWith(href);
         return (
@@ -34,7 +34,7 @@ export function TabBar() {
               className={
                 isActive
                   ? "text-[11px] font-semibold text-gca-badge-text"
-                  : "text-[11px] font-normal text-[#8d9c91]"
+                  : "text-[11px] font-normal text-gca-muted"
               }
             >
               {label}

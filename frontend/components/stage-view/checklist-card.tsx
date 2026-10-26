@@ -80,7 +80,7 @@ export function ChecklistCard({
             >
               <span
                 className={`flex size-[18px] shrink-0 items-center justify-center rounded-[4px] border-[1.5px] ${
-                  item.is_checked ? "border-gca-green bg-gca-green" : "border-[#c9d3cb] bg-white"
+                  item.is_checked ? "border-gca-green bg-gca-green" : "border-gca-border bg-gca-surface"
                 }`}
               >
                 {item.is_checked && (
@@ -121,12 +121,12 @@ export function ChecklistCard({
               onChange={(e) => setNewItemText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addItem()}
               placeholder="Add an item"
-              className="h-[39px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[14px] outline-none focus:border-gca-green"
+              className="h-[39px] w-full rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[14px] outline-none focus:border-gca-green"
             />
             <button
               onClick={addItem}
               disabled={saving || !newItemText.trim()}
-              className="cursor-pointer h-[39px] shrink-0 rounded-[8px] border border-gca-border bg-white px-[12px] text-[13px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
+              className="cursor-pointer h-[39px] shrink-0 rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[13px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
             >
               Add
             </button>

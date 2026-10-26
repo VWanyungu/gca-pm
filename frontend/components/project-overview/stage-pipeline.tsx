@@ -101,7 +101,7 @@ export function StagePipeline({
             <div ref={menuRef} className="relative">
               <button
                 onClick={() => setMenuOpen((o) => !o)}
-                className="flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-white py-[2px] pl-[10px] pr-[8px]"
+                className="flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface py-[2px] pl-[10px] pr-[8px]"
               >
                 <span className="text-[13px] text-gca-show font-light">Current</span>
                 <span className="text-[13px] font-medium text-gca-dark">
@@ -110,7 +110,7 @@ export function StagePipeline({
                 <ChevronsUpDown className="size-[13px] text-gca-muted" />
               </button>
               {menuOpen && (
-                <div className="absolute left-0 top-[36px] z-50 flex w-[282px] flex-col gap-[2px] rounded-[12px] border border-gca-border bg-white p-[8px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
+                <div className="absolute left-0 top-[36px] z-50 flex w-[282px] flex-col gap-[2px] rounded-[12px] border border-gca-border bg-gca-surface p-[8px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
                   <p className="px-[10px] pb-[6px] pt-[2px] text-[12px] font-medium text-gca-muted">
                     Set current stage
                   </p>
@@ -177,7 +177,7 @@ export function StagePipeline({
               <button
                 onClick={saveScope}
                 disabled={saving}
-                className="rounded-[8px] bg-gca-green px-[14px] py-[7px] text-[13px] font-semibold text-white disabled:opacity-50"
+                className="rounded-[8px] bg-gca-green px-[14px] py-[7px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
               >
                 Save
               </button>
@@ -215,7 +215,7 @@ export function StagePipeline({
                   />
                 </div>
               ) : (
-                <div className="h-[6px] w-[98px] rounded-[3px] border border-dashed border-[#d3dcd5]" />
+                <div className="h-[6px] w-[98px] rounded-[3px] border border-dashed border-gca-border" />
               )}
               <div className="flex gap-[6px] items-center">
                 {editMode && (

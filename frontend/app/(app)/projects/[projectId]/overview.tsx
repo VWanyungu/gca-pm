@@ -18,7 +18,7 @@ import {
   useClientContacts,
   useStageActivities,
   useMilestones,
-  useOpenEscalations,
+  // useOpenEscalations, // paused: no escalations module yet
   useDraftSubmission,
   useSidebarCounts,
   ApiError,
@@ -40,7 +40,7 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
   const { data: milestones = [] } = useMilestones(projectId, {
     aggregate: true,
   });
-  const { data: escalations = [] } = useOpenEscalations(projectId);
+  // const { data: escalations = [] } = useOpenEscalations(projectId);
   const { data: draftSubmission } = useDraftSubmission(projectId);
   const { data: counts } = useSidebarCounts(projectId);
 
@@ -100,7 +100,9 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
   const weekStart = addDays(mondayOf(new Date()), 0 * 7);
 
   return (
-    <div className="flex min-h-[calc(100vh-64px)] w-full">
+    // The shell owns the viewport height and the content scrolls inside it, so the sidebar
+    // is always exactly one screen tall rather than ending where the content happens to.
+    <div className="flex h-[calc(100vh-64px)] w-full overflow-hidden">
       <ProjectSidebar
         projectId={projectId}
         stages={data.stages}
@@ -109,8 +111,8 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
         active="overview"
       />
 
-      <div className=" w-full flex justify-center">
-        <main className="flex w-full flex-col gap-[28px] p-[40px] max-w-[1200px]">
+      <div className="flex w-full justify-center overflow-y-auto">
+        <main className="flex w-full max-w-[1200px] flex-col gap-[28px] p-[40px]">
           <header className="flex w-full items-center justify-between">
             <div className="flex flex-col gap-[8px]">
               <h1 className="text-[30px] font-semibold tracking-[-0.75px] text-gca-dark">
@@ -143,7 +145,7 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
               projectId={projectId}
               overdueActivities={overdueActivities}
               draftWeekStart={draftSubmission?.week_start ?? null}
-              escalations={escalations}
+              // escalations={escalations}
             />
           </div>
 

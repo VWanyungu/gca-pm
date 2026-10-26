@@ -44,13 +44,23 @@ function handleSessionExpired() {
 }
 
 async function refreshAccessToken(): Promise<string | null> {
-  const { refreshToken } = getTokens();
+  const { token, refreshToken } = getTokens();
   if (!refreshToken) return null;
 
   try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "api-v": "v1",
+    };
+    // /token authenticates the caller from the access token it is replacing. That token has
+    // expired by the time we get here — the server forgives the clock on this route alone
+    // (authenticateToken({ allowExpired: true })) but still checks signature and blacklist,
+    // so it has to be sent rather than omitted.
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
     const res = await fetch(`${API_BASE}/token`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "api-v": "v1" },
+      headers,
       body: JSON.stringify({ refreshToken }),
     });
 

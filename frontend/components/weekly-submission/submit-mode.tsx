@@ -157,7 +157,7 @@ export function SubmitMode({
             onClick={() => setTab("week")}
             className={`cursor-pointer rounded-[6px] px-[12px] py-[6px] text-[13px] ${
               tab === "week"
-                ? "bg-white font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
+                ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                 : "font-normal text-gca-show"
             }`}
           >
@@ -167,7 +167,7 @@ export function SubmitMode({
             onClick={() => setTab("register")}
             className={`cursor-pointer rounded-[6px] px-[12px] py-[6px] text-[13px] ${
               tab === "register"
-                ? "bg-white font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
+                ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                 : "font-normal text-gca-show"
             }`}
           >
@@ -310,8 +310,8 @@ export function SubmitMode({
                       </button>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center gap-[8px] rounded-[12px] bg-[#f7f9f7] py-[32px]">
-                      <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-white">
+                    <div className="flex flex-col items-center gap-[8px] rounded-[12px] bg-gca-page-bg py-[32px]">
+                      <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-gca-surface">
                         <Shield className="size-[18px] text-gca-green" />
                       </span>
                       <div className="flex flex-col items-center gap-[4px] text-center">
@@ -323,7 +323,7 @@ export function SubmitMode({
                       <div className="mt-[8px] flex items-center gap-[12px]">
                         <button
                           onClick={() => setAddingRisk(true)}
-                          className="flex cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-white py-[10px] pl-[14px] pr-[16px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+                          className="flex cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface py-[10px] pl-[14px] pr-[16px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
                         >
                           Add from register
                         </button>
@@ -367,7 +367,7 @@ export function SubmitMode({
           </div>
 
           <div className="w-1/3 shrink-0">
-            <div className="sticky top-[88px] flex flex-col gap-[16px] rounded-[12px] bg-[#f7f9f7] p-[24px]">
+            <div className="sticky top-[88px] flex flex-col gap-[16px] rounded-[12px] bg-gca-page-bg p-[24px]">
               {viewSubmissionHref ? (
                 <>
                   <h3 className="text-[16px] font-semibold text-gca-dark">Ready to submit?</h3>
@@ -393,7 +393,7 @@ export function SubmitMode({
                   <button
                     onClick={submit}
                     disabled={!ready || submitting}
-                    className="cursor-pointer rounded-[8px] bg-gca-green py-[10px] text-[14px] font-semibold text-white disabled:opacity-50"
+                    className="cursor-pointer rounded-[8px] bg-gca-green py-[10px] text-[14px] font-semibold text-gca-on-accent disabled:opacity-50"
                   >
                     Submit
                   </button>

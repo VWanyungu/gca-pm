@@ -61,7 +61,7 @@ export function UploadResultView({
           </button>
           <button
             onClick={onViewSchedule}
-            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
+            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
           >
             View schedule
           </button>
@@ -119,7 +119,7 @@ export function UploadFailedView({
           </button>
           <button
             onClick={onUploadAgain}
-            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
+            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
           >
             Upload again
           </button>
@@ -144,7 +144,7 @@ export function UploadFailedView({
       </div>
 
       <div className="flex w-full flex-col rounded-[12px] border border-gca-border">
-        <div className="flex w-full items-center gap-[10px] border-b border-gca-border bg-white px-[16px] py-[8px] text-[12px] font-medium text-gca-muted">
+        <div className="flex w-full items-center gap-[10px] border-b border-gca-border bg-gca-surface px-[16px] py-[8px] text-[12px] font-medium text-gca-muted">
           <p className="w-[30%]">Task</p>
           <p className="w-[30%]">Problem</p>
           <p className="w-[40%]">How to fix</p>

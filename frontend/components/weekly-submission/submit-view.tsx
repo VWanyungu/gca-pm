@@ -128,7 +128,7 @@ export function SubmitView({
                       onClick={() => setTab("week")}
                       className={`cursor-pointer rounded-[6px] px-[12px] py-[6px] text-[13px] ${
                         isWeekTab
-                          ? "bg-white font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
+                          ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                           : "font-normal text-gca-show"
                       }`}
                     >
@@ -138,7 +138,7 @@ export function SubmitView({
                       onClick={() => setTab("register")}
                       className={`cursor-pointer rounded-[6px] px-[12px] py-[6px] text-[13px] ${
                         isRegisterTab
-                          ? "bg-white font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
+                          ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                           : "font-normal text-gca-show"
                       }`}
                     >
@@ -146,7 +146,7 @@ export function SubmitView({
                     </button>
                   </div>
 
-                  <div className="flex w-full flex-col items-start gap-[12px] rounded-[12px] border border-gca-border bg-white p-[32px]">
+                  <div className="flex w-full flex-col items-start gap-[12px] rounded-[12px] border border-gca-border bg-gca-surface p-[32px]">
                     <h2 className="text-[18px] font-semibold text-gca-dark">
                       Start Week {weekNumber(weekStart)} submission
                     </h2>
@@ -154,7 +154,7 @@ export function SubmitView({
                     <button
                       onClick={startWeek}
                       disabled={creating}
-                      className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white disabled:opacity-50"
+                      className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent disabled:opacity-50"
                     >
                       Start submission
                     </button>

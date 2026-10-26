@@ -118,7 +118,7 @@ export function ActivitiesTable({
                 onClick={() => changeTab(t)}
                 className={`cursor-pointer rounded-[6px] px-[10px] py-[5px] text-[13px] ${
                   tab === t
-                    ? "bg-white font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
+                    ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                     : "font-normal text-gca-show"
                 }`}
               >
@@ -128,7 +128,7 @@ export function ActivitiesTable({
           </div>
           <button
             onClick={onAddActivity}
-            className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+            className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
           >
             <Plus className="size-[10px]" />
             Add activity
@@ -161,7 +161,7 @@ export function ActivitiesTable({
             {tab === "all" && (
               <button
                 onClick={onAddActivity}
-                className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
+                className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
               >
                 Add activity
               </button>
@@ -177,7 +177,7 @@ export function ActivitiesTable({
                 className="cursor-pointer flex items-center gap-[10px]"
               >
                 <span className="flex size-[16px] items-center justify-center rounded-[4px] border-2 border-gca-green bg-gca-green">
-                  <Check className="size-[11px] text-white" />
+                  <Check className="size-[11px] text-gca-on-accent" />
                 </span>
                 <span className="text-[13px] font-medium text-gca-badge-text">
                   {selected.size} selected
@@ -186,7 +186,7 @@ export function ActivitiesTable({
               <button
                 onClick={markSelectedComplete}
                 disabled={marking}
-                className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[8px] text-[13px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
+                className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[8px] text-[13px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
               >
                 Mark {selected.size} as complete
               </button>
@@ -203,7 +203,7 @@ export function ActivitiesTable({
                       allSelected ? "border-gca-green bg-gca-green" : "border-gca-border"
                     }`}
                   >
-                    {allSelected && <Check className="size-[11px] text-white" />}
+                    {allSelected && <Check className="size-[11px] text-gca-on-accent" />}
                   </button>
                 </span>
               )}
@@ -227,7 +227,7 @@ export function ActivitiesTable({
                     }`}
                   >
                     {selected.has(activity.activity_id) && (
-                      <Check className="size-[11px] text-white" />
+                      <Check className="size-[11px] text-gca-on-accent" />
                     )}
                   </button>
                   {/* )} */}

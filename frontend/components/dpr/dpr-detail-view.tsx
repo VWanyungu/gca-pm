@@ -11,6 +11,7 @@ import {
 } from "@/components/weekly-submission/types";
 import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
 import { ArrowLeft, ChevronDown, ChevronUp, Download } from "lucide-react";
+import { DprReportDocument } from "./dpr-report-document";
 
 const SECTIONS = [
   { id: "conditions", label: "Conditions & references" },
@@ -126,10 +127,23 @@ export function DprDetailView({
     setExportOpen(false);
   }
 
+  function printReport() {
+    if (!dpr) return;
+    setExportOpen(false);
+    // Chrome names the PDF after the document title.
+    const previousTitle = document.title;
+    document.title = `${dpr.dpr_ref ?? dpr.report_date.slice(0, 10)}-dpr`;
+    const restore = () => {
+      document.title = previousTitle;
+      window.removeEventListener("afterprint", restore);
+    };
+    window.addEventListener("afterprint", restore);
+    window.print();
+  }
+
   function exportDpr(kind: "pdf" | "csv" | "exco-csv") {
     if (kind === "pdf") {
-      setExportOpen(false);
-      window.print();
+      printReport();
       return;
     }
     if (kind === "csv") {
@@ -167,7 +181,7 @@ export function DprDetailView({
       <ProjectSidebar projectId={projectId} stages={project.stages} counts={counts} active="dpr" />
 
       <div className="flex justify-center w-full">
-        <div className="flex w-full max-w-[1200px] flex-col gap-[24px] p-[40px] bg-white">
+        <div className="flex w-full max-w-[1100px] flex-col gap-[24px] p-[40px] bg-gca-surface">
           <div className="flex items-end justify-between">
             <div className="flex flex-col gap-[16px]">
               <Link
@@ -187,7 +201,7 @@ export function DprDetailView({
                 onClick={() => setMode("section")}
                 className={`cursor-pointer rounded-[6px] px-[12px] py-[6px] text-[13px] ${
                   mode === "section"
-                    ? "bg-white font-medium text-gca-dark shadow-[0px_1px_2px_0px_rgba(0,0,0,0.08)]"
+                    ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_2px_0px_rgba(0,0,0,0.08)]"
                     : "font-normal text-gca-show"
                 }`}
               >
@@ -197,7 +211,7 @@ export function DprDetailView({
                 onClick={() => setMode("full")}
                 className={`cursor-pointer rounded-[6px] px-[12px] py-[6px] text-[13px] ${
                   mode === "full"
-                    ? "bg-white font-medium text-gca-dark shadow-[0px_1px_2px_0px_rgba(0,0,0,0.08)]"
+                    ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_2px_0px_rgba(0,0,0,0.08)]"
                     : "font-normal text-gca-show"
                 }`}
               >
@@ -208,7 +222,7 @@ export function DprDetailView({
               <div className="relative">
                 {/* <button
                 onClick={() => setExportOpen((o) => !o)}
-                className="flex cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[14px] py-[9px] text-[14px] font-semibold text-gca-dark"
+                className="flex cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[14px] py-[9px] text-[14px] font-semibold text-gca-dark"
               >
                 Export
                 {exportOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
@@ -223,7 +237,7 @@ export function DprDetailView({
                 </button>
 
                 {exportOpen && (
-                  <div className="absolute right-0 top-[44px] z-10 flex w-[238px] flex-col gap-[2px] rounded-[12px] border border-gca-border bg-white p-[6px] shadow-[0px_10px_28px_0px_rgba(23,48,31,0.08)]">
+                  <div className="absolute right-0 top-[44px] z-10 flex w-[238px] flex-col gap-[2px] rounded-[12px] border border-gca-border bg-gca-surface p-[6px] shadow-[0px_10px_28px_0px_rgba(23,48,31,0.08)]">
                     <button
                       onClick={() => exportDpr("pdf")}
                       className="flex cursor-pointer items-center gap-[10px] rounded-[6px] px-[10px] py-[9px] text-left hover:bg-gca-page-bg"
@@ -259,7 +273,7 @@ export function DprDetailView({
 
           <div className="flex items-start gap-[24px]">
             <div className="sticky top-[24px] flex max-h-[calc(100vh-48px)] w-[260px] shrink-0 flex-col gap-[16px] overflow-y-auto">
-              <div className="flex flex-col gap-[2px] rounded-[12px] bg-white px-[24px] py-[20px]">
+              <div className="flex flex-col gap-[2px] rounded-[12px] bg-gca-surface px-[24px] py-[20px]">
                 <p className="mb-[14px] text-[12px] font-semibold text-gca-muted">Sections</p>
                 {SECTIONS.map((s) => (
                   <button
@@ -276,7 +290,7 @@ export function DprDetailView({
                 ))}
               </div>
 
-              <div className="flex w-[260px] flex-col gap-[25px] rounded-[12px] border border-gca-border bg-white px-[24px] py-[20px]">
+              <div className="flex w-[260px] flex-col gap-[25px] rounded-[12px] border border-gca-border bg-gca-surface px-[24px] py-[20px]">
                 <p className="text-[14px] font-semibold text-gca-dark">DPR details</p>
                 {detail("Project", project.project.name)}
                 {detail("Site", dpr.site_location)}
@@ -295,7 +309,7 @@ export function DprDetailView({
             </div>
 
             {mode === "section" ? (
-              <div className="flex w-[800px] flex-col gap-[16px] pb-[24px]">
+              <div className="flex min-w-0 flex-1 flex-col gap-[16px] pb-[24px]">
                 {SECTION_RENDERERS[activeSection](dpr)}
                 <div className="flex items-center justify-between border-t border-gca-border pt-[16px] text-[13px] font-medium text-gca-green">
                   <button
@@ -313,7 +327,7 @@ export function DprDetailView({
                 </div>
               </div>
             ) : (
-              <div className="flex w-[800px] flex-col gap-[48px] pb-[24px]">
+              <div className="flex min-w-0 flex-1 flex-col gap-[48px] pb-[24px]">
                 {SECTIONS.map((s) => (
                   <div
                     key={s.id}
@@ -328,6 +342,10 @@ export function DprDetailView({
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="hidden">
+            <DprReportDocument project={project.project} stages={project.stages} dpr={dpr} />
           </div>
         </div>
       </div>
@@ -438,7 +456,7 @@ function ConditionsSection({ dpr }: { dpr: DprDetail }) {
 
 const SEVERITY_STYLE: Record<string, string> = {
   none: "bg-gca-badge-bg text-gca-green",
-  minor: "bg-[#fdf6ea] text-gca-warning",
+  minor: "bg-gca-warning-bg text-gca-warning",
   significant: "bg-error-bg text-error-text",
   stoppage: "bg-error-bg text-error-text",
 };
@@ -501,7 +519,7 @@ function WorkProgressSection({ dpr }: { dpr: DprDetail }) {
                   {a.task_name ?? a.free_text}
                 </p>
                 {a.source === "free_text" && (
-                  <span className="w-fit rounded-full bg-[#fdf6ea] px-[8px] py-[2px] text-[13px] font-semibold text-gca-warning">
+                  <span className="w-fit rounded-full bg-gca-warning-bg px-[8px] py-[2px] text-[13px] font-semibold text-gca-warning">
                     Not in schedule
                   </span>
                 )}
@@ -560,6 +578,7 @@ function EquipmentSection({ dpr }: { dpr: DprDetail }) {
     detail("Visitors", dpr.visitors_text),
     detail("Delays", dpr.delays_text),
     detail("Incidents", dpr.incidents_text),
+    detail("Materials rejected", dpr.materials_rejected_text),
     detail("Other notes", dpr.other_notes_text),
   ].filter(Boolean);
   return (

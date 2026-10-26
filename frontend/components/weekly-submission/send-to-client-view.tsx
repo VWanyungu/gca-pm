@@ -59,11 +59,11 @@ export function SendToClientView({
 
   if (step === "sent") {
     return (
-      <div className="flex w-full flex-col items-center gap-[12px] rounded-[12px] border border-gca-border bg-white p-[48px]">
-        <div className="flex size-[48px] items-center justify-center rounded-full bg-gca-green text-white">✓</div>
+      <div className="flex w-full flex-col items-center gap-[12px] rounded-[12px] border border-gca-border bg-gca-surface p-[48px]">
+        <div className="flex size-[48px] items-center justify-center rounded-full bg-gca-green text-gca-on-accent">✓</div>
         <h2 className="text-[18px] font-semibold text-gca-dark">Mail client opened</h2>
         <p className="text-[13px] text-gca-show">Review the drafted email and hit send from there.</p>
-        <button onClick={onBack} className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white">
+        <button onClick={onBack} className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent">
           Back to submission
         </button>
       </div>
@@ -71,7 +71,7 @@ export function SendToClientView({
   }
 
   return (
-    <div className="flex w-full flex-col gap-[20px] rounded-[12px] border border-gca-border bg-white p-[32px]">
+    <div className="flex w-full flex-col gap-[20px] rounded-[12px] border border-gca-border bg-gca-surface p-[32px]">
       <button onClick={onBack} className="cursor-pointer w-fit text-[13px] font-medium text-gca-green">
         ← {step === "review" ? "Recipients" : "Submission"}
       </button>
@@ -133,7 +133,7 @@ export function SendToClientView({
             <button
               onClick={() => setStep("review")}
               disabled={toEmails.length === 0}
-              className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white disabled:opacity-50"
+              className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent disabled:opacity-50"
             >
               Next: Review
             </button>
@@ -164,7 +164,7 @@ export function SendToClientView({
           <div className="flex justify-end">
             <button
               onClick={send}
-              className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white"
+              className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent"
             >
               Send to client
             </button>
@@ -180,7 +180,7 @@ function StepBadge({ active, done, label, name }: { active: boolean; done: boole
     <span className={`flex items-center gap-[6px] ${active || done ? "text-gca-dark" : ""}`}>
       <span
         className={`flex size-[20px] items-center justify-center rounded-full text-[11px] ${
-          done ? "bg-gca-green text-white" : active ? "border border-gca-green text-gca-green" : "border border-gca-border"
+          done ? "bg-gca-green text-gca-on-accent" : active ? "border border-gca-green text-gca-green" : "border border-gca-border"
         }`}
       >
         {done ? "✓" : label}

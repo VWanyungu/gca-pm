@@ -162,7 +162,7 @@ export function RiskForm({
   }
 
   return (
-    <div className="flex w-full flex-col gap-[24px] rounded-[12px] bg-white p-[24px]">
+    <div className="flex w-full flex-col gap-[24px] rounded-[12px] bg-gca-surface p-[24px]">
       <button
         onClick={onCancel}
         className="cursor-pointer flex items-center gap-[6px] text-[13px] font-medium text-gca-green"
@@ -375,7 +375,7 @@ export function RiskForm({
                     onClick={() => setLikelihood(lvl.value)}
                     className={`flex-1 cursor-pointer rounded-[6px] py-[7px] text-[13px] ${
                       likelihood === lvl.value
-                        ? "bg-white font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
+                        ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                         : "font-normal text-gca-show"
                     }`}
                   >
@@ -393,7 +393,7 @@ export function RiskForm({
                     onClick={() => setImpact(lvl.value)}
                     className={`flex-1 cursor-pointer rounded-[6px] py-[7px] text-[13px] ${
                       impact === lvl.value
-                        ? "bg-white font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
+                        ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                         : "font-normal text-gca-show"
                     }`}
                   >
@@ -435,7 +435,7 @@ export function RiskForm({
             value={deleteReason}
             onChange={(e) => setDeleteReason(e.target.value)}
             rows={2}
-            className="rounded-[8px] border border-gca-border bg-white px-[13px] py-[10px] text-[14px] outline-none focus:border-gca-green"
+            className="rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[10px] text-[14px] outline-none focus:border-gca-green"
           />
           <div className="flex justify-end gap-[12px]">
             <button
@@ -447,7 +447,7 @@ export function RiskForm({
             <button
               onClick={deleteRisk}
               disabled={saving || !deleteReason.trim()}
-              className="cursor-pointer rounded-[8px] bg-error-text px-[14px] py-[8px] text-[13px] font-semibold text-white disabled:opacity-50"
+              className="cursor-pointer rounded-[8px] bg-error-text px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
             >
               Confirm delete
             </button>
@@ -476,7 +476,7 @@ export function RiskForm({
           <button
             onClick={submit}
             disabled={saving}
-            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
+            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
           >
             {editing ? "Save changes" : "Save risk"}
           </button>

@@ -56,7 +56,7 @@ export function UploadProcessingBanner({
   const progressPct = settled ? 100 : Math.min(90, (stepIndex / STEPS.length) * 100);
 
   return (
-    <div className="flex w-full flex-col gap-[16px] rounded-[12px] border border-gca-border bg-white p-[20px]">
+    <div className="flex w-full flex-col gap-[16px] rounded-[12px] border border-gca-border bg-gca-surface p-[20px]">
       <div className="flex w-full items-center justify-between">
         <div className="flex items-center gap-[12px]">
           <span className="flex size-[32px] items-center justify-center rounded-[6px] bg-gca-page-bg text-[11px] font-semibold text-gca-show">
@@ -86,7 +86,7 @@ export function UploadProcessingBanner({
             <div key={step.key} className="flex items-center gap-[8px]">
               {done ? (
                 <span className="flex size-[18px] items-center justify-center rounded-full bg-gca-green">
-                  <Check className="size-[12px] text-white" />
+                  <Check className="size-[12px] text-gca-on-accent" />
                 </span>
               ) : (
                 <span

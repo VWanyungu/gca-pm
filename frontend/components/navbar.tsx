@@ -23,6 +23,8 @@ import { canAccess, CAN_MANAGE_USERS, CAN_VIEW_REPORTS } from "@/lib/access-cont
 import useOutsideClick from "@/hooks/use-outside-click";
 import { useUnreadCount } from "@/components/notifications/use-notifications";
 import { useMobileNavigation } from "@/components/mobile-navigation-context";
+import { useTheme } from "@/components/theme-provider";
+import { GlobalSearch } from "@/components/global-search";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/" },
@@ -53,9 +55,22 @@ export function Navbar() {
     activeTab,
     setActiveTab,
   } = useMobileNavigation();
+  const { toggle: toggleTheme } = useTheme();
+  const [searchOpen, setSearchOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [mobileProjectsOpen, setMobileProjectsOpen] = useState(false);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearchOpen(true);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
 
@@ -120,315 +135,335 @@ export function Navbar() {
     (pathSegments[0] === "projects" && pathSegments.length >= 2 && pathSegments[1] !== "new");
 
   return (
-    <header className="sticky top-0 z-40 flex h-[64px] shrink-0 items-center justify-between border-b border-gca-border bg-white px-[12px] sm:px-[24px]">
-      {/* Left: logo + nav */}
-      <div className="flex min-w-0 items-center gap-[20px]">
-        <Link href="/" onClick={() => setMobileMenuOpen(false)} className="hidden md:block">
-          <Image src="/GCA Logo.svg" alt="Gas Connect Africa" width={89} height={32} priority />
-        </Link>
-        <div className="md:hidden">
-          <div className="flex gap-[12px] items-center justify-start">
-            <button
-              type="button"
-              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-              aria-expanded={mobileMenuOpen}
-              onClick={() => {
-                setActiveTab("navigation");
-                setMobileMenuOpen(!mobileMenuOpen);
-              }}
-              className="flex size-[36px] items-center justify-center rounded-[8px] text-gca-dark hover:bg-gca-page-bg"
-            >
-              {mobileMenuOpen ? <X className="size-[18]" /> : <Menu className="size-[18]" />}
-            </button>
+    <>
+      <header className="sticky top-0 z-40 flex h-[64px] shrink-0 items-center justify-between border-b border-gca-border bg-gca-surface px-[12px] sm:px-[24px]">
+        {/* Left: logo + nav */}
+        <div className="flex min-w-0 items-center gap-[20px]">
+          <Link href="/" onClick={() => setMobileMenuOpen(false)} className="hidden md:block">
+            <Image src="/GCA Logo.svg" alt="Gas Connect Africa" width={89} height={32} priority />
+          </Link>
+          <div className="md:hidden">
+            <div className="flex gap-[12px] items-center justify-start">
+              <button
+                type="button"
+                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={mobileMenuOpen}
+                onClick={() => {
+                  setActiveTab("navigation");
+                  setMobileMenuOpen(!mobileMenuOpen);
+                }}
+                className="flex size-[36px] items-center justify-center rounded-[8px] text-gca-dark hover:bg-gca-page-bg"
+              >
+                {mobileMenuOpen ? <X className="size-[18]" /> : <Menu className="size-[18]" />}
+              </button>
 
-            <Link href="/" onClick={() => setMobileMenuOpen(false)}>
-              <Image src="/GCA Logo.svg" alt="Gas Connect Africa" width={89} height={32} priority />
-            </Link>
-          </div>
+              <Link href="/" onClick={() => setMobileMenuOpen(false)}>
+                <Image
+                  src="/GCA Logo.svg"
+                  alt="Gas Connect Africa"
+                  width={89}
+                  height={32}
+                  priority
+                />
+              </Link>
+            </div>
 
-          <div
-            className={`fixed inset-x-0 bottom-0 top-[64px] z-[70] flex-col bg-white md:hidden ${
-              mobileMenuOpen ? "flex" : "hidden"
-            }`}
-          >
             <div
-              role="tablist"
-              aria-label="Mobile menu sections"
-              className={`grid border-b border-gca-border px-[16px] ${
-                hasSidebar ? "grid-cols-2" : "grid-cols-1"
+              className={`fixed inset-x-0 bottom-0 top-[64px] z-[70] flex-col bg-gca-surface md:hidden ${
+                mobileMenuOpen ? "flex" : "hidden"
               }`}
             >
-              {(["navigation", "sidebar"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === tab}
-                  hidden={tab === "sidebar" && !hasSidebar}
-                  onClick={() => setActiveTab(tab)}
-                  className={`border-b-2 px-[12px] py-[14px] text-[14px] font-medium ${
-                    activeTab === tab
-                      ? "border-gca-green text-gca-green"
-                      : "border-transparent text-gca-muted"
-                  }`}
-                >
-                  {tab === "navigation" ? "Navigation" : "Sidebar"}
-                </button>
-              ))}
-            </div>
-            <div className="flex-1 overflow-y-auto p-[16px]">
-              {activeTab === "navigation" && (
-                <nav aria-label="Main navigation" className="flex flex-col gap-[4px]">
-                  {navItems.map((item) =>
-                    item.hasDropdown ? (
-                      <div key={item.label}>
-                        <button
-                          type="button"
-                          aria-expanded={mobileProjectsOpen}
-                          onClick={() => setMobileProjectsOpen((open) => !open)}
-                          className="flex w-full items-center justify-between rounded-[6px] px-[10px] py-[9px] text-left text-[14px] font-medium text-gca-dark hover:bg-gca-page-bg"
+              <div
+                role="tablist"
+                aria-label="Mobile menu sections"
+                className={`grid border-b border-gca-border px-[16px] ${
+                  hasSidebar ? "grid-cols-2" : "grid-cols-1"
+                }`}
+              >
+                {(["navigation", "sidebar"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === tab}
+                    hidden={tab === "sidebar" && !hasSidebar}
+                    onClick={() => setActiveTab(tab)}
+                    className={`border-b-2 px-[12px] py-[14px] text-[14px] font-medium ${
+                      activeTab === tab
+                        ? "border-gca-green text-gca-green"
+                        : "border-transparent text-gca-muted"
+                    }`}
+                  >
+                    {tab === "navigation" ? "Navigation" : "Sidebar"}
+                  </button>
+                ))}
+              </div>
+              <div className="flex-1 overflow-y-auto p-[16px]">
+                {activeTab === "navigation" && (
+                  <nav aria-label="Main navigation" className="flex flex-col gap-[4px]">
+                    {navItems.map((item) =>
+                      item.hasDropdown ? (
+                        <div key={item.label}>
+                          <button
+                            type="button"
+                            aria-expanded={mobileProjectsOpen}
+                            onClick={() => setMobileProjectsOpen((open) => !open)}
+                            className="flex w-full items-center justify-between rounded-[6px] px-[10px] py-[9px] text-left text-[14px] font-medium text-gca-dark hover:bg-gca-page-bg"
+                          >
+                            {item.label}
+                            <ChevronDown
+                              className={`size-[16px] transition-transform ${mobileProjectsOpen ? "rotate-180" : ""}`}
+                            />
+                          </button>
+                          {mobileProjectsOpen && (
+                            <div className="ml-[8px] flex flex-col border-l border-gca-border pl-[8px]">
+                              {recentProjects.map((project) => (
+                                <Link
+                                  key={project.project_id}
+                                  href={`/projects/${project.project_id}`}
+                                  onClick={() => setMobileMenuOpen(false)}
+                                  className="rounded-[6px] px-[10px] py-[8px] hover:bg-gca-page-bg"
+                                >
+                                  <span className="block text-[13px] font-medium text-gca-dark">
+                                    {project.name}
+                                  </span>
+                                  <span className="block text-[11px] text-gca-muted">
+                                    {project.current_stage_name ?? "—"} ·{" "}
+                                    {STATUS_LABELS[project.status] ?? project.status}
+                                  </span>
+                                </Link>
+                              ))}
+                              <Link
+                                href="/"
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="flex items-center gap-[10px] rounded-[6px] px-[10px] py-[9px] text-[14px] text-gca-dark hover:bg-gca-page-bg"
+                              >
+                                <FolderKanban className="size-[14px] text-gca-show" />
+                                All projects
+                              </Link>
+                              <Link
+                                href="/projects/new"
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="flex items-center gap-[10px] rounded-[6px] px-[10px] py-[9px] text-[14px] text-gca-dark hover:bg-gca-page-bg"
+                              >
+                                <Plus className="size-[14px] text-gca-show" />
+                                New project
+                              </Link>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <Link
+                          key={item.label}
+                          href={item.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`rounded-[6px] px-[10px] py-[9px] text-[14px] ${
+                            isActive(item.href)
+                              ? "bg-gca-badge-bg font-semibold text-gca-badge-text"
+                              : "font-medium text-gca-dark hover:bg-gca-page-bg"
+                          }`}
                         >
                           {item.label}
-                          <ChevronDown
-                            className={`size-[16px] transition-transform ${mobileProjectsOpen ? "rotate-180" : ""}`}
-                          />
-                        </button>
-                        {mobileProjectsOpen && (
-                          <div className="ml-[8px] flex flex-col border-l border-gca-border pl-[8px]">
-                            {recentProjects.map((project) => (
-                              <Link
-                                key={project.project_id}
-                                href={`/projects/${project.project_id}`}
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="rounded-[6px] px-[10px] py-[8px] hover:bg-gca-page-bg"
-                              >
-                                <span className="block text-[13px] font-medium text-gca-dark">
-                                  {project.name}
-                                </span>
-                                <span className="block text-[11px] text-gca-muted">
-                                  {project.current_stage_name ?? "—"} ·{" "}
-                                  {STATUS_LABELS[project.status] ?? project.status}
-                                </span>
-                              </Link>
-                            ))}
-                            <Link
-                              href="/"
-                              onClick={() => setMobileMenuOpen(false)}
-                              className="flex items-center gap-[10px] rounded-[6px] px-[10px] py-[9px] text-[14px] text-gca-dark hover:bg-gca-page-bg"
-                            >
-                              <FolderKanban className="size-[14px] text-gca-show" />
-                              All projects
-                            </Link>
-                            <Link
-                              href="/projects/new"
-                              onClick={() => setMobileMenuOpen(false)}
-                              className="flex items-center gap-[10px] rounded-[6px] px-[10px] py-[9px] text-[14px] text-gca-dark hover:bg-gca-page-bg"
-                            >
-                              <Plus className="size-[14px] text-gca-show" />
-                              New project
-                            </Link>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <Link
-                        key={item.label}
-                        href={item.href}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={`rounded-[6px] px-[10px] py-[9px] text-[14px] ${
-                          isActive(item.href)
-                            ? "bg-gca-badge-bg font-semibold text-gca-badge-text"
-                            : "font-medium text-gca-dark hover:bg-gca-page-bg"
-                        }`}
-                      >
-                        {item.label}
-                      </Link>
-                    ),
-                  )}
-                </nav>
-              )}
-              <div
-                id="mobile-sidebar-content"
-                className={`h-full ${activeTab === "sidebar" ? "block" : "hidden"}`}
-              />
+                        </Link>
+                      ),
+                    )}
+                  </nav>
+                )}
+                <div
+                  id="mobile-sidebar-content"
+                  className={`h-full ${activeTab === "sidebar" ? "block" : "hidden"}`}
+                />
+              </div>
             </div>
           </div>
-        </div>
-        <div className="hidden h-[20px] w-px bg-gca-border md:block" />
-        <nav className="hidden items-center gap-[4px] md:flex" ref={dropdownRef}>
-          {navItems.map((item) => {
-            const active = isActive(item.href);
-            return (
-              <div key={item.label} className="relative">
-                {item.hasDropdown ? (
-                  <button
-                    onClick={() => setOpenDropdown(openDropdown === item.label ? null : item.label)}
-                    onMouseEnter={() => setOpenDropdown(item.label)}
-                    onMouseLeave={() => setOpenDropdown(null)}
-                    className="flex flex-col items-center gap-[6px] px-[12px] pb-[4px] pt-[10px] cursor-pointer"
-                  >
-                    <span className="flex items-center gap-[6px]">
+          <div className="hidden h-[20px] w-px bg-gca-border md:block" />
+          <nav className="hidden items-center gap-[4px] md:flex" ref={dropdownRef}>
+            {navItems.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <div key={item.label} className="relative">
+                  {item.hasDropdown ? (
+                    <button
+                      onClick={() =>
+                        setOpenDropdown(openDropdown === item.label ? null : item.label)
+                      }
+                      onMouseEnter={() => setOpenDropdown(item.label)}
+                      onMouseLeave={() => setOpenDropdown(null)}
+                      className="flex flex-col items-center gap-[6px] px-[12px] pb-[4px] pt-[10px] cursor-pointer"
+                    >
+                      <span className="flex items-center gap-[6px]">
+                        <span
+                          className={`text-[14px] ${active ? "font-medium text-gca-dark" : "font-medium text-gca-show"}`}
+                        >
+                          {item.label}
+                        </span>
+                        <ChevronDown className="size-[18] text-gca-show" />
+                      </span>
+                      <span
+                        className={`size-[4px] rounded-full ${active ? "bg-gca-green" : "bg-transparent"}`}
+                      />
+                    </button>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      className="flex flex-col items-center gap-[6px] px-[12px] pb-[4px] pt-[10px]"
+                    >
                       <span
                         className={`text-[14px] ${active ? "font-medium text-gca-dark" : "font-medium text-gca-show"}`}
                       >
                         {item.label}
                       </span>
-                      <ChevronDown className="size-[18] text-gca-show" />
-                    </span>
-                    <span
-                      className={`size-[4px] rounded-full ${active ? "bg-gca-green" : "bg-transparent"}`}
-                    />
-                  </button>
-                ) : (
-                  <Link
-                    href={item.href}
-                    className="flex flex-col items-center gap-[6px] px-[12px] pb-[4px] pt-[10px]"
-                  >
-                    <span
-                      className={`text-[14px] ${active ? "font-medium text-gca-dark" : "font-medium text-gca-show"}`}
-                    >
-                      {item.label}
-                    </span>
-                    <span
-                      className={`size-[4px] rounded-full ${active ? "bg-gca-green" : "bg-transparent"}`}
-                    />
-                  </Link>
-                )}
+                      <span
+                        className={`size-[4px] rounded-full ${active ? "bg-gca-green" : "bg-transparent"}`}
+                      />
+                    </Link>
+                  )}
 
-                {/* Projects dropdown — recent projects + shortcuts (S-PM-09) */}
-                {item.hasDropdown && openDropdown === "Projects" && (
-                  <div
-                    onMouseEnter={() => setOpenDropdown(item.label)}
-                    onMouseLeave={() => setOpenDropdown(null)}
-                    className="absolute left-0 top-[48px] z-50 w-[294px] rounded-[10px] border border-gca-border bg-white p-[8px] shadow-[0px_4px_12px_rgba(0,0,0,0.08)]"
-                  >
-                    <p className="pl-[14px] px-[10px] py-[6px] text-[12px] font-medium normal-case tracking-[0.4px] text-gca-muted">
-                      Recent
-                    </p>
-                    {recentProjects.map((project) => (
+                  {/* Projects dropdown — recent projects + shortcuts (S-PM-09) */}
+                  {item.hasDropdown && openDropdown === "Projects" && (
+                    <div
+                      onMouseEnter={() => setOpenDropdown(item.label)}
+                      onMouseLeave={() => setOpenDropdown(null)}
+                      className="absolute left-0 top-[48px] z-50 w-[294px] rounded-[10px] border border-gca-border bg-gca-surface p-[8px] shadow-[0px_4px_12px_rgba(0,0,0,0.08)]"
+                    >
+                      <p className="pl-[14px] px-[10px] py-[6px] text-[12px] font-medium normal-case tracking-[0.4px] text-gca-muted">
+                        Recent
+                      </p>
+                      {recentProjects.map((project) => (
+                        <Link
+                          key={project.project_id}
+                          href={`/projects/${project.project_id}`}
+                          onClick={() => setOpenDropdown(null)}
+                          className="block rounded-[6px] px-[10px] py-[8px] hover:bg-gca-page-bg"
+                        >
+                          <p className="text-[13px] font-medium text-gca-dark">{project.name}</p>
+                          <p className="text-[11px] text-gca-muted">
+                            {project.current_stage_name ?? "—"} ·{" "}
+                            {STATUS_LABELS[project.status] ?? project.status}
+                          </p>
+                        </Link>
+                      ))}
+                      <div className="my-[9px] h-px bg-gca-border" />
                       <Link
-                        key={project.project_id}
-                        href={`/projects/${project.project_id}`}
+                        href="/"
                         onClick={() => setOpenDropdown(null)}
-                        className="block rounded-[6px] px-[10px] py-[8px] hover:bg-gca-page-bg"
+                        className="flex items-center gap-[10px] rounded-[6px] px-[10px] py-[8px] text-[14px] font-medium text-gca-dark hover:bg-gca-page-bg"
                       >
-                        <p className="text-[13px] font-medium text-gca-dark">{project.name}</p>
-                        <p className="text-[11px] text-gca-muted">
-                          {project.current_stage_name ?? "—"} ·{" "}
-                          {STATUS_LABELS[project.status] ?? project.status}
-                        </p>
+                        <FolderKanban className="size-[14px] text-gca-show" />
+                        All projects
                       </Link>
-                    ))}
-                    <div className="my-[9px] h-px bg-gca-border" />
-                    <Link
-                      href="/"
-                      onClick={() => setOpenDropdown(null)}
-                      className="flex items-center gap-[10px] rounded-[6px] px-[10px] py-[8px] text-[14px] font-medium text-gca-dark hover:bg-gca-page-bg"
-                    >
-                      <FolderKanban className="size-[14px] text-gca-show" />
-                      All projects
-                    </Link>
-                    <Link
-                      href="/projects/new"
-                      onClick={() => setOpenDropdown(null)}
-                      className="flex items-center gap-[10px] rounded-[6px] px-[10px] py-[8px] text-[14px] font-medium text-gca-dark hover:bg-gca-page-bg"
-                    >
-                      <Plus className="size-[14px] text-gca-show" />
-                      New project
-                    </Link>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Right: search + actions */}
-      <div className="flex shrink-0 items-center gap-[2px] sm:gap-[8px]">
-        {/* Global search */}
-        <div className="hidden w-[300px] items-center justify-between rounded-[8px] bg-gca-page-bg px-[12px] py-[8px] lg:flex">
-          <Search className="size-[16px] text-gca-muted" />
-          <span className="text-[14px] text-gca-muted">Search projects, DPRs, risks</span>
-          <kbd className="rounded-[4px] border border-gca-border bg-white px-[6px] py-[2px] text-[11px] font-medium text-gca-show">
-            Ctrl K
-          </kbd>
+                      <Link
+                        href="/projects/new"
+                        onClick={() => setOpenDropdown(null)}
+                        className="flex items-center gap-[10px] rounded-[6px] px-[10px] py-[8px] text-[14px] font-medium text-gca-dark hover:bg-gca-page-bg"
+                      >
+                        <Plus className="size-[14px] text-gca-show" />
+                        New project
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
         </div>
 
-        {/* Theme switcher */}
-        <div className="flex gap-[2px] rounded-[8px] bg-gca-page-bg p-[2px]">
-          <button className="flex size-[28px] items-center justify-center rounded-[6px] bg-white shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]">
-            <Sun className="size-[16px] text-gca-dark" />
-          </button>
-          <button className="flex size-[28px] items-center justify-center rounded-[6px]">
-            <Moon className="size-[16px] text-gca-show" />
-          </button>
-        </div>
-
-        {/* Help */}
-        <button className="hidden size-[36px] items-center justify-center rounded-[8px] md:flex">
-          <HelpCircle className="size-[18px] text-gca-show" />
-        </button>
-
-        {/* Notifications */}
-        <Link
-          href="/notifications"
-          className="relative flex size-[36px] items-center justify-center rounded-[8px] hover:bg-gca-page-bg"
-        >
-          <Bell className="size-[18px] text-gca-show" />
-          {unreadCount > 0 && (
-            <span className="absolute left-[30px] top-[-6px] flex items-center rounded-[6px] bg-gca-green px-[4px] py-px text-[11px] font-semibold text-white">
-              {unreadCount}
-            </span>
-          )}
-        </Link>
-
-        {/* User menu */}
-        <div className="relative" ref={accountMenuRef}>
+        {/* Right: search + actions */}
+        <div className="flex shrink-0 items-center gap-[2px] sm:gap-[8px]">
+          {/* Global search */}
           <button
-            onClick={() => setAccountMenuOpen((open) => !open)}
-            className="flex items-center gap-[8px] rounded-[8px] px-[4px] py-[2px] cursor-pointer"
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            aria-label="Search"
+            className="hidden w-[300px] cursor-pointer items-center justify-between rounded-[8px] bg-gca-page-bg px-[12px] py-[8px] lg:flex"
           >
-            <div className="flex size-[32px] items-center justify-center rounded-[8px] bg-gca-badge-bg">
-              <span className="text-[12px] font-semibold text-gca-badge-text">{initials}</span>
-            </div>
-            <ChevronDown className="hidden size-[8px] text-gca-show sm:block" />
+            <Search className="size-[16px] text-gca-muted" />
+            <span className="text-[14px] text-gca-muted">Search projects, risks, changes</span>
+            <kbd className="rounded-[4px] border border-gca-border bg-gca-surface px-[6px] py-[2px] text-[11px] font-medium text-gca-show">
+              Ctrl K
+            </kbd>
           </button>
 
-          {accountMenuOpen && (
-            <div className="absolute right-0 top-[44px] z-50 w-[260px] rounded-[12px] border border-gca-border bg-white p-[8px] shadow-[0px_10px_28px_0px_rgba(23,48,31,0.08)]">
-              <div className="flex flex-col gap-[2px] px-[10px] py-[8px]">
-                <p className="truncate text-[14px] font-semibold text-gca-dark">
-                  {user?.firstName || user?.email || "Account"}
-                </p>
-                <p className="truncate text-[12px] text-gca-show">{user?.email}</p>
+          {/* Theme switcher */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label="Toggle dark mode"
+            title="Toggle dark mode"
+            className="flex size-[32px] cursor-pointer items-center justify-center rounded-[8px] hover:bg-gca-page-bg"
+          >
+            <span className="theme-icon-window size-[16px]">
+              <Moon className="theme-icon theme-icon-moon size-[16px] text-gca-dark" />
+              <Sun className="theme-icon theme-icon-sun size-[16px] text-gca-dark" />
+            </span>
+          </button>
+
+          {/* Help */}
+          <button className="hidden size-[36px] items-center justify-center rounded-[8px] md:flex">
+            <HelpCircle className="size-[18px] text-gca-show" />
+          </button>
+
+          {/* Notifications */}
+          <Link
+            href="/notifications"
+            className="relative flex size-[36px] items-center justify-center rounded-[8px] hover:bg-gca-page-bg"
+          >
+            <Bell className="size-[18px] text-gca-show" />
+            {unreadCount > 0 && (
+              <span className="absolute left-[30px] top-[-6px] flex items-center rounded-[6px] bg-gca-green px-[4px] py-px text-[11px] font-semibold text-gca-on-accent">
+                {unreadCount}
+              </span>
+            )}
+          </Link>
+
+          {/* User menu */}
+          <div className="relative" ref={accountMenuRef}>
+            <button
+              onClick={() => setAccountMenuOpen((open) => !open)}
+              className="flex items-center gap-[8px] rounded-[8px] px-[4px] py-[2px] cursor-pointer"
+            >
+              <div className="flex size-[32px] items-center justify-center rounded-[8px] bg-gca-badge-bg">
+                <span className="text-[12px] font-semibold text-gca-badge-text">{initials}</span>
               </div>
-              <div className="my-[4px] h-px bg-gca-border" />
-              <Link
-                href="/profile"
-                onClick={() => setAccountMenuOpen(false)}
-                className="block rounded-[6px] px-[10px] py-[9px] text-[14px] text-gca-dark hover:bg-gca-page-bg"
-              >
-                My profile
-              </Link>
-              <Link
-                href="/notifications?tab=preferences"
-                onClick={() => setAccountMenuOpen(false)}
-                className="block rounded-[6px] px-[10px] py-[9px] text-[14px] text-gca-dark hover:bg-gca-page-bg"
-              >
-                Notification preferences
-              </Link>
-              <div className="my-[4px] h-px bg-gca-border" />
-              <button
-                onClick={handleSignOut}
-                className="block w-full rounded-[6px] px-[10px] py-[9px] text-left text-[14px] text-[#b42318] hover:bg-gca-page-bg cursor-pointer"
-              >
-                Sign out
-              </button>
-            </div>
-          )}
+              <ChevronDown className="hidden size-[8px] text-gca-show sm:block" />
+            </button>
+
+            {accountMenuOpen && (
+              <div className="absolute right-0 top-[44px] z-50 w-[260px] rounded-[12px] border border-gca-border bg-gca-surface p-[8px] shadow-[0px_10px_28px_0px_rgba(23,48,31,0.08)]">
+                <div className="flex flex-col gap-[2px] px-[10px] py-[8px]">
+                  <p className="truncate text-[14px] font-semibold text-gca-dark">
+                    {user?.firstName || user?.email || "Account"}
+                  </p>
+                  <p className="truncate text-[12px] text-gca-show">{user?.email}</p>
+                </div>
+                <div className="my-[4px] h-px bg-gca-border" />
+                <Link
+                  href="/profile"
+                  onClick={() => setAccountMenuOpen(false)}
+                  className="block rounded-[6px] px-[10px] py-[9px] text-[14px] text-gca-dark hover:bg-gca-page-bg"
+                >
+                  My profile
+                </Link>
+                <Link
+                  href="/notifications?tab=preferences"
+                  onClick={() => setAccountMenuOpen(false)}
+                  className="block rounded-[6px] px-[10px] py-[9px] text-[14px] text-gca-dark hover:bg-gca-page-bg"
+                >
+                  Notification preferences
+                </Link>
+                <div className="my-[4px] h-px bg-gca-border" />
+                <button
+                  onClick={handleSignOut}
+                  className="block w-full rounded-[6px] px-[10px] py-[9px] text-left text-[14px] text-error-text hover:bg-gca-page-bg cursor-pointer"
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+    </>
   );
 }

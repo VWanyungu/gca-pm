@@ -31,7 +31,7 @@ export function DeactivateUserModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-[rgba(24,48,31,0.45)]" onClick={onClose} />
-      <div className="relative m-6 md:m-0  w-[392px] max-w-full rounded-[12px] bg-white p-[24px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
+      <div className="relative m-6 md:m-0  w-[392px] max-w-full rounded-[12px] bg-gca-surface p-[24px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
         <h2 className="text-[18px] font-semibold text-gca-dark">
           {deactivating
             ? `Deactivate ${user.first_name} ${user.last_name}?`
@@ -46,7 +46,7 @@ export function DeactivateUserModal({
         {blocked && (
           <div className="mt-[16px] flex flex-col gap-[8px]">
             {pmCount > 0 && (
-              <div className="flex items-center justify-between rounded-[8px] bg-[#fff4e5] px-[12px] py-[10px]">
+              <div className="flex items-center justify-between rounded-[8px] bg-gca-warning-bg px-[12px] py-[10px]">
                 <p className="text-[13px] font-medium text-gca-warning">
                   {mainRoleWarning("PM", pmCount)}
                 </p>
@@ -59,7 +59,7 @@ export function DeactivateUserModal({
               </div>
             )}
             {plannerCount > 0 && (
-              <div className="flex items-center justify-between rounded-[8px] bg-[#fff4e5] px-[12px] py-[10px]">
+              <div className="flex items-center justify-between rounded-[8px] bg-gca-warning-bg px-[12px] py-[10px]">
                 <p className="text-[13px] font-medium text-gca-warning">
                   {mainRoleWarning("Planner", plannerCount)}
                 </p>
@@ -79,14 +79,14 @@ export function DeactivateUserModal({
         <div className="mt-[24px] flex justify-end gap-[12px]">
           <button
             onClick={onClose}
-            className="rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
+            className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
             disabled={setStatus.isPending || blocked}
-            className={`rounded-[8px] px-[16px] py-[10px] text-[14px] font-medium text-white disabled:opacity-40 ${
+            className={`rounded-[8px] px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40 ${
               deactivating ? "bg-error-border" : "bg-gca-green"
             }`}
           >

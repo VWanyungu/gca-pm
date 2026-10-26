@@ -52,7 +52,7 @@ export function ActivityDetail({
   }
 
   return (
-    <div className="flex w-full flex-col gap-[16px] rounded-[12px] border border-gca-border bg-white p-[24px]">
+    <div className="flex w-full flex-col gap-[16px] rounded-[12px] border border-gca-border bg-gca-surface p-[24px]">
       <button
         onClick={onBack}
         className=" cursor-pointer flex items-center gap-[8px] text-[13px] font-medium text-gca-green"
@@ -69,13 +69,13 @@ export function ActivityDetail({
           <div className="flex items-center gap-[12px]">
             <button
               onClick={onEdit}
-              className="cursor-pointer rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+              className="cursor-pointer rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
             >
               Edit
             </button>
             <button
               onClick={toggleDone}
-              className={`${activity.status === "done" ? "border border-gca-green text-gca-dark hover:text-gca-green" : "bg-gca-green hover:bg-gca-green-hover text-white"} cursor-pointer rounded-[8px] px-[16px] py-[10px] text-[14px] font-semibold`}
+              className={`${activity.status === "done" ? "border border-gca-green text-gca-dark hover:text-gca-green" : "bg-gca-green hover:bg-gca-green-hover text-gca-on-accent"} cursor-pointer rounded-[8px] px-[16px] py-[10px] text-[14px] font-semibold`}
             >
               {activity.status === "done" ? "Mark open" : "Mark done"}
             </button>
@@ -119,7 +119,7 @@ export function ActivityDetail({
               href={att.attachment_id}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center justify-between rounded-[8px] border border-gca-border bg-white px-[12px] py-[10px]"
+              className="flex items-center justify-between rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[10px]"
             >
               <span className="text-[13px] font-medium text-gca-dark">
                 {att.caption || "Attachment"}

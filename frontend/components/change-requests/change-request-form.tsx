@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { ArrowLeft, LoaderCircle, Paperclip, Upload, X } from "lucide-react";
 import { api } from "@/lib/api-client";
-import { useAuth } from "@/hooks/use-auth";
 import Dropdown from "@/components/Dropdown";
 import { useChangeRequestsInvalidate, uploadChangeRequestAttachment } from "./use-change-requests-data";
 import type { ChangeRequest, ChangeRequestType } from "./types";
@@ -46,15 +45,6 @@ export function ChangeRequestForm({
   onCancel,
 }: ChangeRequestFormProps) {
   const invalidate = useChangeRequestsInvalidate(projectId);
-  const { user } = useAuth();
-
-  // Mirrors the backend's skipApproval check (changeRequestRouter.ts): a Site Engineer's own
-  // change request is FYI only and never goes to ExCo, unlike a PM's or Admin's.
-  const isAdmin = user?.role.some((r) => r.role === "Admin" && r.scope_type === "global") ?? false;
-  const isPmForProject =
-    user?.role.some((r) => r.role === "PM" && (r.scope_type === "global" || r.project_id === projectId)) ??
-    false;
-  const skipsApproval = !isAdmin && !isPmForProject;
 
   const [title, setTitle] = useState(editing?.title ?? "");
   const [type, setType] = useState<ChangeRequestType>(editing?.type ?? "scope");
@@ -138,7 +128,7 @@ export function ChangeRequestForm({
   }
 
   return (
-    <div className="flex w-full flex-col gap-[24px] rounded-[12px] bg-white p-[24px]">
+    <div className="flex w-full flex-col gap-[24px] rounded-[12px] bg-gca-surface p-[24px]">
       <button
         onClick={onCancel}
         className="cursor-pointer flex items-center gap-[6px] text-[13px] font-medium text-gca-green"
@@ -191,7 +181,7 @@ export function ChangeRequestForm({
                   onClick={() => setType(tab.id)}
                   className={`flex-1 cursor-pointer rounded-[6px] py-[7px] text-[13px] ${
                     type === tab.id
-                      ? "bg-white font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
+                      ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                       : "font-normal text-gca-show"
                   }`}
                 >
@@ -329,9 +319,7 @@ export function ChangeRequestForm({
       </div>
 
       <div className="flex w-full items-center justify-between gap-[16px] border-t border-gca-border pt-[20px]">
-        <p className="text-[13px] text-gca-muted">
-          {skipsApproval ? "FYI only — no ExCo approval needed" : "Goes to ExCo for the Tuesday review"}
-        </p>
+        <p className="text-[13px] text-gca-muted">Approved on raising</p>
         <div className="flex items-center gap-[16px]">
           <button
             onClick={onCancel}
@@ -342,7 +330,7 @@ export function ChangeRequestForm({
           <button
             onClick={submit}
             disabled={saving}
-            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
+            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
           >
             Save
           </button>

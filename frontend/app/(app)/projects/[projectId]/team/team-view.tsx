@@ -144,7 +144,7 @@ export default function TeamView({ projectId }: { projectId: string }) {
                 </button>
                 <button
                   onClick={() => setEditMode(false)}
-                  className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
+                  className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
                 >
                   Save changes
                 </button>
@@ -255,7 +255,7 @@ export default function TeamView({ projectId }: { projectId: string }) {
               className="grid w-full grid-cols-[380px_250px_230px_124px_50px] items-center border-t border-gca-border py-[12px]"
             >
               <div className="flex items-center gap-[12px]">
-                <span className="flex size-[36px] shrink-0 items-center justify-center rounded-[10px] bg-[#fff4e5] text-[13px] font-semibold text-gca-warning">
+                <span className="flex size-[36px] shrink-0 items-center justify-center rounded-[10px] bg-gca-warning-bg text-[13px] font-semibold text-gca-warning">
                   {initials(c.name.split(" ")[0] ?? "", c.name.split(" ")[1] ?? "")}
                 </span>
                 <div className="flex flex-col gap-[2px]">
@@ -269,7 +269,7 @@ export default function TeamView({ projectId }: { projectId: string }) {
               {editMode ? (
                 <button
                   onClick={() => removeContact(c.contact_id)}
-                  className="flex size-[32px] items-center justify-center justify-self-end rounded-[8px] border border-gca-border bg-white"
+                  className="flex size-[32px] items-center justify-center justify-self-end rounded-[8px] border border-gca-border bg-gca-surface"
                 >
                   <X className="size-[14px] text-gca-muted" />
                 </button>
@@ -299,7 +299,7 @@ export default function TeamView({ projectId }: { projectId: string }) {
                   placeholder="Email"
                   className="h-[38px] flex-1 rounded-[8px] border border-gca-border px-[12px] text-[13px] outline-none"
                 />
-                <button onClick={addContact} className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[13px] font-semibold text-white">
+                <button onClick={addContact} className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[13px] font-semibold text-gca-on-accent">
                   Add
                 </button>
                 <button onClick={() => setAddingContact(false)} className="text-[13px] font-medium text-gca-show">
@@ -405,7 +405,7 @@ function PersonRow({
       {editMode && !isMain ? (
         <button
           onClick={onRemove}
-          className="flex size-[32px] items-center justify-center justify-self-end rounded-[8px] border border-gca-border bg-white"
+          className="flex size-[32px] items-center justify-center justify-self-end rounded-[8px] border border-gca-border bg-gca-surface"
         >
           <X className="size-[14px] text-gca-muted" />
         </button>
@@ -448,7 +448,7 @@ function AddRow({
         style="h-[38px] w-[220px] rounded-[8px] border border-gca-border px-[12px] text-[14px]"
         onSelect={(id) => onChange(id)}
       />
-      <button onClick={onAdd} className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[13px] font-semibold text-white">
+      <button onClick={onAdd} className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[13px] font-semibold text-gca-on-accent">
         Add
       </button>
       <button onClick={onCancel} className="text-[13px] font-medium text-gca-show">

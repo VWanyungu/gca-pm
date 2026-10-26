@@ -1,4 +1,4 @@
-export type ChangeRequestStatus = "pending" | "approved" | "rejected" | "withdrawn" | "noted";
+export type ChangeRequestStatus = "pending" | "approved" | "rejected" | "withdrawn";
 export type ChangeRequestType = "scope" | "schedule" | "cost";
 
 export interface ChangeRequestAttachment {
@@ -48,8 +48,6 @@ export function statusInfo(status: ChangeRequestStatus): { label: string; classN
       return { label: "Rejected", className: "text-error-text" };
     case "withdrawn":
       return { label: "Withdrawn", className: "text-gca-muted" };
-    case "noted":
-      return { label: "Noted (FYI)", className: "text-gca-blue" };
   }
 }
 

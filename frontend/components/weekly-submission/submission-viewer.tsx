@@ -102,14 +102,14 @@ export function SubmissionViewer({
             <div className="flex gap-[12px]">
               <button
                 onClick={printReport}
-                className="cursor-pointer rounded-[8px] border border-gca-border bg-white px-[8px] py-[8px] text-[13px] font-medium text-gca-dark"
+                className="cursor-pointer rounded-[8px] border border-gca-border bg-gca-surface px-[8px] py-[8px] text-[13px] font-medium text-gca-dark"
                 title="Save as PDF"
               >
                 <Download size={18} />
               </button>
               <button
                 onClick={() => setSending(true)}
-                className="cursor-pointer rounded-[8px] border border-gca-border bg-white px-[14px] py-[8px] text-[13px] font-medium text-gca-dark flex gap-[6px] items-center"
+                className="cursor-pointer rounded-[8px] border border-gca-border bg-gca-surface px-[14px] py-[8px] text-[13px] font-medium text-gca-dark flex gap-[6px] items-center"
               >
                 <SendIcon size={18} /> Send to client
               </button>

@@ -90,7 +90,7 @@ export function ReconciliationFlagsView({
           <button
             onClick={() => acknowledge(Array.from(selected))}
             disabled={saving}
-            className="cursor-pointer rounded-[8px] bg-gca-green px-[14px] py-[8px] text-[13px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
+            className="cursor-pointer rounded-[8px] bg-gca-green px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
           >
             Acknowledge selected
           </button>
@@ -104,6 +104,8 @@ export function ReconciliationFlagsView({
               type="checkbox"
               checked={rows.length > 0 && rows.every((r) => selected.has(r.flag_id))}
               onChange={toggleAllOnPage}
+              aria-label="Select every flag on this page"
+              className="size-[18px] shrink-0 cursor-pointer rounded-[4px] border-[1.5px] border-gca-border accent-gca-green"
             />
           </span>
           <p className="w-[31%]">Task</p>
@@ -130,6 +132,8 @@ export function ReconciliationFlagsView({
                     type="checkbox"
                     checked={selected.has(f.flag_id)}
                     onChange={() => toggle(f.flag_id)}
+                    aria-label={`Select flag for ${f.task_name}`}
+                    className="size-[18px] shrink-0 cursor-pointer rounded-[4px] border-[1.5px] border-gca-border accent-gca-green"
                   />
                 </span>
                 <p className="w-[31%] truncate text-[13px] font-medium text-gca-dark">

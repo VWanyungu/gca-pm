@@ -54,7 +54,7 @@ export function ScheduleHistoryView({
         {canManage && (
           <button
             onClick={onUpload}
-            className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
+            className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
           >
             <Upload className="size-[14px]" />
             Upload schedule
@@ -67,7 +67,7 @@ export function ScheduleHistoryView({
       ) : (
         <div className="flex w-full flex-col gap-[16px]">
           <div className="flex w-full flex-col rounded-[12px] border border-gca-border">
-            <div className="flex w-full items-center gap-[10px] border-b border-gca-border bg-white px-[16px] py-[8px] text-[12px] font-medium text-gca-muted">
+            <div className="flex w-full items-center gap-[10px] border-b border-gca-border bg-gca-surface px-[16px] py-[8px] text-[12px] font-medium text-gca-muted">
               <p className="w-[10%]">Version</p>
               <p className="w-[22%]">Uploaded</p>
               <p className="w-[18%]">By</p>

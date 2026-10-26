@@ -157,14 +157,14 @@ export default function AdminProjectsPage() {
                     {/* <button
                       onClick={() => router.push(`/projects/${p.project_id}`)}
                       title="View project"
-                      className="flex size-[34px] items-center justify-center rounded-[8px] border border-gca-border text-gca-show hover:bg-white"
+                      className="flex size-[34px] items-center justify-center rounded-[8px] border border-gca-border text-gca-show hover:bg-gca-surface"
                     >
                       <Eye className="size-[16px]" />
                     </button> */}
                     <button
                       onClick={() => router.push(`/admin/projects/${p.project_id}/edit`)}
                       title="Edit project"
-                      className="flex size-[34px] items-center justify-center rounded-[8px] text-gca-show hover:bg-white"
+                      className="flex size-[34px] items-center justify-center rounded-[8px] text-gca-show hover:bg-gca-surface"
                     >
                       <Pencil className="size-[14px]" />
                     </button>

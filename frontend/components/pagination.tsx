@@ -46,7 +46,7 @@ export function Pagination({
       className={`flex size-[36px] items-center justify-center rounded-[8px] font-mono text-[13px] ${
         pageNumber === page
           ? "bg-gca-page-bg font-semibold text-gca-dark"
-          : "bg-white font-medium text-gca-dark hover:bg-gca-page-bg"
+          : "bg-gca-surface font-medium text-gca-dark hover:bg-gca-page-bg"
       }`}
     >
       {pageNumber}
@@ -71,7 +71,7 @@ export function Pagination({
               e.currentTarget.blur();
             }
           }}
-          className="rounded-[8px] border border-gca-border bg-white px-[10px] py-[7px] w-[50px] outline-none font-mono font-medium text-gca-dark"
+          className="rounded-[8px] border border-gca-border bg-gca-surface px-[10px] py-[7px] w-[50px] outline-none font-mono font-medium text-gca-dark"
         />
         <span>
           of {total} {label}
@@ -140,7 +140,7 @@ function PageButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="flex size-[36px] items-center justify-center rounded-[8px] border border-gca-border bg-white text-gca-show hover:bg-gca-page-bg disabled:opacity-40 disabled:hover:bg-white"
+      className="flex size-[36px] items-center justify-center rounded-[8px] border border-gca-border bg-gca-surface text-gca-show hover:bg-gca-page-bg disabled:opacity-40 disabled:hover:bg-gca-surface"
     >
       {children}
     </button>

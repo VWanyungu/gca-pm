@@ -30,12 +30,12 @@ export default function DprConfirmationPage({ params }: { params: Promise<{ dprI
             href={`/projects/${projectId}/dpr/${dprId}`}
             className="flex items-center justify-center rounded-[8px] bg-gca-green py-[13px]"
           >
-            <p className="text-[15px] font-semibold text-white">View DPR</p>
+            <p className="text-[15px] font-semibold text-gca-on-accent">View DPR</p>
           </Link>
         )}
         <Link
           href="/engineer"
-          className="flex items-center justify-center rounded-[8px] border border-gca-border bg-white py-[13px]"
+          className="flex items-center justify-center rounded-[8px] border border-gca-border bg-gca-surface py-[13px]"
         >
           <p className="text-[15px] font-semibold text-gca-dark">Back to home</p>
         </Link>

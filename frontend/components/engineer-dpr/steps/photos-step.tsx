@@ -50,7 +50,10 @@ export function PhotosStep({ draft, update, projectId }: StepProps) {
       const remaining = MAX_PHOTOS - draft.photos.length;
       for (const file of Array.from(files).slice(0, remaining)) {
         const dataUrl = await resizeToJpegDataUrl(file);
-        const { file_id, url } = await uploadDprPhoto(projectId, { file: dataUrl, filename: file.name });
+        const { file_id, url } = await uploadDprPhoto(projectId, {
+          file: dataUrl,
+          filename: file.name,
+        });
         update({ photos: [...draft.photos, { file_id, url, caption: null }] });
       }
     } finally {
@@ -64,7 +67,7 @@ export function PhotosStep({ draft, update, projectId }: StepProps) {
       <div className="grid grid-cols-2 gap-[16px]">
         {draft.photos.map((photo, index) => (
           <div key={photo.file_id} className="flex flex-col gap-[6px]">
-            <div className="relative h-[128px] w-full overflow-hidden rounded-[8px] bg-gca-badge-bg">
+            <div className="relative aspect-square w-full overflow-hidden rounded-[8px] bg-gca-badge-bg">
               {/* eslint-disable-next-line @next/next/no-img-element -- remote upload host, not configured in next/image */}
               <img src={photo.url} alt={photo.caption ?? ""} className="size-full object-cover" />
               <button
@@ -73,6 +76,7 @@ export function PhotosStep({ draft, update, projectId }: StepProps) {
                 aria-label="Remove photo"
                 className="absolute right-[6px] top-[6px] flex size-[22px] cursor-pointer items-center justify-center rounded-full bg-black/60"
               >
+                {/* On a black scrim over the photo, not on an accent fill — stays white in both themes. */}
                 <X className="size-[12px] text-white" />
               </button>
             </div>
@@ -80,7 +84,7 @@ export function PhotosStep({ draft, update, projectId }: StepProps) {
               value={photo.caption ?? ""}
               onChange={(e) => updateCaption(index, e.target.value)}
               placeholder="Caption"
-              className="h-[32px] w-full rounded-[6px] border border-gca-border bg-white px-[8px] text-[12px] text-gca-dark outline-none focus:border-gca-green placeholder:text-gca-muted"
+              className="h-[32px] w-full rounded-[6px] border border-gca-border bg-gca-surface px-[8px] text-[12px] text-gca-dark outline-none focus:border-gca-green placeholder:text-gca-muted"
             />
           </div>
         ))}
@@ -91,7 +95,7 @@ export function PhotosStep({ draft, update, projectId }: StepProps) {
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             aria-label={uploading ? "Uploading photo" : "Add photo"}
-            className="flex h-[128px] w-full cursor-pointer flex-col items-center justify-center gap-[6px] rounded-[8px] border border-dashed border-gca-border disabled:opacity-50"
+            className="flex aspect-square w-full cursor-pointer flex-col items-center justify-center gap-[6px] rounded-[8px] border border-dashed border-gca-border disabled:opacity-50"
           >
             {uploading ? (
               <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />
@@ -105,7 +109,9 @@ export function PhotosStep({ draft, update, projectId }: StepProps) {
         )}
       </div>
 
-      {atLimit && <p className="text-[13px] text-gca-muted">Maximum of {MAX_PHOTOS} photos reached.</p>}
+      {atLimit && (
+        <p className="text-[13px] text-gca-muted">Maximum of {MAX_PHOTOS} photos reached.</p>
+      )}
 
       <input
         ref={fileInputRef}

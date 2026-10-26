@@ -108,7 +108,7 @@ export function ScopeStep({ value, onChange, onBack, onNext, singlePage = false 
                   key={s.stage_no}
                   type="button"
                   onClick={() => toggleStage(s.stage_no)}
-                  className="flex items-center gap-[8px] rounded-[6px] border border-gca-border bg-white px-[10px] py-[7px] text-[13px] font-medium text-gca-dark hover:bg-gca-page-bg"
+                  className="flex items-center gap-[8px] rounded-[6px] border border-gca-border bg-gca-surface px-[10px] py-[7px] text-[13px] font-medium text-gca-dark hover:bg-gca-page-bg"
                 >
                   <Plus className="size-[12] cursor-pointer" />
                   {s.stage_no} · {s.name.split(" ")[0]}
@@ -134,7 +134,7 @@ export function ScopeStep({ value, onChange, onBack, onNext, singlePage = false 
           type="button"
           disabled={value.length === 0}
           onClick={onNext}
-          className="cursor-pointer flex items-center gap-[10px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
+          className="cursor-pointer flex items-center gap-[10px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
         >
           {/* {nextLabel} */}
           Next

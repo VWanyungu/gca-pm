@@ -103,10 +103,10 @@ export default function ProfilePage() {
   return (
     <div className="flex w-full justify-center bg-gca-page-bg h-[100vh]">
       <main className="w-full max-w-[1400px] max-[1450px]:p-[0] max-[1450px]:pt-[20px] p-[40px]">
-        <div className="rounded-[12px] bg-white p-[12px]">
+        <div className="rounded-[12px] bg-gca-surface p-[12px]">
           {/* Banner */}
           <div className="relative h-[200px] w-full rounded-[8px] bg-gradient-to-r from-[#dcebdf] via-[#a9d1b3] via-55% to-[#e8f1ea]">
-            <button className="absolute right-[24px] top-[138px] flex items-center rounded-[8px] border-[1.5px] border-white bg-white/85 px-[18px] py-[9px] text-[14px] font-semibold text-gca-dark hover:bg-white cursor-pointer">
+            <button className="absolute right-[24px] top-[138px] flex items-center rounded-[8px] border-[1.5px] border-gca-surface bg-gca-surface/85 px-[18px] py-[9px] text-[14px] font-semibold text-gca-dark hover:bg-gca-surface cursor-pointer">
               Edit profile
             </button>
           </div>
@@ -114,12 +114,12 @@ export default function ProfilePage() {
           <div className="relative flex flex-wrap gap-[48px] px-[40px] pb-[40px] pt-[24px]">
             {/* Profile picture, overlapping the banner */}
             <div className="absolute left-[40px] top-[-64px] size-[128px]">
-              <div className="flex size-[128px] items-center justify-center rounded-[38px] border-[5px] border-white bg-gca-badge-bg">
+              <div className="flex size-[128px] items-center justify-center rounded-[38px] border-[5px] border-gca-surface bg-gca-badge-bg">
                 <span className="text-[40px] font-semibold tracking-[-1px] text-gca-green">
                   {initials}
                 </span>
               </div>
-              <button className="absolute bottom-[-6px] right-[-6px] flex size-[34px] items-center justify-center rounded-full bg-gca-green text-white shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)] hover:bg-gca-green-hover cursor-pointer">
+              <button className="absolute bottom-[-6px] right-[-6px] flex size-[34px] items-center justify-center rounded-full bg-gca-green text-gca-on-accent shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)] hover:bg-gca-green-hover cursor-pointer">
                 <Camera className="size-[16px]" />
               </button>
             </div>
@@ -200,7 +200,7 @@ export default function ProfilePage() {
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="flex size-[32px] items-center justify-center rounded-[6px] border border-gca-border bg-white text-gca-dark disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                    className="flex size-[32px] items-center justify-center rounded-[6px] border border-gca-border bg-gca-surface text-gca-dark disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
                   >
                     <ChevronLeft className="size-[14px]" />
                   </button>
@@ -210,8 +210,8 @@ export default function ProfilePage() {
                       onClick={() => setPage(p)}
                       className={`flex size-[32px] items-center justify-center rounded-[6px] font-mono text-[13px] font-medium cursor-pointer ${
                         p === page
-                          ? "bg-gca-green text-white"
-                          : "border border-gca-border bg-white text-gca-dark"
+                          ? "bg-gca-green text-gca-on-accent"
+                          : "border border-gca-border bg-gca-surface text-gca-dark"
                       }`}
                     >
                       {p}
@@ -220,7 +220,7 @@ export default function ProfilePage() {
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
-                    className="flex size-[32px] items-center justify-center rounded-[6px] border border-gca-border bg-white text-gca-dark disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                    className="flex size-[32px] items-center justify-center rounded-[6px] border border-gca-border bg-gca-surface text-gca-dark disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
                   >
                     <ChevronRight className="size-[14px]" />
                   </button>

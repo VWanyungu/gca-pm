@@ -2,9 +2,9 @@ import Image from "next/image";
 
 export function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-white md:bg-gca-page-bg">
+    <div className="flex min-h-screen bg-gca-surface md:bg-gca-page-bg">
       <div className="flex flex-1 items-stretch p-0 md:p-[52px]">
-        <div className="flex w-full overflow-clip rounded-none bg-white md:rounded-[12px]">
+        <div className="flex w-full overflow-clip rounded-none bg-gca-surface md:rounded-[12px]">
           <div className="flex w-full flex-col md:flex-row">
             {/* Mobile: image on top */}
             <div className="relative h-[388px] w-full shrink-0 md:hidden">

@@ -59,7 +59,7 @@ export default function LoginPage() {
                 setFieldErrors((current) => ({ ...current, email: undefined }));
               }}
               aria-invalid={!!fieldErrors.email}
-              className={`w-full rounded-[8px] border bg-white px-[14px] py-[13px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:border-gca-green focus:ring-1 focus:ring-gca-green ${
+              className={`w-full rounded-[8px] border bg-gca-surface px-[14px] py-[13px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:border-gca-green focus:ring-1 focus:ring-gca-green ${
                 fieldErrors.email ? "border-error-border" : "border-gca-border"
               }`}
             />
@@ -91,7 +91,7 @@ export default function LoginPage() {
                   setFieldErrors((current) => ({ ...current, password: undefined }));
                 }}
                 aria-invalid={!!fieldErrors.password}
-                className={`w-full rounded-[8px] border bg-white px-[14px] py-[13px] pr-[70px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:ring-1 ${
+                className={`w-full rounded-[8px] border bg-gca-surface px-[14px] py-[13px] pr-[70px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:ring-1 ${
                   fieldErrors.password
                     ? "border-error-border focus:border-error-border focus:ring-error-border"
                     : "border-gca-border focus:border-gca-green focus:ring-gca-green"
@@ -121,7 +121,7 @@ export default function LoginPage() {
             type="submit"
             disabled={submitting}
             onClick={handleSubmit}
-            className="cursor-pointer flex w-full items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[14px] text-[15px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-60"
+            className="cursor-pointer flex w-full items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[14px] text-[15px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-60"
           >
             {submitting ? (
               <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />
@@ -138,7 +138,7 @@ export default function LoginPage() {
 
           <button
             type="button"
-            className="cursor-pointer flex w-full items-center justify-center gap-[10px] rounded-[8px] border border-gca-border bg-white px-[16px] py-[14px] text-[15px] font-semibold text-gca-dark hover:bg-gray-50"
+            className="cursor-pointer flex w-full items-center justify-center gap-[10px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[14px] text-[15px] font-semibold text-gca-dark hover:bg-gray-50"
           >
             <MicrosoftIcon />
             Sign in with Microsoft

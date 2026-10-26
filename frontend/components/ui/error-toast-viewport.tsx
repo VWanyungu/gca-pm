@@ -16,7 +16,7 @@ export function ErrorToastViewport() {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className="flex items-center justify-between gap-[12px] rounded-[8px] bg-[#fdecea] px-[18px] py-[16px] shadow-[0px_10px_28px_0px_rgba(23,48,31,0.08)]"
+          className="flex items-center justify-between gap-[12px] rounded-[8px] bg-error-bg px-[18px] py-[16px] shadow-[0px_10px_28px_0px_rgba(23,48,31,0.08)]"
         >
           <Ban className="size-[22px] shrink-0 text-gca-dark" />
           <div className="flex flex-1 flex-wrap items-center gap-x-[6px] text-[14px]">

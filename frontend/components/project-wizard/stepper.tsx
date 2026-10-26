@@ -45,7 +45,7 @@ export function ProjectStepper({
             >
               <div className="flex flex-col items-center gap-[6px]">
                 <span
-                  className={`flex size-[32px] shrink-0 items-center justify-center rounded-full border bg-white font-mono text-[13px] font-semibold ${
+                  className={`flex size-[32px] shrink-0 items-center justify-center rounded-full border bg-gca-surface font-mono text-[13px] font-semibold ${
                     isCurrent ? "border-2 border-gca-green text-gca-green" : "border-gca-border text-gca-muted"
                   }`}
                 >

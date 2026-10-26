@@ -46,7 +46,7 @@ export default function ForgotPasswordPage() {
     return (
       <AuthLayout>
         <div className="flex flex-col items-center text-center gap-[24px]">
-          <div className="flex size-[48px] items-center justify-center rounded-full bg-[#e8f1ea]">
+          <div className="flex size-[48px] items-center justify-center rounded-full bg-gca-badge-bg">
             <Mail className="size-[24px] text-gca-green" />
           </div>
           <h1 className="text-[32px] font-semibold tracking-[-0.8px] text-gca-dark">
@@ -102,7 +102,7 @@ export default function ForgotPasswordPage() {
               setEmailError(null);
             }}
             aria-invalid={!!emailError}
-            className={`w-full rounded-[8px] border bg-white px-[14px] py-[13px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:border-gca-green focus:ring-1 focus:ring-gca-green ${
+            className={`w-full rounded-[8px] border bg-gca-surface px-[14px] py-[13px] text-[15px] text-gca-dark placeholder:text-gca-muted outline-none focus:border-gca-green focus:ring-1 focus:ring-gca-green ${
               emailError ? "border-error-border" : "border-gca-border"
             }`}
           />
@@ -113,7 +113,7 @@ export default function ForgotPasswordPage() {
           type="submit"
           disabled={submitting}
           onClick={handleSubmit}
-          className="cursor-pointer w-full flex items-center justify-center rounded-[8px] bg-gca-green px-[16px] py-[14px] text-[15px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-60"
+          className="cursor-pointer w-full flex items-center justify-center rounded-[8px] bg-gca-green px-[16px] py-[14px] text-[15px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-60"
         >
           {submitting ? (
             <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />

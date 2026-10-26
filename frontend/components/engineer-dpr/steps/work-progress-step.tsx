@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import type { ScheduleTask } from "@/components/schedule/types";
-import type { DprDraftInput, DprValidationErrors, DraftActivityProgress, DraftWorkItem } from "../types";
+import type {
+  DprDraftInput,
+  DprValidationErrors,
+  DraftActivityProgress,
+  DraftWorkItem,
+} from "../types";
 import { TaskPickerSheet } from "./task-picker-sheet";
 
 interface StepProps {
@@ -11,9 +16,16 @@ interface StepProps {
   update: (patch: Partial<DprDraftInput>) => void;
   projectId: string;
   errors?: DprValidationErrors["workItems"];
+  activityErrors?: DprValidationErrors["activityProgress"];
 }
 
-export function WorkProgressStep({ draft, update, projectId, errors = {} }: StepProps) {
+export function WorkProgressStep({
+  draft,
+  update,
+  projectId,
+  errors = {},
+  activityErrors = {},
+}: StepProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
 
   function updateWorkItem(index: number, patch: Partial<DraftWorkItem>) {
@@ -30,7 +42,9 @@ export function WorkProgressStep({ draft, update, projectId, errors = {} }: Step
   }
 
   function updateActivity(index: number, patch: Partial<DraftActivityProgress>) {
-    const next = draft.activity_progress.map((row, i) => (i === index ? { ...row, ...patch } : row));
+    const next = draft.activity_progress.map((row, i) =>
+      i === index ? { ...row, ...patch } : row,
+    );
     update({ activity_progress: next });
   }
 
@@ -79,7 +93,7 @@ export function WorkProgressStep({ draft, update, projectId, errors = {} }: Step
         {draft.work_items.map((item, index) => {
           const itemErrors = errors[index];
           return (
-            <div key={index} className="flex flex-col gap-[10px] rounded-[12px] bg-white p-[16px]">
+            <div key={index} className="flex flex-col gap-[10px] rounded-[12px] bg-gca-surface p-[16px]">
               <div className="flex items-center justify-between gap-[8px]">
                 <div className="flex w-full flex-col gap-[4px]">
                   <input
@@ -87,7 +101,7 @@ export function WorkProgressStep({ draft, update, projectId, errors = {} }: Step
                     onChange={(e) => updateWorkItem(index, { work_area: e.target.value })}
                     placeholder="Work area"
                     aria-invalid={!!itemErrors?.work_area}
-                    className={`h-[44px] w-full rounded-[8px] border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green placeholder:text-gca-muted ${
+                    className={`h-[44px] w-full rounded-[8px] border bg-gca-surface px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green placeholder:text-gca-muted ${
                       itemErrors?.work_area ? "border-error-border" : "border-gca-border"
                     }`}
                   />
@@ -111,7 +125,7 @@ export function WorkProgressStep({ draft, update, projectId, errors = {} }: Step
                   placeholder="Work carried out"
                   rows={3}
                   aria-invalid={!!itemErrors?.work_carried_out}
-                  className={`w-full rounded-[8px] border bg-white p-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green placeholder:text-gca-muted ${
+                  className={`w-full rounded-[8px] border bg-gca-surface p-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green placeholder:text-gca-muted ${
                     itemErrors?.work_carried_out ? "border-error-border" : "border-gca-border"
                   }`}
                 />
@@ -135,12 +149,12 @@ export function WorkProgressStep({ draft, update, projectId, errors = {} }: Step
       <div className="flex flex-col gap-[6px]">
         <p className="text-[14px] font-semibold text-gca-dark">Activity progress</p>
         {draft.activity_progress.map((row, index) => (
-          <div key={index} className="flex flex-col gap-[10px] rounded-[12px] bg-white p-[16px]">
+          <div key={index} className="flex flex-col gap-[10px] rounded-[12px] bg-gca-surface p-[16px]">
             <div className="flex items-start justify-between gap-[8px]">
               {row.source === "schedule_task" ? (
                 <p className="text-[15px] font-semibold text-gca-dark">{row.task_name}</p>
               ) : (
-                <span className="rounded-[999px] bg-[#fff4e5] px-[9px] py-[3px] text-[11px] font-semibold text-gca-warning">
+                <span className="rounded-[999px] bg-gca-warning-bg px-[9px] py-[3px] text-[11px] font-semibold text-gca-warning">
                   Custom task
                 </span>
               )}
@@ -160,7 +174,7 @@ export function WorkProgressStep({ draft, update, projectId, errors = {} }: Step
                 onChange={(e) => updateActivity(index, { free_text: e.target.value })}
                 placeholder="Describe the work"
                 rows={3}
-                className="w-full rounded-[8px] border border-gca-border bg-white p-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green placeholder:text-gca-muted"
+                className="w-full rounded-[8px] border border-gca-border bg-gca-surface p-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green placeholder:text-gca-muted"
               />
             ) : null}
 
@@ -173,15 +187,25 @@ export function WorkProgressStep({ draft, update, projectId, errors = {} }: Step
                   </p>
                 </div>
                 <div className="flex w-full flex-col gap-[4px]">
-                  <span className="text-[13px] font-medium text-gca-dark">New total completion</span>
+                  <span className="text-[13px] font-medium text-gca-dark">
+                    New total completion
+                  </span>
                   <input
                     type="number"
-                    min={0}
+                    min={1}
                     max={100}
                     value={row.total_pct}
+                    aria-invalid={!!activityErrors[index]?.total_pct}
                     onChange={(e) => updateScheduleTaskTotal(index, Number(e.target.value))}
-                    className="h-[44px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green"
+                    className={`h-[44px] w-full rounded-[8px] border bg-gca-surface px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green ${
+                      activityErrors[index]?.total_pct ? "border-error-border" : "border-gca-border"
+                    }`}
                   />
+                  {activityErrors[index]?.total_pct && (
+                    <span className="text-[12px] text-error-text">
+                      New total completion must be above 0%
+                    </span>
+                  )}
                 </div>
               </div>
             ) : (
@@ -194,21 +218,29 @@ export function WorkProgressStep({ draft, update, projectId, errors = {} }: Step
                     max={100}
                     value={row.today_pct}
                     onChange={(e) =>
-                      updateActivity(index, { today_pct: Math.min(Number(e.target.value), row.total_pct) })
+                      updateActivity(index, {
+                        today_pct: Math.min(Number(e.target.value), row.total_pct),
+                      })
                     }
-                    className="h-[44px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green"
+                    className="h-[44px] w-full rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green"
                   />
                 </div>
                 <div className="flex w-full flex-col gap-[4px]">
                   <span className="text-[13px] font-medium text-gca-dark">Total %</span>
                   <input
                     type="number"
-                    min={0}
+                    min={1}
                     max={100}
                     value={row.total_pct}
+                    aria-invalid={!!activityErrors[index]?.total_pct}
                     onChange={(e) => updateActivity(index, { total_pct: Number(e.target.value) })}
-                    className="h-[44px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green"
+                    className={`h-[44px] w-full rounded-[8px] border bg-gca-surface px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green ${
+                      activityErrors[index]?.total_pct ? "border-error-border" : "border-gca-border"
+                    }`}
                   />
+                  {activityErrors[index]?.total_pct && (
+                    <span className="text-[12px] text-error-text">Total % must be above 0</span>
+                  )}
                 </div>
               </div>
             )}

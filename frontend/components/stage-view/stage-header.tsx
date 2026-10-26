@@ -55,7 +55,7 @@ export function StageHeader({
           {!hasChecklist && (
             <button
               onClick={onAddChecklist}
-              className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+              className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
             >
               <Plus className="size-[10px]" />
               Add a checklist
@@ -64,7 +64,7 @@ export function StageHeader({
           <button
             onClick={onToggleComplete}
             disabled={stage.state === "not_started"}
-            className={`${stage.state === "complete" ? "border border-gca-green text-gca-dark hover:text-gca-green" : "bg-gca-green hover:bg-gca-green-hover text-white"} cursor-pointer rounded-[8px] px-[16px] py-[10px] text-[14px] font-semibold disabled:opacity-50`}
+            className={`${stage.state === "complete" ? "border border-gca-green text-gca-dark hover:text-gca-green" : "bg-gca-green hover:bg-gca-green-hover text-gca-on-accent"} cursor-pointer rounded-[8px] px-[16px] py-[10px] text-[14px] font-semibold disabled:opacity-50`}
           >
             {stage.state === "complete" ? "Reopen stage" : "Mark as complete"}
           </button>

@@ -20,12 +20,15 @@ export function TaskPickerSheet({ projectId, open, onClose, onPick }: TaskPicker
 
   if (!open) return null;
 
+  // A task already at 100% has no progress left to report, so offering it only invites a
+  // reconciliation flag.
   const pickable = tasks
     .filter((t) => !t.is_summary)
+    .filter((t) => Number(t.pct_work_complete) < 100)
     .filter((t) => t.task_name.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="flex flex-col gap-[10px] rounded-[12px] border border-gca-border bg-white p-[16px]">
+    <div className="flex flex-col gap-[10px] rounded-[12px] border border-gca-border bg-gca-surface p-[16px]">
       <div className="flex items-center justify-between gap-[8px]">
         <p className="text-[14px] font-semibold text-gca-dark">Add schedule task</p>
         <button
@@ -36,7 +39,7 @@ export function TaskPickerSheet({ projectId, open, onClose, onPick }: TaskPicker
           Close
         </button>
       </div>
-      <label className="flex h-[40px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[12px]">
+      <label className="flex h-[40px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px]">
         <Search className="size-[14px] shrink-0 text-gca-muted" />
         <input
           value={search}
@@ -48,7 +51,9 @@ export function TaskPickerSheet({ projectId, open, onClose, onPick }: TaskPicker
       </label>
       <div className="flex max-h-[280px] flex-col overflow-y-auto">
         {pickable.length === 0 ? (
-          <p className="py-[12px] text-[14px] text-gca-show">No schedule tasks available.</p>
+          <p className="py-[12px] text-[14px] text-gca-show">
+            No incomplete schedule tasks available.
+          </p>
         ) : (
           pickable.map((task, i) => (
             <button

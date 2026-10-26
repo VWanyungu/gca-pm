@@ -33,7 +33,7 @@ function AdminSidebarLinks({ pathname, onNavigate }: { pathname: string; onNavig
             >
               {item.label}
               {item.count != null && (
-                <span className="rounded-full bg-gca-warning px-[6px] py-[1px] text-[12px] font-semibold text-white">
+                <span className="rounded-full bg-gca-warning px-[6px] py-[1px] text-[12px] font-semibold text-gca-on-accent">
                   {item.count}
                 </span>
               )}
@@ -48,7 +48,7 @@ function AdminSidebarLinks({ pathname, onNavigate }: { pathname: string; onNavig
             className={`flex items-center justify-between rounded-[8px] px-[12px] py-[8px] text-[14px] ${
               isActive
                 ? "bg-gca-badge-bg font-semibold text-gca-badge-text"
-                : "text-gca-dark hover:bg-white"
+                : "text-gca-dark hover:bg-gca-surface"
             }`}
           >
             {item.label}

@@ -322,7 +322,7 @@ export function ScheduleView({ projectId }: { projectId: string }) {
               {canUpload && (
                 <button
                   onClick={() => setSubView({ mode: "upload-form" })}
-                  className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
+                  className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
                 >
                   <Upload className="size-[14px]" />
                   Upload schedule

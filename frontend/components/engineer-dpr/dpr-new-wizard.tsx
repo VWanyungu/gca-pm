@@ -181,7 +181,7 @@ export function DprNewWizard({
             onClick={() =>
               dprId ? router.push(`/projects/${projectId}/dpr/${dprId}`) : onClose?.()
             }
-            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white"
+            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent"
           >
             View it
           </button>

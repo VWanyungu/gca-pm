@@ -82,7 +82,7 @@ export function VersionChangesView({ projectId, version, team, onBack }: Version
             }}
             className={`cursor-pointer rounded-[6px] px-[14px] py-[7px] text-[13px] ${
               filter === opt.id
-                ? "bg-white font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
+                ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                 : "font-normal text-gca-show"
             }`}
           >
@@ -96,7 +96,7 @@ export function VersionChangesView({ projectId, version, team, onBack }: Version
       ) : (
         <div className="flex w-full flex-col gap-[16px]">
           <div className="flex w-full flex-col rounded-[12px] border border-gca-border">
-            <div className="flex w-full items-center gap-[10px] border-b border-gca-border bg-white px-[16px] py-[8px] text-[12px] font-medium text-gca-muted">
+            <div className="flex w-full items-center gap-[10px] border-b border-gca-border bg-gca-surface px-[16px] py-[8px] text-[12px] font-medium text-gca-muted">
               <p className="w-[40%]">Task</p>
               <p className="w-[15%]">Field</p>
               <p className="w-[30%]">Change</p>

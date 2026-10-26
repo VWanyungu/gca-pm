@@ -111,6 +111,7 @@ export interface DprDraftInput {
   visitors_text: string | null;
   delays_text: string | null;
   incidents_text: string | null;
+  materials_rejected_text: string | null;
   other_notes_text: string | null;
   photos: DraftPhoto[];
 }
@@ -134,6 +135,7 @@ export function emptyDprDraft(reportDate: string, siteLocation = ""): DprDraftIn
     visitors_text: null,
     delays_text: null,
     incidents_text: null,
+    materials_rejected_text: null,
     other_notes_text: null,
     photos: [],
   };
@@ -183,6 +185,7 @@ export function detailToDraftInput(detail: DprDetail): DprDraftInput {
     visitors_text: detail.visitors_text,
     delays_text: detail.delays_text,
     incidents_text: detail.incidents_text,
+    materials_rejected_text: detail.materials_rejected_text,
     other_notes_text: detail.other_notes_text,
     photos: detail.photos.map((p) => ({
       photo_id: p.photo_id,
@@ -223,6 +226,8 @@ export interface DprValidationErrors {
     number,
     { project_contractor_id?: boolean; role_counts?: Record<number, boolean> }
   >;
+  /** Rows whose new total completion is still zero — nothing was reported for the task. */
+  activityProgress: Record<number, { total_pct?: boolean }>;
 }
 
 export function getDprValidationErrors(draft: DprDraftInput): DprValidationErrors {
@@ -246,13 +251,20 @@ export function getDprValidationErrors(draft: DprDraftInput): DprValidationError
     if (Object.keys(errors).length) personnelGroups[i] = errors;
   });
 
-  return { workItems, personnelGroups };
+  const activityProgress: DprValidationErrors["activityProgress"] = {};
+  draft.activity_progress.forEach((row, i) => {
+    if (row.total_pct <= 0) activityProgress[i] = { total_pct: true };
+  });
+
+  return { workItems, personnelGroups, activityProgress };
 }
 
 export function isDprDraftValid(draft: DprDraftInput): boolean {
   if (!draft.site_location.trim()) return false;
   const errors = getDprValidationErrors(draft);
   return (
-    Object.keys(errors.workItems).length === 0 && Object.keys(errors.personnelGroups).length === 0
+    Object.keys(errors.workItems).length === 0 &&
+    Object.keys(errors.personnelGroups).length === 0 &&
+    Object.keys(errors.activityProgress).length === 0
   );
 }

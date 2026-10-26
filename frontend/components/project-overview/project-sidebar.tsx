@@ -129,7 +129,7 @@ export function ProjectSidebar({
               href={item.href}
               onClick={() => setIsOpen(false)}
               className={`flex items-center justify-between rounded-[8px] px-[12px] py-[8px] ${
-                isActive ? "bg-gca-badge-bg" : "hover:bg-white"
+                isActive ? "bg-gca-badge-bg" : "hover:bg-gca-surface"
               }`}
             >
               <span className="flex items-center gap-[10px]">
@@ -152,7 +152,7 @@ export function ProjectSidebar({
           <>
             <button
               onClick={() => setStagesOpen((o) => !o)}
-              className="flex items-center justify-between rounded-[8px] px-[12px] py-[8px] hover:bg-white"
+              className="flex items-center justify-between rounded-[8px] px-[12px] py-[8px] hover:bg-gca-surface"
             >
               <span className="flex items-center gap-[10px]">
                 <ListTree className="size-[16px] text-gca-show" />
@@ -204,7 +204,7 @@ export function ProjectSidebar({
                       href={`${base}/stages/${s.stage_no}`}
                       onClick={() => setIsOpen(false)}
                       className={`flex h-[32px] items-center justify-between rounded-[6px] pl-[26px] pr-[12px] text-[13px] ${
-                        viewing ? "bg-gca-badge-bg" : "hover:bg-white"
+                        viewing ? "bg-gca-badge-bg" : "hover:bg-gca-surface"
                       }`}
                     >
                       <span
@@ -245,7 +245,7 @@ export function ProjectSidebar({
         <Link
           href={`${base}/settings`}
           onClick={() => setIsOpen(false)}
-          className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] hover:bg-white"
+          className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] hover:bg-gca-surface"
         >
           <Settings className="size-[16px] text-gca-show" />
           <span className="text-[14px] font-medium text-gca-show">Project settings</span>

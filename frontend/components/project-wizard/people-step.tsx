@@ -247,7 +247,7 @@ export function PeopleStep({
           disabled={!value.pmUserId || !value.plannerUserId || submitting}
           onClick={onSubmit}
           aria-label={submitting ? "Saving" : undefined}
-          className="cursor-pointer w-full md:w-auto flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-white hover:bg-gca-green-hover disabled:opacity-50"
+          className="cursor-pointer w-full md:w-auto flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
         >
           {submitting ? (
             <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />
@@ -288,7 +288,7 @@ function SiteEngineersField({ options, selectedIds, onToggle }: SiteEngineersFie
     <div className="flex flex-col gap-[6px]">
       <label className="text-[13px] font-medium text-gca-dark">Site engineers</label>
       <div ref={ref} className="relative">
-        <div className="flex flex-wrap items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[10px] py-[8px]">
+        <div className="flex flex-wrap items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[10px] py-[8px]">
           {selected.map((u) => (
             <span
               key={u.id}
@@ -310,7 +310,7 @@ function SiteEngineersField({ options, selectedIds, onToggle }: SiteEngineersFie
         </div>
 
         {isOpen && (
-          <ul className="dropdown-scrollbar absolute top-full left-0 z-10 mt-[4px] max-h-52 w-full overflow-y-auto rounded-[8px] border border-gca-border bg-white py-[6px] shadow-[0px_1px_10px_4px_rgba(23,48,31,0.08)]">
+          <ul className="dropdown-scrollbar absolute top-full left-0 z-10 mt-[4px] max-h-52 w-full overflow-y-auto rounded-[8px] border border-gca-border bg-gca-surface py-[6px] shadow-[0px_1px_10px_4px_rgba(23,48,31,0.08)]">
             {available.map((u) => (
               <li
                 key={u.id}

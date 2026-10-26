@@ -88,8 +88,8 @@ export function AddFromRegisterForm({
   }
 
   return (
-    <div className="flex flex-col gap-[16px] rounded-[12px] bg-white">
-      <div className="flex items-center gap-[10px] rounded-[8px] border border-gca-border bg-white px-[12px] py-[9px]">
+    <div className="flex flex-col gap-[16px] rounded-[12px] bg-gca-surface">
+      <div className="flex items-center gap-[10px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[9px]">
         <Search className="size-[14px] shrink-0 text-gca-muted" />
         <input
           value={query}
@@ -105,7 +105,7 @@ export function AddFromRegisterForm({
             key={key}
             onClick={() => setSeverity(key)}
             className={`cursor-pointer rounded-[6px] px-[10px] py-[5px] text-[13px] ${
-              severity === key ? "bg-white font-medium text-gca-dark" : "font-normal text-gca-show"
+              severity === key ? "bg-gca-surface font-medium text-gca-dark" : "font-normal text-gca-show"
             }`}
           >
             {key === "all" ? `All ${counts.all}` : `${key} ${counts[key]}`}
@@ -136,7 +136,7 @@ export function AddFromRegisterForm({
                       type="checkbox"
                       checked={selected.has(risk.risk_id)}
                       onChange={() => toggle(risk.risk_id)}
-                      className="mt-[2px] size-[18px] shrink-0 cursor-pointer rounded-[4px] border-[1.5px] border-[#c9d3cb] accent-gca-green"
+                      className="mt-[2px] size-[18px] shrink-0 cursor-pointer rounded-[4px] border-[1.5px] border-gca-border accent-gca-green"
                     />
                   )}
                   <div className="flex flex-col gap-[3px]">
@@ -170,7 +170,7 @@ export function AddFromRegisterForm({
           <button
             onClick={submit}
             disabled={saving || selected.size === 0}
-            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white disabled:opacity-50"
+            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent disabled:opacity-50"
           >
             {selected.size === 0
               ? "Add risk"

@@ -19,8 +19,8 @@ export function NextMilestonesList({ milestones }: { milestones: Milestone[] }) 
       </div>
 
       {upcoming.length === 0 ? (
-        <div className="flex flex-col items-center gap-[8px] rounded-[12px] bg-[#f7f9f7] py-[64px]">
-          <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-white">
+        <div className="flex flex-col items-center gap-[8px] rounded-[12px] bg-gca-page-bg py-[64px]">
+          <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-gca-surface">
             <Trophy className="size-[18px] text-gca-green" />
           </span>
           <div className="flex flex-col items-center gap-[4px] text-center">

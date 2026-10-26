@@ -65,7 +65,7 @@ function DprDeleteModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-[rgba(24,48,31,0.45)]" onClick={onClose} />
-      <div className="relative w-[392px] max-w-full rounded-[12px] bg-white p-[24px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
+      <div className="relative w-[392px] max-w-full rounded-[12px] bg-gca-surface p-[24px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
         <h2 className="text-[18px] font-semibold text-gca-dark">Delete draft DPR?</h2>
         <p className="mt-[8px] text-[14px] text-gca-muted">
           This draft for {formatDate(dpr.report_date)} will be permanently removed. This cannot be
@@ -75,7 +75,7 @@ function DprDeleteModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-[8px] border border-gca-border bg-white px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
+            className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
           >
             Cancel
           </button>
@@ -83,7 +83,7 @@ function DprDeleteModal({
             type="button"
             onClick={() => void handleConfirm()}
             disabled={deleteDpr.isPending}
-            className="rounded-[8px] bg-error-border px-[16px] py-[10px] text-[14px] font-medium text-white disabled:opacity-40"
+            className="rounded-[8px] bg-error-border px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40"
           >
             Delete draft
           </button>
@@ -150,7 +150,9 @@ export function DprListView({ projectId }: { projectId: string }) {
     (grant) => grant.role === "Admin" && grant.scope_type === "global",
   );
   const canDecideAmendments = canRequestAsPm || isAdmin;
-  const { data: allMissedDates = [] } = useMissedDprDates(projectId, canCreate);
+  // Missed days are part of the record for whoever is reading it — a PM chasing a gap needs
+  // them as much as the engineer who would fill it.
+  const { data: allMissedDates = [] } = useMissedDprDates(projectId, true);
   const { data: amendments = [] } = useDprAmendments(projectId, canCreate || canDecideAmendments);
   const deleteDpr = useDeleteDpr(projectId);
   const decideAmendment = useDecideDprAmendment(projectId);
@@ -247,7 +249,7 @@ export function DprListView({ projectId }: { projectId: string }) {
                         reportDate: todayInTimezone(project.project.timezone),
                       })
                     }
-                    className="flex cursor-pointer items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-white hover:bg-gca-green-hover"
+                    className="flex cursor-pointer items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
                   >
                     <Plus className="size-[14px]" />
                     New DPR
@@ -260,10 +262,10 @@ export function DprListView({ projectId }: { projectId: string }) {
                   id="dpr-filter-status"
                   data={STATUS_OPTIONS}
                   selectedId={statusFilter}
-                  style="h-[40px] rounded-[8px] border border-gca-border bg-white px-[13px] text-[14px] text-gca-dark"
+                  style="h-[40px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
                   onSelect={(id) => changeFilter(setStatusFilter, id)}
                 />
-                <label className="flex h-[40px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[13px]">
+                <label className="flex h-[40px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px]">
                   <span className="text-[13px] text-gca-muted">From</span>
                   <input
                     type="date"
@@ -276,7 +278,7 @@ export function DprListView({ projectId }: { projectId: string }) {
                     className="bg-transparent text-[14px] text-gca-dark outline-none"
                   />
                 </label>
-                <label className="flex h-[40px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-white px-[13px]">
+                <label className="flex h-[40px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px]">
                   <span className="text-[13px] text-gca-muted">To</span>
                   <input
                     type="date"
@@ -301,7 +303,7 @@ export function DprListView({ projectId }: { projectId: string }) {
               </div>
 
               {canDecideAmendments && amendments.length > 0 && (
-                <section className="flex flex-col gap-[10px] rounded-[12px] bg-white">
+                <section className="flex flex-col gap-[10px] rounded-[12px] bg-gca-surface">
                   <h2 className="text-[15px] font-semibold text-gca-dark">
                     Amendment requests{" "}
                     {/* <span className="text-gca-warning">({amendments.length})</span> */}
@@ -341,7 +343,7 @@ export function DprListView({ projectId }: { projectId: string }) {
                             type="button"
                             onClick={() => void decide(amendment, "approve")}
                             disabled={decideAmendment.isPending}
-                            className="flex cursor-pointer items-center gap-[6px] rounded-[8px] bg-gca-green px-[12px] py-[8px] text-[13px] font-semibold text-white disabled:opacity-50"
+                            className="flex cursor-pointer items-center gap-[6px] rounded-[8px] bg-gca-green px-[12px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
                           >
                             <Check className="size-[14px]" />
                             Approve
@@ -371,7 +373,7 @@ export function DprListView({ projectId }: { projectId: string }) {
                             onChange={(event) => setDecisionNote(event.target.value)}
                             rows={2}
                             maxLength={10000}
-                            className="rounded-[8px] border border-gca-border bg-white px-[10px] py-[8px] text-[13px] outline-none focus:border-gca-green"
+                            className="rounded-[8px] border border-gca-border bg-gca-surface px-[10px] py-[8px] text-[13px] outline-none focus:border-gca-green"
                           />
                           <div className="flex justify-end gap-[8px]">
                             <button
@@ -388,7 +390,7 @@ export function DprListView({ projectId }: { projectId: string }) {
                               type="button"
                               onClick={() => void decide(amendment, "reject")}
                               disabled={!decisionNote.trim() || decideAmendment.isPending}
-                              className="cursor-pointer rounded-[6px] bg-error-text px-[12px] py-[7px] text-[13px] font-semibold text-white disabled:opacity-50"
+                              className="cursor-pointer rounded-[6px] bg-error-text px-[12px] py-[7px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
                             >
                               Confirm rejection
                             </button>

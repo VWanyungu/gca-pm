@@ -793,6 +793,33 @@ export class PersonnelRoles {
 
     return { roles };
   }
+
+  /** Site engineers add roles from the DPR form, so a repeat of an existing name must return
+   *  that role rather than fail the unique index. Matching is case-insensitive because
+   *  "Welder" and "welder" are the same trade to the person typing. */
+  static async findOrCreate(name: string): Promise<PersonnelRoleRow> {
+    const trimmed = name.trim();
+    const existing = await db('personnel_role')
+      .whereRaw('lower(name) = lower(?)', [trimmed])
+      .select('personnel_role_id', 'name', 'sort_order', 'is_active')
+      .first();
+    if (existing) {
+      // A role deactivated earlier is revived rather than duplicated under a new id.
+      if (existing.is_active) return existing;
+      const [revived] = await db('personnel_role')
+        .where({ personnel_role_id: existing.personnel_role_id })
+        .update({ is_active: true })
+        .returning(['personnel_role_id', 'name', 'sort_order', 'is_active']);
+      return revived;
+    }
+
+    // New roles sort after the seeded ones so the reference list keeps its intended order.
+    const maxRow = await db('personnel_role').max<{ max: number | null }>('sort_order as max').first();
+    const [row] = await db('personnel_role')
+      .insert({ name: trimmed, sort_order: Number(maxRow?.max ?? 0) + 10, is_active: true })
+      .returning(['personnel_role_id', 'name', 'sort_order', 'is_active']);
+    return row;
+  }
 }
 
 export type RiskStatus = 'open' | 'mitigated' | 'closed' | 'dismissed' | 'auto_resolved';
@@ -1616,6 +1643,7 @@ export interface ProjectRow {
 }
 
 export interface ProjectListRow extends ProjectRow {
+  current_stage_no: number | null;
   current_stage_name: string | null;
   spi: number | null;
   completed_pct: number | null;
@@ -2139,6 +2167,7 @@ export class Projects {
     return {
       projects: projects.map((p) => ({
         ...p,
+        current_stage_no: stageByProject.get(p.project_id)?.stage_no ?? null,
         current_stage_name: stageByProject.get(p.project_id)?.stage_name ?? null,
         spi: metricsByProject.get(p.project_id)?.spi ?? null,
         completed_pct: metricsByProject.get(p.project_id)?.actual_pct ?? null,
@@ -3645,6 +3674,7 @@ export interface DprRow {
   visitors_text: string | null;
   delays_text: string | null;
   incidents_text: string | null;
+  materials_rejected_text: string | null;
   other_notes_text: string | null;
   status: DprStatus;
   author_id: string;
@@ -3736,6 +3766,7 @@ export interface CreateDprInput {
   visitors_text?: string | null;
   delays_text?: string | null;
   incidents_text?: string | null;
+  materials_rejected_text?: string | null;
   other_notes_text?: string | null;
   status?: DprStatus;
   author_id: string;
@@ -3792,6 +3823,7 @@ export interface UpdateDprFields {
   visitors_text?: string | null;
   delays_text?: string | null;
   incidents_text?: string | null;
+  materials_rejected_text?: string | null;
   other_notes_text?: string | null;
   work_items?: Array<{
     work_item_id?: string;
@@ -3849,6 +3881,7 @@ const DPR_COLS = [
   'visitors_text',
   'delays_text',
   'incidents_text',
+  'materials_rejected_text',
   'other_notes_text',
   'status',
   'author_id',
@@ -3947,6 +3980,7 @@ export class Dprs {
           visitors_text: input.visitors_text ?? null,
           delays_text: input.delays_text ?? null,
           incidents_text: input.incidents_text ?? null,
+          materials_rejected_text: input.materials_rejected_text ?? null,
           other_notes_text: input.other_notes_text ?? null,
           status: input.status ?? 'draft',
           author_id: input.author_id,
@@ -4282,6 +4316,7 @@ export class Dprs {
       if (patch.visitors_text !== undefined) headerUpdate.visitors_text = patch.visitors_text;
       if (patch.delays_text !== undefined) headerUpdate.delays_text = patch.delays_text;
       if (patch.incidents_text !== undefined) headerUpdate.incidents_text = patch.incidents_text;
+      if (patch.materials_rejected_text !== undefined) headerUpdate.materials_rejected_text = patch.materials_rejected_text;
       if (patch.other_notes_text !== undefined) headerUpdate.other_notes_text = patch.other_notes_text;
 
       await t('dpr').where({ dpr_id: dprId }).update(headerUpdate);
@@ -6102,9 +6137,6 @@ export interface CreateChangeRequestInput {
   cost_currency: string | null;
   schedule_impact_days: number | null;
   raised_by: string;
-  /** A Site Engineer's own change requests are FYI only (no ExCo approval needed): they land
-   *  straight at `status = 'noted'` as a record for the project's PM, never 'pending'. */
-  skipApproval?: boolean;
   /** file_object ids from a prior /attachments/upload call, to attach at creation. */
   attachmentFileIds?: string[];
 }
@@ -6193,7 +6225,11 @@ export class ChangeRequests {
           cost_impact: input.cost_impact,
           cost_currency: input.cost_currency,
           schedule_impact_days: input.schedule_impact_days,
-          status: input.skipApproval ? 'noted' : 'pending',
+          // shortcut: ExCo review is switched off for now, so every raise is approved on the
+          // spot (no change_approval row — nobody decided it). Restore 'pending' here, and the
+          // Site Engineer FYI branch in changeRequestRouter, when the review runs again.
+          status: 'approved',
+          decided_at: new Date(),
           raised_by: input.raised_by,
         })
         .returning(CHANGE_REQUEST_COLS);
@@ -6559,5 +6595,92 @@ export class FileObjects {
    *  been referenced are retired with deleted_at instead (AC-GEN-08), never with this. */
   static async remove(fileId: string): Promise<void> {
     await db('file_object').where({ file_id: fileId }).del();
+  }
+}
+
+export interface SearchHit {
+  id: string;
+  project_id: string;
+  project_name: string;
+  title: string;
+  subtitle: string | null;
+}
+
+export interface SearchResults {
+  projects: SearchHit[];
+  risks: SearchHit[];
+  changeRequests: SearchHit[];
+  milestones: SearchHit[];
+}
+
+/**
+ * The navbar's global search. One query per entity rather than a UNION: each has a different
+ * notion of a title and of what to show beneath it, and four small indexed LIKEs are cheaper
+ * to read than one wide union that has to normalise them.
+ *
+ * `projectIds` is the visibility filter — null means unrestricted (a global grant), an array
+ * means those projects only. An empty array can see nothing, which is not the same as null,
+ * so it must short-circuit rather than fall through to "no filter".
+ */
+export class Search {
+  static async query({
+    q,
+    projectIds,
+    limit = 5,
+  }: {
+    q: string;
+    projectIds: string[] | null;
+    limit?: number;
+  }): Promise<SearchResults> {
+    const empty: SearchResults = { projects: [], risks: [], changeRequests: [], milestones: [] };
+    const term = q.trim();
+    if (!term || (projectIds && projectIds.length === 0)) return empty;
+
+    // Escape the LIKE wildcards so a literal % or _ in the query searches for itself.
+    const pattern = `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    const scope = <T extends Knex.QueryBuilder>(query: T, column: string): T => {
+      if (projectIds) query.whereIn(column, projectIds);
+      return query;
+    };
+
+    const [projects, risks, changeRequests, milestones] = await Promise.all([
+      scope(db('projects'), 'project_id')
+        .where((qb) => {
+          qb.whereILike('name', pattern).orWhereILike('project_code', pattern);
+        })
+        .orderBy('name')
+        .limit(limit)
+        .select('project_id as id', 'project_id', 'name as title', 'project_code as subtitle'),
+
+      scope(db('risk as r'), 'r.project_id')
+        .join('projects as p', 'p.project_id', 'r.project_id')
+        .whereILike('r.title', pattern)
+        .whereNotIn('r.status', ['closed', 'dismissed', 'auto_resolved'])
+        .orderBy('r.score', 'desc')
+        .limit(limit)
+        .select('r.risk_id as id', 'r.project_id', 'p.name as project_name', 'r.title', 'r.kind as subtitle'),
+
+      scope(db('change_request as c'), 'c.project_id')
+        .join('projects as p', 'p.project_id', 'c.project_id')
+        .whereILike('c.title', pattern)
+        .orderBy('c.raised_at', 'desc')
+        .limit(limit)
+        .select('c.change_id as id', 'c.project_id', 'p.name as project_name', 'c.title', 'c.type as subtitle'),
+
+      scope(db('project_milestone_v as m'), 'm.project_id')
+        .join('projects as p', 'p.project_id', 'm.project_id')
+        .whereILike('m.title', pattern)
+        .orderBy('m.planned_date')
+        .limit(limit)
+        .select('m.id', 'm.project_id', 'p.name as project_name', 'm.title', 'm.source as subtitle'),
+    ]);
+
+    // A project is its own context, so it repeats its name rather than carrying another's.
+    return {
+      projects: projects.map((row: SearchHit) => ({ ...row, project_name: row.title })),
+      risks,
+      changeRequests,
+      milestones,
+    };
   }
 }

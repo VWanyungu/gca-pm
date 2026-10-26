@@ -18,7 +18,7 @@ export default function MyDprsPage() {
     <div className="flex flex-1 flex-col gap-[12px] p-[16px]">
       <p className="text-[17px] font-semibold text-gca-dark">My DPRs</p>
       {!primaryProject && <p className="text-[14px] text-gca-muted">No project assigned.</p>}
-      <div className="flex flex-col rounded-[12px] bg-white px-[16px]">
+      <div className="flex flex-col rounded-[12px] bg-gca-surface px-[16px]">
         {(dprs ?? []).map((dpr, i) => (
           <Link
             key={dpr.dpr_id}

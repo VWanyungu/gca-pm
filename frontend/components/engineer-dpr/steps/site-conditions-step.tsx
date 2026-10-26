@@ -31,7 +31,7 @@ export function SiteConditionsStep({
           onChange={(e) => update({ site_location: e.target.value })}
           aria-invalid={siteLocationError}
           placeholder="e.g. Gitanga Mall · Block A"
-          className={`h-[48px] w-full rounded-[8px] border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green ${
+          className={`h-[48px] w-full rounded-[8px] border bg-gca-surface px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green ${
             siteLocationError ? "border-error-border" : "border-gca-border"
           }`}
         />
@@ -68,7 +68,7 @@ export function SiteConditionsStep({
                 className={`cursor-pointer rounded-[999px] border px-[14px] py-[8px] text-[14px] ${
                   selected
                     ? "border-gca-green bg-gca-badge-bg font-medium text-gca-badge-text"
-                    : "border-gca-border bg-white text-gca-show"
+                    : "border-gca-border bg-gca-surface text-gca-show"
                 }`}
               >
                 {category.name}
@@ -90,7 +90,7 @@ export function SiteConditionsStep({
                 onChange={(e) =>
                   update({ temp_min_c: e.target.value === "" ? null : Number(e.target.value) })
                 }
-                className="h-[48px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green"
+                className="h-[48px] w-full rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green"
               />
             </div>
             <div className="flex w-full flex-col gap-[4px]">
@@ -101,7 +101,7 @@ export function SiteConditionsStep({
                 onChange={(e) =>
                   update({ temp_max_c: e.target.value === "" ? null : Number(e.target.value) })
                 }
-                className="h-[48px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green"
+                className="h-[48px] w-full rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green"
               />
             </div>
           </div>
@@ -117,7 +117,7 @@ export function SiteConditionsStep({
             onChange={(e) =>
               update({ humidity_pct: e.target.value === "" ? null : Number(e.target.value) })
             }
-            className="h-[48px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green"
+            className="h-[48px] w-full rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green"
           />
         </div>
 
@@ -127,7 +127,7 @@ export function SiteConditionsStep({
             value={draft.wind ?? ""}
             onChange={(e) => update({ wind: e.target.value || null })}
             placeholder="Optional"
-            className="h-[48px] w-full rounded-[8px] border border-gca-border bg-white px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green placeholder:text-gca-muted"
+            className="h-[48px] w-full rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[15px] text-gca-dark outline-none focus:border-gca-green placeholder:text-gca-muted"
           />
         </div>
       </div>

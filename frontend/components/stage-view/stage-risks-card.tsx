@@ -33,7 +33,7 @@ export function StageRisksCard({ projectId, stageNo }: { projectId: string; stag
 
       {risks.length === 0 ? (
         <div className="flex flex-col items-center gap-[12px] py-[16px] text-center">
-          <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-white">
+          <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-gca-surface">
             <ShieldCheck className="size-[18px] text-gca-green" />
           </span>
           <p className="text-[14px] font-semibold text-gca-dark">Nothing raised for this stage</p>

@@ -132,7 +132,7 @@ export function AccessPanelContent({ user }: { user: AdminUserDetail }) {
               }}
               className={`flex-1 rounded-[6px] py-[8px] text-[13px] font-medium ${
                 level === l.id
-                  ? "bg-white text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
+                  ? "bg-gca-surface text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                   : "text-gca-show"
               }`}
             >
@@ -156,7 +156,7 @@ export function AccessPanelContent({ user }: { user: AdminUserDetail }) {
           type="button"
           onClick={handleAdd}
           disabled={grantRole.isPending || (level !== "global" && !scopeId)}
-          className="w-full rounded-[8px] bg-gca-green px-[14px] py-[10px] text-[14px] font-medium text-white disabled:opacity-60"
+          className="w-full rounded-[8px] bg-gca-green px-[14px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-60"
         >
           Add access
         </button>

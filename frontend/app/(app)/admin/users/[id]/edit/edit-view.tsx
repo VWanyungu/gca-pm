@@ -27,8 +27,8 @@ export default function EditUserView({ userId }: { userId: string }) {
           onClick={() => setShowStatusModal(true)}
           className={`rounded-[8px] px-[14px] py-[8px] text-[13px] font-medium ${
             user.status === "active"
-              ? "border border-gca-border bg-white text-error-text"
-              : "bg-gca-green text-white"
+              ? "border border-gca-border bg-gca-surface text-error-text"
+              : "bg-gca-green text-gca-on-accent"
           }`}
         >
           {user.status === "active" ? "Deactivate" : "Reactivate"}
