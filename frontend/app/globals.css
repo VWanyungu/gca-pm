@@ -160,3 +160,45 @@ body {
     animation: none;
   }
 }
+
+/* The weekly report PDF is produced by the browser's own print engine rather than a
+   rasteriser, so the output is the view: real text, exact borders, no clipped captions.
+   Everything outside the report is dropped and its ancestors are flattened to plain
+   blocks, which removes the app shell's flex sizing and padding from the page. */
+@media print {
+  @page {
+    size: A4;
+    /* Vertical only: the report supplies its own left/right gutter, and this is what
+       keeps content off the paper edge where a long table runs onto the next page. */
+    margin: 12mm 0;
+  }
+
+  body *:not(:has(#report-print-root)):not(#report-print-root):not(#report-print-root *) {
+    display: none !important;
+  }
+
+  body :has(#report-print-root) {
+    display: block !important;
+    width: auto !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+  }
+
+  #report-print-root {
+    width: 210mm;
+    max-width: none;
+    /* Chrome drops background colours when printing unless asked not to. */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  #report-print-root tr,
+  #report-print-root img,
+  #report-print-root figure {
+    break-inside: avoid;
+  }
+}

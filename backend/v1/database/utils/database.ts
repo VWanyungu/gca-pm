@@ -2,6 +2,7 @@ import type { Knex } from 'knex';
 import { randomUUID } from 'crypto';
 import db from '../dbSetup.js';
 import { writebackDprActivityProgress } from '../../utils/scheduleWriteback.js';
+import { refreshProjectMetrics } from '../../utils/scheduleRisks.js';
 import { objectUrl } from '../../utils/objectStorage.js';
 
 export interface Paginated<T> {
@@ -826,6 +827,8 @@ export interface RiskIssueRow {
   closed_at: Date | null;
   created_by: string;
   updated_at: Date;
+  /** Joined in getById only — the list and write paths return RISK_COLS. */
+  owner_name?: string | null;
 }
 
 export interface RiskIssueCreateInput {
@@ -933,7 +936,14 @@ export class RiskIssues {
   }
 
   static async getById(projectId: string, riskId: string): Promise<RiskIssueRow | null> {
-    const row = await db('risk').where({ project_id: projectId, risk_id: riskId }).first();
+    const row = await db('risk')
+      .leftJoin('users as owner', 'risk.owner_id', 'owner.id')
+      .where({ 'risk.project_id': projectId, 'risk.risk_id': riskId })
+      .select(
+        'risk.*',
+        db.raw("NULLIF(CONCAT(owner.first_name, ' ', owner.last_name), ' ') as owner_name"),
+      )
+      .first();
     return row ?? null;
   }
 
@@ -4176,27 +4186,73 @@ export class Dprs {
     };
   }
 
+  /**
+   * The "expected DPR day" definition from `docs/app-constraints.md` (§15.4), inclusive of both
+   * ends: day D is expected when `extract(isodow from D)` is in `project.dpr_expected_weekdays`,
+   * Stage 7 was active on D per `stage_state_history`, D is not a `holiday` on the project's
+   * calendar unless a `project_calendar_exception` marks it `is_working_day = true`, and no
+   * exception marks it `is_working_day = false`.
+   *
+   * The stage-7 condition applies only from the first recorded stage event onwards. Stage history
+   * started being written long after the first DPRs were filed, so for earlier days there is no
+   * event to read and "was it active?" is unanswerable; treating that as "not expected" would
+   * print rows like "5 filed of 0 expected" on the client report. Before a project's first stage
+   * event the weekday/holiday rules stand alone.
+   */
+  static async expectedDates(
+    projectId: string,
+    fromDate: string,
+    toDate: string,
+  ): Promise<string[]> {
+    const { rows } = await db.raw(
+      `
+      SELECT to_char(d.day, 'YYYY-MM-DD') AS day
+      FROM projects p
+      CROSS JOIN LATERAL generate_series(:fromDate::date, :toDate::date, interval '1 day') AS d(day)
+      LEFT JOIN project_calendar_exception e
+             ON e.project_id = p.project_id AND e.exception_date = d.day::date
+      LEFT JOIN holiday h
+             ON h.calendar_id = p.holiday_calendar_id AND h.holiday_date = d.day::date
+      WHERE p.project_id = :projectId
+        AND EXTRACT(ISODOW FROM d.day)::smallint = ANY (p.dpr_expected_weekdays)
+        AND COALESCE(e.is_working_day, true) = true
+        AND (h.holiday_date IS NULL OR e.is_working_day = true)
+        AND (
+              NOT EXISTS (SELECT 1
+                            FROM stage_state_history s0
+                           WHERE s0.project_id = p.project_id
+                             AND s0.stage_no = 7
+                             AND (s0.occurred_at AT TIME ZONE p.timezone)::date <= d.day::date)
+              OR (SELECT s.to_state::text
+                    FROM stage_state_history s
+                   WHERE s.project_id = p.project_id
+                     AND s.stage_no = 7
+                     AND (s.occurred_at AT TIME ZONE p.timezone)::date <= d.day::date
+                   ORDER BY s.occurred_at DESC
+                   LIMIT 1) = 'active'
+            )
+      ORDER BY d.day
+      `,
+      { projectId, fromDate, toDate },
+    );
+    return rows.map((row: { day: string }) => row.day);
+  }
+
+  /** Expected days (above) with no DPR filed. `toDate` is exclusive here: the caller passes
+   *  today, and today's DPR is not late yet. */
   static async missingWeekdays(
     projectId: string,
     fromDate: string,
     toDate: string,
   ): Promise<string[]> {
+    const expected = await Dprs.expectedDates(projectId, fromDate, toDate);
     const existingRows = await db('dpr')
       .where({ project_id: projectId })
       .andWhere('report_date', '>=', fromDate)
       .andWhere('report_date', '<', toDate)
       .select('report_date');
     const existing = new Set(existingRows.map((row) => String(row.report_date).slice(0, 10)));
-    const dates: string[] = [];
-    const cursor = new Date(`${fromDate}T00:00:00Z`);
-    const end = new Date(`${toDate}T00:00:00Z`);
-    while (cursor < end) {
-      const weekday = cursor.getUTCDay();
-      const date = cursor.toISOString().slice(0, 10);
-      if (weekday !== 0 && weekday !== 6 && !existing.has(date)) dates.push(date);
-      cursor.setUTCDate(cursor.getUTCDate() + 1);
-    }
-    return dates;
+    return expected.filter((date) => date < toDate && !existing.has(date));
   }
 
   static async update(
@@ -5125,13 +5181,11 @@ export interface UpdateWeeklySubmissionInput {
   updated_at?: string | Date;
 }
 
+/** `planned_pct` / `actual_pct` / `spi` / `rag` are deliberately absent: AC-WKS-05 makes them a
+ *  server-side recompute at approval, not something the caller can supply. */
 export interface ApproveWeeklySubmissionInput {
   approved_by: string;
   updated_at?: string | Date;
-  planned_pct?: number;
-  actual_pct?: number;
-  spi?: number | null;
-  rag?: ProjectRag | null;
   schedule_version_id?: string | null;
 }
 
@@ -5568,13 +5622,12 @@ export class WeeklySubmissions {
         return { validationErrors: errors };
       }
 
-      // AC-WKS-05 (1): Schedule values
-      let scheduleVersionId = input.schedule_version_id ?? existing.schedule_version_id ?? null;
-      let plannedPct = input.planned_pct ?? existing.planned_pct ?? 0.0;
-      let actualPct = input.actual_pct ?? existing.actual_pct ?? 0.0;
-      let spi = input.spi ?? existing.spi ?? null;
-      let rag = input.rag ?? existing.rag ?? null;
+      const project = await t('projects').where('project_id', existing.project_id).first();
 
+      // AC-WKS-05 (1): Schedule values are recomputed here, not taken from the request. The
+      // client's figures come from whatever metrics snapshot its page happened to load, which
+      // can be weeks stale; the submission must record the project's position at approval.
+      let scheduleVersionId = input.schedule_version_id ?? existing.schedule_version_id ?? null;
       if (!scheduleVersionId) {
         const latestSchedule = await t('schedule_version')
           .where({ project_id: existing.project_id, status: 'applied' })
@@ -5585,8 +5638,23 @@ export class WeeklySubmissions {
         }
       }
 
+      // No applied schedule, or none of its tasks carry duration, means there is no position to
+      // report. AC-WKS-05 allows all four to be null then — the report suppresses its KPI cards
+      // rather than showing a fabricated 0%.
+      const snapshot = scheduleVersionId
+        ? await refreshProjectMetrics(
+            t,
+            existing.project_id,
+            scheduleVersionId,
+            project?.timezone ?? 'Africa/Nairobi',
+          )
+        : null;
+      const plannedPct = snapshot?.planned_pct ?? null;
+      const actualPct = snapshot?.actual_pct ?? null;
+      const spi = snapshot?.spi ?? null;
+      const rag = snapshot?.rag ?? null;
+
       // AC-WKS-05 (2): Set approved, is_late
-      const project = await t('projects').where('project_id', existing.project_id).first();
       const approvedAt = new Date();
       const isLate = computeWeeklyIsLate(
         approvedAt,

@@ -126,10 +126,6 @@ export function SubmitMode({
     setSubmitting(true);
     try {
       const approved = await approveWeeklySubmission(projectId, submission.submission_id, {
-        planned_pct: latestMetric?.planned_pct,
-        actual_pct: latestMetric?.actual_pct,
-        spi: latestMetric?.spi ?? null,
-        rag: latestMetric?.rag ?? null,
         schedule_version_id: latestVersion?.schedule_version_id ?? null,
       });
       invalidate();

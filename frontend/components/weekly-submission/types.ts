@@ -221,14 +221,18 @@ export function formatWeekPeriod(weekStart: string): string {
     year: "numeric",
     timeZone: "UTC",
   });
-  return sameMonth ? `${startLabel}–${endLabel}` : `${startLabel.padStart(0)} ${endLabel}`;
+  return sameMonth ? `${startLabel} to ${endLabel}` : `${startLabel.padStart(0)} ${endLabel}`;
 }
 
+/** ISO 8601 week number, which is what `extract(week from ...)` gives on the database side
+ *  and what the WPR document code has to match. A week belongs to the year holding its
+ *  Thursday, so a January week can be week 52/53 of the year before. */
 export function weekNumber(weekStart: string): number {
   const d = new Date(`${weekStart.slice(0, 10)}T00:00:00Z`);
+  const isoDay = d.getUTCDay() || 7; // Sunday -> 7
+  d.setUTCDate(d.getUTCDate() + 4 - isoDay); // this week's Thursday
   const firstJan = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const days = Math.floor((d.getTime() - firstJan.getTime()) / 86_400_000);
-  return Math.ceil((days + firstJan.getUTCDay() + 1) / 7);
+  return Math.ceil(((d.getTime() - firstJan.getTime()) / 86_400_000 + 1) / 7);
 }
 
 export const ADDRESSED_METHOD_LABEL: Record<AddressedRiskMethod, string> = {

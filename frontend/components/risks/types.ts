@@ -23,6 +23,8 @@ export interface Risk {
   impact: number;
   score: number;
   owner_id: string;
+  /** Only returned by the single-risk endpoint, not the list. */
+  owner_name?: string | null;
   mitigation: string | null;
   review_by: string | null;
   status: RiskStatus;
@@ -41,7 +43,10 @@ export function ratingFromScore(score: number): { label: string; className: stri
   return { label: "Low", className: "text-gca-muted" };
 }
 
-export function statusInfo(risk: Pick<Risk, "status" | "source">): { label: string; className: string } {
+export function statusInfo(risk: Pick<Risk, "status" | "source">): {
+  label: string;
+  className: string;
+} {
   if (risk.source === "overdue_task") {
     if (risk.status === "open") return { label: "Unaddressed", className: "text-error-text" };
     if (risk.status === "mitigated") return { label: "Addressed", className: "text-gca-green" };
@@ -89,5 +94,9 @@ export function formatShortDate(iso: string | null): string {
 
 export function formatLongDate(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }

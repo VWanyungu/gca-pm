@@ -1367,6 +1367,11 @@ export interface ListDprsQuery {
   limit?: number;
 }
 
+export interface ExpectedDprDaysQuery {
+  from: string;
+  to: string;
+}
+
 export interface CreateDprAmendmentBody {
   reason: string;
   proposed_document: CreateDprBody;
@@ -1567,7 +1572,16 @@ export const listDprsQuerySchema = Joi.object<ListDprsQuery>({
   to_date: Joi.string().isoDate().optional(),
   author_id: Joi.string().uuid().optional(),
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(25),
+  // The DPR list view pages DPRs and missed dates together, and missed dates only exist
+  // client-side, so the merge needs the project's whole DPR list in one request. A daily
+  // report per working day is ~250 a year, so 1000 covers a multi-year project.
+  // shortcut: projects past 1000 DPRs lose their oldest rows, move the merge server-side then.
+  limit: Joi.number().integer().min(1).max(1000).default(25),
+});
+
+export const expectedDprDaysQuerySchema = Joi.object<ExpectedDprDaysQuery>({
+  from: Joi.string().isoDate().required(),
+  to: Joi.string().isoDate().required(),
 });
 
 export const createDprAmendmentSchema = Joi.object<CreateDprAmendmentBody>({
@@ -1716,10 +1730,6 @@ export interface UpdateWeeklySubmissionBody {
 
 export interface ApproveWeeklySubmissionBody {
   updated_at?: string;
-  planned_pct?: number;
-  actual_pct?: number;
-  spi?: number | null;
-  rag?: "green" | "amber" | "red" | null;
   schedule_version_id?: string | null;
 }
 
@@ -1863,10 +1873,6 @@ export const updateWeeklySubmissionSchema =
 export const approveWeeklySubmissionSchema =
   Joi.object<ApproveWeeklySubmissionBody>({
     updated_at: Joi.string().isoDate().optional(),
-    planned_pct: Joi.number().min(0).max(100).optional(),
-    actual_pct: Joi.number().min(0).max(100).optional(),
-    spi: Joi.number().min(0).max(10).allow(null).optional(),
-    rag: Joi.string().valid("green", "amber", "red").allow(null).optional(),
     schedule_version_id: Joi.string().uuid().allow(null).optional(),
   });
 

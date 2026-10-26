@@ -93,6 +93,23 @@ export function useWeekDprs(projectId: string, weekStart: string) {
   });
 }
 
+/** Days the project was due a DPR in [weekStart, weekStart+6] — the project's expected weekdays
+ *  minus holidays and calendar exceptions (app-constraints §15.4). `expected_weekdays` is the
+ *  project's own working-week setting, which the report prints as "Allowable working days". */
+export function useExpectedDprDays(projectId: string, weekStart: string) {
+  return useQuery({
+    queryKey: ["project", projectId, "dpr-expected-days", weekStart],
+    queryFn: async () =>
+      unwrap(
+        await api.get<{ expected_dates: string[]; expected_weekdays: number[] }>(
+          `/projects/${projectId}/dpr/expected-days?from=${weekStart}&to=${addDays(weekStart, 6)}`,
+        ),
+      ),
+    enabled: !!weekStart,
+    staleTime: 60_000,
+  });
+}
+
 export function useDprs({
   projectId,
   status,
@@ -192,13 +209,8 @@ export async function updateWeeklySubmission(
 export async function approveWeeklySubmission(
   projectId: string,
   submissionId: string,
-  body: {
-    planned_pct?: number;
-    actual_pct?: number;
-    spi?: number | null;
-    rag?: ProjectRagLiteral | null;
-    schedule_version_id?: string | null;
-  },
+  /** No percentages here: AC-WKS-05 has the server recompute them from the schedule at approval. */
+  body: { schedule_version_id?: string | null },
 ) {
   const res = await api.post<{ submission: WeeklySubmission }>(
     `/projects/${projectId}/weekly-submission/${submissionId}/approve`,
@@ -209,7 +221,6 @@ export async function approveWeeklySubmission(
   return res.data.submission;
 }
 
-type ProjectRagLiteral = "green" | "amber" | "red";
 
 export async function addAddressedRisk(
   projectId: string,

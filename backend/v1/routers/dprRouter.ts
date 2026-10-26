@@ -16,6 +16,7 @@ import {
   createDprSchema,
   updateDprSchema,
   listDprsQuerySchema,
+  expectedDprDaysQuerySchema,
   uploadDprPhotoSchema,
   createDprAmendmentSchema,
   decideDprAmendmentSchema,
@@ -152,6 +153,42 @@ router.get('/missed-dates', canCreateOrEdit, async (req, res) => {
       status: 'success',
       data: { missed_dates: missedDates },
       message: 'Missed DPR dates retrieved',
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({ status: 'error', data: null, message });
+  }
+});
+
+// Expected DPR days in a window (§15.4), for the weekly report's compliance and days-worked rows.
+router.get('/expected-days', canView, async (req, res) => {
+  const params = projectIdParamSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const { projectId } = params.value as { projectId: string };
+
+  const query = expectedDprDaysQuerySchema.validate(req.query ?? {}, { stripUnknown: true });
+  if (query.error) {
+    res.status(400).json({ status: 'error', data: null, message: query.error.message });
+    return;
+  }
+  const { from, to } = query.value as { from: string; to: string };
+
+  try {
+    const project = await Projects.getById(projectId);
+    if (!project) {
+      res.status(404).json({ status: 'error', data: null, message: 'Project not found' });
+      return;
+    }
+    res.status(200).json({
+      status: 'success',
+      data: {
+        expected_dates: await Dprs.expectedDates(projectId, from, to),
+        expected_weekdays: project.dpr_expected_weekdays,
+      },
+      message: 'Expected DPR days retrieved',
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

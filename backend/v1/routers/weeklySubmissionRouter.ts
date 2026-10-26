@@ -4,7 +4,6 @@ import {
   SubmissionClientPhotos,
   Projects,
   type WeeklySubmissionStatus,
-  type ProjectRag,
 } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
 import {
@@ -324,10 +323,6 @@ router.post('/:submissionId/approve', canManage, async (req, res) => {
       {
         approved_by: req.user!.userId,
         updated_at: input.updated_at,
-        planned_pct: input.planned_pct,
-        actual_pct: input.actual_pct,
-        spi: input.spi,
-        rag: input.rag as ProjectRag | undefined,
         schedule_version_id: input.schedule_version_id,
       },
       projectId,
