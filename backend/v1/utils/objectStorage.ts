@@ -227,9 +227,16 @@ export async function discardObject(fileObject: FileObjectRow): Promise<void> {
   await FileObjects.remove(fileObject.file_id);
 }
 
-/** Delivery URL for a stored object, built from its handle. */
+/**
+ * Delivery URL for a stored object, built from its handle.
+ *
+ * Deliberately does NOT call assertStorageKeyIsHandle. That guard protects deletion, which
+ * cannot turn a URL back into a public id; reading needs no such reversal, and a row written
+ * before storage_key held a handle is still perfectly readable. Enforcing it here took down
+ * every read of the owning entity — one legacy photo row 500'd a whole DPR.
+ */
 export function objectUrl(fileObject: FileObjectRow): string {
-  assertStorageKeyIsHandle(fileObject);
+  if (/^https?:\/\//i.test(fileObject.storage_key)) return fileObject.storage_key;
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUD_NAME;
   if (!cloudName) {
     throw new FileStorageError('Cloudinary cloud name missing; cannot build an object URL');

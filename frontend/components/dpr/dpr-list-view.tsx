@@ -30,6 +30,10 @@ type SubView =
 
 type DprRow = { type: "dpr"; dpr: DprSummary } | { type: "missed"; date: string };
 
+/** Matches the server's max (listDprsQuerySchema) — the merged list pages client-side, so it
+ *  needs every DPR, not a page of them. */
+const ALL_DPRS_LIMIT = 1000;
+
 const STATUS_FILTER_ALL = "all";
 const STATUS_OPTIONS = [
   { id: STATUS_FILTER_ALL, name: "All status" },
@@ -126,13 +130,16 @@ export function DprListView({ projectId }: { projectId: string }) {
   const [toDate, setToDate] = useState("");
   const showRealDprs = statusFilter !== "missed";
   const showMissed = statusFilter === STATUS_FILTER_ALL || statusFilter === "missed";
+  // Filed DPRs and missed dates are one chronological list to the reader, so paging happens
+  // over the merged rows below. Missed dates exist only client-side, so the whole DPR list
+  // has to come down in one request for the merge to be complete.
   const { data } = useDprs({
     projectId,
     status: statusFilter === "draft" || statusFilter === "submitted" ? statusFilter : undefined,
     fromDate: fromDate || undefined,
     toDate: toDate || undefined,
-    page,
-    limit: perPage,
+    page: 1,
+    limit: ALL_DPRS_LIMIT,
   });
 
   const canCreate = canAccess(user?.role, CAN_CREATE_DPR, { projectId });
@@ -148,20 +155,15 @@ export function DprListView({ projectId }: { projectId: string }) {
   const deleteDpr = useDeleteDpr(projectId);
   const decideAmendment = useDecideDprAmendment(projectId);
   const dprs = showRealDprs ? (data?.dprs ?? []) : [];
-  const total = data?.pagination.total ?? 0;
-  const totalPages = data?.pagination.totalPages ?? 1;
   const pendingByDpr = new Map(amendments.map((amendment) => [amendment.dpr_id, amendment]));
 
-  // Missed dates aren't paginated server-side, so they're only merged into page 1 — otherwise
-  // they'd reappear identically on every page of the real DPR list.
-  const missedDates =
-    showMissed && page === 1
-      ? allMissedDates.filter(
-          (date) => (!fromDate || date >= fromDate) && (!toDate || date <= toDate),
-        )
-      : [];
+  const missedDates = showMissed
+    ? allMissedDates.filter(
+        (date) => (!fromDate || date >= fromDate) && (!toDate || date <= toDate),
+      )
+    : [];
 
-  const rows: DprRow[] = [
+  const allRows: DprRow[] = [
     ...dprs.map((dpr): DprRow => ({ type: "dpr", dpr })),
     ...missedDates.map((date): DprRow => ({ type: "missed", date })),
   ].sort((a, b) => {
@@ -169,6 +171,11 @@ export function DprListView({ projectId }: { projectId: string }) {
     const dateB = b.type === "dpr" ? b.dpr.report_date.slice(0, 10) : b.date;
     return dateB.localeCompare(dateA);
   });
+
+  const total = allRows.length;
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  const currentPage = Math.min(page, totalPages);
+  const rows = allRows.slice((currentPage - 1) * perPage, currentPage * perPage);
   const hasActiveFilters = statusFilter !== STATUS_FILTER_ALL || !!fromDate || !!toDate;
 
   if (!project) return null;
@@ -549,9 +556,9 @@ export function DprListView({ projectId }: { projectId: string }) {
                 </div>
               )}
 
-              {showRealDprs && totalPages > 1 && (
+              {totalPages > 1 && (
                 <Pagination
-                  page={page}
+                  page={currentPage}
                   totalPages={totalPages}
                   perPage={perPage}
                   total={total}
@@ -560,7 +567,7 @@ export function DprListView({ projectId }: { projectId: string }) {
                     setPerPage(n);
                     setPage(1);
                   }}
-                  label="DPRs"
+                  label="entries"
                 />
               )}
             </>

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import {
   assertStorageKeyIsHandle,
   decodeUploadedFile,
+  objectUrl,
   FileValidationError,
   __testing,
 } from '../utils/objectStorage.js';
@@ -87,5 +88,24 @@ describe('assertStorageKeyIsHandle', () => {
     // image ids drop it, and a v<digits> segment may or may not be there.
     expect(() => assertStorageKeyIsHandle(row('https://res.cloudinary.com/x/raw/upload/v1/a.mpp'))).toThrow(/storage_key/);
     expect(() => assertStorageKeyIsHandle(row('http://example.com/a.mpp'))).toThrow();
+  });
+});
+
+describe('objectUrl', () => {
+  const row = (storage_key: string, mime_type = 'image/jpeg') =>
+    ({ file_id: 'f1', storage_key, mime_type }) as any;
+
+  it('builds a delivery URL from a handle', () => {
+    process.env.CLOUDINARY_CLOUD_NAME = 'gca';
+    expect(objectUrl(row('projects/abc/dpr/photo1'))).toBe(
+      'https://res.cloudinary.com/gca/image/upload/projects/abc/dpr/photo1',
+    );
+  });
+
+  it('returns a storage_key that is already a URL instead of refusing to read it', () => {
+    // Reading needs no reversal to a public id, so the delete-path guard must not apply:
+    // one legacy row used to 500 every read of the DPR that owned it.
+    const url = 'https://res.cloudinary.com/x/image/upload/v1/legacy.jpg';
+    expect(objectUrl(row(url))).toBe(url);
   });
 });
