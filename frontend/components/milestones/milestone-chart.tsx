@@ -28,14 +28,18 @@ function daysInMonth(year: number, month: number) {
 
 export function MilestoneChart({ milestones, sourceFilter, onSelect }: MilestoneChartProps) {
   const filtered = useMemo(
-    () => (sourceFilter === "all" ? milestones : milestones.filter((m) => m.source === sourceFilter)),
+    () =>
+      sourceFilter === "all" ? milestones : milestones.filter((m) => m.source === sourceFilter),
     [milestones, sourceFilter],
   );
 
   const chart = useMemo(() => {
     if (filtered.length === 0) return null;
 
-    const dated = filtered.map((m) => ({ milestone: m, date: new Date(m.forecast_date ?? m.planned_date) }));
+    const dated = filtered.map((m) => ({
+      milestone: m,
+      date: new Date(m.forecast_date ?? m.planned_date),
+    }));
     const minKey = Math.min(...dated.map((d) => monthKey(d.date)));
     const maxKey = Math.max(...dated.map((d) => monthKey(d.date)));
 
@@ -77,7 +81,7 @@ export function MilestoneChart({ milestones, sourceFilter, onSelect }: Milestone
 
   return (
     <div className="flex w-full flex-col gap-[16px] rounded-[12px] border border-gca-border bg-gca-surface p-[24px]">
-      <div className="flex w-full items-center justify-between">
+      <div className="flex w-full flex-wrap items-center justify-between gap-[8px]">
         <p className="text-[14px] font-semibold text-gca-dark">{rangeLabel}</p>
         <div className="flex items-center gap-[14px]">
           <LegendItem colorClassName="bg-gca-green" label="Schedule" />
@@ -87,7 +91,10 @@ export function MilestoneChart({ milestones, sourceFilter, onSelect }: Milestone
 
       <div className="w-full overflow-x-auto">
         <div style={{ paddingLeft: LABEL_HALF_WIDTH, paddingRight: LABEL_HALF_WIDTH }}>
-          <div className="relative w-full" style={{ minWidth: chart.minWidth, height: CHART_HEIGHT }}>
+          <div
+            className="relative w-full"
+            style={{ minWidth: chart.minWidth, height: CHART_HEIGHT }}
+          >
             {/* Month axis */}
             <div className="absolute left-0 right-0 flex" style={{ top: AXIS_Y }}>
               {chart.months.map((m, i) => (
@@ -106,7 +113,9 @@ export function MilestoneChart({ milestones, sourceFilter, onSelect }: Milestone
                 style={{ left: `${chart.todayFrac * 100}%`, height: CHART_HEIGHT }}
               >
                 <div className="h-full w-0 border-l border-dashed border-error-text" />
-                <p className="absolute bottom-0 -translate-x-1/2 text-[11px] font-semibold text-error-text">Today</p>
+                <p className="absolute bottom-0 -translate-x-1/2 text-[11px] font-semibold text-error-text">
+                  Today
+                </p>
               </div>
             )}
 
@@ -135,7 +144,10 @@ export function MilestoneChart({ milestones, sourceFilter, onSelect }: Milestone
                     above ? "bottom-full mb-[14px]" : "top-full mt-[14px]"
                   }`}
                 >
-                  <p className="w-full truncate text-center text-[12px] font-medium text-gca-dark" title={milestone.title}>
+                  <p
+                    className="w-full truncate text-center text-[12px] font-medium text-gca-dark"
+                    title={milestone.title}
+                  >
                     {milestone.title}
                   </p>
                   <p className="font-mono text-[11px] text-gca-show">

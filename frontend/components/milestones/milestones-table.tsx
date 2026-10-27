@@ -62,7 +62,7 @@ export function MilestonesTable({
   return (
     <div className="flex w-full flex-col gap-[16px]">
       <div className="flex w-full flex-col">
-        <div className="flex w-full items-center gap-[10px] py-[8px] text-[12px] font-medium text-gca-muted border-b border-gca-border">
+        <div className="hidden w-full items-center gap-[10px] border-b border-gca-border py-[8px] text-[12px] font-medium text-gca-muted md:flex">
           <p className="w-[35%]">Milestone</p>
           <p className="w-[15%]">Source</p>
           <p className="w-[15%]">Date</p>
@@ -77,31 +77,54 @@ export function MilestonesTable({
           return (
             <div
               key={m.id}
-              className={`flex w-full items-center gap-[10px] py-[12px] ${i > 0 ? "border-t border-gca-border" : ""}`}
+              className={`flex w-full flex-col items-start gap-[4px] py-[14px] md:flex-row md:items-center md:gap-[10px] md:py-[12px] ${i > 0 ? "border-t border-gca-border" : ""}`}
             >
-              <p className="w-[35%] truncate text-[13px] font-medium text-gca-dark">{m.title}</p>
-              <p className={`w-[15%] text-[13px] font-medium ${source.className}`}>
-                {source.label}
+              <p className="w-full text-[15px] font-medium text-gca-dark md:w-[35%] md:truncate md:text-[13px]">
+                {m.title}
               </p>
-              <p className="w-[15%] font-mono text-[13px] text-gca-dark">
-                {formatShortDate(m.planned_date ?? m.forecast_date)}
-              </p>
-              <p className={`w-[12%] font-mono text-[13px] font-semibold ${v.className}`}>
-                {v.label}
-              </p>
-              <p className={`w-[13%] text-[13px] font-semibold ${status.className}`}>
-                {status.label}
-              </p>
-              <div className="flex w-[10%] justify-end">
+              {/* Phone: source, date, variance and status fold under the title; the edit
+                  control keeps its place at the end of that line. */}
+              <div className="flex w-full flex-wrap items-center gap-x-[8px] text-[12px] md:hidden">
+                <span className={`font-semibold ${status.className}`}>{status.label}</span>
+                <span className={`font-mono font-semibold ${v.className}`}>{v.label}</span>
+                <span className="text-gca-muted">
+                  {source.label} · {formatShortDate(m.planned_date ?? m.forecast_date)}
+                </span>
                 {canManage && m.source === "custom" && (
                   <button
                     onClick={() => onEdit(m.id)}
-                    className="cursor-pointer flex size-[28px] items-center justify-center rounded-[6px] hover:bg-gca-page-bg"
+                    aria-label={`Edit ${m.title}`}
+                    className="ml-auto flex size-[28px] cursor-pointer items-center justify-center rounded-[6px] hover:bg-gca-page-bg"
                   >
                     <Pencil className="size-[14px] text-gca-show" />
                   </button>
                 )}
               </div>
+              <span className="hidden md:contents">
+                <p className={`w-[15%] text-[13px] font-medium ${source.className}`}>
+                  {source.label}
+                </p>
+                <p className="w-[15%] font-mono text-[13px] text-gca-dark">
+                  {formatShortDate(m.planned_date ?? m.forecast_date)}
+                </p>
+                <p className={`w-[12%] font-mono text-[13px] font-semibold ${v.className}`}>
+                  {v.label}
+                </p>
+                <p className={`w-[13%] text-[13px] font-semibold ${status.className}`}>
+                  {status.label}
+                </p>
+                <div className="flex w-[10%] justify-end">
+                  {canManage && m.source === "custom" && (
+                    <button
+                      onClick={() => onEdit(m.id)}
+                      aria-label={`Edit ${m.title}`}
+                      className="cursor-pointer flex size-[28px] items-center justify-center rounded-[6px] hover:bg-gca-page-bg"
+                    >
+                      <Pencil className="size-[14px] text-gca-show" />
+                    </button>
+                  )}
+                </div>
+              </span>
             </div>
           );
         })}

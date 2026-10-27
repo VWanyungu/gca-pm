@@ -156,7 +156,7 @@ export function AddActivityForm({
             One owner, one date. Overdue activities show on the overview.
           </p>
         </div>
-        <div className="flex w-full max-w-[792px] gap-[16px]">
+        <div className="flex w-full max-w-[792px] flex-col gap-[16px] sm:flex-row">
           <div className="flex w-full flex-col gap-[6px]">
             <label className="text-[14px] text-gca-dark">
               Owner<span className="text-error-text">*</span>

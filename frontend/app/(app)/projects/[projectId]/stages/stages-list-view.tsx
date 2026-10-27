@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { useProjectDetail, useStageActivities } from "@/components/project-overview/use-project-data";
+import {
+  useProjectDetail,
+  useStageActivities,
+} from "@/components/project-overview/use-project-data";
 import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
 import { STAGE_SHORT_NAME } from "@/components/project-overview/types";
 
@@ -31,10 +34,15 @@ export default function StagesListView({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex min-h-[calc(100vh-64px)] w-full">
-      <ProjectSidebar projectId={projectId} stages={project.stages} percentByStage={percentByStage} active="stages" />
+      <ProjectSidebar
+        projectId={projectId}
+        stages={project.stages}
+        percentByStage={percentByStage}
+        active="stages"
+      />
 
-      <div className="flex w-full justify-center">
-        <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[40px]">
+      <div className="flex w-full min-w-0 justify-center">
+        <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[20px] md:p-[40px]">
           <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">All stages</h1>
 
           <div className="flex flex-col">
@@ -50,11 +58,15 @@ export default function StagesListView({ projectId }: { projectId: string }) {
                   <p className="text-[14px] font-medium text-gca-dark">
                     {STAGE_SHORT_NAME[stage.stage_no] ?? stage.stage_name}
                   </p>
-                  <p className="text-[12px] text-gca-muted">{stage.in_scope ? "In scope" : "Out of scope"}</p>
+                  <p className="text-[12px] text-gca-muted">
+                    {stage.in_scope ? "In scope" : "Out of scope"}
+                  </p>
                 </div>
                 <div className="flex items-center gap-[16px]">
                   <span className="font-mono text-[13px] text-gca-muted">
-                    {stage.state === "active" ? `${percentByStage[stage.stage_no] ?? 0}%` : STATE_LABEL[stage.state]}
+                    {stage.state === "active"
+                      ? `${percentByStage[stage.stage_no] ?? 0}%`
+                      : STATE_LABEL[stage.state]}
                   </span>
                   <ChevronRight className="size-[14px] text-gca-muted" />
                 </div>

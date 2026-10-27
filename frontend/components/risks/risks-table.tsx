@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Search, ShieldCheck } from "lucide-react";
 import Dropdown from "@/components/Dropdown";
+import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { Pagination } from "@/components/pagination";
 import { useRisks } from "./use-risks-data";
@@ -74,12 +75,12 @@ export function RisksTable({ projectId, team, canManage, onAddRisk, onOpenRisk }
 
   return (
     <div className="flex w-full flex-col gap-[16px]">
-      <div className="flex w-full items-center justify-between">
+      <div className="flex w-full flex-col gap-[12px] sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">Risks</h1>
         {canManage && (
           <button
             onClick={onAddRisk}
-            className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
+            className="flex w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[12px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover sm:w-auto sm:py-[10px]"
           >
             <Plus className="size-[14px]" />
             New risk
@@ -87,8 +88,8 @@ export function RisksTable({ projectId, team, canManage, onAddRisk, onOpenRisk }
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-[12px]">
-        <label className="flex h-[40px] w-[260px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px]">
+      <div className="flex flex-col items-stretch gap-[12px] sm:flex-row sm:flex-wrap sm:items-center">
+        <label className="flex h-[40px] w-full items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] sm:w-[260px]">
           <Search className="size-[14px] shrink-0 text-gca-muted" />
           <input
             type="search"
@@ -102,20 +103,22 @@ export function RisksTable({ projectId, team, canManage, onAddRisk, onOpenRisk }
             className="min-w-0 w-full bg-transparent text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
           />
         </label>
-        <Dropdown
-          id="risk-filter-status"
-          data={STATUS_OPTIONS}
-          selectedId={statusFilter}
-          style="h-[40px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
-          onSelect={(id) => changeFilter(setStatusFilter, id)}
-        />
-        <Dropdown
-          id="risk-filter-rating"
-          data={RATING_OPTIONS}
-          selectedId={ratingFilter}
-          style="h-[40px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
-          onSelect={(id) => changeFilter(setRatingFilter, id)}
-        />
+        <MobileFilterToggle>
+          <Dropdown
+            id="risk-filter-status"
+            data={STATUS_OPTIONS}
+            selectedId={statusFilter}
+            style="h-[40px] w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
+            onSelect={(id) => changeFilter(setStatusFilter, id)}
+          />
+          <Dropdown
+            id="risk-filter-rating"
+            data={RATING_OPTIONS}
+            selectedId={ratingFilter}
+            style="h-[40px] w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
+            onSelect={(id) => changeFilter(setRatingFilter, id)}
+          />
+        </MobileFilterToggle>
       </div>
 
       {risks.length === 0 ? (
@@ -133,7 +136,7 @@ export function RisksTable({ projectId, team, canManage, onAddRisk, onOpenRisk }
       ) : (
         <>
           <div className="flex w-full flex-col">
-            <div className="flex w-full items-center gap-[10px] py-[8px] text-[12px] font-medium text-gca-muted border-b border-gca-border">
+            <div className="hidden w-full items-center gap-[10px] border-b border-gca-border py-[8px] text-[12px] font-medium text-gca-muted md:flex">
               <p className="w-[32%]">Risk</p>
               <p className="w-[13%]">Stage</p>
               <p className="w-[11%]">Rating</p>
@@ -148,28 +151,39 @@ export function RisksTable({ projectId, team, canManage, onAddRisk, onOpenRisk }
                 <button
                   key={risk.risk_id}
                   onClick={() => onOpenRisk(risk.risk_id)}
-                  className={`cursor-pointer flex w-full items-center gap-[10px] py-[12px] text-left ${
+                  className={`flex w-full cursor-pointer flex-col items-start gap-[4px] py-[14px] text-left md:flex-row md:items-center md:gap-[10px] md:py-[12px] ${
                     i > 0 ? "border-t border-gca-border" : ""
                   }`}
                 >
-                  <p className="w-[32%] truncate text-[13px] font-medium text-gca-dark">
+                  {/* Phone: title on its own line, the five attributes fold under it. */}
+                  <p className="w-full text-[15px] font-medium text-gca-dark md:w-[32%] md:truncate md:text-[13px]">
                     {risk.title}
                   </p>
-                  <p className="w-[13%] text-[13px] text-gca-dark">
-                    {risk.stage_no ? (STAGE_SHORT_NAME[risk.stage_no] ?? risk.stage_no) : "—"}
+                  <p className="flex flex-wrap items-center gap-x-[8px] text-[12px] md:hidden">
+                    <span className={`font-semibold ${rating.className}`}>{rating.label}</span>
+                    <span className={`font-semibold ${status.className}`}>{status.label}</span>
+                    <span className="text-gca-muted">
+                      {risk.stage_no ? (STAGE_SHORT_NAME[risk.stage_no] ?? risk.stage_no) : "—"} ·{" "}
+                      {ownerName(risk.owner_id, team)} · {formatShortDate(risk.opened_at)}
+                    </span>
                   </p>
-                  <p className={`w-[11%] text-[13px] font-semibold ${rating.className}`}>
-                    {rating.label}
-                  </p>
-                  <p className="w-[16%] text-[13px] text-gca-dark">
-                    {ownerName(risk.owner_id, team)}
-                  </p>
-                  <p className={`w-[16%] text-[13px] font-semibold ${status.className}`}>
-                    {status.label}
-                  </p>
-                  <p className="w-[12%] text-[13px] text-gca-dark">
-                    {formatShortDate(risk.opened_at)}
-                  </p>
+                  <span className="hidden md:contents">
+                    <p className="w-[13%] text-[13px] text-gca-dark">
+                      {risk.stage_no ? (STAGE_SHORT_NAME[risk.stage_no] ?? risk.stage_no) : "—"}
+                    </p>
+                    <p className={`w-[11%] text-[13px] font-semibold ${rating.className}`}>
+                      {rating.label}
+                    </p>
+                    <p className="w-[16%] text-[13px] text-gca-dark">
+                      {ownerName(risk.owner_id, team)}
+                    </p>
+                    <p className={`w-[16%] text-[13px] font-semibold ${status.className}`}>
+                      {status.label}
+                    </p>
+                    <p className="w-[12%] text-[13px] text-gca-dark">
+                      {formatShortDate(risk.opened_at)}
+                    </p>
+                  </span>
                 </button>
               );
             })}

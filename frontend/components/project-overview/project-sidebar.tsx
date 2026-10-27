@@ -57,7 +57,7 @@ export function ProjectSidebar({
   activeStageNo,
 }: ProjectSidebarProps) {
   const { user } = useAuth();
-  const { isOpen, activeTab, setIsOpen } = useMobileNavigation();
+  const { isOpen, setIsOpen } = useMobileNavigation();
   const [stagesOpen, setStagesOpen] = useState(false);
   const [allStagesOpen, setAllStagesOpen] = useState(true);
 
@@ -260,10 +260,9 @@ export function ProjectSidebar({
         {sidebarContent}
       </aside>
       {isOpen &&
-        activeTab === "sidebar" &&
         mobileSidebarTarget &&
         createPortal(
-          <aside className="flex h-full flex-col justify-between overflow-y-auto bg-gca-page-bg">
+          <aside className="flex flex-col justify-between border-t border-gca-border bg-gca-page-bg py-[8px]">
             {sidebarContent}
           </aside>,
           mobileSidebarTarget,

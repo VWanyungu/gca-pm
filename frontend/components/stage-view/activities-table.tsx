@@ -103,42 +103,44 @@ export function ActivitiesTable({
 
   return (
     <div className="flex w-full flex-col gap-[16px]">
-      <div className="flex w-full items-center justify-between">
+      <div className="flex w-full flex-col gap-[12px] sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-[2px]">
           <p className="text-[16px] font-semibold text-gca-dark">Activities</p>
           <p className="text-[13px] text-gca-show">
             {total === 0 ? "No activities yet" : `${doneCount} of ${activities.length} done`}
           </p>
         </div>
-        <div className="flex items-center gap-[12px]">
-          <div className="flex items-center gap-[2px] rounded-[8px] bg-gca-page-bg p-[3px]">
-            {(["all", "open", "done"] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => changeTab(t)}
-                className={`cursor-pointer rounded-[6px] px-[10px] py-[5px] text-[13px] ${
-                  tab === t
-                    ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
-                    : "font-normal text-gca-show"
-                }`}
-              >
-                {t === "all" ? "All" : t === "open" ? "Open" : "Done"}
-              </button>
-            ))}
+        {total > 0 && (
+          <div className="flex flex-wrap items-center gap-[12px]">
+            <div className="flex items-center gap-[2px] rounded-[8px] bg-gca-page-bg p-[3px]">
+              {(["all", "open", "done"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => changeTab(t)}
+                  className={`cursor-pointer rounded-[6px] px-[10px] py-[5px] text-[13px] ${
+                    tab === t
+                      ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
+                      : "font-normal text-gca-show"
+                  }`}
+                >
+                  {t === "all" ? "All" : t === "open" ? "Open" : "Done"}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={onAddActivity}
+              className="flex cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+            >
+              <Plus className="size-[10px]" />
+              Add activity
+            </button>
           </div>
-          <button
-            onClick={onAddActivity}
-            className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
-          >
-            <Plus className="size-[10px]" />
-            Add activity
-          </button>
-        </div>
+        )}
       </div>
 
       {activities.length === 0 ? (
         <>
-          <div className="flex flex-col items-center gap-[16px] py-[56px]">
+          <div className="flex flex-col items-center gap-[16px] py-[40px] sm:py-[56px]">
             <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-gca-page-bg">
               <ClipboardList className="size-[18px] text-gca-green" />
             </span>
@@ -171,7 +173,7 @@ export function ActivitiesTable({
       ) : (
         <>
           {selected.size > 0 && (
-            <div className="flex w-full items-center justify-between rounded-[10px] bg-gca-badge-bg px-[16px] py-[10px]">
+            <div className="flex w-full flex-wrap items-center justify-between gap-[10px] rounded-[10px] bg-gca-badge-bg px-[16px] py-[10px]">
               <button
                 onClick={toggleSelectAll}
                 className="cursor-pointer flex items-center gap-[10px]"

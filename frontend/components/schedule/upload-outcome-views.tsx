@@ -13,7 +13,9 @@ function StatTile({ label, value, note, emphasize }: StatTileProps) {
   return (
     <div className="flex flex-1 flex-col gap-[4px] rounded-[10px] border border-gca-border p-[16px]">
       <p className="text-[13px] text-gca-show">{label}</p>
-      <p className={`text-[24px] font-semibold ${emphasize ? "text-error-text" : "text-gca-dark"}`}>{value}</p>
+      <p className={`text-[24px] font-semibold ${emphasize ? "text-error-text" : "text-gca-dark"}`}>
+        {value}
+      </p>
       {note && <p className="text-[12px] text-gca-show">{note}</p>}
     </div>
   );
@@ -47,7 +49,9 @@ export function UploadResultView({
     <div className="flex w-full flex-col gap-[20px]">
       <div className="flex w-full items-center justify-between">
         <div>
-          <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">Upload received</h1>
+          <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">
+            Upload received
+          </h1>
           <p className="mt-[2px] text-[13px] text-gca-show">
             {formatLongDateTime(uploadedAt)} · {fileName}
           </p>
@@ -68,10 +72,15 @@ export function UploadResultView({
         </div>
       </div>
 
-      <div className="flex w-full gap-[16px]">
+      <div className="grid w-full grid-cols-2 gap-[12px] lg:flex lg:gap-[16px]">
         <StatTile label="Tasks" value={taskCount} />
         <StatTile label="Dates moved" value={datesMoved} note="vs previous version" />
-        <StatTile label="Overdue tasks" value={overdueCount} note="Review on the Overdue tab" emphasize={overdueCount > 0} />
+        <StatTile
+          label="Overdue tasks"
+          value={overdueCount}
+          note="Review on the Overdue tab"
+          emphasize={overdueCount > 0}
+        />
         <StatTile label="Reconciliation flags" value={flagCount} note="From DPR progress" />
       </div>
     </div>
@@ -107,8 +116,12 @@ export function UploadFailedView({
     <div className="flex w-full flex-col gap-[20px]">
       <div className="flex w-full items-center justify-between">
         <div>
-          <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">Upload didn&apos;t go through</h1>
-          <p className="mt-[2px] text-[13px] text-gca-show">Nothing was saved. Fix these in MS Project and upload again.</p>
+          <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">
+            Upload didn&apos;t go through
+          </h1>
+          <p className="mt-[2px] text-[13px] text-gca-show">
+            Nothing was saved. Fix these in MS Project and upload again.
+          </p>
         </div>
         <div className="flex items-center gap-[12px]">
           <button
@@ -150,7 +163,10 @@ export function UploadFailedView({
           <p className="w-[40%]">How to fix</p>
         </div>
         {problems.map((p, i) => (
-          <div key={i} className={`flex w-full items-center gap-[10px] px-[16px] py-[12px] ${i > 0 ? "border-t border-gca-border" : ""}`}>
+          <div
+            key={i}
+            className={`flex w-full items-center gap-[10px] px-[16px] py-[12px] ${i > 0 ? "border-t border-gca-border" : ""}`}
+          >
             <p className="w-[30%] truncate text-[13px] font-medium text-gca-dark">{p.task}</p>
             <p className="w-[30%] text-[13px] text-gca-show">{p.problem}</p>
             <p className="w-[40%] text-[13px] text-gca-dark">{p.howToFix}</p>

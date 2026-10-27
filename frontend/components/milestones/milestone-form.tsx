@@ -149,7 +149,7 @@ export function MilestoneForm({
               <span className="text-[12px] text-error-text">{fieldErrors.title}</span>
             )}
           </div>
-          <div className="flex gap-[16px]">
+          <div className="flex flex-col gap-[16px] sm:flex-row">
             <div className="flex w-full flex-col gap-[6px]">
               <label className="text-[14px] text-gca-dark">
                 Planned Date<span className="text-error-text">*</span>

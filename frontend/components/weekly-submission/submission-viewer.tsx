@@ -62,7 +62,7 @@ export function SubmissionViewer({
 
   if (sending) {
     return (
-      <div className="flex w-full justify-center p-[40px]">
+      <div className="flex w-full min-w-0 justify-center p-[20px] md:p-[40px]">
         <div className="w-full max-w-[1200px]">
           <SendToClientView
             projectId={projectId}
@@ -83,7 +83,7 @@ export function SubmissionViewer({
         counts={counts}
         active="submit"
       />
-      <div className="flex w-full justify-center p-[40px]">
+      <div className="flex w-full min-w-0 justify-center p-[20px] md:p-[40px]">
         <div className="flex w-full max-w-[1200px] flex-col gap-[16px]">
           <Link
             href={`/projects/${projectId}/weekly-submission`}
@@ -92,10 +92,10 @@ export function SubmissionViewer({
             <ArrowLeft size={18} /> Register
           </Link>
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-[12px]">
             <div>
-              <h1 className="text-[28px] font-semibold tracking-[-0.3px] text-gca-dark">
-                Week {weekNumber(submission.week_start)} 
+              <h1 className="text-[22px] font-semibold tracking-[-0.3px] text-gca-dark sm:text-[28px]">
+                Week {weekNumber(submission.week_start)}
                 {/* · {formatWeekPeriod(submission.week_start)} */}
               </h1>
             </div>

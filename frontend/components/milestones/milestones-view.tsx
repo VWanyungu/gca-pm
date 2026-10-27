@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChartGantt, Plus, Search, Table, type LucideIcon } from "lucide-react";
+import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_MANAGE_PROJECT } from "@/lib/access-control";
 import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
@@ -47,27 +48,36 @@ export function MilestonesView({ projectId }: { projectId: string }) {
   const canManage = canAccess(user?.role, CAN_MANAGE_PROJECT, { projectId });
   const customCount = milestones.filter((m) => m.source === "custom").length;
   const searchedMilestones = search.trim()
-    ? milestones.filter((milestone) => milestone.title.toLowerCase().includes(search.trim().toLowerCase()))
+    ? milestones.filter((milestone) =>
+        milestone.title.toLowerCase().includes(search.trim().toLowerCase()),
+      )
     : milestones;
 
   if (!project) return null;
 
   return (
     <div className="flex min-h-[calc(100vh-64px)] w-full">
-      <ProjectSidebar projectId={projectId} stages={project.stages} counts={counts} active="milestones" />
+      <ProjectSidebar
+        projectId={projectId}
+        stages={project.stages}
+        counts={counts}
+        active="milestones"
+      />
 
-      <div className="flex w-full justify-center">
-        <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[40px]">
+      <div className="flex w-full min-w-0 justify-center">
+        <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[20px] md:p-[40px]">
           {subView.mode === "list" && (
             <>
-              <div className="flex w-full items-center justify-between">
+              <div className="flex w-full flex-col gap-[16px] lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">Milestones</h1>
+                  <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">
+                    Milestones
+                  </h1>
                   <p className="mt-[2px] text-[13px] text-gca-show">
                     {milestones.length} milestones · {customCount} custom
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center justify-end gap-[12px]">
+                <div className="flex flex-wrap items-center gap-[12px] lg:justify-end">
                   <SegmentedControl
                     options={[
                       { id: "chart", label: "Chart", icon: ChartGantt },
@@ -76,32 +86,34 @@ export function MilestonesView({ projectId }: { projectId: string }) {
                     selected={viewMode}
                     onSelect={(id) => setViewMode(id as ViewMode)}
                   />
-                  <SegmentedControl
-                    options={SOURCE_TABS}
-                    selected={sourceFilter}
-                    onSelect={(value) => {
-                      setSourceFilter(value);
-                      setTablePage(1);
-                    }}
-                  />
-                  <label className="flex h-[40px] w-[240px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px]">
-                    <Search className="size-[14px] shrink-0 text-gca-muted" />
-                    <input
-                      type="search"
-                      value={search}
-                      onChange={(event) => {
-                        setSearch(event.target.value);
+                  <MobileFilterToggle>
+                    <SegmentedControl
+                      options={SOURCE_TABS}
+                      selected={sourceFilter}
+                      onSelect={(value) => {
+                        setSourceFilter(value);
                         setTablePage(1);
                       }}
-                      placeholder="Search milestones"
-                      aria-label="Search milestones"
-                      className="min-w-0 w-full bg-transparent text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
                     />
-                  </label>
+                    <label className="flex h-[40px] w-full items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] sm:w-[240px]">
+                      <Search className="size-[14px] shrink-0 text-gca-muted" />
+                      <input
+                        type="search"
+                        value={search}
+                        onChange={(event) => {
+                          setSearch(event.target.value);
+                          setTablePage(1);
+                        }}
+                        placeholder="Search milestones"
+                        aria-label="Search milestones"
+                        className="min-w-0 w-full bg-transparent text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
+                      />
+                    </label>
+                  </MobileFilterToggle>
                   {canManage && (
                     <button
                       onClick={() => setSubView({ mode: "add" })}
-                      className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
+                      className="flex w-full cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[12px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover sm:w-auto sm:py-[10px]"
                     >
                       <Plus className="size-[14px]" />
                       Add milestone

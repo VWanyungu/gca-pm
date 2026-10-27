@@ -93,8 +93,8 @@ export function StagePipeline({
 
   return (
     <section className="flex w-full flex-col gap-[16px] pb-[20px]">
-      <div className="flex w-full items-center justify-between">
-        <div className="flex items-center gap-[14px]">
+      <div className="flex w-full flex-wrap items-center justify-between gap-[12px]">
+        <div className="flex min-w-0 items-center gap-[14px]">
           <h2 className="text-[16px] font-semibold text-gca-dark">Stages</h2>
           {editMode && <p className="text-[13px] text-gca-green">Edit scope</p>}
           {!editMode && current && (
@@ -110,7 +110,7 @@ export function StagePipeline({
                 <ChevronsUpDown className="size-[13px] text-gca-muted" />
               </button>
               {menuOpen && (
-                <div className="absolute left-0 top-[36px] z-50 flex w-[282px] flex-col gap-[2px] rounded-[12px] border border-gca-border bg-gca-surface p-[8px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
+                <div className="absolute left-0 top-[36px] z-50 flex w-[calc(100vw-40px)] max-w-[282px] flex-col gap-[2px] rounded-[12px] border border-gca-border bg-gca-surface p-[8px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)] sm:w-[282px]">
                   <p className="px-[10px] pb-[6px] pt-[2px] text-[12px] font-medium text-gca-muted">
                     Set current stage
                   </p>
@@ -193,7 +193,7 @@ export function StagePipeline({
           ))}
       </div>
 
-      <div className="flex w-full items-start justify-between">
+      <div className="no-scrollbar -mx-[20px] flex w-[calc(100%+40px)] items-start gap-[12px] overflow-x-auto px-[20px] xl:mx-0 xl:w-full xl:justify-between xl:gap-0 xl:overflow-visible">
         {sorted.map((s) => {
           const locked = s.state !== "not_started";
           const checked = editMode ? pendingScope.has(s.stage_no) : s.in_scope;
@@ -204,7 +204,7 @@ export function StagePipeline({
                 ? (percentByStage[s.stage_no] ?? 0)
                 : 0;
 
-          const columnClassName = "flex w-[98px] flex-col gap-[6px]";
+          const columnClassName = "flex w-[98px] shrink-0 flex-col gap-[6px]";
           const columnContent = (
             <>
               {s.in_scope ? (

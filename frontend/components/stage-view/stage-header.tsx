@@ -43,19 +43,24 @@ export function StageHeader({
   );
 
   return (
-    <div className="flex w-full items-start justify-between">
-      <div className="flex flex-col gap-[4px]">
-        <h1 className="text-[20px] font-semibold tracking-[-0.3px] text-gca-dark">
-          Stage {stageNo} : {stage.stage_name}
+    // The stage number leads as a label rather than sitting inside the heading: a long
+    // stage name wrapped to three lines under "Stage 8 :" and collided with the actions.
+    <div className="flex w-full flex-col gap-[16px] lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex min-w-0 flex-col gap-[4px]">
+        <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-gca-muted">
+          Stage {stageNo}
+        </p>
+        <h1 className="text-[22px] font-semibold tracking-[-0.33px] text-gca-dark text-balance">
+          {stage.stage_name}
         </h1>
         <p className="text-[13px] text-gca-show">{subtitle}</p>
       </div>
       {canManage && (
-        <div className="flex items-center gap-[12px]">
+        <div className="flex shrink-0 flex-col gap-[10px] sm:flex-row sm:items-center sm:gap-[12px]">
           {!hasChecklist && (
             <button
               onClick={onAddChecklist}
-              className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+              className="flex w-full cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[11px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg sm:w-auto sm:py-[10px]"
             >
               <Plus className="size-[10px]" />
               Add a checklist
@@ -64,7 +69,7 @@ export function StageHeader({
           <button
             onClick={onToggleComplete}
             disabled={stage.state === "not_started"}
-            className={`${stage.state === "complete" ? "border border-gca-green text-gca-dark hover:text-gca-green" : "bg-gca-green hover:bg-gca-green-hover text-gca-on-accent"} cursor-pointer rounded-[8px] px-[16px] py-[10px] text-[14px] font-semibold disabled:opacity-50`}
+            className={`${stage.state === "complete" ? "border border-gca-green text-gca-dark hover:text-gca-green" : "bg-gca-green hover:bg-gca-green-hover text-gca-on-accent"} w-full cursor-pointer rounded-[8px] px-[16px] py-[11px] text-[14px] font-semibold disabled:opacity-50 sm:w-auto sm:py-[10px]`}
           >
             {stage.state === "complete" ? "Reopen stage" : "Mark as complete"}
           </button>

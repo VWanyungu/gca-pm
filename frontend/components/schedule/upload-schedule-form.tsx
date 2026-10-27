@@ -142,7 +142,7 @@ export function UploadScheduleForm({
           <p className="text-[14px] font-semibold text-gca-dark">Scope mode</p>
           <p className="mt-[4px] text-[13px] text-gca-show">How much of the file to read.</p>
         </div>
-        <div className="flex w-full max-w-[792px] gap-[16px]">
+        <div className="flex w-full max-w-[792px] flex-col gap-[16px] sm:flex-row">
           {SCOPE_OPTIONS.map((option) => (
             <button
               key={option.value}

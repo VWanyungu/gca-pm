@@ -61,7 +61,7 @@ function AdminSidebarLinks({ pathname, onNavigate }: { pathname: string; onNavig
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const { isOpen, activeTab, setIsOpen } = useMobileNavigation();
+  const { isOpen, setIsOpen } = useMobileNavigation();
   const mobileSidebarTarget =
     typeof document === "undefined" ? null : document.getElementById("mobile-sidebar-content");
 
@@ -71,10 +71,9 @@ export function AdminSidebar() {
         <AdminSidebarLinks pathname={pathname} onNavigate={() => setIsOpen(false)} />
       </aside>
       {isOpen &&
-        activeTab === "sidebar" &&
         mobileSidebarTarget &&
         createPortal(
-          <aside className="flex h-full flex-col gap-[4px] overflow-y-auto bg-gca-page-bg p-[16px]">
+          <aside className="flex flex-col gap-[4px] border-t border-gca-border bg-gca-page-bg p-[16px]">
             <AdminSidebarLinks pathname={pathname} onNavigate={() => setIsOpen(false)} />
           </aside>,
           mobileSidebarTarget,

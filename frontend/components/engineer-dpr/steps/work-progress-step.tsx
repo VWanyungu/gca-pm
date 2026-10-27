@@ -93,7 +93,10 @@ export function WorkProgressStep({
         {draft.work_items.map((item, index) => {
           const itemErrors = errors[index];
           return (
-            <div key={index} className="flex flex-col gap-[10px] rounded-[12px] bg-gca-surface p-[16px]">
+            <div
+              key={index}
+              className="flex flex-col gap-[10px] rounded-[12px] bg-gca-surface p-[16px]"
+            >
               <div className="flex items-center justify-between gap-[8px]">
                 <div className="flex w-full flex-col gap-[4px]">
                   <input
@@ -149,7 +152,10 @@ export function WorkProgressStep({
       <div className="flex flex-col gap-[6px]">
         <p className="text-[14px] font-semibold text-gca-dark">Activity progress</p>
         {draft.activity_progress.map((row, index) => (
-          <div key={index} className="flex flex-col gap-[10px] rounded-[12px] bg-gca-surface p-[16px]">
+          <div
+            key={index}
+            className="flex flex-col gap-[10px] rounded-[12px] bg-gca-surface p-[16px]"
+          >
             <div className="flex items-start justify-between gap-[8px]">
               {row.source === "schedule_task" ? (
                 <p className="text-[15px] font-semibold text-gca-dark">{row.task_name}</p>

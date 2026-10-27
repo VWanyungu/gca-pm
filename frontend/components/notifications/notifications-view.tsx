@@ -21,7 +21,8 @@ export function NotificationsView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tab = tabFrom(searchParams.get("tab"));
-  const setTab = (next: Tab) => router.replace(next === "all" ? pathname : `${pathname}?tab=${next}`);
+  const setTab = (next: Tab) =>
+    router.replace(next === "all" ? pathname : `${pathname}?tab=${next}`);
   const { data, isLoading } = useNotifications(tab === "unread" ? "unread" : "all");
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
@@ -32,9 +33,11 @@ export function NotificationsView() {
 
   return (
     <div className="flex w-full justify-center bg-gca-surface">
-      <main className="w-full max-w-[1200px] p-[40px]">
-        <div className="flex items-center justify-between">
-          <h1 className="text-[28px] font-semibold tracking-[-0.7px] text-gca-dark">Notification centre</h1>
+      <main className="w-full max-w-[1200px] p-[20px] md:p-[40px]">
+        <div className="flex flex-col gap-[12px] sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-[28px] font-semibold tracking-[-0.7px] text-gca-dark">
+            Notification centre
+          </h1>
           <button
             onClick={() => markAllRead.mutate()}
             disabled={markAllRead.isPending || unreadCount === 0}
@@ -46,8 +49,16 @@ export function NotificationsView() {
 
         <div className="mt-[28px] flex items-end gap-[16px] border-b border-gca-border">
           <TabButton label="All" active={tab === "all"} onClick={() => setTab("all")} />
-          <TabButton label={`Unread ${unreadCount}`} active={tab === "unread"} onClick={() => setTab("unread")} />
-          <TabButton label="Preferences" active={tab === "preferences"} onClick={() => setTab("preferences")} />
+          <TabButton
+            label={`Unread ${unreadCount}`}
+            active={tab === "unread"}
+            onClick={() => setTab("unread")}
+          />
+          <TabButton
+            label="Preferences"
+            active={tab === "preferences"}
+            onClick={() => setTab("preferences")}
+          />
         </div>
 
         <div className="mt-[32px] flex flex-col gap-[32px]">
@@ -62,7 +73,9 @@ export function NotificationsView() {
           ) : (
             groups.map((group) => (
               <div key={group.label} className="flex flex-col gap-[18px]">
-                <h2 className="text-[18px] font-semibold tracking-[-0.27px] text-gca-dark">{group.label}</h2>
+                <h2 className="text-[18px] font-semibold tracking-[-0.27px] text-gca-dark">
+                  {group.label}
+                </h2>
                 <div className="flex flex-col gap-[12px]">
                   {group.items.map((notification) => (
                     <NotificationCard
@@ -81,16 +94,31 @@ export function NotificationsView() {
   );
 }
 
-function TabButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function TabButton({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
-    <button onClick={onClick} className="flex flex-col items-start gap-[8px] px-[4px] pb-[1px] cursor-pointer">
-      <span className={`text-[14px] ${active ? "font-semibold text-gca-dark" : "text-gca-show"}`}>{label}</span>
+    <button
+      onClick={onClick}
+      className="flex flex-col items-start gap-[8px] px-[4px] pb-[1px] cursor-pointer"
+    >
+      <span className={`text-[14px] ${active ? "font-semibold text-gca-dark" : "text-gca-show"}`}>
+        {label}
+      </span>
       <div className={`h-[2px] w-full ${active ? "bg-gca-green" : "bg-transparent"}`} />
     </button>
   );
 }
 
-function groupByDay(notifications: NotificationRow[]): { label: string; items: NotificationRow[] }[] {
+function groupByDay(
+  notifications: NotificationRow[],
+): { label: string; items: NotificationRow[] }[] {
   const byLabel = new Map<string, NotificationRow[]>();
   for (const n of notifications) {
     const label = dayLabel(n.created_at);
@@ -100,7 +128,13 @@ function groupByDay(notifications: NotificationRow[]): { label: string; items: N
   return Array.from(byLabel.entries()).map(([label, items]) => ({ label, items }));
 }
 
-function NotificationCard({ notification, onMarkRead }: { notification: NotificationRow; onMarkRead: () => void }) {
+function NotificationCard({
+  notification,
+  onMarkRead,
+}: {
+  notification: NotificationRow;
+  onMarkRead: () => void;
+}) {
   const meta = metaFor(notification.type_code);
   const Icon = meta.icon;
   const unread = !notification.read_at;
@@ -109,22 +143,30 @@ function NotificationCard({ notification, onMarkRead }: { notification: Notifica
     <div
       onClick={unread ? onMarkRead : undefined}
       className={`flex items-start gap-[12px] rounded-[12px] border p-[16px] ${
-        unread ? "border-gca-border bg-gca-surface cursor-pointer" : "border-gca-border/60 bg-gca-surface"
+        unread
+          ? "border-gca-border bg-gca-surface cursor-pointer"
+          : "border-gca-border/60 bg-gca-surface"
       }`}
     >
-      <div className={`flex size-[36px] shrink-0 items-center justify-center rounded-[8px] ${meta.iconBg}`}>
+      <div
+        className={`flex size-[36px] shrink-0 items-center justify-center rounded-[8px] ${meta.iconBg}`}
+      >
         <Icon className={`size-[18px] ${meta.iconColor}`} />
       </div>
       <div className="flex flex-1 flex-col gap-[10px]">
-        <div className="flex items-center justify-between gap-[12px]">
+        <div className="flex flex-wrap items-center justify-between gap-[12px]">
           <p className="text-[15px] font-semibold text-gca-dark">{notification.title}</p>
           <div className="flex shrink-0 items-center gap-[10px]">
             {meta.pill && (
-              <span className={`rounded-[999px] px-[10px] py-[3px] text-[12px] font-medium ${meta.pill.bg} ${meta.pill.text}`}>
+              <span
+                className={`rounded-[999px] px-[10px] py-[3px] text-[12px] font-medium ${meta.pill.bg} ${meta.pill.text}`}
+              >
                 {meta.pill.label}
               </span>
             )}
-            <span className="whitespace-nowrap text-[13px] text-gca-show">{timeLabel(notification.created_at)}</span>
+            <span className="whitespace-nowrap text-[13px] text-gca-show">
+              {timeLabel(notification.created_at)}
+            </span>
           </div>
         </div>
         <p className="text-[14px] text-gca-show">{notification.body}</p>
@@ -137,24 +179,30 @@ function PreferencesPanel() {
   const { data: preferences = [], isLoading } = useNotificationPreferences();
   const updatePreference = useUpdateNotificationPreference();
 
-  const enabledFor = (typeCode: string) => preferences.find((p) => p.type_code === typeCode)?.enabled ?? true;
+  const enabledFor = (typeCode: string) =>
+    preferences.find((p) => p.type_code === typeCode)?.enabled ?? true;
 
   if (isLoading) return <p className="text-[14px] text-gca-show">Loading preferences…</p>;
 
   return (
     <div className="flex flex-col gap-[20px]">
       {PREFERENCE_GROUPS.map((group) => (
-        <div key={group.heading} className="rounded-[12px] border border-gca-border px-[20px] pb-[8px] pt-[16px]">
+        <div
+          key={group.heading}
+          className="rounded-[12px] border border-gca-border px-[20px] pb-[8px] pt-[16px]"
+        >
           <p className="text-[15px] font-semibold text-gca-dark">{group.heading}</p>
           {group.items.map((item, i) => (
             <div
               key={item.type_code}
-              className={`flex items-center justify-between py-[12px] ${i > 0 ? "border-t border-gca-border" : ""}`}
+              className={`flex items-center justify-between gap-[12px] py-[12px] ${i > 0 ? "border-t border-gca-border" : ""}`}
             >
               <p className="text-[14px] text-gca-dark">{item.label}</p>
               <Toggle
                 checked={enabledFor(item.type_code)}
-                onChange={(enabled) => updatePreference.mutate({ type_code: item.type_code, enabled })}
+                onChange={(enabled) =>
+                  updatePreference.mutate({ type_code: item.type_code, enabled })
+                }
               />
             </div>
           ))}

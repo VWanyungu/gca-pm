@@ -9,8 +9,14 @@ import {
   CloudUpload,
   LoaderCircle,
 } from "lucide-react";
+import { SectionChips } from "@/components/ui/section-chips";
 import { StepNavigator } from "./step-navigator";
-import { getDprValidationErrors, getWizardSteps, type DprDraftInput, type WizardStepDef } from "./types";
+import {
+  getDprValidationErrors,
+  getWizardSteps,
+  type DprDraftInput,
+  type WizardStepDef,
+} from "./types";
 import { SiteConditionsStep } from "./steps/site-conditions-step";
 import { EffectsStep } from "./steps/effects-step";
 import { WorkProgressStep } from "./steps/work-progress-step";
@@ -175,9 +181,9 @@ export function DprWizardForm({
         </button>
       </div>
 
-      <div className="flex items-center justify-between bg-gca-surface py-[10px]">
-        <div className="flex items-start gap-[14px]">
-          <div className="flex flex-col gap-[2px]">
+      <div className="flex items-center justify-between gap-[12px] bg-gca-surface py-[10px]">
+        <div className="flex min-w-0 items-start gap-[14px]">
+          <div className="flex min-w-0 flex-col gap-[2px]">
             <h1 className="text-2xl font-semibold tracking-[-0.7px] text-gca-dark sm:text-[28px] flex items-center gap-[10px]">
               {title}{" "}
               {saving ? (
@@ -209,31 +215,41 @@ export function DprWizardForm({
             <CloudAlert size={24} className="text-gca-warning font-bold" />
           )}
         </p> */}
-        <button
-          onClick={onPrimary}
-          disabled={submitting}
-          className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
-        >
-          {isFinalAction && submitting ? (
-            <LoaderCircle
-              className="size-[18px] animate-spin"
-              aria-label={amendmentMode ? "Requesting amendment" : "Submitting"}
-            />
-          ) : isFinalAction ? (
-            amendmentMode ? (
-              "Request amendment"
+        {/* The step flow carries this in a sticky footer instead, where a thumb reaches it
+            on any step however long. */}
+        {isFullLayout && (
+          <button
+            onClick={onPrimary}
+            disabled={submitting}
+            className="shrink-0 cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+          >
+            {isFinalAction && submitting ? (
+              <LoaderCircle
+                className="size-[18px] animate-spin"
+                aria-label={amendmentMode ? "Requesting amendment" : "Submitting"}
+              />
+            ) : isFinalAction ? (
+              amendmentMode ? (
+                "Request amendment"
+              ) : (
+                "Submit"
+              )
             ) : (
-              "Submit"
-            )
-          ) : (
-            "Next"
-          )}
-        </button>
+              "Next"
+            )}
+          </button>
+        )}
       </div>
 
       {isFullLayout ? (
-        <div className="flex flex-1 items-start gap-[24px] py-[16px]">
-          <div className="sticky top-[80px] flex w-[220px] shrink-0 flex-col gap-[2px] rounded-[12px] bg-gca-surface">
+        <div className="flex flex-1 flex-col items-stretch gap-[16px] py-[16px] lg:flex-row lg:items-start lg:gap-[24px]">
+          <SectionChips
+            sections={steps.map((step) => ({ id: step.key, label: step.label }))}
+            activeId={activeSectionKey}
+            onSelect={scrollToSection}
+          />
+
+          <div className="sticky top-[80px] hidden w-[220px] shrink-0 flex-col gap-[2px] rounded-[12px] bg-gca-surface lg:flex">
             <p className="mb-[10px] text-[12px] font-semibold text-gca-muted">Sections</p>
             {steps.map((step) => (
               <button
@@ -276,46 +292,44 @@ export function DprWizardForm({
           <div className="flex flex-1 flex-col gap-[16px] overflow-y-auto p-[16px]">
             {renderStepBody(steps[currentStep])}
           </div>
+
+          <div className="sticky bottom-0 z-10 flex gap-[12px] border-t border-gca-border bg-gca-surface px-[16px] pb-[20px] pt-[12px]">
+            {!amendmentMode && (
+              <button
+                onClick={onSaveDraft}
+                disabled={saving}
+                className="flex flex-1 cursor-pointer items-center justify-center rounded-[8px] border border-gca-border bg-gca-surface py-[13px] text-[15px] font-semibold text-gca-dark disabled:opacity-60"
+              >
+                {saving ? (
+                  <LoaderCircle className="size-[18px] animate-spin" aria-label="Saving draft" />
+                ) : (
+                  "Save draft"
+                )}
+              </button>
+            )}
+            <button
+              onClick={onPrimary}
+              disabled={submitting}
+              className="flex flex-1 cursor-pointer items-center justify-center rounded-[8px] bg-gca-green py-[13px] text-[15px] font-semibold text-gca-on-accent disabled:opacity-60"
+            >
+              {isFinalAction && submitting ? (
+                <LoaderCircle
+                  className="size-[18px] animate-spin"
+                  aria-label={amendmentMode ? "Requesting amendment" : "Submitting"}
+                />
+              ) : isFinalAction ? (
+                amendmentMode ? (
+                  "Request amendment"
+                ) : (
+                  "Submit"
+                )
+              ) : (
+                "Next"
+              )}
+            </button>
+          </div>
         </>
       )}
-
-      {/* <div className="sticky bottom-0 z-10 flex justify-between gap-[12px] border-t border-gca-border bg-gca-surface px-[16px] pt-[12px] pb-[30px]">
-        {!amendmentMode && (
-          <button
-            onClick={onSaveDraft}
-            disabled={saving}
-            className="flex w-[150px] items-center justify-center rounded-[8px] border border-gca-border bg-gca-surface py-[13px] disabled:opacity-60"
-          >
-            {saving ? (
-              <LoaderCircle className="size-[18px] animate-spin" aria-label="Saving draft" />
-            ) : (
-              <p className="text-[15px] font-semibold text-gca-dark">Save draft</p>
-            )}
-          </button>
-        )}
-        <button
-          onClick={onPrimary}
-          disabled={submitting}
-          className="flex w-[150px] items-center justify-center rounded-[8px] bg-gca-green py-[13px] disabled:opacity-60"
-        >
-          <p className="text-[15px] font-semibold text-gca-on-accent">
-            {isFinalAction && submitting ? (
-              <LoaderCircle
-                className="size-[18px] animate-spin"
-                aria-label={amendmentMode ? "Requesting amendment" : "Submitting"}
-              />
-            ) : isFinalAction ? (
-              amendmentMode ? (
-                "Request amendment"
-              ) : (
-                "Submit"
-              )
-            ) : (
-              "Next"
-            )}
-          </p>
-        </button>
-      </div> */}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import {
 } from "@/components/weekly-submission/types";
 import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
 import { ArrowLeft, ChevronDown, ChevronUp, Download } from "lucide-react";
+import { SectionChips } from "@/components/ui/section-chips";
 import { DprReportDocument } from "./dpr-report-document";
 
 const SECTIONS = [
@@ -108,6 +109,25 @@ export function DprDetailView({
       ? `/projects/${projectId}/dpr`
       : `/projects/${projectId}/weekly-submission?weekStart=${weekStart}`;
 
+  // Written once, placed in the lg rail and in the band that replaces it below lg.
+  const dprDetailFields = (
+    <>
+      {detail("Project", project.project.name)}
+      {detail("Site", dpr.site_location)}
+      {detail(
+        "Date",
+        formatDate(dpr.report_date, {
+          weekday: "long",
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        }),
+      )}
+      {detail("Submitted by", dpr.author_name)}
+      {dpr.submitted_at && detail("Submitted", formatDateTime(dpr.submitted_at))}
+    </>
+  );
+
   function goToSection(id: SectionId) {
     setActiveSection(id);
     if (mode === "full") {
@@ -180,10 +200,10 @@ export function DprDetailView({
     <div className="flex w-full">
       <ProjectSidebar projectId={projectId} stages={project.stages} counts={counts} active="dpr" />
 
-      <div className="flex justify-center w-full">
-        <div className="flex w-full max-w-[1100px] flex-col gap-[24px] p-[40px] bg-gca-surface">
-          <div className="flex items-end justify-between">
-            <div className="flex flex-col gap-[16px]">
+      <div className="flex w-full min-w-0 justify-center">
+        <div className="flex w-full max-w-[1100px] flex-col gap-[24px] p-[20px] md:p-[40px] bg-gca-surface">
+          <div className="flex items-end justify-between gap-[12px]">
+            <div className="flex min-w-0 flex-col gap-[16px]">
               <Link
                 href={backHref}
                 className="text-[13px] font-medium text-gca-green flex items-center gap-[6px]"
@@ -271,8 +291,21 @@ export function DprDetailView({
             </div>
           </div>
 
-          <div className="flex items-start gap-[24px]">
-            <div className="sticky top-[24px] flex max-h-[calc(100vh-48px)] w-[260px] shrink-0 flex-col gap-[16px] overflow-y-auto">
+          {/* Below lg the details read as a band under the heading and the section list
+              becomes a swipeable strip — a 260px rail would leave no room for the report. */}
+          <div className="flex flex-col gap-[16px] rounded-[12px] border border-gca-border bg-gca-surface p-[16px] lg:hidden">
+            <p className="text-[14px] font-semibold text-gca-dark">DPR details</p>
+            <div className="grid grid-cols-2 gap-x-[24px] gap-y-[16px]">{dprDetailFields}</div>
+          </div>
+
+          <SectionChips
+            sections={SECTIONS}
+            activeId={activeSection}
+            onSelect={(id) => goToSection(id as SectionId)}
+          />
+
+          <div className="flex flex-col gap-[16px] lg:flex-row lg:items-start lg:gap-[24px]">
+            <div className="sticky top-[24px] hidden max-h-[calc(100vh-48px)] w-[260px] shrink-0 flex-col gap-[16px] overflow-y-auto lg:flex">
               <div className="flex flex-col gap-[2px] rounded-[12px] bg-gca-surface px-[24px] py-[20px]">
                 <p className="mb-[14px] text-[12px] font-semibold text-gca-muted">Sections</p>
                 {SECTIONS.map((s) => (
@@ -292,19 +325,7 @@ export function DprDetailView({
 
               <div className="flex w-[260px] flex-col gap-[25px] rounded-[12px] border border-gca-border bg-gca-surface px-[24px] py-[20px]">
                 <p className="text-[14px] font-semibold text-gca-dark">DPR details</p>
-                {detail("Project", project.project.name)}
-                {detail("Site", dpr.site_location)}
-                {detail(
-                  "Date",
-                  formatDate(dpr.report_date, {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  }),
-                )}
-                {detail("Submitted by", dpr.author_name)}
-                {dpr.submitted_at && detail("Submitted", formatDateTime(dpr.submitted_at))}
+                {dprDetailFields}
               </div>
             </div>
 
@@ -490,9 +511,11 @@ function WorkProgressSection({ dpr }: { dpr: DprDetail }) {
           {dpr.work_items.map((w) => (
             <div
               key={w.work_item_id}
-              className="flex gap-[12px] border-t border-gca-border py-[8px] text-[13px]"
+              className="flex flex-col gap-[4px] border-t border-gca-border py-[8px] text-[13px] sm:flex-row sm:gap-[12px]"
             >
-              <span className="w-[120px] shrink-0 font-medium text-gca-dark">{w.work_area}</span>
+              <span className="font-medium text-gca-dark sm:w-[120px] sm:shrink-0">
+                {w.work_area}
+              </span>
               <span className="text-gca-dark">{w.work_carried_out}</span>
             </div>
           ))}

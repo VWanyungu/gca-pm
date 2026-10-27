@@ -30,7 +30,7 @@ export function NextMilestonesList({ milestones }: { milestones: Milestone[] }) 
         </div>
       ) : (
         <div className="flex w-full flex-col">
-          <div className="flex gap-[16px] py-[8px] text-[12px] font-medium text-gca-muted">
+          <div className="hidden gap-[16px] py-[8px] text-[12px] font-medium text-gca-muted md:flex">
             <span className="w-[372px]">Milestone</span>
             <span className="w-[150px]">Date</span>
             <span className="w-[150px]">Status</span>
@@ -41,10 +41,10 @@ export function NextMilestonesList({ milestones }: { milestones: Milestone[] }) 
             return (
               <div
                 key={m.milestone_id}
-                className="flex gap-[16px] border-t border-gca-border py-[12px] text-[13px]"
+                className="flex flex-col gap-[2px] border-t border-gca-border py-[12px] text-[13px] md:flex-row md:gap-[16px]"
               >
-                <span className="w-[372px] font-medium text-gca-dark">{m.title}</span>
-                <span className="w-[150px] text-gca-dark">
+                <span className="font-medium text-gca-dark md:w-[372px]">{m.title}</span>
+                <span className="text-[12px] text-gca-muted md:w-[150px] md:text-[13px] md:text-gca-dark">
                   {new Date(date).toLocaleDateString("en-GB", {
                     day: "numeric",
                     month: "short",
@@ -52,7 +52,7 @@ export function NextMilestonesList({ milestones }: { milestones: Milestone[] }) 
                   })}
                 </span>
                 <span
-                  className={`w-[150px] font-semibold ${atRisk ? "text-gca-warning" : "text-gca-green"}`}
+                  className={`text-[12px] font-semibold md:w-[150px] md:text-[13px] ${atRisk ? "text-gca-warning" : "text-gca-green"}`}
                 >
                   {atRisk ? "At risk" : "On track"}
                 </span>

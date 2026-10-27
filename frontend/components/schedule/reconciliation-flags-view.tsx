@@ -97,70 +97,72 @@ export function ReconciliationFlagsView({
         </div>
       )}
 
-      <div className="flex w-full flex-col">
-        <div className="flex w-full items-center gap-[10px] border-b border-gca-border py-[8px] text-[12px] font-medium text-gca-muted">
-          <span className="flex w-[4%] items-center">
-            <input
-              type="checkbox"
-              checked={rows.length > 0 && rows.every((r) => selected.has(r.flag_id))}
-              onChange={toggleAllOnPage}
-              aria-label="Select every flag on this page"
-              className="size-[18px] shrink-0 cursor-pointer rounded-[4px] border-[1.5px] border-gca-border accent-gca-green"
-            />
-          </span>
-          <p className="w-[31%]">Task</p>
-          <p className="w-[15%]">DPR says</p>
-          <p className="w-[15%]">Schedule says</p>
-          <p className="w-[20%]">Reported</p>
-          <p className="w-[15%]" />
-        </div>
-
-        {groups.map(({ group, items }, gi) => (
-          <div key={group ?? "ungrouped"}>
-            <div
-              className={`bg-gca-badge-bg px-[4px] py-[8px] ${gi > 0 ? "border-t border-gca-border" : ""}`}
-            >
-              <p className="text-[12px] font-semibold text-gca-badge-text">{group ?? "Other"}</p>
-            </div>
-            {items.map((f, i) => (
-              <div
-                key={f.flag_id}
-                className={`flex w-full items-center gap-[10px] py-[12px] ${i > 0 ? "border-t border-gca-border" : ""}`}
-              >
-                <span className="flex w-[4%] items-center">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(f.flag_id)}
-                    onChange={() => toggle(f.flag_id)}
-                    aria-label={`Select flag for ${f.task_name}`}
-                    className="size-[18px] shrink-0 cursor-pointer rounded-[4px] border-[1.5px] border-gca-border accent-gca-green"
-                  />
-                </span>
-                <p className="w-[31%] truncate text-[13px] font-medium text-gca-dark">
-                  {f.task_name}
-                </p>
-                <p className="w-[15%] font-mono text-[13px] font-semibold text-gca-warning">
-                  {Math.round(Number(f.dpr_pct))}%
-                </p>
-                <p className="w-[15%] font-mono text-[13px] text-gca-dark">
-                  {Math.round(Number(f.schedule_pct))}%
-                </p>
-                <p className="w-[20%] text-[13px] text-gca-show">
-                  {reporterName(f.reported_by, team)} · {formatShortDate(f.reported_at)}
-                </p>
-                <div className="flex w-[15%] justify-end">
-                  <button
-                    onClick={() => acknowledge([f.flag_id])}
-                    disabled={saving}
-                    className="cursor-pointer rounded-[8px] border border-gca-border px-[12px] py-[6px] text-[13px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
-                  >
-                    Acknowledge
-                  </button>
-                </div>
-              </div>
-            ))}
+      <div className="no-scrollbar w-full overflow-x-auto">
+        <div className="flex w-full min-w-[760px] flex-col">
+          <div className="flex w-full items-center gap-[10px] border-b border-gca-border py-[8px] text-[12px] font-medium text-gca-muted">
+            <span className="flex w-[4%] items-center">
+              <input
+                type="checkbox"
+                checked={rows.length > 0 && rows.every((r) => selected.has(r.flag_id))}
+                onChange={toggleAllOnPage}
+                aria-label="Select every flag on this page"
+                className="size-[18px] shrink-0 cursor-pointer rounded-[4px] border-[1.5px] border-gca-border accent-gca-green"
+              />
+            </span>
+            <p className="w-[31%]">Task</p>
+            <p className="w-[15%]">DPR says</p>
+            <p className="w-[15%]">Schedule says</p>
+            <p className="w-[20%]">Reported</p>
+            <p className="w-[15%]" />
           </div>
-        ))}
+
+          {groups.map(({ group, items }, gi) => (
+            <div key={group ?? "ungrouped"}>
+              <div
+                className={`bg-gca-badge-bg px-[4px] py-[8px] ${gi > 0 ? "border-t border-gca-border" : ""}`}
+              >
+                <p className="text-[12px] font-semibold text-gca-badge-text">{group ?? "Other"}</p>
+              </div>
+              {items.map((f, i) => (
+                <div
+                  key={f.flag_id}
+                  className={`flex w-full items-center gap-[10px] py-[12px] ${i > 0 ? "border-t border-gca-border" : ""}`}
+                >
+                  <span className="flex w-[4%] items-center">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(f.flag_id)}
+                      onChange={() => toggle(f.flag_id)}
+                      aria-label={`Select flag for ${f.task_name}`}
+                      className="size-[18px] shrink-0 cursor-pointer rounded-[4px] border-[1.5px] border-gca-border accent-gca-green"
+                    />
+                  </span>
+                  <p className="w-[31%] truncate text-[13px] font-medium text-gca-dark">
+                    {f.task_name}
+                  </p>
+                  <p className="w-[15%] font-mono text-[13px] font-semibold text-gca-warning">
+                    {Math.round(Number(f.dpr_pct))}%
+                  </p>
+                  <p className="w-[15%] font-mono text-[13px] text-gca-dark">
+                    {Math.round(Number(f.schedule_pct))}%
+                  </p>
+                  <p className="w-[20%] text-[13px] text-gca-show">
+                    {reporterName(f.reported_by, team)} · {formatShortDate(f.reported_at)}
+                  </p>
+                  <div className="flex w-[15%] justify-end">
+                    <button
+                      onClick={() => acknowledge([f.flag_id])}
+                      disabled={saving}
+                      className="cursor-pointer rounded-[8px] border border-gca-border px-[12px] py-[6px] text-[13px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
+                    >
+                      Acknowledge
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
 
       {pages > 1 && (

@@ -116,7 +116,7 @@ export function StatusControl({
       </button>
 
       {menuOpen && (
-        <div className="absolute right-0 top-[48px] z-50 flex w-[382px] flex-col gap-[14px] rounded-[12px] border border-gca-border bg-gca-surface px-[24px] py-[20px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
+        <div className="absolute right-0 top-[48px] z-50 flex w-[calc(100vw-40px)] max-w-[382px] flex-col gap-[14px] rounded-[12px] border border-gca-border bg-gca-surface px-[16px] py-[20px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)] sm:w-[382px] sm:px-[24px]">
           <p className="text-[16px] font-semibold text-gca-dark">Change status</p>
 
           <div className="flex flex-col gap-[2px]">

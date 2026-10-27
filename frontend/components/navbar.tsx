@@ -16,6 +16,8 @@ import {
   Plus,
   Menu,
   X,
+  User,
+  LogOut,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
@@ -49,12 +51,7 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuth();
-  const {
-    isOpen: mobileMenuOpen,
-    setIsOpen: setMobileMenuOpen,
-    activeTab,
-    setActiveTab,
-  } = useMobileNavigation();
+  const { isOpen: mobileMenuOpen, setIsOpen: setMobileMenuOpen } = useMobileNavigation();
   const { toggle: toggleTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -90,6 +87,7 @@ export function Navbar() {
 
   async function handleSignOut() {
     setAccountMenuOpen(false);
+    setMobileMenuOpen(false);
     await logout();
     router.push("/login");
   }
@@ -129,11 +127,6 @@ export function Navbar() {
     return pathname.startsWith(href);
   }
 
-  const pathSegments = pathname.split("/").filter(Boolean);
-  const hasSidebar =
-    pathname.startsWith("/admin") ||
-    (pathSegments[0] === "projects" && pathSegments.length >= 2 && pathSegments[1] !== "new");
-
   return (
     <>
       <header className="sticky top-0 z-40 flex h-[64px] shrink-0 items-center justify-between border-b border-gca-border bg-gca-surface px-[12px] sm:px-[24px]">
@@ -148,10 +141,7 @@ export function Navbar() {
                 type="button"
                 aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
                 aria-expanded={mobileMenuOpen}
-                onClick={() => {
-                  setActiveTab("navigation");
-                  setMobileMenuOpen(!mobileMenuOpen);
-                }}
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="flex size-[36px] items-center justify-center rounded-[8px] text-gca-dark hover:bg-gca-page-bg"
               >
                 {mobileMenuOpen ? <X className="size-[18]" /> : <Menu className="size-[18]" />}
@@ -168,111 +158,132 @@ export function Navbar() {
               </Link>
             </div>
 
+            {/* ── Mobile panel ── */}
             <div
               className={`fixed inset-x-0 bottom-0 top-[64px] z-[70] flex-col bg-gca-surface md:hidden ${
                 mobileMenuOpen ? "flex" : "hidden"
               }`}
             >
-              <div
-                role="tablist"
-                aria-label="Mobile menu sections"
-                className={`grid border-b border-gca-border px-[16px] ${
-                  hasSidebar ? "grid-cols-2" : "grid-cols-1"
-                }`}
-              >
-                {(["navigation", "sidebar"] as const).map((tab) => (
+              <div className="flex flex-1 flex-col overflow-y-auto">
+                {/* Search */}
+                <div className="px-[16px] pt-[16px] pb-[8px]">
                   <button
-                    key={tab}
                     type="button"
-                    role="tab"
-                    aria-selected={activeTab === tab}
-                    hidden={tab === "sidebar" && !hasSidebar}
-                    onClick={() => setActiveTab(tab)}
-                    className={`border-b-2 px-[12px] py-[14px] text-[14px] font-medium ${
-                      activeTab === tab
-                        ? "border-gca-green text-gca-green"
-                        : "border-transparent text-gca-muted"
-                    }`}
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      setSearchOpen(true);
+                    }}
+                    className="flex w-full items-center gap-[10px] rounded-[8px] border border-gca-border bg-gca-page-bg px-[14px] py-[10px] text-left"
                   >
-                    {tab === "navigation" ? "Navigation" : "Sidebar"}
+                    <Search className="size-[16px] text-gca-muted" />
+                    <span className="text-[14px] text-gca-muted">Search projects, risks, changes</span>
                   </button>
-                ))}
-              </div>
-              <div className="flex-1 overflow-y-auto p-[16px]">
-                {activeTab === "navigation" && (
-                  <nav aria-label="Main navigation" className="flex flex-col gap-[4px]">
-                    {navItems.map((item) =>
-                      item.hasDropdown ? (
-                        <div key={item.label}>
-                          <button
-                            type="button"
-                            aria-expanded={mobileProjectsOpen}
-                            onClick={() => setMobileProjectsOpen((open) => !open)}
-                            className="flex w-full items-center justify-between rounded-[6px] px-[10px] py-[9px] text-left text-[14px] font-medium text-gca-dark hover:bg-gca-page-bg"
-                          >
-                            {item.label}
-                            <ChevronDown
-                              className={`size-[16px] transition-transform ${mobileProjectsOpen ? "rotate-180" : ""}`}
-                            />
-                          </button>
-                          {mobileProjectsOpen && (
-                            <div className="ml-[8px] flex flex-col border-l border-gca-border pl-[8px]">
-                              {recentProjects.map((project) => (
-                                <Link
-                                  key={project.project_id}
-                                  href={`/projects/${project.project_id}`}
-                                  onClick={() => setMobileMenuOpen(false)}
-                                  className="rounded-[6px] px-[10px] py-[8px] hover:bg-gca-page-bg"
-                                >
-                                  <span className="block text-[13px] font-medium text-gca-dark">
-                                    {project.name}
-                                  </span>
-                                  <span className="block text-[11px] text-gca-muted">
-                                    {project.current_stage_name ?? "—"} ·{" "}
-                                    {STATUS_LABELS[project.status] ?? project.status}
-                                  </span>
-                                </Link>
-                              ))}
-                              <Link
-                                href="/"
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="flex items-center gap-[10px] rounded-[6px] px-[10px] py-[9px] text-[14px] text-gca-dark hover:bg-gca-page-bg"
-                              >
-                                <FolderKanban className="size-[14px] text-gca-show" />
-                                All projects
-                              </Link>
-                              <Link
-                                href="/projects/new"
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="flex items-center gap-[10px] rounded-[6px] px-[10px] py-[9px] text-[14px] text-gca-dark hover:bg-gca-page-bg"
-                              >
-                                <Plus className="size-[14px] text-gca-show" />
-                                New project
-                              </Link>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <Link
-                          key={item.label}
-                          href={item.href}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className={`rounded-[6px] px-[10px] py-[9px] text-[14px] ${
-                            isActive(item.href)
-                              ? "bg-gca-badge-bg font-semibold text-gca-badge-text"
-                              : "font-medium text-gca-dark hover:bg-gca-page-bg"
-                          }`}
+                </div>
+
+                {/* Main navigation */}
+                <nav aria-label="Main navigation" className="flex flex-col gap-[2px] px-[16px] py-[8px]">
+                  {navItems.map((item) =>
+                    item.hasDropdown ? (
+                      <div key={item.label}>
+                        <button
+                          type="button"
+                          aria-expanded={mobileProjectsOpen}
+                          onClick={() => setMobileProjectsOpen((open) => !open)}
+                          className="flex w-full items-center justify-between rounded-[8px] px-[12px] py-[10px] text-left text-[15px] font-medium text-gca-dark hover:bg-gca-page-bg transition-colors duration-150"
                         >
                           {item.label}
-                        </Link>
-                      ),
-                    )}
-                  </nav>
-                )}
-                <div
-                  id="mobile-sidebar-content"
-                  className={`h-full ${activeTab === "sidebar" ? "block" : "hidden"}`}
-                />
+                          <ChevronDown
+                            className={`size-[16px] text-gca-muted transition-transform duration-200 ${mobileProjectsOpen ? "rotate-180" : ""}`}
+                          />
+                        </button>
+                        {mobileProjectsOpen && (
+                          <div className="ml-[12px] flex flex-col gap-[2px] border-l border-gca-border pl-[12px] py-[4px]">
+                            {recentProjects.map((project) => (
+                              <Link
+                                key={project.project_id}
+                                href={`/projects/${project.project_id}`}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="rounded-[8px] px-[12px] py-[8px] hover:bg-gca-page-bg transition-colors duration-150"
+                              >
+                                <span className="block text-[14px] font-medium text-gca-dark">
+                                  {project.name}
+                                </span>
+                                <span className="block text-[12px] text-gca-muted">
+                                  {project.current_stage_name ?? "—"} ·{" "}
+                                  {STATUS_LABELS[project.status] ?? project.status}
+                                </span>
+                              </Link>
+                            ))}
+                            <Link
+                              href="/"
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[10px] text-[14px] font-medium text-gca-dark hover:bg-gca-page-bg transition-colors duration-150"
+                            >
+                              <FolderKanban className="size-[14px] text-gca-show" />
+                              All projects
+                            </Link>
+                            <Link
+                              href="/projects/new"
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[10px] text-[14px] font-medium text-gca-dark hover:bg-gca-page-bg transition-colors duration-150"
+                            >
+                              <Plus className="size-[14px] text-gca-show" />
+                              New project
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <Link
+                        key={item.label}
+                        href={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`rounded-[8px] px-[12px] py-[10px] text-[15px] transition-colors duration-150 ${
+                          isActive(item.href)
+                            ? "bg-gca-badge-bg font-semibold text-gca-badge-text"
+                            : "font-medium text-gca-dark hover:bg-gca-page-bg"
+                        }`}
+                      >
+                        {item.label}
+                      </Link>
+                    ),
+                  )}
+                </nav>
+
+                {/* Sidebar content (portaled from project/admin sidebar) */}
+                <div id="mobile-sidebar-content" />
+              </div>
+
+              {/* Bottom: user card */}
+              <div className="border-t border-gca-border bg-gca-surface px-[16px] py-[12px]">
+                <div className="flex items-center gap-[12px] rounded-[10px] bg-gca-page-bg px-[14px] py-[12px]">
+                  <div className="flex size-[36px] shrink-0 items-center justify-center rounded-[8px] bg-gca-badge-bg">
+                    <span className="text-[13px] font-semibold text-gca-badge-text">{initials}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[14px] font-semibold text-gca-dark">
+                      {user?.firstName || user?.email?.split("@")[0] || "Account"}
+                    </p>
+                    <p className="truncate text-[12px] text-gca-muted">{user?.email}</p>
+                  </div>
+                </div>
+                <div className="mt-[8px] flex gap-[8px]">
+                  <Link
+                    href="/profile"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex flex-1 items-center justify-center gap-[6px] rounded-[8px] border border-gca-border bg-gca-surface py-[9px] text-[13px] font-medium text-gca-dark hover:bg-gca-page-bg transition-colors duration-150"
+                  >
+                    <User className="size-[14px] text-gca-show" />
+                    My profile
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="flex flex-1 items-center justify-center gap-[6px] rounded-[8px] border border-gca-border bg-gca-surface py-[9px] text-[13px] font-medium text-error-text hover:bg-gca-page-bg transition-colors duration-150 cursor-pointer"
+                  >
+                    <LogOut className="size-[14px]" />
+                    Sign out
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -417,7 +428,7 @@ export function Navbar() {
           </Link>
 
           {/* User menu */}
-          <div className="relative" ref={accountMenuRef}>
+          <div className="relative hidden md:block" ref={accountMenuRef}>
             <button
               onClick={() => setAccountMenuOpen((open) => !open)}
               className="flex items-center gap-[8px] rounded-[8px] px-[4px] py-[2px] cursor-pointer"

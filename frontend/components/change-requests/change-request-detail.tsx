@@ -83,7 +83,7 @@ export function ChangeRequestDetail({
   }
 
   return (
-    <div className="flex w-full items-start gap-[20px]">
+    <div className="flex w-full flex-col gap-[20px] lg:flex-row lg:items-start">
       <div className="flex min-w-0 flex-1 flex-col gap-[16px] rounded-[12px] bg-gca-surface p-[24px]">
         <button
           onClick={onBack}
@@ -150,7 +150,10 @@ export function ChangeRequestDetail({
               className="rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[10px] text-[14px] outline-none focus:border-gca-green"
             />
             <div className="flex justify-end gap-[12px]">
-              <button onClick={() => setRejecting(false)} className="cursor-pointer text-[13px] font-medium text-gca-show">
+              <button
+                onClick={() => setRejecting(false)}
+                className="cursor-pointer text-[13px] font-medium text-gca-show"
+              >
                 Cancel
               </button>
               <button
@@ -179,7 +182,9 @@ export function ChangeRequestDetail({
                   className="flex items-center gap-[8px] rounded-[8px] border border-gca-border px-[12px] py-[8px] text-[13px]"
                 >
                   <Paperclip className="size-[14px] shrink-0 text-gca-muted" />
-                  <span className="min-w-0 flex-1 truncate text-gca-dark">{a.original_filename}</span>
+                  <span className="min-w-0 flex-1 truncate text-gca-dark">
+                    {a.original_filename}
+                  </span>
                   <a
                     href={a.url}
                     target="_blank"
@@ -204,16 +209,21 @@ export function ChangeRequestDetail({
           ) : cr.status === "withdrawn" ? (
             <ProgressRow label="Withdrawn" value={formatLongDate(cr.withdrawn_at)} />
           ) : (
-            <ProgressRow label="Decision" value={`${status.label} · ${formatLongDate(cr.decided_at)}`} />
+            <ProgressRow
+              label="Decision"
+              value={`${status.label} · ${formatLongDate(cr.decided_at)}`}
+            />
           )}
         </div>
 
         {cr.status === "pending" && (
-          <p className="text-[13px] text-gca-muted">The Planner can link this to a rebaseline on the next upload.</p>
+          <p className="text-[13px] text-gca-muted">
+            The Planner can link this to a rebaseline on the next upload.
+          </p>
         )}
       </div>
 
-      <div className="flex w-[320px] shrink-0 flex-col gap-[12px] rounded-[12px] bg-gca-page-bg p-[20px]">
+      <div className="flex w-full shrink-0 flex-col gap-[12px] rounded-[12px] bg-gca-page-bg p-[20px] lg:w-[320px]">
         <p className="text-[14px] font-semibold text-gca-dark">Details</p>
         <div className="flex flex-col gap-[10px] text-[13px]">
           <Row label="Status" value={status.label} valueClassName={status.className} />
@@ -230,7 +240,11 @@ export function ChangeRequestDetail({
 }
 
 function formatShortLabel(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function ProgressRow({ label, value }: { label: string; value: string }) {
@@ -242,7 +256,15 @@ function ProgressRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Row({ label, value, valueClassName }: { label: string; value: string; valueClassName?: string }) {
+function Row({
+  label,
+  value,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
   return (
     <div className="flex items-center justify-between gap-[12px]">
       <span className="text-gca-show">{label}</span>

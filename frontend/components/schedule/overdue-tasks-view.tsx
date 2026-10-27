@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import Dropdown from "@/components/Dropdown";
+import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import {
   daysLate,
   formatShortDate,
@@ -107,27 +108,29 @@ export function OverdueTasksView({
       </div> */}
 
       {groups.length > 1 && (
-        <div className="flex justify-start border-b border-gca-border pb-[20px]">
-          <Dropdown
-            id="overdue-group-filter"
-            title="All groups"
-            data={[
-              {
-                id: "",
-                name: "All groups",
-              },
-              ...groups.map(({ group }) => ({
-                id: groupFilterValue(group),
-                name: group ?? "Other",
-              })),
-            ]}
-            selectedId={activeGroup || undefined}
-            onSelect={(id) => {
-              setSelectedGroup(id);
-              setVisibleCount(INITIAL_ROWS);
-            }}
-            style="h-[36px] w-[200px]  rounded-[8px] border border-gca-border bg-gca-surface px-[10px] text-[13px] text-gca-dark"
-          />
+        <div className="border-b border-gca-border pb-[20px]">
+          <MobileFilterToggle>
+            <Dropdown
+              id="overdue-group-filter"
+              title="All groups"
+              data={[
+                {
+                  id: "",
+                  name: "All groups",
+                },
+                ...groups.map(({ group }) => ({
+                  id: groupFilterValue(group),
+                  name: group ?? "Other",
+                })),
+              ]}
+              selectedId={activeGroup || undefined}
+              onSelect={(id) => {
+                setSelectedGroup(id);
+                setVisibleCount(INITIAL_ROWS);
+              }}
+              style="h-[36px] w-full sm:w-[200px] rounded-[8px] border border-gca-border bg-gca-surface px-[10px] text-[13px] text-gca-dark"
+            />
+          </MobileFilterToggle>
         </div>
       )}
 
@@ -141,7 +144,7 @@ export function OverdueTasksView({
           {items.map((t, i) => (
             <div
               key={t.task_id}
-              className={`flex w-full items-center justify-between gap-[16px] px-[20px] py-[16px] ${i > 0 ? "border-t border-gca-border" : ""}`}
+              className={`flex w-full flex-col items-start justify-between gap-[10px] px-[16px] py-[16px] sm:flex-row sm:items-center sm:gap-[16px] sm:px-[20px] ${i > 0 ? "border-t border-gca-border" : ""}`}
             >
               <div>
                 <p className="text-[14px] font-medium text-gca-dark">{t.task_name}</p>

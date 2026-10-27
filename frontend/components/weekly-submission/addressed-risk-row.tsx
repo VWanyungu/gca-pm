@@ -32,12 +32,14 @@ export function AddressedRiskRow({
   const rating = risk ? ratingFromScore(risk.score) : null;
 
   return (
-    <div className="flex w-full items-start justify-between border-b border-gca-border py-[14px] last:border-b-0">
-      <div className="flex gap-[12px]">
-        <span className="pt-[1px] w-[14px] font-mono text-[13px] font-semibold text-gca-muted">{index}</span>
-        <div className="flex flex-col gap-[4px]">
-          <div className="flex items-center gap-[8px]">
-            <p className="w-[330px] text-[14px] font-medium text-gca-dark">
+    <div className="flex w-full items-start justify-between gap-[8px] border-b border-gca-border py-[14px] last:border-b-0">
+      <div className="flex min-w-0 gap-[12px]">
+        <span className="pt-[1px] w-[14px] shrink-0 font-mono text-[13px] font-semibold text-gca-muted">
+          {index}
+        </span>
+        <div className="flex min-w-0 flex-col gap-[4px]">
+          <div className="flex flex-wrap items-center gap-[8px]">
+            <p className="text-[14px] font-medium text-gca-dark md:w-[330px]">
               {addressedRisk.risk_title ?? risk?.title ?? "Risk"}
             </p>
             {isMainTopRisk && (
@@ -46,10 +48,13 @@ export function AddressedRiskRow({
               </span>
             )}
           </div>
-          {rating && <p className={`text-[12px] font-semibold ${rating.className}`}>{rating.label}</p>}
-          <div className="flex items-center gap-[16px] text-[13px]">
-            <p className="w-[360px] text-gca-dark">{risk?.mitigation || "—"}</p>
-            <p className="whitespace-nowrap text-gca-show">{ownerName(risk?.owner_id, team)}</p>
+          {rating && (
+            <p className={`text-[12px] font-semibold ${rating.className}`}>{rating.label}</p>
+          )}
+          {/* The mitigation and its owner share a line only once there is width for both. */}
+          <div className="flex flex-col gap-[2px] text-[13px] md:flex-row md:items-center md:gap-[16px]">
+            <p className="text-gca-dark md:w-[360px]">{risk?.mitigation || "—"}</p>
+            <p className="text-gca-show md:whitespace-nowrap">{ownerName(risk?.owner_id, team)}</p>
           </div>
           {onMarkAsTopRisk && risk && (
             <button

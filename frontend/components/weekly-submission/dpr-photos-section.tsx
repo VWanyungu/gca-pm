@@ -61,7 +61,7 @@ export function DprPhotosSection({
 
   return (
     <div className="flex w-full flex-col gap-[16px] rounded-[12px] bg-gca-surface py-[24px]">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-[8px]">
         <div>
           <h3 className="text-[16px] font-semibold text-gca-dark">DPR photos</h3>
           {/* <p className="mt-[2px] text-[13px] text-gca-show">
@@ -97,7 +97,7 @@ export function DprPhotosSection({
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-[16px]">
+          <div className="grid grid-cols-2 gap-[12px] sm:grid-cols-3 sm:gap-[16px]">
             {pagePhotos.map((photo) => (
               <button
                 key={photo.photo_id}
@@ -114,7 +114,9 @@ export function DprPhotosSection({
                   />
                   <span
                     className={`absolute left-[8px] top-[8px] flex size-[20px] items-center justify-center rounded-[5px] border ${
-                      photo.selected ? "border-gca-green bg-gca-green" : "border-gca-surface bg-gca-surface/80"
+                      photo.selected
+                        ? "border-gca-green bg-gca-green"
+                        : "border-gca-surface bg-gca-surface/80"
                     }`}
                   >
                     {photo.selected && <span className="size-[8px] rounded-[2px] bg-gca-surface" />}

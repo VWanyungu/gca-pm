@@ -11,6 +11,7 @@ import {
   useSidebarCounts,
 } from "@/components/project-overview/use-project-data";
 import Dropdown from "@/components/Dropdown";
+import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import { RiskForm } from "@/components/risks/risk-form";
 import { GanttChart } from "./gantt-chart";
 import { ScheduleTable } from "./schedule-table";
@@ -171,8 +172,8 @@ export function ScheduleView({ projectId }: { projectId: string }) {
           counts={counts}
           active="schedule"
         />
-        <div className="flex w-full justify-center">
-          <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[40px]">
+        <div className="flex w-full min-w-0 justify-center">
+          <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[20px] md:p-[40px]">
             <RiskForm
               projectId={projectId}
               projectName={project.project.name}
@@ -211,8 +212,8 @@ export function ScheduleView({ projectId }: { projectId: string }) {
           counts={counts}
           active="schedule"
         />
-        <div className="flex w-full justify-center">
-          <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[40px]">
+        <div className="flex w-full min-w-0 justify-center">
+          <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[20px] md:p-[40px]">
             {subView.mode === "history" && (
               <ScheduleHistoryView
                 projectId={projectId}
@@ -289,9 +290,9 @@ export function ScheduleView({ projectId }: { projectId: string }) {
         active="schedule"
       />
 
-      <div className="flex w-full justify-center">
-        <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[40px]">
-          <div className="flex w-full items-center justify-between">
+      <div className="flex w-full min-w-0 justify-center">
+        <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[20px] md:p-[40px]">
+          <div className="flex w-full flex-col gap-[12px] md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">
                 Schedule
@@ -363,8 +364,8 @@ export function ScheduleView({ projectId }: { projectId: string }) {
             />
           )}
 
-          <div className="flex items-end w-full items-center justify-between border-b border-gca-border">
-            <div className="flex items-center gap-[4px]">
+          <div className="flex w-full flex-col items-stretch gap-[12px] border-b border-gca-border md:flex-row md:items-center md:justify-between">
+            <div className="no-scrollbar flex min-w-0 items-center gap-[4px] overflow-x-auto">
               {(
                 [
                   { id: "table", label: "Table" },
@@ -396,34 +397,36 @@ export function ScheduleView({ projectId }: { projectId: string }) {
               ))}
             </div>
 
-            <div className="flex items-center gap-[12px] pb-[10px]">
-              {(tab === "gantt" || tab === "table") && (
-                <Dropdown
-                  id="schedule-range"
-                  data={[
-                    { id: "full", name: "Full schedule" },
-                    {
-                      id: "lookahead",
-                      name: `Next 2 weeks`,
-                    },
-                  ]}
-                  selectedId={range}
-                  style="h-[36px] w-[220px] rounded-[8px] border border-gca-border px-[13px] text-[13px]"
-                  onSelect={(id) => setRange(id as "full" | "lookahead")}
-                />
-              )}
-              {(tab === "gantt" || tab === "table") && (
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-[12px] top-1/2 size-[14px] -translate-y-1/2 text-gca-muted" />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search tasks"
-                    className="h-[36px] w-[220px] rounded-[8px] border border-gca-border pl-[34px] pr-[13px] text-[13px] outline-none focus:border-gca-green"
-                  />
-                </div>
-              )}
-            </div>
+            {(tab === "gantt" || tab === "table") && (
+              <div className="pb-[10px]">
+                <MobileFilterToggle>
+                  <div className="flex items-center gap-[12px]">
+                    <Dropdown
+                      id="schedule-range"
+                      data={[
+                        { id: "full", name: "Full schedule" },
+                        {
+                          id: "lookahead",
+                          name: `Next 2 weeks`,
+                        },
+                      ]}
+                      selectedId={range}
+                      style="h-[36px] w-full sm:w-[220px] rounded-[8px] border border-gca-border px-[13px] text-[13px]"
+                      onSelect={(id) => setRange(id as "full" | "lookahead")}
+                    />
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-[12px] top-1/2 size-[14px] -translate-y-1/2 text-gca-muted" />
+                      <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search tasks"
+                        className="h-[36px] w-full rounded-[8px] border border-gca-border pl-[34px] pr-[13px] text-[13px] outline-none focus:border-gca-green sm:w-[220px]"
+                      />
+                    </div>
+                  </div>
+                </MobileFilterToggle>
+              </div>
+            )}
           </div>
 
           {(tab === "gantt" || tab === "table") && lookaheadSummary && (

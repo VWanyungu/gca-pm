@@ -231,7 +231,7 @@ export function RiskForm({
           </p>
         </div>
         <div className="flex w-full max-w-[792px] flex-col gap-[16px]">
-          <div className="flex gap-[16px]">
+          <div className="flex flex-col gap-[16px] sm:flex-row">
             <div className="flex w-full flex-col gap-[6px]">
               <label className="text-[14px] text-gca-dark">
                 Stage<span className="text-error-text">*</span>
@@ -275,7 +275,7 @@ export function RiskForm({
               )}
             </div>
           </div>
-          <div className="flex gap-[16px]">
+          <div className="flex flex-col gap-[16px] sm:flex-row">
             <div className="flex w-full flex-col gap-[6px]">
               <label className="text-[14px] text-gca-dark">
                 Category<span className="text-error-text">*</span>
@@ -365,7 +365,7 @@ export function RiskForm({
           </p>
         </div>
         <div className="flex w-full max-w-[792px] flex-col gap-[16px]">
-          <div className="flex gap-[16px]">
+          <div className="flex flex-col gap-[16px] sm:flex-row">
             <div className="flex w-full flex-col gap-[6px]">
               <label className="text-[14px] text-gca-dark">Likelihood</label>
               <div className="flex gap-[2px] rounded-[8px] bg-gca-page-bg p-[3px]">

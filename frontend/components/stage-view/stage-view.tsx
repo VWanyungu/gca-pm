@@ -75,8 +75,8 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
         activeStageNo={stageNo}
       />
 
-      <div className="flex w-full justify-center">
-        <main className="flex w-full max-w-[1200px] flex-col gap-[24px] p-[40px]">
+      <div className="flex w-full min-w-0 justify-center">
+        <main className="flex w-full max-w-[1200px] flex-col gap-[24px] p-[20px] md:p-[40px]">
           <StageHeader
             stage={stage}
             stageNo={stageNo}
@@ -88,7 +88,7 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
           />
 
           {(subView.mode === "list" || subView.mode === "detail") && (
-            <div className="flex w-full items-start gap-[20px]">
+            <div className="flex w-full flex-col gap-[20px] lg:flex-row lg:items-start">
               <div className="min-w-0 flex-1">
                 {subView.mode === "list" ? (
                   <ActivitiesTable
@@ -110,7 +110,7 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
                   />
                 )}
               </div>
-              <div className="flex w-[362px] shrink-0 flex-col gap-[20px]">
+              <div className="flex w-full shrink-0 flex-col gap-[20px] lg:w-[362px]">
                 <ChecklistCard
                   projectId={projectId}
                   stageNo={stageNo}

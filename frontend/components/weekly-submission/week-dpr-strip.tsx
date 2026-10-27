@@ -74,17 +74,19 @@ export function WeekDprStrip({
         {/* <p className="mt-[2px] text-[13px] text-gca-show">Red days have a missing DPR</p> */}
       </div>
 
-      <div className="flex w-full items-center justify-between gap-[24px]">
+      {/* The week arrows keep their place at the ends; the seven days swipe between them,
+          since all seven never fit across a phone. */}
+      <div className="flex w-full items-center gap-[8px] sm:gap-[24px]">
         <button
           onClick={onPrevWeek}
           aria-label="Previous week"
-          className="p-[8px] rounded-lg border border-gca-border cursor-pointer text-gca-muted hover:text-gca-dark disabled:cursor-not-allowed disabled:opacity-40"
+          className="shrink-0 p-[8px] rounded-lg border border-gca-border cursor-pointer text-gca-muted hover:text-gca-dark disabled:cursor-not-allowed disabled:opacity-40"
           disabled={!onPrevWeek}
         >
           <ChevronLeft className="size-[16px]" />
         </button>
 
-        <div className="dpr-scroll flex w-full flex-1 items-center justify-between gap-[16px] overflow-x-auto">
+        <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-[4px] overflow-x-auto sm:justify-between sm:gap-[16px]">
           {days.map((date, i) => {
             const isFuture = date > todayIso;
             const hasDpr = weekDprs.some((d) => d.report_date === date);
@@ -96,7 +98,7 @@ export function WeekDprStrip({
                 onClick={() => !isFuture && toggleDay(date)}
                 disabled={isFuture}
                 aria-expanded={isFuture ? undefined : isOpen}
-                className={`py-[8px] px-[12px] flex shrink-0 cursor-pointer items-center gap-[4px] text-[15px] font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gca-green disabled:cursor-not-allowed disabled:text-gca-muted ${isOpen && "bg-gca-badge-bg rounded-lg"} ${!isMissing || isOpen ? "" : "text-error-text"}`}
+                className={`py-[8px] px-[8px] sm:px-[12px] flex shrink-0 cursor-pointer items-center gap-[4px] text-[14px] sm:text-[15px] font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gca-green disabled:cursor-not-allowed disabled:text-gca-muted ${isOpen && "bg-gca-badge-bg rounded-lg"} ${!isMissing || isOpen ? "" : "text-error-text"}`}
               >
                 {DAY_LABELS[i]} {new Date(`${date}T00:00:00Z`).getUTCDate()}
                 {!isFuture &&
@@ -113,7 +115,7 @@ export function WeekDprStrip({
         <button
           onClick={onNextWeek}
           aria-label="Next week"
-          className="p-[8px] rounded-lg border border-gca-border cursor-pointer text-gca-muted hover:text-gca-dark disabled:cursor-not-allowed disabled:opacity-40"
+          className="shrink-0 p-[8px] rounded-lg border border-gca-border cursor-pointer text-gca-muted hover:text-gca-dark disabled:cursor-not-allowed disabled:opacity-40"
           disabled={!onNextWeek}
         >
           <ChevronRight className="size-[16px]" />
@@ -126,7 +128,7 @@ export function WeekDprStrip({
             {new Date(openDay).toDateString()}
           </h3>
 
-          <div className="grid grid-cols-[1fr_1fr_1fr_1fr_28px] gap-[12px] text-[12px] font-medium text-gca-muted border-b border-gca-border pb-[4px]">
+          <div className="hidden grid-cols-[1fr_1fr_1fr_1fr_28px] gap-[12px] border-b border-gca-border pb-[4px] text-[12px] font-medium text-gca-muted md:grid">
             <span>Site</span>
             <span>Engineer</span>
             <span>Submitted</span>
@@ -161,28 +163,32 @@ export function WeekDprStrip({
                     }}
                     aria-expanded={isOpen}
                     aria-controls={`dpr-report-${dpr.dpr_id}`}
-                    className="group grid cursor-pointer grid-cols-[1fr_1fr_1fr_1fr_28px] items-center gap-[12px] rounded-[6px] pb-[4px] text-left text-[13px] text-gca-dark transition-colors duration-150 hover:text-gca-green focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gca-green"
+                    className="group grid cursor-pointer grid-cols-[1fr_28px] items-center gap-x-[12px] gap-y-[2px] rounded-[6px] pb-[4px] text-left text-[13px] text-gca-dark transition-colors duration-150 hover:text-gca-green focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gca-green md:grid-cols-[1fr_1fr_1fr_1fr_28px] md:items-center"
                   >
                     <span className={`truncate ${isOpen ? "font-semibold" : ""}`}>
                       {dpr.site_location}
                     </span>
-                    <span className="truncate">{authorName(dpr.author_id, team)}</span>
-                    <span className="font-mono tabular-nums">
-                      {dpr.submitted_at
-                        ? new Date(dpr.submitted_at).toLocaleTimeString("en-GB", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : "—"}
-                    </span>
-                    <span className={dpr.is_late ? "text-gca-warning" : "text-gca-green"}>
-                      {dpr.status === "submitted" ? (dpr.is_late ? "Late" : "On time") : "Draft"}
-                    </span>
+                    {/* Phone: the chevron keeps the first row, the rest fold under the site
+                        as one meta line instead of four squeezed columns. */}
                     {isOpen ? (
-                      <ChevronUp className="size-[16px] justify-self-end text-gca-green" />
+                      <ChevronUp className="size-[16px] justify-self-end text-gca-green md:order-last" />
                     ) : (
-                      <ChevronDown className="size-[16px] justify-self-end text-gca-muted transition-colors duration-150 group-hover:text-gca-green" />
+                      <ChevronDown className="size-[16px] justify-self-end text-gca-muted transition-colors duration-150 group-hover:text-gca-green md:order-last" />
                     )}
+                    <span className="col-span-2 flex flex-wrap items-center gap-x-[8px] text-[12px] text-gca-muted md:contents md:text-[13px] md:text-inherit">
+                      <span className="truncate">{authorName(dpr.author_id, team)}</span>
+                      <span className="font-mono tabular-nums">
+                        {dpr.submitted_at
+                          ? new Date(dpr.submitted_at).toLocaleTimeString("en-GB", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "—"}
+                      </span>
+                      <span className={dpr.is_late ? "text-gca-warning" : "text-gca-green"}>
+                        {dpr.status === "submitted" ? (dpr.is_late ? "Late" : "On time") : "Draft"}
+                      </span>
+                    </span>
                   </button>
 
                   {isOpen && (

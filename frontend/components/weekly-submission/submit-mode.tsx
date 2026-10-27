@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, Percent, Shield, Trophy, X } from "lucide-react";
+import { Check, Percent, Shield, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { reportError } from "@/lib/toast";
@@ -22,7 +22,6 @@ import {
 import { buildMailto, buildSubmissionReportText, DEPARTMENT_LEAD_EMAIL } from "./mailto";
 import type { WeeklySubmission } from "./types";
 import { formatWeekPeriod, weekNumber } from "./types";
-import classNames from "classnames/bind";
 
 function useLatestScheduleVersion(projectId: string) {
   return useQuery({
@@ -203,8 +202,8 @@ export function SubmitMode({
           onNextWeek={onNextWeek}
         />
 
-        <div className="flex w-full gap-[32px]">
-          <div id="left" className="flex w-2/3 flex-col gap-[32px]">
+        <div className="flex w-full flex-col gap-[32px] lg:flex-row">
+          <div id="left" className="flex w-full min-w-0 flex-col gap-[32px] lg:w-2/3">
             {/* Progress */}
             {latestMetric && (
               <div className="flex w-full flex-col gap-[16px]">
@@ -213,11 +212,9 @@ export function SubmitMode({
                   <p className="text-[13px] text-gca-show">From the schedule</p>
                 </div>
 
-                <div className="flex gap-[32px]">
-                  {/* <Tile label="Planned" value={`${Math.trunc(latestMetric.planned_pct)}%`} />
-                  <Tile label="Actual" value={`${Math.trunc(latestMetric.actual_pct)}%`} />
-                  <Tile label="SPI" value={latestMetric.spi?.toFixed(2) ?? "—"} /> */}
-
+                {/* Three tiles side by side at 375px would clip the third, so the row wraps
+                    and the dividers only appear once there is room for them. */}
+                <div className="flex flex-wrap gap-x-[24px] gap-y-[16px] sm:gap-[32px]">
                   <div className="flex flex-col gap-[2px]">
                     <p className="text-[12px] font-medium text-gca-muted">Planned</p>
 
@@ -226,7 +223,7 @@ export function SubmitMode({
                     </p>
                   </div>
 
-                  <div className="flex flex-col gap-[2px] border-l border-gca-border pl-[25px]">
+                  <div className="flex flex-col gap-[2px] sm:border-l sm:border-gca-border sm:pl-[25px]">
                     <p className="text-[12px] font-medium text-gca-muted">Actual</p>
 
                     <p className="font-mono text-[22px] font-semibold tracking-[-0.33px] text-gca-dark flex items-center gap-[4px]">
@@ -234,7 +231,7 @@ export function SubmitMode({
                     </p>
                   </div>
 
-                  <div className="flex flex-col gap-[2px] border-l border-gca-border pl-[25px]">
+                  <div className="flex flex-col gap-[2px] sm:border-l sm:border-gca-border sm:pl-[25px]">
                     <p className="text-[12px] font-medium text-gca-muted">SPI</p>
 
                     <p className="font-mono text-[22px] font-semibold tracking-[-0.33px] text-gca-dark">
@@ -366,7 +363,9 @@ export function SubmitMode({
             <NextMilestonesList milestones={milestones} />
           </div>
 
-          <div className="w-1/3 shrink-0">
+          {/* Below lg this card is replaced by the sticky bar at the foot of the page —
+              a submit button parked at the end of a long scroll never gets found. */}
+          <div className="hidden w-1/3 shrink-0 lg:block">
             <div className="sticky top-[88px] flex flex-col gap-[16px] rounded-[12px] bg-gca-page-bg p-[24px]">
               {viewSubmissionHref ? (
                 <>
@@ -414,19 +413,57 @@ export function SubmitMode({
             </div>
           </div>
         </div>
+
+        {/* Phone/tablet: readiness and the submit action follow the reader down the page.
+            The gutter bleed matches the page padding set by the owning <main>. */}
+        <div className="sticky bottom-0 z-20 -mx-[20px] flex flex-col gap-[10px] border-t border-gca-border bg-gca-surface px-[20px] pb-[16px] pt-[12px] lg:hidden">
+          <div className="flex flex-wrap items-center gap-x-[14px] gap-y-[6px]">
+            <ReadinessMark ok={checks.progress} label="Progress" />
+            <ReadinessMark ok={checks.commentary} label="Commentary" />
+            <ReadinessMark ok={checks.topRiskText && checks.topAction} label="Top risk" />
+          </div>
+          {viewSubmissionHref ? (
+            <Link
+              href={viewSubmissionHref}
+              className="rounded-[8px] border border-gca-green py-[12px] text-center text-[15px] font-semibold text-gca-green"
+            >
+              View submission
+            </Link>
+          ) : (
+            <>
+              <button
+                onClick={submit}
+                disabled={!ready || submitting}
+                className="cursor-pointer rounded-[8px] bg-gca-green py-[12px] text-[15px] font-semibold text-gca-on-accent disabled:opacity-50"
+              >
+                Submit
+              </button>
+              {!ready && (
+                <p className="text-[12px] text-error-text">
+                  {!checks.commentary
+                    ? "Write a commentary to submit."
+                    : "Mark a top risk, or 'No risks this week', to submit."}
+                </p>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function Tile({ label, value }: { label: string; value: string }) {
+/** The compact form of ChecklistItem, for the sticky bar where there is one line to spare. */
+function ReadinessMark({ ok, label }: { ok: boolean; label: string }) {
   return (
-    <div className="flex flex-col gap-[2px]">
-      <p className="text-[12px] font-medium text-gca-muted">{label}</p>
-      <p className="font-mono text-[22px] font-semibold tracking-[-0.33px] text-gca-dark">
-        {value}
-      </p>
-    </div>
+    <span className="flex items-center gap-[5px] text-[12px]">
+      {ok ? (
+        <Check className="size-[14px] text-gca-green" />
+      ) : (
+        <X className="size-[14px] text-error-text" />
+      )}
+      <span className={ok ? "text-gca-show" : "font-medium text-error-text"}>{label}</span>
+    </span>
   );
 }
 

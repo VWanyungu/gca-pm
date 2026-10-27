@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, GitPullRequest, Search } from "lucide-react";
 import Dropdown from "@/components/Dropdown";
+import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { Pagination } from "@/components/pagination";
 import { useChangeRequests } from "./use-change-requests-data";
@@ -44,7 +45,13 @@ interface ChangeRequestsTableProps {
   onOpen: (changeId: string) => void;
 }
 
-export function ChangeRequestsTable({ projectId, stages, canRaise, onRaise, onOpen }: ChangeRequestsTableProps) {
+export function ChangeRequestsTable({
+  projectId,
+  stages,
+  canRaise,
+  onRaise,
+  onOpen,
+}: ChangeRequestsTableProps) {
   const [stageFilter, setStageFilter] = useState(STAGE_FILTER_ALL);
   const [typeFilter, setTypeFilter] = useState(TYPE_FILTER_ALL);
   const [statusFilter, setStatusFilter] = useState(STATUS_FILTER_ALL);
@@ -81,9 +88,11 @@ export function ChangeRequestsTable({ projectId, stages, canRaise, onRaise, onOp
 
   return (
     <div className="flex w-full flex-col gap-[16px]">
-      <div className="flex w-full items-center justify-between">
+      <div className="flex w-full flex-col gap-[12px] sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">Change requests</h1>
+          <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">
+            Change requests
+          </h1>
           <p className="mt-[4px] text-[14px] text-gca-show">
             Raise, review and track scope, schedule and cost changes.
           </p>
@@ -91,7 +100,7 @@ export function ChangeRequestsTable({ projectId, stages, canRaise, onRaise, onOp
         {canRaise && (
           <button
             onClick={onRaise}
-            className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
+            className="flex w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[12px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover sm:w-auto sm:py-[10px]"
           >
             <Plus className="size-[14px]" />
             Raise change request
@@ -99,8 +108,8 @@ export function ChangeRequestsTable({ projectId, stages, canRaise, onRaise, onOp
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-[12px]">
-        <label className="flex h-[40px] w-[260px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px]">
+      <div className="flex flex-col items-stretch gap-[12px] sm:flex-row sm:flex-wrap sm:items-center">
+        <label className="flex h-[40px] w-full items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] sm:w-[260px]">
           <Search className="size-[14px] shrink-0 text-gca-muted" />
           <input
             type="search"
@@ -114,27 +123,29 @@ export function ChangeRequestsTable({ projectId, stages, canRaise, onRaise, onOp
             className="min-w-0 w-full bg-transparent text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
           />
         </label>
-        <Dropdown
-          id="cr-filter-stage"
-          data={stageOptions}
-          selectedId={stageFilter}
-          style="h-[40px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
-          onSelect={(id) => changeFilter(setStageFilter, id)}
-        />
-        <Dropdown
-          id="cr-filter-type"
-          data={TYPE_OPTIONS}
-          selectedId={typeFilter}
-          style="h-[40px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
-          onSelect={(id) => changeFilter(setTypeFilter, id)}
-        />
-        <Dropdown
-          id="cr-filter-status"
-          data={STATUS_OPTIONS}
-          selectedId={statusFilter}
-          style="h-[40px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
-          onSelect={(id) => changeFilter(setStatusFilter, id)}
-        />
+        <MobileFilterToggle>
+          <Dropdown
+            id="cr-filter-stage"
+            data={stageOptions}
+            selectedId={stageFilter}
+            style="h-[40px] w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
+            onSelect={(id) => changeFilter(setStageFilter, id)}
+          />
+          <Dropdown
+            id="cr-filter-type"
+            data={TYPE_OPTIONS}
+            selectedId={typeFilter}
+            style="h-[40px] w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
+            onSelect={(id) => changeFilter(setTypeFilter, id)}
+          />
+          <Dropdown
+            id="cr-filter-status"
+            data={STATUS_OPTIONS}
+            selectedId={statusFilter}
+            style="h-[40px] w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
+            onSelect={(id) => changeFilter(setStatusFilter, id)}
+          />
+        </MobileFilterToggle>
       </div>
 
       {changeRequests.length === 0 ? (
@@ -152,7 +163,7 @@ export function ChangeRequestsTable({ projectId, stages, canRaise, onRaise, onOp
       ) : (
         <>
           <div className="flex w-full flex-col">
-            <div className="flex w-full items-center gap-[10px] py-[8px] text-[12px] font-medium text-gca-muted border-b border-gca-border">
+            <div className="hidden w-full items-center gap-[10px] border-b border-gca-border py-[8px] text-[12px] font-medium text-gca-muted md:flex">
               <p className="w-[28%]">Change request</p>
               <p className="w-[12%]">Type</p>
               <p className="w-[14%]">Schedule</p>
@@ -166,25 +177,42 @@ export function ChangeRequestsTable({ projectId, stages, canRaise, onRaise, onOp
                 <button
                   key={cr.change_id}
                   onClick={() => onOpen(cr.change_id)}
-                  className={`cursor-pointer flex w-full items-center gap-[10px] py-[12px] text-left ${
+                  className={`flex w-full cursor-pointer flex-col items-start gap-[4px] py-[14px] text-left md:flex-row md:items-center md:gap-[10px] md:py-[12px] ${
                     i > 0 ? "border-t border-gca-border" : ""
                   }`}
                 >
-                  <div className="w-[28%] min-w-0">
-                    <p className="truncate text-[13px] font-medium text-gca-dark">{cr.title}</p>
+                  <div className="w-full min-w-0 md:w-[28%]">
+                    <p className="text-[15px] font-medium text-gca-dark md:truncate md:text-[13px]">
+                      {cr.title}
+                    </p>
                     <p className="truncate text-[12px] text-gca-muted">
                       {cr.stage_no ? (STAGE_SHORT_NAME[cr.stage_no] ?? cr.stage_no) : "—"}
                     </p>
                   </div>
-                  <p className="w-[12%] text-[13px] text-gca-dark">{TYPE_LABEL[cr.type]}</p>
-                  <p className="w-[14%] font-mono text-[13px] text-gca-dark">
-                    {formatScheduleImpact(cr.schedule_impact_days)}
+                  {/* Phone: type, impacts and status fold into one line under the title. */}
+                  <p className="flex flex-wrap items-center gap-x-[8px] text-[12px] md:hidden">
+                    <span className={`font-semibold ${status.className}`}>{status.label}</span>
+                    <span className="text-gca-muted">
+                      {TYPE_LABEL[cr.type]} · {formatScheduleImpact(cr.schedule_impact_days)} ·{" "}
+                      {formatCostImpact(cr.cost_impact, cr.cost_currency)} ·{" "}
+                      {formatShortDate(cr.raised_at)}
+                    </span>
                   </p>
-                  <p className="w-[14%] font-mono text-[13px] text-gca-dark">
-                    {formatCostImpact(cr.cost_impact, cr.cost_currency)}
-                  </p>
-                  <p className="w-[14%] text-[13px] text-gca-dark">{formatShortDate(cr.raised_at)}</p>
-                  <p className={`w-[18%] text-[13px] font-semibold ${status.className}`}>{status.label}</p>
+                  <span className="hidden md:contents">
+                    <p className="w-[12%] text-[13px] text-gca-dark">{TYPE_LABEL[cr.type]}</p>
+                    <p className="w-[14%] font-mono text-[13px] text-gca-dark">
+                      {formatScheduleImpact(cr.schedule_impact_days)}
+                    </p>
+                    <p className="w-[14%] font-mono text-[13px] text-gca-dark">
+                      {formatCostImpact(cr.cost_impact, cr.cost_currency)}
+                    </p>
+                    <p className="w-[14%] text-[13px] text-gca-dark">
+                      {formatShortDate(cr.raised_at)}
+                    </p>
+                    <p className={`w-[18%] text-[13px] font-semibold ${status.className}`}>
+                      {status.label}
+                    </p>
+                  </span>
                 </button>
               );
             })}

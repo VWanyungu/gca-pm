@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { canAccess, CAN_DECIDE_CHANGE_REQUEST, CAN_RAISE_CHANGE_REQUEST } from "@/lib/access-control";
+import {
+  canAccess,
+  CAN_DECIDE_CHANGE_REQUEST,
+  CAN_RAISE_CHANGE_REQUEST,
+} from "@/lib/access-control";
 import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
 import {
   useProjectDetail,
@@ -35,10 +39,15 @@ export function ChangeRequestsView({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex min-h-[calc(100vh-64px)] w-full">
-      <ProjectSidebar projectId={projectId} stages={project.stages} counts={counts} active="change-requests" />
+      <ProjectSidebar
+        projectId={projectId}
+        stages={project.stages}
+        counts={counts}
+        active="change-requests"
+      />
 
-      <div className="flex w-full justify-center">
-        <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[40px]">
+      <div className="flex w-full min-w-0 justify-center">
+        <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[20px] md:p-[40px]">
           {subView.mode === "list" && (
             <ChangeRequestsTable
               projectId={projectId}

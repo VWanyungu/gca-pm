@@ -13,7 +13,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // gate inline here, matching the simplest pattern available.
   if (!isAuthenticated || !canAccess(user?.role, CAN_MANAGE_USERS)) {
     return (
-      <div className="flex w-full justify-center p-[40px]">
+      <div className="flex w-full min-w-0 justify-center p-[20px] md:p-[40px]">
         <p className="text-[14px] text-gca-muted">You don&apos;t have access to this page.</p>
       </div>
     );
@@ -22,7 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex min-h-[calc(100vh-64px)] w-full">
       <AdminSidebar />
-      <div className="flex w-full justify-center">{children}</div>
+      <div className="flex w-full min-w-0 justify-center">{children}</div>
     </div>
   );
 }

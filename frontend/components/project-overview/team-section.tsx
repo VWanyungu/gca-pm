@@ -15,15 +15,16 @@ export function TeamSection({
 
   return (
     <section className="flex w-full flex-col items-start gap-[8px] pb-[20px]">
-      <div className="flex w-full items-center justify-between">
-        <div className="flex items-end gap-[24px]">
-            <div className="flex flex-col gap-[8px]">
-              <h3 className="text-[16px] font-semibold text-gca-dark">Team</h3>
-              <p className="text-[12px] text-gca-muted">
-                {total} people{clientContacts.length > 0 ? ` · ${clientContacts.length} from the client` : ""}
-              </p>
-            </div>
-            <div className="flex items-center">
+      <div className="flex w-full flex-wrap items-center justify-between gap-[12px]">
+        <div className="flex flex-wrap items-end gap-[16px] sm:gap-[24px]">
+          <div className="flex flex-col gap-[8px]">
+            <h3 className="text-[16px] font-semibold text-gca-dark">Team</h3>
+            <p className="text-[12px] text-gca-muted">
+              {total} people
+              {clientContacts.length > 0 ? ` · ${clientContacts.length} from the client` : ""}
+            </p>
+          </div>
+          <div className="flex items-center">
             {uniquePeople(team).map((m) => (
               <div
                 key={m.attribute_id}
@@ -50,8 +51,11 @@ export function TeamSection({
             ))}
           </div>
         </div>
-        
-        <Link href={`/projects/${projectId}/team`} className="flex items-center gap-[6px] text-[13px] font-medium text-gca-green">
+
+        <Link
+          href={`/projects/${projectId}/team`}
+          className="flex items-center gap-[6px] text-[13px] font-medium text-gca-green"
+        >
           View team
           <ChevronRight className="size-[18]" />
         </Link>

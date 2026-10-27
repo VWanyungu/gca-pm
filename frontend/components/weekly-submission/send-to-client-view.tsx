@@ -41,7 +41,10 @@ export function SendToClientView({
   }
 
   const selectedContacts = contacts.filter((c) => selectedContactIds.has(c.contact_id));
-  const toEmails = [...selectedContacts.map((c) => c.email), ...(oneOff.trim() ? [oneOff.trim()] : [])];
+  const toEmails = [
+    ...selectedContacts.map((c) => c.email),
+    ...(oneOff.trim() ? [oneOff.trim()] : []),
+  ];
 
   function send() {
     const body = attachReport
@@ -60,10 +63,17 @@ export function SendToClientView({
   if (step === "sent") {
     return (
       <div className="flex w-full flex-col items-center gap-[12px] rounded-[12px] border border-gca-border bg-gca-surface p-[48px]">
-        <div className="flex size-[48px] items-center justify-center rounded-full bg-gca-green text-gca-on-accent">✓</div>
+        <div className="flex size-[48px] items-center justify-center rounded-full bg-gca-green text-gca-on-accent">
+          ✓
+        </div>
         <h2 className="text-[18px] font-semibold text-gca-dark">Mail client opened</h2>
-        <p className="text-[13px] text-gca-show">Review the drafted email and hit send from there.</p>
-        <button onClick={onBack} className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent">
+        <p className="text-[13px] text-gca-show">
+          Review the drafted email and hit send from there.
+        </p>
+        <button
+          onClick={onBack}
+          className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent"
+        >
           Back to submission
         </button>
       </div>
@@ -71,12 +81,15 @@ export function SendToClientView({
   }
 
   return (
-    <div className="flex w-full flex-col gap-[20px] rounded-[12px] border border-gca-border bg-gca-surface p-[32px]">
-      <button onClick={onBack} className="cursor-pointer w-fit text-[13px] font-medium text-gca-green">
+    <div className="flex w-full flex-col gap-[20px] rounded-[12px] border border-gca-border bg-gca-surface p-[16px] sm:p-[32px]">
+      <button
+        onClick={onBack}
+        className="cursor-pointer w-fit text-[13px] font-medium text-gca-green"
+      >
         ← {step === "review" ? "Recipients" : "Submission"}
       </button>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-[12px]">
         <div>
           <h2 className="text-[20px] font-semibold text-gca-dark">Send to client</h2>
           <p className="mt-[2px] text-[13px] text-gca-show">
@@ -84,7 +97,12 @@ export function SendToClientView({
           </p>
         </div>
         <div className="flex items-center gap-[8px] text-[13px] font-medium text-gca-muted">
-          <StepBadge active={step === "recipients"} done={step === "review"} label="1" name="Recipients" />
+          <StepBadge
+            active={step === "recipients"}
+            done={step === "review"}
+            label="1"
+            name="Recipients"
+          />
           <span>—</span>
           <StepBadge active={step === "review"} done={false} label="2" name="Review" />
         </div>
@@ -95,10 +113,15 @@ export function SendToClientView({
           <div className="flex flex-col gap-[8px]">
             <p className="text-[14px] font-semibold text-gca-dark">Client team</p>
             {contacts.length === 0 ? (
-              <p className="text-[13px] text-gca-muted">No client contacts added for this project yet.</p>
+              <p className="text-[13px] text-gca-muted">
+                No client contacts added for this project yet.
+              </p>
             ) : (
               contacts.map((c) => (
-                <label key={c.contact_id} className="flex items-center gap-[12px] border-b border-gca-border py-[10px] last:border-b-0">
+                <label
+                  key={c.contact_id}
+                  className="flex items-center gap-[12px] border-b border-gca-border py-[10px] last:border-b-0"
+                >
                   <input
                     type="checkbox"
                     checked={selectedContactIds.has(c.contact_id)}
@@ -124,12 +147,19 @@ export function SendToClientView({
           </div>
 
           <label className="flex items-center gap-[10px] rounded-[10px] bg-gca-page-bg p-[14px] text-[13px]">
-            <input type="checkbox" checked={ccMe} onChange={(e) => setCcMe(e.target.checked)} className="size-[16px]" />
+            <input
+              type="checkbox"
+              checked={ccMe}
+              onChange={(e) => setCcMe(e.target.checked)}
+              className="size-[16px]"
+            />
             CC me on this report ({user?.email})
           </label>
 
-          <div className="flex items-center justify-between pt-[8px]">
-            <span className="text-[13px] text-gca-muted">{toEmails.length} recipients selected</span>
+          <div className="flex flex-wrap items-center justify-between gap-[12px] pt-[8px]">
+            <span className="text-[13px] text-gca-muted">
+              {toEmails.length} recipients selected
+            </span>
             <button
               onClick={() => setStep("review")}
               disabled={toEmails.length === 0}
@@ -154,11 +184,17 @@ export function SendToClientView({
           </div>
 
           <label className="flex items-center gap-[10px] text-[13px] text-gca-dark">
-            <input type="checkbox" checked={attachReport} onChange={(e) => setAttachReport(e.target.checked)} className="size-[16px]" />
+            <input
+              type="checkbox"
+              checked={attachReport}
+              onChange={(e) => setAttachReport(e.target.checked)}
+              className="size-[16px]"
+            />
             Attach report
           </label>
           <p className="-mt-[8px] text-[12px] text-gca-muted">
-            Opens your mail client with the report summary in the body — attach the exported report file yourself if the client needs a file.
+            Opens your mail client with the report summary in the body — attach the exported report
+            file yourself if the client needs a file.
           </p>
 
           <div className="flex justify-end">
@@ -175,12 +211,26 @@ export function SendToClientView({
   );
 }
 
-function StepBadge({ active, done, label, name }: { active: boolean; done: boolean; label: string; name: string }) {
+function StepBadge({
+  active,
+  done,
+  label,
+  name,
+}: {
+  active: boolean;
+  done: boolean;
+  label: string;
+  name: string;
+}) {
   return (
     <span className={`flex items-center gap-[6px] ${active || done ? "text-gca-dark" : ""}`}>
       <span
         className={`flex size-[20px] items-center justify-center rounded-full text-[11px] ${
-          done ? "bg-gca-green text-gca-on-accent" : active ? "border border-gca-green text-gca-green" : "border border-gca-border"
+          done
+            ? "bg-gca-green text-gca-on-accent"
+            : active
+              ? "border border-gca-green text-gca-green"
+              : "border border-gca-border"
         }`}
       >
         {done ? "✓" : label}

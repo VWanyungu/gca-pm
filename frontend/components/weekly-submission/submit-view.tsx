@@ -64,8 +64,8 @@ export function SubmitView({
         active="submit"
       />
 
-      <div className="flex w-full justify-center">
-        <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[40px]">
+      <div className="flex w-full min-w-0 justify-center">
+        <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[20px] md:p-[40px]">
           {isRegisterTab && (
             <WeeklyRegisterTable
               projectId={projectId}
@@ -146,7 +146,7 @@ export function SubmitView({
                     </button>
                   </div>
 
-                  <div className="flex w-full flex-col items-start gap-[12px] rounded-[12px] border border-gca-border bg-gca-surface p-[32px]">
+                  <div className="flex w-full flex-col items-start gap-[12px] rounded-[12px] border border-gca-border bg-gca-surface p-[20px] sm:p-[32px]">
                     <h2 className="text-[18px] font-semibold text-gca-dark">
                       Start Week {weekNumber(weekStart)} submission
                     </h2>

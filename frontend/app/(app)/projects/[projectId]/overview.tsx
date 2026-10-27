@@ -111,11 +111,11 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
         active="overview"
       />
 
-      <div className="flex w-full justify-center overflow-y-auto">
-        <main className="flex w-full max-w-[1200px] flex-col gap-[28px] p-[40px]">
-          <header className="flex w-full items-center justify-between">
-            <div className="flex flex-col gap-[8px]">
-              <h1 className="text-[30px] font-semibold tracking-[-0.75px] text-gca-dark">
+      <div className="flex w-full min-w-0 justify-center overflow-y-auto">
+        <main className="flex w-full max-w-[1200px] flex-col gap-[28px] p-[20px] md:p-[40px]">
+          <header className="flex w-full flex-col gap-[16px] md:flex-row md:items-center md:justify-between">
+            <div className="flex min-w-0 flex-col gap-[8px]">
+              <h1 className="text-[24px] font-semibold tracking-[-0.75px] text-gca-dark sm:text-[30px]">
                 {data.project.name}
               </h1>
               <p className="text-[14px] text-gca-show">
@@ -139,7 +139,9 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
             onChanged={invalidate}
           />
 
-          <div className="flex w-full items-start gap-[20px]">
+          {/* The progress chart needs ~700px to read at all, so it sits above the
+              attention list rather than beside it until there is room for both. */}
+          <div className="flex w-full flex-col items-stretch gap-[20px] xl:flex-row xl:items-start">
             <ProgressCard metrics={data.metrics} />
             <NeedsAttentionCard
               projectId={projectId}

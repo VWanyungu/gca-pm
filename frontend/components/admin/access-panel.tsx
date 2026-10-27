@@ -69,7 +69,7 @@ export function AccessPanelContent({ user }: { user: AdminUserDetail }) {
         {user.roles.map((grant) => (
           <div
             key={grant.attribute_id}
-            className="flex items-center justify-between border-t border-gca-border py-[12px]"
+            className="flex items-center justify-between gap-[12px] border-t border-gca-border py-[12px]"
           >
             <div>
               <div className="flex items-center gap-[6px]">

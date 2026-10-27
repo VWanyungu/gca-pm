@@ -20,7 +20,7 @@ export function NextMilestonesRow({
 
   return (
     <section className="flex w-full flex-col gap-[16px] pb-[28px]">
-      <div className="flex w-full items-center justify-between">
+      <div className="flex w-full flex-wrap items-center justify-between gap-[8px]">
         <h3 className="text-[16px] font-semibold text-gca-dark">Next milestones</h3>
         <Link
           href={`/projects/${projectId}/milestones`}
@@ -35,7 +35,7 @@ export function NextMilestonesRow({
         <p className="text-[13px] text-gca-muted">No upcoming milestones.</p>
       ) : (
         <div
-          className={`flex w-full items-start ${upcoming.length > 3 ? "justify-between" : "justify-start"}`}
+          className={`no-scrollbar -mx-[20px] flex w-[calc(100%+40px)] items-start overflow-x-auto px-[20px] md:mx-0 md:w-full md:overflow-visible md:px-0 ${upcoming.length > 3 ? "md:justify-between" : "justify-start"}`}
         >
           {upcoming.map((m, i) => {
             const date = m.forecast_date ?? m.planned_date;
@@ -47,12 +47,12 @@ export function NextMilestonesRow({
             return (
               <div
                 key={m.milestone_id}
-                className={`flex w-[258px] flex-col gap-[4px] ${i > 0 ? "border-l border-gca-border pl-[20px]" : ""}`}
+                className={`flex w-[258px] shrink-0 flex-col gap-[4px] ${i > 0 ? "border-l border-gca-border pl-[20px]" : ""}`}
               >
                 <p className="font-mono text-[13px] text-gca-show">
                   {new Date(date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
                 </p>
-                <p className="w-[230px] text-[15px] font-semibold text-gca-dark min-h-12 ">
+                <p className="min-h-12 w-[230px] text-[15px] font-semibold text-gca-dark">
                   {m.title}
                 </p>
                 <p

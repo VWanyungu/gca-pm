@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import Dropdown from "@/components/Dropdown";
+import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import { Pagination } from "@/components/pagination";
 import { useAdminUsers } from "@/components/admin/use-admin-users-data";
 import { summarizeProjectAccess } from "@/components/admin/format";
@@ -40,7 +41,7 @@ export default function AdminUsersPage() {
 
   return (
     <main className="flex w-full overflow-hidden md:max-w-[1200px] flex-col gap-[20px] p-[20px] md:p-[40px]">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-[12px] sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-[24px] font-semibold text-gca-dark">Users</h1>
           <p className="text-[14px] text-gca-muted">
@@ -56,7 +57,7 @@ export default function AdminUsersPage() {
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-[12px]">
+      <div className="flex flex-col gap-[12px] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <input
           value={search}
           onChange={(e) => {
@@ -66,13 +67,13 @@ export default function AdminUsersPage() {
           placeholder="Search name or email"
           className="h-[40px] w-full md:w-[320px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
         />
-        <div className="flex flex-wrap items-center gap-[12px]">
+        <MobileFilterToggle>
           <Dropdown
             id="role-filter"
             title="All roles"
             data={ROLE_OPTIONS}
             selectedId={roleFilter ?? "all"}
-            style="h-[40px] w-[180px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
+            style="h-[40px] w-full sm:w-[180px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
             onSelect={(id) => {
               setRoleFilter(id === "all" ? undefined : (id as RoleName));
               setPage(1);
@@ -83,13 +84,13 @@ export default function AdminUsersPage() {
             title="Active"
             data={STATUS_OPTIONS}
             selectedId={statusFilter ?? "all"}
-            style="h-[40px] w-[160px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
+            style="h-[40px] w-full sm:w-[160px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
             onSelect={(id) => {
               setStatusFilter(id === "all" ? undefined : (id as "active" | "deactivated"));
               setPage(1);
             }}
           />
-        </div>
+        </MobileFilterToggle>
       </div>
 
       <div className="overflow-hidden rounded-[12px] overflow-scroll">

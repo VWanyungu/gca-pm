@@ -21,7 +21,14 @@ interface RiskDetailProps {
   onEdit: () => void;
 }
 
-export function RiskDetail({ projectId, riskId, team, canManage, onBack, onEdit }: RiskDetailProps) {
+export function RiskDetail({
+  projectId,
+  riskId,
+  team,
+  canManage,
+  onBack,
+  onEdit,
+}: RiskDetailProps) {
   const { data: risk } = useRisk(projectId, riskId);
   const { data: categories = [] } = useRiskCategories(projectId);
   const invalidate = useRisksInvalidate(projectId);
@@ -42,7 +49,9 @@ export function RiskDetail({ projectId, riskId, team, canManage, onBack, onEdit 
   async function saveMitigation() {
     if (!risk) return;
     setSaving(true);
-    await api.patch(`/projects/${projectId}/risks/${risk.risk_id}`, { mitigation: mitigationDraft.trim() || null });
+    await api.patch(`/projects/${projectId}/risks/${risk.risk_id}`, {
+      mitigation: mitigationDraft.trim() || null,
+    });
     setSaving(false);
     setEditingMitigation(false);
     invalidate();
@@ -67,7 +76,7 @@ export function RiskDetail({ projectId, riskId, team, canManage, onBack, onEdit 
   }
 
   return (
-    <div className="flex w-full items-start gap-[20px]">
+    <div className="flex w-full flex-col gap-[20px] lg:flex-row lg:items-start">
       <div className="flex min-w-0 flex-1 flex-col gap-[16px] rounded-[12px] bg-gca-surface p-[24px]">
         <button
           onClick={onBack}
@@ -133,9 +142,7 @@ export function RiskDetail({ projectId, riskId, team, canManage, onBack, onEdit 
           </div>
         )}
 
-        {risk.description && (
-          <p className="text-[14px] text-gca-dark">{risk.description}</p>
-        )}
+        {risk.description && <p className="text-[14px] text-gca-dark">{risk.description}</p>}
 
         <div className="flex items-center justify-between border-t border-gca-border pt-[16px]">
           <p className="text-[14px] font-semibold text-gca-dark">Mitigation</p>
@@ -179,11 +186,13 @@ export function RiskDetail({ projectId, riskId, team, canManage, onBack, onEdit 
             </div>
           </div>
         ) : (
-          <p className="text-[14px] text-gca-dark">{risk.mitigation || "No mitigation recorded yet."}</p>
+          <p className="text-[14px] text-gca-dark">
+            {risk.mitigation || "No mitigation recorded yet."}
+          </p>
         )}
       </div>
 
-      <div className="flex w-[320px] shrink-0 flex-col gap-[12px] rounded-[12px] bg-gca-page-bg p-[20px]">
+      <div className="flex w-full shrink-0 flex-col gap-[12px] rounded-[12px] bg-gca-page-bg p-[20px] lg:w-[320px]">
         <p className="text-[14px] font-semibold text-gca-dark">Details</p>
         <div className="flex flex-col gap-[10px] text-[13px]">
           <Row label="Status" value={status.label} valueClassName={status.className} />
@@ -198,7 +207,15 @@ export function RiskDetail({ projectId, riskId, team, canManage, onBack, onEdit 
   );
 }
 
-function Row({ label, value, valueClassName }: { label: string; value: string; valueClassName?: string }) {
+function Row({
+  label,
+  value,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
   return (
     <div className="flex items-center justify-between gap-[12px]">
       <span className="text-gca-show">{label}</span>

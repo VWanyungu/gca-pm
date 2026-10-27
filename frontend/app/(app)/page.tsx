@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Search, LayoutGrid, List, Plus, FolderOpen, ChevronDown } from "lucide-react";
+import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
 import {
@@ -245,9 +246,9 @@ export default function Home() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-[8px] sm:flex sm:items-center">
+              <div className="flex flex-wrap items-center gap-[8px]">
                 {/* View switch */}
-                <div className="col-span-2 flex w-fit cursor-pointer gap-[4px] rounded-[10px] bg-gca-page-bg p-[4px] sm:col-span-auto">
+                <div className="flex w-fit cursor-pointer gap-[4px] rounded-[10px] bg-gca-page-bg p-[4px]">
                   <button
                     onClick={() => changeView("card")}
                     className={`flex h-[32px] w-[36px] items-center justify-center rounded-[6px] cursor-pointer ${
@@ -268,51 +269,47 @@ export default function Home() {
                   </button>
                 </div>
 
-                {/* Status filter — server-side, so it's meaningless against the engineer's
-                    client-side-only project list */}
                 {canListAll && (
-                  <div className="relative min-w-0">
-                    <Dropdown
-                      id="status-filter"
-                      title="Status"
-                      data={projectStatusOptions.map((status) => ({
-                        id: status.id,
-                        name: status.name,
-                        value: status.value,
-                      }))}
-                      style="h-[44px] w-full appearance-none rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[14px] text-gca-dark outline-none sm:w-[170px]"
-                      selectedId={
-                        projectStatusOptions.find((s) => s.value === statusFilter)?.id ?? "all"
-                      }
-                      onSelect={(id, name, value) => {
-                        setStatusFilter(value);
-                        setPage(1);
-                      }}
-                    />
-                  </div>
-                )}
-
-                {/* Program filter — same reason */}
-                {canListAll && (
-                  <div className="relative min-w-0">
-                    <Dropdown
-                      id="program-filter"
-                      title="Program"
-                      data={projectProgramOptions.map((program) => ({
-                        id: program.id.toString(),
-                        name: program.name,
-                      }))}
-                      style="h-[44px] w-full appearance-none rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[14px] text-gca-dark outline-none sm:w-[170px]"
-                      selectedId={
-                        projectProgramOptions.find((p) => p.id.toString() === programFilter)?.id ??
-                        "all"
-                      }
-                      onSelect={(id) => {
-                        setProgramFilter(id);
-                        setPage(1);
-                      }}
-                    />
-                  </div>
+                  <MobileFilterToggle>
+                    <div className="relative min-w-0">
+                      <Dropdown
+                        id="status-filter"
+                        title="Status"
+                        data={projectStatusOptions.map((status) => ({
+                          id: status.id,
+                          name: status.name,
+                          value: status.value,
+                        }))}
+                        style="h-[44px] w-full appearance-none rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[14px] text-gca-dark outline-none sm:w-[170px]"
+                        selectedId={
+                          projectStatusOptions.find((s) => s.value === statusFilter)?.id ?? "all"
+                        }
+                        onSelect={(id, name, value) => {
+                          setStatusFilter(value);
+                          setPage(1);
+                        }}
+                      />
+                    </div>
+                    <div className="relative min-w-0">
+                      <Dropdown
+                        id="program-filter"
+                        title="Program"
+                        data={projectProgramOptions.map((program) => ({
+                          id: program.id.toString(),
+                          name: program.name,
+                        }))}
+                        style="h-[44px] w-full appearance-none rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[14px] text-gca-dark outline-none sm:w-[170px]"
+                        selectedId={
+                          projectProgramOptions.find((p) => p.id.toString() === programFilter)?.id ??
+                          "all"
+                        }
+                        onSelect={(id) => {
+                          setProgramFilter(id);
+                          setPage(1);
+                        }}
+                      />
+                    </div>
+                  </MobileFilterToggle>
                 )}
               </div>
             </div>

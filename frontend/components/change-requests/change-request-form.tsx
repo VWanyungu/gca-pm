@@ -4,7 +4,10 @@ import { useState } from "react";
 import { ArrowLeft, LoaderCircle, Paperclip, Upload, X } from "lucide-react";
 import { api } from "@/lib/api-client";
 import Dropdown from "@/components/Dropdown";
-import { useChangeRequestsInvalidate, uploadChangeRequestAttachment } from "./use-change-requests-data";
+import {
+  useChangeRequestsInvalidate,
+  uploadChangeRequestAttachment,
+} from "./use-change-requests-data";
 import type { ChangeRequest, ChangeRequestType } from "./types";
 import type { StageRow } from "@/components/project-overview/types";
 
@@ -57,7 +60,9 @@ export function ChangeRequestForm({
   );
   const [stageNo, setStageNo] = useState(editing?.stage_no ? String(editing.stage_no) : "");
   const existingAttachments = editing?.attachments ?? [];
-  const [newAttachments, setNewAttachments] = useState<{ file_id: string; url: string; filename: string }[]>([]);
+  const [newAttachments, setNewAttachments] = useState<
+    { file_id: string; url: string; filename: string }[]
+  >([]);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -220,7 +225,7 @@ export function ChangeRequestForm({
           <p className="mt-[4px] text-[13px] text-gca-show">Your best estimate is fine.</p>
         </div>
         <div className="flex w-full max-w-[792px] flex-col gap-[16px]">
-          <div className="flex gap-[16px]">
+          <div className="flex flex-col gap-[16px] sm:flex-row">
             <div className="flex w-full flex-col gap-[6px]">
               <label className="text-[14px] text-gca-dark">Schedule impact</label>
               <input
@@ -270,7 +275,12 @@ export function ChangeRequestForm({
                   className="flex items-center gap-[8px] rounded-[8px] border border-gca-border px-[12px] py-[8px] text-[13px] text-gca-dark"
                 >
                   <Paperclip className="size-[14px] shrink-0 text-gca-muted" />
-                  <a href={a.url} target="_blank" rel="noopener noreferrer" className="truncate hover:underline">
+                  <a
+                    href={a.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="truncate hover:underline"
+                  >
                     {a.original_filename}
                   </a>
                 </li>
@@ -307,7 +317,9 @@ export function ChangeRequestForm({
               type="file"
               multiple
               className="hidden"
-              disabled={uploading || existingAttachments.length + newAttachments.length >= MAX_ATTACHMENTS}
+              disabled={
+                uploading || existingAttachments.length + newAttachments.length >= MAX_ATTACHMENTS
+              }
               onChange={(e) => {
                 void handleFiles(e.target.files);
                 e.target.value = "";

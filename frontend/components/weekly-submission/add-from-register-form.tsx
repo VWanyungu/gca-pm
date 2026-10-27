@@ -105,7 +105,9 @@ export function AddFromRegisterForm({
             key={key}
             onClick={() => setSeverity(key)}
             className={`cursor-pointer rounded-[6px] px-[10px] py-[5px] text-[13px] ${
-              severity === key ? "bg-gca-surface font-medium text-gca-dark" : "font-normal text-gca-show"
+              severity === key
+                ? "bg-gca-surface font-medium text-gca-dark"
+                : "font-normal text-gca-show"
             }`}
           >
             {key === "all" ? `All ${counts.all}` : `${key} ${counts[key]}`}
@@ -158,7 +160,7 @@ export function AddFromRegisterForm({
         )}
       </div>
 
-      <div className="flex items-center justify-between border-t border-gca-border pt-[16px]">
+      <div className="flex flex-wrap items-center justify-between gap-[12px] border-t border-gca-border pt-[16px]">
         <p className="text-[13px] text-gca-show">{selected.size} selected</p>
         <div className="flex items-center gap-[16px]">
           <button

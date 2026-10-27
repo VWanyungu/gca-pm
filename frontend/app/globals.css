@@ -241,6 +241,16 @@ body {
   height: 0;
 }
 
+/* Horizontal strips that scroll by swipe on a phone — the bar itself is the affordance,
+   so the scrollbar would only eat a row of pixels. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* DPR inline report: scroll surface themed from the palette */
 .dpr-scroll {
   scrollbar-width: thin;

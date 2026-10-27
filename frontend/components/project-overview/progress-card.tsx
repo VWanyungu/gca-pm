@@ -117,7 +117,7 @@ export function ProgressCard({ metrics }: { metrics: MetricRow[] }) {
 
   if (!latest) {
     return (
-      <div className="flex h-[415px] w-[700px] shrink-0 items-center justify-center rounded-[12px] border border-gca-border bg-gca-surface p-[24px]">
+      <div className="flex h-[415px] w-full items-center justify-center rounded-[12px] border border-gca-border bg-gca-surface p-[24px] xl:w-[700px] xl:shrink-0">
         <p className="text-[14px] text-gca-muted">No progress data yet.</p>
       </div>
     );
@@ -142,8 +142,8 @@ export function ProgressCard({ metrics }: { metrics: MetricRow[] }) {
   const lastActualY = lastFilled ? CHART_H - (lastFilled.actual_pct / 100) * CHART_H : CHART_H;
 
   return (
-    <div className="flex h-[415px] w-[700px] shrink-0 flex-col gap-[16px] rounded-[12px] border border-gca-border bg-gca-surface p-[24px] pb-[28px]">
-      <div className="flex w-full items-center justify-between">
+    <div className="flex h-[415px] w-full flex-col gap-[16px] rounded-[12px] border border-gca-border bg-gca-surface p-[16px] pb-[28px] sm:p-[24px] xl:w-[700px] xl:shrink-0">
+      <div className="flex w-full flex-wrap items-center justify-between gap-[8px]">
         <h3 className="text-[16px] font-semibold text-gca-dark">Progress</h3>
         <div className="flex items-center gap-[6px] text-[12px] text-gca-show">
           <span className="flex items-center gap-[4px]">
@@ -155,7 +155,7 @@ export function ProgressCard({ metrics }: { metrics: MetricRow[] }) {
           </span>
         </div>
       </div>
-      <div className="flex items-center gap-[24px]">
+      <div className="flex flex-wrap items-center gap-x-[24px] gap-y-[12px]">
         <Tile
           label="SPI"
           value={latest.spi?.toFixed(2) ?? "—"}
@@ -189,7 +189,14 @@ export function ProgressCard({ metrics }: { metrics: MetricRow[] }) {
         <div className="flex items-center justify-end">
           <RangeToggle value={range} onChange={setRange} />
         </div>
-        <svg viewBox={`0 0 ${CHART_W} ${CHART_H + 10}`} width={CHART_W} height={CHART_H}>
+        {/* The viewBox alone: a fixed width overflowed the card once the card itself
+            became fluid. Uniform scaling keeps the two lines undistorted. */}
+        <svg
+          viewBox={`0 0 ${CHART_W} ${CHART_H + 10}`}
+          className="h-auto w-full"
+          role="img"
+          aria-label="Planned against actual completion"
+        >
           {[0, 60, 120, 180].map((y) => (
             <line key={y} x1={0} y1={y} x2={CHART_W} y2={y} stroke="#e2e8e3" strokeWidth={1} />
           ))}

@@ -15,7 +15,11 @@ import { RiskDetail } from "./risk-detail";
 import { RiskForm } from "./risk-form";
 import { useRisk } from "./use-risks-data";
 
-type SubView = { mode: "list" } | { mode: "add" } | { mode: "edit"; riskId: string } | { mode: "detail"; riskId: string };
+type SubView =
+  | { mode: "list" }
+  | { mode: "add" }
+  | { mode: "edit"; riskId: string }
+  | { mode: "detail"; riskId: string };
 
 export function RisksView({ projectId }: { projectId: string }) {
   const { user } = useAuth();
@@ -30,10 +34,15 @@ export function RisksView({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex min-h-[calc(100vh-64px)] w-full">
-      <ProjectSidebar projectId={projectId} stages={project.stages} counts={counts} active="risks" />
+      <ProjectSidebar
+        projectId={projectId}
+        stages={project.stages}
+        counts={counts}
+        active="risks"
+      />
 
-      <div className="flex w-full justify-center">
-        <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[40px]">
+      <div className="flex w-full min-w-0 justify-center">
+        <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[20px] md:p-[40px]">
           {subView.mode === "list" && (
             <RisksTable
               projectId={projectId}

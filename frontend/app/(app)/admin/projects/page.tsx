@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Pencil, Trash2 } from "lucide-react";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import Dropdown from "@/components/Dropdown";
+import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import { Pagination } from "@/components/pagination";
 import { useAdminProjects } from "@/components/admin/use-admin-projects-data";
 import { useProgramsList } from "@/components/admin/use-admin-users-data";
@@ -69,7 +70,7 @@ export default function AdminProjectsPage() {
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-[12px] w-full">
+      <div className="flex flex-col gap-[12px] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between w-full">
         <input
           value={search}
           onChange={(e) => {
@@ -79,34 +80,30 @@ export default function AdminProjectsPage() {
           placeholder="Search projects"
           className="h-[40px] w-full rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none placeholder:text-gca-muted md:w-[320px]"
         />
-        <div className="flex w-full flex-nowrap items-center gap-[12px]">
-          <div className="min-w-0 flex-1 md:w-[170px] md:flex-none">
-            <Dropdown
-              id="status-filter"
-              title="All statuses"
-              data={STATUS_OPTIONS}
-              selectedId={statusFilter ?? "all"}
-              style="h-[40px] w-full rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
-              onSelect={(id) => {
-                setStatusFilter(id === "all" ? undefined : (id as ProjectStatus));
-                setPage(1);
-              }}
-            />
-          </div>
-          <div className="min-w-0 flex-1 md:w-[190px] md:flex-none">
-            <Dropdown
-              id="program-filter"
-              title="All programs"
-              data={programOptions}
-              selectedId={programFilter != null ? String(programFilter) : "all"}
-              style="h-[40px] w-full rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
-              onSelect={(id) => {
-                setProgramFilter(id === "all" ? undefined : Number(id));
-                setPage(1);
-              }}
-            />
-          </div>
-        </div>
+        <MobileFilterToggle>
+          <Dropdown
+            id="status-filter"
+            title="All statuses"
+            data={STATUS_OPTIONS}
+            selectedId={statusFilter ?? "all"}
+            style="h-[40px] w-full sm:w-[170px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
+            onSelect={(id) => {
+              setStatusFilter(id === "all" ? undefined : (id as ProjectStatus));
+              setPage(1);
+            }}
+          />
+          <Dropdown
+            id="program-filter"
+            title="All programs"
+            data={programOptions}
+            selectedId={programFilter != null ? String(programFilter) : "all"}
+            style="h-[40px] w-full sm:w-[190px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
+            onSelect={(id) => {
+              setProgramFilter(id === "all" ? undefined : Number(id));
+              setPage(1);
+            }}
+          />
+        </MobileFilterToggle>
       </div>
 
       <div className="overflow-x-auto rounded-[12px]">

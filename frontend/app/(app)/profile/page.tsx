@@ -7,7 +7,12 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Camera, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
-import { canAccess, hasAnyRole, CAN_LIST_PROJECTS, CAN_LIST_PROJECTS_GLOBAL_ONLY } from "@/lib/access-control";
+import {
+  canAccess,
+  hasAnyRole,
+  CAN_LIST_PROJECTS,
+  CAN_LIST_PROJECTS_GLOBAL_ONLY,
+} from "@/lib/access-control";
 import { useEngineerProjectSummaries } from "@/components/engineer-dpr/use-dpr-wizard-data";
 import type { RoleGrant, RoleName, ScopeType } from "@/contexts/auth-context";
 
@@ -43,7 +48,8 @@ export default function ProfilePage() {
   // A project-scoped-only Site Engineer has no GET /projects access (same gap as the home
   // page, see CAN_LIST_PROJECTS) — fall back to their own projects from their role grants.
   const canListAll =
-    hasAnyRole(user?.role, CAN_LIST_PROJECTS) || canAccess(user?.role, CAN_LIST_PROJECTS_GLOBAL_ONLY);
+    hasAnyRole(user?.role, CAN_LIST_PROJECTS) ||
+    canAccess(user?.role, CAN_LIST_PROJECTS_GLOBAL_ONLY);
   const engineerProjects = useEngineerProjectSummaries();
 
   const { data: bulkProjects = [] } = useQuery({
@@ -101,21 +107,21 @@ export default function ProfilePage() {
   const rangeEnd = Math.min(page * PAGE_SIZE, user.role.length);
 
   return (
-    <div className="flex w-full justify-center bg-gca-page-bg h-[100vh]">
-      <main className="w-full max-w-[1400px] max-[1450px]:p-[0] max-[1450px]:pt-[20px] p-[40px]">
+    <div className="flex min-h-[100dvh] w-full justify-center bg-gca-page-bg">
+      <main className="w-full max-w-[1400px] p-[12px] sm:p-[20px] min-[1450px]:p-[40px]">
         <div className="rounded-[12px] bg-gca-surface p-[12px]">
           {/* Banner */}
-          <div className="relative h-[200px] w-full rounded-[8px] bg-gradient-to-r from-[#dcebdf] via-[#a9d1b3] via-55% to-[#e8f1ea]">
-            <button className="absolute right-[24px] top-[138px] flex items-center rounded-[8px] border-[1.5px] border-gca-surface bg-gca-surface/85 px-[18px] py-[9px] text-[14px] font-semibold text-gca-dark hover:bg-gca-surface cursor-pointer">
+          <div className="relative h-[120px] w-full rounded-[8px] bg-gradient-to-r from-[#dcebdf] via-[#a9d1b3] via-55% to-[#e8f1ea] sm:h-[200px]">
+            <button className="absolute right-[12px] top-[72px] flex cursor-pointer items-center rounded-[8px] border-[1.5px] border-gca-surface bg-gca-surface/85 px-[14px] py-[8px] text-[13px] font-semibold text-gca-dark hover:bg-gca-surface sm:right-[24px] sm:top-[138px] sm:px-[18px] sm:py-[9px] sm:text-[14px]">
               Edit profile
             </button>
           </div>
 
-          <div className="relative flex flex-wrap gap-[48px] px-[40px] pb-[40px] pt-[24px]">
+          <div className="relative flex flex-wrap gap-[24px] px-[16px] pb-[24px] pt-[24px] sm:gap-[48px] sm:px-[40px] sm:pb-[40px]">
             {/* Profile picture, overlapping the banner */}
-            <div className="absolute left-[40px] top-[-64px] size-[128px]">
-              <div className="flex size-[128px] items-center justify-center rounded-[38px] border-[5px] border-gca-surface bg-gca-badge-bg">
-                <span className="text-[40px] font-semibold tracking-[-1px] text-gca-green">
+            <div className="absolute left-[16px] top-[-44px] size-[88px] sm:left-[40px] sm:top-[-64px] sm:size-[128px]">
+              <div className="flex size-[88px] items-center justify-center rounded-[26px] border-[5px] border-gca-surface bg-gca-badge-bg sm:size-[128px] sm:rounded-[38px]">
+                <span className="text-[28px] font-semibold tracking-[-1px] text-gca-green sm:text-[40px]">
                   {initials}
                 </span>
               </div>
@@ -125,7 +131,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Identity column */}
-            <div className="flex w-[300px] shrink-0 flex-col gap-[16px] pt-[76px]">
+            <div className="flex w-full shrink-0 flex-col gap-[16px] pt-[56px] sm:w-[300px] sm:pt-[76px]">
               <div className="flex flex-col gap-[4px]">
                 <p className="text-[22px] font-semibold tracking-[-0.33px] text-gca-dark">
                   {user.firstName || user.email}
@@ -133,7 +139,7 @@ export default function ProfilePage() {
                 <p className="text-[14px] text-gca-show">{primaryRole}</p>
               </div>
               <p className="text-[14px] text-gca-dark">{user.email}</p>
-              <div className="h-px w-[300px] bg-gca-border" />
+              <div className="h-px w-full bg-gca-border sm:w-[300px]" />
               <p className="text-[12px] text-gca-muted">Member since —</p>
               <Link
                 href="/notifications?tab=preferences"
@@ -144,9 +150,9 @@ export default function ProfilePage() {
             </div>
 
             {/* Access column */}
-            <div className="flex min-w-[320px] flex-1 flex-col gap-[20px]">
-              <div className="flex items-center justify-between rounded-[8px] bg-gca-page-bg px-[16px] py-[12px]">
-                <div className="flex items-center gap-[12px]">
+            <div className="flex w-full min-w-0 flex-1 flex-col gap-[20px] sm:min-w-[320px]">
+              <div className="flex flex-col items-start justify-between gap-[12px] rounded-[8px] bg-gca-page-bg px-[16px] py-[12px] md:flex-row md:items-center">
+                <div className="flex items-start gap-[12px] md:items-center">
                   <MicrosoftLogo />
                   <p className="text-[14px] font-medium text-gca-dark">
                     Your profile is linked to your Microsoft account. Name and email are managed
@@ -165,8 +171,8 @@ export default function ProfilePage() {
                 <p className="text-[13px] text-gca-show">Only an Admin can change this.</p>
               </div>
 
-              <div className="flex flex-col">
-                <div className="flex items-center py-[8px] text-[12px] font-medium text-gca-muted">
+              <div className="no-scrollbar flex flex-col overflow-x-auto">
+                <div className="hidden items-center py-[8px] text-[12px] font-medium text-gca-muted lg:flex">
                   <p className="w-[200px]">Role</p>
                   <p className="w-[380px]">Scope</p>
                   <p className="w-[180px]">Granted by</p>
@@ -180,17 +186,19 @@ export default function ProfilePage() {
                 {pageRoles.map((grant, i) => (
                   <div
                     key={`${grant.role}-${grant.scope_type}-${grant.project_id ?? grant.program_id ?? i}`}
-                    className="flex items-start border-t border-gca-border py-[12px] text-[13px] text-gca-dark"
+                    className="flex flex-col items-start gap-[2px] border-t border-gca-border py-[12px] text-[13px] text-gca-dark lg:flex-row"
                   >
-                    <p className="w-[200px] font-medium">{ROLE_LABELS[grant.role]}</p>
-                    <p className="w-[380px]">{scopeDescription(grant)}</p>
-                    <p className="w-[180px]">—</p>
-                    <p className="w-[204px]">—</p>
+                    <p className="font-medium lg:w-[200px]">{ROLE_LABELS[grant.role]}</p>
+                    <p className="text-gca-muted lg:w-[380px] lg:text-gca-dark">
+                      {scopeDescription(grant)}
+                    </p>
+                    <p className="hidden lg:block lg:w-[180px]">—</p>
+                    <p className="hidden lg:block lg:w-[204px]">—</p>
                   </div>
                 ))}
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-[12px]">
                 <p className="text-[13px] text-gca-show">
                   {user.role.length === 0
                     ? "Showing 0 of 0"
