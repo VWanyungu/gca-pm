@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "bun --watch index.ts",
     "start": "bun index.ts",
-    "build": "tsc; cp package.json .env server.cjs dist/",
+    "build": "tsc; cp package.json server.cjs dist/",
     "typecheck": "tsc --noEmit",
     "migrate": "bun run node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts",
     "migrate:rollback": "bun run node_modules/knex/bin/cli.js migrate:rollback --knexfile knexfile.ts",

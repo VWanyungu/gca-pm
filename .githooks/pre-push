@@ -1,0 +1,19 @@
+#!/bin/sh
+# Rebuilds backend and frontend, then refuses to push if the rebuild doesn't
+# match what's committed — dist/ and .next/standalone are tracked in git, so
+# a push must always carry build output that matches its source.
+set -e
+
+echo "Running backend build..."
+(cd backend && npm run build)
+
+echo "Running frontend build..."
+(cd frontend && npm run build)
+
+if ! git diff --quiet -- backend/dist frontend/.next/standalone; then
+  echo ""
+  echo "error: rebuilding produced changes to backend/dist or frontend/.next/standalone"
+  echo "that aren't committed. Commit the rebuilt files before pushing."
+  git status --short -- backend/dist frontend/.next/standalone
+  exit 1
+fi

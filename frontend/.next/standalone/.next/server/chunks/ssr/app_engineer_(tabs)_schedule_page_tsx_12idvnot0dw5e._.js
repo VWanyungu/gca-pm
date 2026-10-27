@@ -1,0 +1,3 @@
+module.exports=[69911,a=>{"use strict";var b=a.i(87924),c=a.i(72131),d=a.i(50944),e=a.i(37298);a.s(["default",0,function(){let a=(0,d.useRouter)(),{data:f}=(0,e.i)(),g=f?.[0];return(0,c.useEffect)(()=>{g&&a.replace(`/projects/${g.project_id}/schedule`)},[g,a]),(0,b.jsx)("div",{className:"flex flex-1 items-center justify-center p-[40px] text-[14px] text-gca-muted",children:"Loading schedule…"})}])}];
+
+//# sourceMappingURL=app_engineer_%28tabs%29_schedule_page_tsx_12idvnot0dw5e._.js.map

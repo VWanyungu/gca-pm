@@ -1,0 +1,26 @@
+export async function up(knex) {
+    if (!(await knex.schema.hasTable('refreshTokens'))) {
+        await knex.schema.createTable('refreshTokens', (table) => {
+            table.increments('id').primary();
+            table
+                .uuid('user_id')
+                .notNullable()
+                .references('id')
+                .inTable('users')
+                .onDelete('CASCADE');
+            table.text('refresh_token').notNullable().unique();
+            table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
+        });
+    }
+    if (!(await knex.schema.hasTable('tokens'))) {
+        await knex.schema.createTable('tokens', (table) => {
+            table.increments('id').primary();
+            table.text('token').notNullable().unique();
+            table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
+        });
+    }
+}
+export async function down(knex) {
+    await knex.schema.dropTableIfExists('tokens');
+    await knex.schema.dropTableIfExists('refreshTokens');
+}

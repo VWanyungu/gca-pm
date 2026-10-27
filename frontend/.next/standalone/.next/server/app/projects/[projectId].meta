@@ -1,0 +1,47 @@
+{
+  "status": 200,
+  "headers": {
+    "link": "</_next/static/media/07a39a8a4660cc7c-s.p.0r6juujl39pe6.woff2>; rel=preload; as=\"font\"; crossorigin=\"\"; type=\"font/woff2\", </_next/static/media/605ce01b664af129-s.p.0wgildi0cnwt9.woff2>; rel=preload; as=\"font\"; crossorigin=\"\"; type=\"font/woff2\", </_next/static/chunks/2rus2ce211itd.css>; rel=preload; as=\"style\"",
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(app)/layout,_N_T_/(app)/projects/layout,_N_T_/(app)/projects/[projectId]/layout,_N_T_/(app)/projects/[projectId]/page"
+  },
+  "postponed": "1075:13[\"projectId\"][0,{\"nextSegmentId\":0,\"rootFormatContext\":{\"insertionMode\":0,\"selectedValue\":null,\"tagScope\":0,\"viewTransition\":null},\"progressiveChunkSize\":12800,\"resumableState\":{\"idPrefix\":\"\",\"nextFormID\":0,\"streamingFormat\":0,\"bootstrapScriptContent\":\"(globalThis[\\\"TURBOPACK\\\"] || (globalThis[\\\"TURBOPACK\\\"] = [])).push({\\\"otherChunks\\\":[\\\"static/chunks/1ckvzn7sfprko.js\\\",\\\"static/chunks/0ssqr03lk-c8r.js\\\",\\\"static/chunks/20box33a0_n53.js\\\",\\\"static/chunks/2gnaw_5isj4df.js\\\"],\\\"runtimeModuleIds\\\":[94553]});\",\"bootstrapScripts\":[{\"src\":\"/_next/static/chunks/1ckvzn7sfprko.js\"}],\"instructions\":0,\"hasBody\":false,\"hasHtml\":false,\"unknownResources\":{\"font\":{\"/_next/static/media/07a39a8a4660cc7c-s.p.0r6juujl39pe6.woff2\":[],\"/_next/static/media/605ce01b664af129-s.p.0wgildi0cnwt9.woff2\":[]}},\"dnsResources\":{},\"connectResources\":{\"default\":{},\"anonymous\":{},\"credentials\":{}},\"imageResources\":{},\"styleResources\":{\"/_next/static/chunks/2rus2ce211itd.css\":[]},\"scriptResources\":{},\"moduleUnknownResources\":{},\"moduleScriptResources\":{}},\"replayNodes\":[],\"replaySlots\":-1}]null",
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KGFwcCk/projects/$d$projectId/__PAGE__"
+  ],
+  "prefetchHints": {
+    "hints": 49216,
+    "slots": {
+      "children": {
+        "hints": 49248,
+        "slots": {
+          "children": {
+            "hints": 49248,
+            "slots": {
+              "children": {
+                "hints": 49248,
+                "slots": {
+                  "children": {
+                    "hints": 49312,
+                    "slots": null
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "routeCache": {
+    "key": "/route-cache/APP_PAGE/f8b38fc1c697ea65b258576310431d6d1c1b503742ec91aac0262dc32a1369b1/$/projects/[projectId]",
+    "owner": {
+      "kind": "APP_PAGE",
+      "sourceRoute": "/(app)/projects/[projectId]/page"
+    },
+    "isFallback": true
+  }
+}

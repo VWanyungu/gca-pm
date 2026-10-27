@@ -1,0 +1,243 @@
+import express from 'express';
+import { randomUUID } from 'crypto';
+import { RiskIssues, RiskCategories, ScheduleTasks, ScheduleVersions } from '../database/utils/database.js';
+import authorize from '../middlewares/authorize.js';
+import { createRiskIssueSchema, updateRiskIssueSchema, listRiskIssuesQuerySchema, riskIssueProjectParamsSchema, riskIssueParamsSchema, } from '../utils/validation.js';
+// mergeParams so :projectId from the parent mount reaches authorize + handlers.
+const router = express.Router({ mergeParams: true });
+const canView = authorize([
+    { role: 'PM', scopeType: 'global' },
+    { role: 'PM', scopeType: 'project' },
+    { role: 'Planner', scopeType: 'project' },
+    { role: 'SiteEngineer', scopeType: 'project' },
+    { role: 'ExCo', scopeType: 'global' },
+    { role: 'Admin', scopeType: 'global' },
+]);
+const canManage = authorize([
+    { role: 'PM', scopeType: 'project' },
+    { role: 'ExCo', scopeType: 'global' },
+    { role: 'Admin', scopeType: 'global' },
+]);
+const STATUS_TRANSITIONS = {
+    open: ['mitigated', 'closed', 'dismissed'],
+    mitigated: ['open', 'closed'],
+    closed: ['open'],
+    dismissed: ['open'],
+    auto_resolved: [],
+};
+router.post('/', canManage, async (req, res) => {
+    const params = riskIssueProjectParamsSchema.validate(req.params);
+    if (params.error) {
+        res.status(400).json({ status: 'error', data: null, message: params.error.message });
+        return;
+    }
+    const body = createRiskIssueSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
+    if (body.error) {
+        res.status(400).json({ status: 'error', data: null, message: body.error.message });
+        return;
+    }
+    const { projectId } = params.value;
+    const input = body.value;
+    try {
+        // AC-RSK-01: category must come from an active risk_category row.
+        const category = await RiskCategories.getById(input.category_id);
+        if (!category || !category.is_active) {
+            res.status(400).json({ status: 'error', data: null, message: 'category_id must reference an active risk_category' });
+            return;
+        }
+        // AC-GEN-10: a risk raised from a schedule task must reference a task of this same
+        // project. The DB checks tie source, source_task_id and source_schedule_version_id
+        // together, so all three are set or none are.
+        let sourceTaskId = null;
+        let sourceVersionId = null;
+        if (input.source_task_id) {
+            const task = await ScheduleTasks.getById(projectId, input.source_task_id);
+            if (!task) {
+                res.status(400).json({ status: 'error', data: null, message: 'source_task_id must be a task of this project' });
+                return;
+            }
+            const latest = await ScheduleVersions.latestApplied(projectId);
+            if (!latest) {
+                res.status(400).json({ status: 'error', data: null, message: 'This project has no applied schedule' });
+                return;
+            }
+            sourceTaskId = task.task_id;
+            sourceVersionId = latest.schedule_version_id;
+        }
+        const now = new Date();
+        const kind = input.kind;
+        const created = await RiskIssues.create({
+            risk_id: randomUUID(),
+            project_id: projectId,
+            stage_no: input.stage_no ?? null,
+            title: input.title,
+            description: input.description ?? null,
+            category_id: input.category_id,
+            likelihood: kind === 'risk' ? input.likelihood ?? null : null,
+            impact: input.impact,
+            owner_id: input.owner_id ?? req.user.userId,
+            mitigation: input.mitigation ?? null,
+            review_by: input.review_by ?? null,
+            status: 'open',
+            source: sourceTaskId ? 'overdue_task' : 'manual',
+            source_task_id: sourceTaskId,
+            source_schedule_version_id: sourceVersionId,
+            kind,
+            realised_at: kind === 'issue' ? now : null,
+            realised_by: kind === 'issue' ? req.user.userId : null,
+            created_by: req.user.userId,
+        });
+        res.status(201).json({ status: 'success', data: { riskIssue: created }, message: 'Risk/issue created' });
+    }
+    catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        res.status(500).json({ status: 'error', data: null, message });
+    }
+});
+router.get('/', canView, async (req, res) => {
+    const params = riskIssueProjectParamsSchema.validate(req.params);
+    if (params.error) {
+        res.status(400).json({ status: 'error', data: null, message: params.error.message });
+        return;
+    }
+    const query = listRiskIssuesQuerySchema.validate(req.query, { abortEarly: false });
+    if (query.error) {
+        res.status(400).json({ status: 'error', data: null, message: query.error.message });
+        return;
+    }
+    const { projectId } = params.value;
+    const { status, kind, stage_no, source, rating, search, page, limit } = query.value;
+    try {
+        const result = await RiskIssues.list({ projectId, status, kind, stageNo: stage_no, source, rating, search, page, limit });
+        res.status(200).json({ status: 'success', data: result, message: 'Risk/issues retrieved' });
+    }
+    catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        res.status(500).json({ status: 'error', data: null, message });
+    }
+});
+// Mounted here (rather than the global risk-categories router) so project-scoped
+// PM/Planner/SiteEngineer roles — who can't match a scope-less global route — can
+// list categories to populate the risk form.
+router.get('/categories', canView, async (req, res) => {
+    const params = riskIssueProjectParamsSchema.validate(req.params);
+    if (params.error) {
+        res.status(400).json({ status: 'error', data: null, message: params.error.message });
+        return;
+    }
+    try {
+        const result = await RiskCategories.list({ includeInactive: false, page: 1, limit: 100 });
+        res.status(200).json({ status: 'success', data: result, message: 'Risk categories retrieved' });
+    }
+    catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        res.status(500).json({ status: 'error', data: null, message });
+    }
+});
+router.get('/:riskId', canView, async (req, res) => {
+    const params = riskIssueParamsSchema.validate(req.params);
+    if (params.error) {
+        res.status(400).json({ status: 'error', data: null, message: params.error.message });
+        return;
+    }
+    const { projectId, riskId } = params.value;
+    try {
+        const riskIssue = await RiskIssues.getById(projectId, riskId);
+        if (!riskIssue) {
+            res.status(404).json({ status: 'error', data: null, message: 'Risk/issue not found' });
+            return;
+        }
+        res.status(200).json({ status: 'success', data: { riskIssue }, message: 'Risk/issue retrieved' });
+    }
+    catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        res.status(500).json({ status: 'error', data: null, message });
+    }
+});
+router.patch('/:riskId', canManage, async (req, res) => {
+    const params = riskIssueParamsSchema.validate(req.params);
+    if (params.error) {
+        res.status(400).json({ status: 'error', data: null, message: params.error.message });
+        return;
+    }
+    const body = updateRiskIssueSchema.validate(req.body ?? {}, { abortEarly: false, stripUnknown: true });
+    if (body.error) {
+        res.status(400).json({ status: 'error', data: null, message: body.error.message });
+        return;
+    }
+    const { projectId, riskId } = params.value;
+    const patch = body.value;
+    try {
+        const existing = await RiskIssues.getById(projectId, riskId);
+        if (!existing) {
+            res.status(404).json({ status: 'error', data: null, message: 'Risk/issue not found' });
+            return;
+        }
+        const updates = { ...patch };
+        if (patch.status && patch.status !== existing.status) {
+            const allowed = STATUS_TRANSITIONS[existing.status];
+            if (!allowed.includes(patch.status)) {
+                res.status(400).json({ status: 'error', data: null, message: `Illegal status transition ${existing.status} → ${patch.status}` });
+                return;
+            }
+            updates.closed_at = patch.status === 'open' ? null : new Date();
+        }
+        if (patch.kind === 'issue' && existing.kind !== 'issue') {
+            if (existing.source === 'overdue_task') {
+                res.status(403).json({ status: 'error', data: null, message: 'Auto-overdue risks cannot be converted to issues' });
+                return;
+            }
+            updates.realised_at = new Date();
+            updates.realised_by = req.user.userId;
+            updates.likelihood = null;
+        }
+        if (patch.category_id && patch.category_id !== existing.category_id) {
+            const category = await RiskCategories.getById(patch.category_id);
+            if (!category || !category.is_active) {
+                res.status(400).json({ status: 'error', data: null, message: 'category_id must reference an active risk_category' });
+                return;
+            }
+        }
+        const updated = await RiskIssues.update(projectId, riskId, updates);
+        res.status(200).json({ status: 'success', data: { riskIssue: updated }, message: 'Risk/issue updated' });
+    }
+    catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        res.status(500).json({ status: 'error', data: null, message });
+    }
+});
+router.delete('/:riskId', canManage, async (req, res) => {
+    const params = riskIssueParamsSchema.validate(req.params);
+    if (params.error) {
+        res.status(400).json({ status: 'error', data: null, message: params.error.message });
+        return;
+    }
+    const { projectId, riskId } = params.value;
+    const reason = req.body?.reason?.trim();
+    if (!reason) {
+        res.status(400).json({ status: 'error', data: null, message: 'reason required to dismiss' });
+        return;
+    }
+    try {
+        const existing = await RiskIssues.getById(projectId, riskId);
+        if (!existing) {
+            res.status(404).json({ status: 'error', data: null, message: 'Risk/issue not found' });
+            return;
+        }
+        if (!STATUS_TRANSITIONS[existing.status].includes('dismissed')) {
+            res.status(400).json({ status: 'error', data: null, message: `Cannot dismiss from status ${existing.status}` });
+            return;
+        }
+        const dismissed = await RiskIssues.update(projectId, riskId, {
+            status: 'dismissed',
+            dismissal_reason: reason,
+            closed_at: new Date(),
+        });
+        res.status(200).json({ status: 'success', data: { riskIssue: dismissed }, message: 'Risk/issue dismissed' });
+    }
+    catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        res.status(500).json({ status: 'error', data: null, message });
+    }
+});
+export default router;

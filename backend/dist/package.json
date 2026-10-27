@@ -1,0 +1,47 @@
+{
+  "name": "gca-backend",
+  "version": "0.1.0",
+  "description": "Gas Connect Africa backend",
+  "main": "index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch index.ts",
+    "start": "bun index.ts",
+    "build": "tsc; cp package.json server.cjs dist/",
+    "typecheck": "tsc --noEmit",
+    "migrate": "bun run node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts",
+    "migrate:rollback": "bun run node_modules/knex/bin/cli.js migrate:rollback --knexfile knexfile.ts",
+    "migrate:make": "bun run node_modules/knex/bin/cli.js migrate:make --knexfile knexfile.ts",
+    "seed": "bun run node_modules/knex/bin/cli.js seed:run --knexfile knexfile.ts",
+    "test": "NODE_ENV=development bun test"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.40.0",
+    "bcrypt": "^6.0.0",
+    "cloudinary": "^2.5.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "helmet": "^8.0.0",
+    "joi": "^18.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "knex": "^3.1.0",
+    "morgan": "^1.10.0",
+    "nodemailer": "^7.0.9",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.0",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@types/bcrypt": "^5.0.2",
+    "@types/bun": "^1.1.14",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/morgan": "^1.9.9",
+    "@types/node": "^22.9.0",
+    "@types/nodemailer": "^6.4.17",
+    "@types/pg": "^8.23.1",
+    "typescript": "^5.6.3"
+  }
+}
