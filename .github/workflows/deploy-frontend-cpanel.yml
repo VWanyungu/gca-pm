@@ -29,14 +29,16 @@ jobs:
           touch /tmp/restart.txt
 
           lftp -u "$FTP_USER,$FTP_PASS" "$FTP_HOST" <<-EOF
-          set mirror:parallel-transfer-count 4
+          set net:timeout 15
+          set net:max-retries 2
+          set mirror:parallel-transfer-count 10
           cd "$WORKING_DIR"
 
-          # 2. Delete existing standalone folder
-          rm -rf standalone
-
-          # 3. Upload built standalone folder
-          mirror --reverse --verbose frontend/.next/standalone standalone
+          # 2 & 3. Replace the standalone folder: upload changed files, delete
+          # anything no longer present locally (one pass instead of a full
+          # serial delete followed by a full re-upload, which times out on
+          # the ~2000 files Next's standalone output includes).
+          mirror --reverse --delete --verbose frontend/.next/standalone standalone
 
           # 4. Copy .htaccess from working folder to the standalone folder
           get .htaccess -o /tmp/.htaccess
