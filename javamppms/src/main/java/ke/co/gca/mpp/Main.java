@@ -25,24 +25,47 @@ public final class Main {
   /** AC-FIL-02 caps schedule_mpp uploads at 50 MB. */
   private static final int MAX_BYTES = 50 * 1024 * 1024;
 
+  /** Only the frontend origin may call this service directly (e.g. a future browser-facing endpoint). */
+  private static final String CORS_ORIGIN =
+      System.getenv().getOrDefault("CORS_ORIGIN", "https://gca-pm.vercel.app");
+
   private static final ObjectMapper JSON =
       new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
   public static void main(String[] args) throws IOException {
     String host = System.getenv().getOrDefault("MPP_HOST", "127.0.0.1");
-    int port = Integer.parseInt(System.getenv().getOrDefault("MPP_PORT", "8081"));
+    // Containers need PORT (Cloud Run, Fly.io, Railway, Render all inject it); MPP_PORT still wins if set.
+    int port = Integer.parseInt(
+        System.getenv().getOrDefault("MPP_PORT", System.getenv().getOrDefault("PORT", "8081")));
 
     HttpServer server = HttpServer.create(new InetSocketAddress(host, port), 0);
     // MPXJ holds the whole project graph in memory, so cap concurrent parses at what the heap is sized for.
     server.setExecutor(Executors.newFixedThreadPool(2));
-    server.createContext("/health", exchange -> respond(exchange, 200, Map.of("status", "ok")));
+    server.createContext("/health", exchange -> {
+      if (handleCorsPreflight(exchange)) return;
+      respond(exchange, 200, Map.of("status", "ok"));
+    });
     server.createContext("/parse", Main::handleParse);
     server.start();
 
     System.out.println("javamppms listening on http://" + host + ":" + port);
   }
 
+  /** Returns true if this was an OPTIONS preflight and the exchange is already closed. */
+  private static boolean handleCorsPreflight(HttpExchange exchange) throws IOException {
+    exchange.getResponseHeaders().set("Access-Control-Allow-Origin", CORS_ORIGIN);
+    exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
+    if ("OPTIONS".equals(exchange.getRequestMethod())) {
+      exchange.sendResponseHeaders(204, -1);
+      exchange.close();
+      return true;
+    }
+    return false;
+  }
+
   private static void handleParse(HttpExchange exchange) throws IOException {
+    if (handleCorsPreflight(exchange)) return;
     if (!"POST".equals(exchange.getRequestMethod())) {
       respond(exchange, 405, ParseResult.failed(List.of(Diagnostic.file("POST the file bytes to this endpoint."))));
       return;

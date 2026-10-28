@@ -40,6 +40,11 @@ MAIL_FROM=
 PORT=
 NODE_ENV=
 
+# javamppms (MS Project parser). Leave unset locally — mppParser.ts defaults to
+# http://127.0.0.1:8081. Set this in Vercel's production env vars to the deployed
+# service's URL.
+MPP_PARSER_URL=
+
 # cloudinary
 CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
