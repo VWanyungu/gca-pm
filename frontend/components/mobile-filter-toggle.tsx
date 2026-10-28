@@ -13,7 +13,7 @@ export function MobileFilterToggle({ children, always }: MobileFilterToggleProps
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="flex flex-col gap-[12px]">
+    <div className="flex flex-col md:flex-row gap-[12px]">
       {always}
       {/* Desktop: show filters inline */}
       <div className="hidden sm:contents">{children}</div>

@@ -20,7 +20,7 @@ const STATUS_LABELS: Record<string, string> = {
 export function ProjectTable({ projects, canEdit }: { projects: Project[]; canEdit: boolean }) {
   return (
     <div className="w-full overflow-x-auto">
-      <div className="w-[1100px]">
+      <div className="">
         {/* Header */}
         <div className="flex items-center py-[8px] text-[12px] font-medium text-gca-muted">
           <span className="w-[260px] max-w-[260px] shrink-0 truncate">Project</span>

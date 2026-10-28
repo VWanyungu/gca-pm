@@ -4,4 +4,3 @@ node_modules
 !/.vscode/settings.json
 !/.vscode/extensions.json
 *.log
-package-lock.json
