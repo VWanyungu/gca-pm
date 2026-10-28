@@ -1,11 +1,16 @@
-import express, { type ErrorRequestHandler } from 'express';
-import helmet from 'helmet';
+import express, { type ErrorRequestHandler, type RequestHandler } from 'express';
+import helmetImport from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
 import 'dotenv/config';
 import './types.js';
 import checkVersion from './middlewares/version.js';
 import { recoverScheduleVersions } from './v1/utils/scheduleProcessor.js';
+
+// shortcut: Vercel's Express framework preset type-checks this file with a resolver
+// that infers helmet's default export as the whole module namespace instead of the
+// callable default (passes under local tsc, fails there); cast past it.
+const helmet = helmetImport as unknown as (options?: Record<string, unknown>) => RequestHandler;
 
 const app = express();
 
