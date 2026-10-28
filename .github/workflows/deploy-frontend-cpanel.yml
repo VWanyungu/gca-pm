@@ -1,0 +1,50 @@
+name: Deploy Frontend to cPanel
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  deploy:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Deploy standalone build and restart app
+        env:
+          FTP_HOST: ${{ secrets.CPANEL_FTP_HOST }}
+          FTP_USER: ${{ secrets.CPANEL_FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.CPANEL_FTP_PASSWORD }}
+          WORKING_DIR: ${{ secrets.CPANEL_FRONTEND_WORKING_DIR }}
+        run: |
+          set -euo pipefail
+          touch /tmp/restart.txt
+
+          lftp -u "$FTP_USER,$FTP_PASS" "$FTP_HOST" <<-EOF
+          set mirror:parallel-transfer-count 4
+          cd "$WORKING_DIR"
+
+          # 2. Delete existing standalone folder
+          rm -rf standalone
+
+          # 3. Upload built standalone folder
+          mirror --reverse --verbose frontend/.next/standalone standalone
+
+          # 4. Copy .htaccess from working folder to the standalone folder
+          get .htaccess -o /tmp/.htaccess
+          put /tmp/.htaccess -o standalone/.htaccess
+
+          # Restart the Node app (Passenger picks this up on the next request)
+          mkdir -p standalone/tmp
+          put /tmp/restart.txt -o standalone/tmp/restart.txt
+
+          bye
+          EOF
