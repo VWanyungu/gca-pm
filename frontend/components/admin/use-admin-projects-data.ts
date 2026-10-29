@@ -5,8 +5,10 @@ import { api } from "@/lib/api-client";
 import type { AdminProjectDetail, AdminProjectListItem, ProjectStatus } from "./types";
 
 function unwrap<T>(res: { status: string; data: T | null; message: string }): T {
-  if (res.status !== "success" || !res.data) throw new Error(res.message);
-  return res.data;
+  // `data: null` is a valid success payload (e.g. delete endpoints) — only a
+  // non-"success" status is an actual error.
+  if (res.status !== "success") throw new Error(res.message);
+  return res.data as T;
 }
 
 export function useAdminProjects({

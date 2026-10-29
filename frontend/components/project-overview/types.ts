@@ -1,4 +1,4 @@
-export type ProjectStatus = "active" | "on_hold" | "complete" | "cancelled";
+export type ProjectStatus = "active" | "on_hold" | "complete" | "cancelled" | "deleted";
 
 export interface ProjectDetail {
   project_id: string;
