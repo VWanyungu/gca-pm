@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_MANAGE_PROJECT } from "@/lib/access-control";
 import { SystemStateScreen } from "@/components/system-state/system-state-screen";
-import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
+import { useProjectSidebarData } from "@/components/project-overview/project-sidebar-context";
 import { StatusControl } from "@/components/project-overview/status-control";
 import { StagePipeline } from "@/components/project-overview/stage-pipeline";
 import { ProgressCard } from "@/components/project-overview/progress-card";
@@ -20,7 +20,6 @@ import {
   useMilestones,
   // useOpenEscalations, // paused: no escalations module yet
   useDraftSubmission,
-  useSidebarCounts,
   ApiError,
 } from "@/components/project-overview/use-project-data";
 import {
@@ -42,19 +41,7 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
   });
   // const { data: escalations = [] } = useOpenEscalations(projectId);
   const { data: draftSubmission } = useDraftSubmission(projectId);
-  const { data: counts } = useSidebarCounts(projectId);
-
-  const percentByStage = useMemo(() => {
-    const result: Record<number, number> = {};
-    for (const stage of data?.stages ?? []) {
-      const stageActivities = activities.filter((a) => a.stage_no === stage.stage_no);
-      if (stageActivities.length > 0) {
-        const done = stageActivities.filter((a) => a.status === "done").length;
-        result[stage.stage_no] = Math.round((done / stageActivities.length) * 100);
-      }
-    }
-    return result;
-  }, [data?.stages, activities]);
+  const { percentByStage } = useProjectSidebarData();
 
   const currentStage = useMemo(() => {
     const stages = data?.stages ?? [];
@@ -74,11 +61,7 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
   }, [activities]);
 
   if (isLoading) {
-    return (
-      <div className="flex h-[calc(100vh-64px)] w-full items-center justify-center text-[14px] text-gca-muted">
-        Loading project…
-      </div>
-    );
+    return <p className="p-[40px] text-[14px] text-gca-muted">Loading project…</p>;
   }
   if (error || !data) {
     if (error instanceof ApiError && error.httpStatus === 403) {
@@ -100,62 +83,48 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
   const weekStart = addDays(mondayOf(new Date()), 0 * 7);
 
   return (
-    // The shell owns the viewport height and the content scrolls inside it, so the sidebar
-    // is always exactly one screen tall rather than ending where the content happens to.
-    <div className="flex h-[calc(100vh-64px)] w-full overflow-hidden">
-      <ProjectSidebar
+    <main className="flex w-full max-w-[1200px] flex-col gap-[28px] p-[20px] md:p-[40px]">
+      <header className="flex w-full flex-col gap-[16px] md:flex-row md:items-center md:justify-between">
+        <div className="flex min-w-0 flex-col gap-[8px]">
+          <h1 className="text-[24px] font-semibold tracking-[-0.75px] text-gca-dark sm:text-[30px]">
+            {data.project.name}
+          </h1>
+          <p className="text-[14px] text-gca-show">
+            {data.project.client_name ?? "—"} · Week {weekNumber(weekStart)}
+          </p>
+        </div>
+        <StatusControl
+          projectId={projectId}
+          status={data.project.status}
+          canManage={canManage}
+          onChanged={invalidate}
+        />
+      </header>
+
+      <StagePipeline
         projectId={projectId}
         stages={data.stages}
-        counts={counts}
+        currentStage={currentStage}
         percentByStage={percentByStage}
-        active="overview"
+        canManage={canManage}
+        onChanged={invalidate}
       />
 
-      <div className="flex w-full min-w-0 justify-center overflow-y-auto">
-        <main className="flex w-full max-w-[1200px] flex-col gap-[28px] p-[20px] md:p-[40px]">
-          <header className="flex w-full flex-col gap-[16px] md:flex-row md:items-center md:justify-between">
-            <div className="flex min-w-0 flex-col gap-[8px]">
-              <h1 className="text-[24px] font-semibold tracking-[-0.75px] text-gca-dark sm:text-[30px]">
-                {data.project.name}
-              </h1>
-              <p className="text-[14px] text-gca-show">
-                {data.project.client_name ?? "—"} · Week {weekNumber(weekStart)}
-              </p>
-            </div>
-            <StatusControl
-              projectId={projectId}
-              status={data.project.status}
-              canManage={canManage}
-              onChanged={invalidate}
-            />
-          </header>
-
-          <StagePipeline
-            projectId={projectId}
-            stages={data.stages}
-            currentStage={currentStage}
-            percentByStage={percentByStage}
-            canManage={canManage}
-            onChanged={invalidate}
-          />
-
-          {/* The progress chart needs ~700px to read at all, so it sits above the
-              attention list rather than beside it until there is room for both. */}
-          <div className="flex w-full flex-col items-stretch gap-[20px] xl:flex-row xl:items-start">
-            <ProgressCard metrics={data.metrics} />
-            <NeedsAttentionCard
-              projectId={projectId}
-              overdueActivities={overdueActivities}
-              draftWeekStart={draftSubmission?.week_start ?? null}
-              // escalations={escalations}
-            />
-          </div>
-
-          <NextMilestonesRow projectId={projectId} milestones={milestones} />
-
-          <TeamSection projectId={projectId} team={team} clientContacts={clientContacts} />
-        </main>
+      {/* The progress chart needs ~700px to read at all, so it sits above the
+          attention list rather than beside it until there is room for both. */}
+      <div className="flex w-full flex-col items-stretch gap-[20px] xl:flex-row xl:items-start">
+        <ProgressCard metrics={data.metrics} />
+        <NeedsAttentionCard
+          projectId={projectId}
+          overdueActivities={overdueActivities}
+          draftWeekStart={draftSubmission?.week_start ?? null}
+          // escalations={escalations}
+        />
       </div>
-    </div>
+
+      <NextMilestonesRow projectId={projectId} milestones={milestones} />
+
+      <TeamSection projectId={projectId} team={team} clientContacts={clientContacts} />
+    </main>
   );
 }

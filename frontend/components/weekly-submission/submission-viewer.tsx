@@ -2,12 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
-import {
-  useProjectDetail,
-  useProjectTeam,
-  useSidebarCounts,
-} from "@/components/project-overview/use-project-data";
+import { useProjectDetail, useProjectTeam } from "@/components/project-overview/use-project-data";
 import { useWeeklySubmission } from "./use-weekly-submission-data";
 import { useWeeklyReportData } from "./use-weekly-report-data";
 import { WeeklyReportDocument } from "./weekly-report-document";
@@ -24,7 +19,6 @@ export function SubmissionViewer({
 }) {
   const { data: project } = useProjectDetail(projectId);
   const { data: team = [] } = useProjectTeam(projectId);
-  const { data: counts } = useSidebarCounts(projectId);
   const { data: submission } = useWeeklySubmission(projectId, submissionId);
   const {
     weekDprs,
@@ -76,69 +70,61 @@ export function SubmissionViewer({
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-64px)] w-full">
-      <ProjectSidebar
-        projectId={projectId}
-        stages={project.stages}
-        counts={counts}
-        active="submit"
-      />
-      <div className="flex w-full min-w-0 justify-center p-[20px] md:p-[40px]">
-        <div className="flex w-full max-w-[1200px] flex-col gap-[16px]">
-          <Link
-            href={`/projects/${projectId}/weekly-submission`}
-            className="w-fit text-[13px] font-medium text-gca-green flex gap-[6px] items-center"
-          >
-            <ArrowLeft size={18} /> Register
-          </Link>
+    <div className="flex w-full min-w-0 justify-center p-[20px] md:p-[40px]">
+      <div className="flex w-full max-w-[1200px] flex-col gap-[16px]">
+        <Link
+          href={`/projects/${projectId}/weekly-submission`}
+          className="w-fit text-[13px] font-medium text-gca-green flex gap-[6px] items-center"
+        >
+          <ArrowLeft size={18} /> Register
+        </Link>
 
-          <div className="flex flex-wrap items-center justify-between gap-[12px]">
-            <div>
-              <h1 className="text-[22px] font-semibold tracking-[-0.3px] text-gca-dark sm:text-[28px]">
-                Week {weekNumber(submission.week_start)}
-                {/* · {formatWeekPeriod(submission.week_start)} */}
-              </h1>
-            </div>
-            <div className="flex gap-[12px]">
-              <button
-                onClick={printReport}
-                className="cursor-pointer rounded-[8px] border border-gca-border bg-gca-surface px-[8px] py-[8px] text-[13px] font-medium text-gca-dark"
-                title="Save as PDF"
-              >
-                <Download size={18} />
-              </button>
-              <button
-                onClick={() => setSending(true)}
-                className="cursor-pointer rounded-[8px] border border-gca-border bg-gca-surface px-[14px] py-[8px] text-[13px] font-medium text-gca-dark flex gap-[6px] items-center"
-              >
-                <SendIcon size={18} /> Send to client
-              </button>
-            </div>
+        <div className="flex flex-wrap items-center justify-between gap-[12px]">
+          <div>
+            <h1 className="text-[22px] font-semibold tracking-[-0.3px] text-gca-dark sm:text-[28px]">
+              Week {weekNumber(submission.week_start)}
+              {/* · {formatWeekPeriod(submission.week_start)} */}
+            </h1>
           </div>
+          <div className="flex gap-[12px]">
+            <button
+              onClick={printReport}
+              className="cursor-pointer rounded-[8px] border border-gca-border bg-gca-surface px-[8px] py-[8px] text-[13px] font-medium text-gca-dark"
+              title="Save as PDF"
+            >
+              <Download size={18} />
+            </button>
+            <button
+              onClick={() => setSending(true)}
+              className="cursor-pointer rounded-[8px] border border-gca-border bg-gca-surface px-[14px] py-[8px] text-[13px] font-medium text-gca-dark flex gap-[6px] items-center"
+            >
+              <SendIcon size={18} /> Send to client
+            </button>
+          </div>
+        </div>
 
-          <div className="overflow-x-auto border-t border-gca-border">
-            <WeeklyReportDocument
-              project={project.project}
-              weekPeriod={formatWeekPeriod(submission.week_start)}
-              submission={submission}
-              team={team}
-              weekDprs={weekDprs}
-              submittedDprCount={submittedDprCount}
-              lateDprCount={lateDprCount}
-              dprDetailsFailed={dprDetailsFailed}
-              photos={photos}
-              totalCandidatePhotos={totalCandidatePhotos}
-              previousWeekActualPct={previousWeekActualPct}
-              previousSpi={previousSpi}
-              previousWeekStart={previousWeekStart}
-              topRisk={topRisk}
-              forecastFinish={forecastFinish}
-              lookaheadTasks={lookaheadTasks}
-              weekAmendmentsCount={weekAmendmentsCount}
-              expectedDprDays={expectedDprDays}
-              allowableWorkingDays={allowableWorkingDays}
-            />
-          </div>
+        <div className="overflow-x-auto border-t border-gca-border">
+          <WeeklyReportDocument
+            project={project.project}
+            weekPeriod={formatWeekPeriod(submission.week_start)}
+            submission={submission}
+            team={team}
+            weekDprs={weekDprs}
+            submittedDprCount={submittedDprCount}
+            lateDprCount={lateDprCount}
+            dprDetailsFailed={dprDetailsFailed}
+            photos={photos}
+            totalCandidatePhotos={totalCandidatePhotos}
+            previousWeekActualPct={previousWeekActualPct}
+            previousSpi={previousSpi}
+            previousWeekStart={previousWeekStart}
+            topRisk={topRisk}
+            forecastFinish={forecastFinish}
+            lookaheadTasks={lookaheadTasks}
+            weekAmendmentsCount={weekAmendmentsCount}
+            expectedDprDays={expectedDprDays}
+            allowableWorkingDays={allowableWorkingDays}
+          />
         </div>
       </div>
     </div>

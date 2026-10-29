@@ -3,12 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_MANAGE_PROJECT } from "@/lib/access-control";
-import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
-import {
-  useProjectDetail,
-  useProjectTeam,
-  useSidebarCounts,
-} from "@/components/project-overview/use-project-data";
+import { useProjectDetail, useProjectTeam } from "@/components/project-overview/use-project-data";
 import type { StageRow, TeamMember } from "@/components/project-overview/types";
 import { RisksTable } from "./risks-table";
 import { RiskDetail } from "./risk-detail";
@@ -25,7 +20,6 @@ export function RisksView({ projectId }: { projectId: string }) {
   const { user } = useAuth();
   const { data: project } = useProjectDetail(projectId);
   const { data: team = [] } = useProjectTeam(projectId);
-  const { data: counts } = useSidebarCounts(projectId);
   const [subView, setSubView] = useState<SubView>({ mode: "list" });
 
   const canManage = canAccess(user?.role, CAN_MANAGE_PROJECT, { projectId });
@@ -33,62 +27,51 @@ export function RisksView({ projectId }: { projectId: string }) {
   if (!project) return null;
 
   return (
-    <div className="flex min-h-[calc(100vh-64px)] w-full">
-      <ProjectSidebar
-        projectId={projectId}
-        stages={project.stages}
-        counts={counts}
-        active="risks"
-      />
+    <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[20px] md:p-[40px]">
+      {subView.mode === "list" && (
+        <RisksTable
+          projectId={projectId}
+          team={team}
+          canManage={canManage}
+          onAddRisk={() => setSubView({ mode: "add" })}
+          onOpenRisk={(riskId) => setSubView({ mode: "detail", riskId })}
+        />
+      )}
 
-      <div className="flex w-full min-w-0 justify-center">
-        <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[20px] md:p-[40px]">
-          {subView.mode === "list" && (
-            <RisksTable
-              projectId={projectId}
-              team={team}
-              canManage={canManage}
-              onAddRisk={() => setSubView({ mode: "add" })}
-              onOpenRisk={(riskId) => setSubView({ mode: "detail", riskId })}
-            />
-          )}
+      {subView.mode === "detail" && (
+        <RiskDetail
+          projectId={projectId}
+          riskId={subView.riskId}
+          team={team}
+          canManage={canManage}
+          onBack={() => setSubView({ mode: "list" })}
+          onEdit={() => setSubView({ mode: "edit", riskId: subView.riskId })}
+        />
+      )}
 
-          {subView.mode === "detail" && (
-            <RiskDetail
-              projectId={projectId}
-              riskId={subView.riskId}
-              team={team}
-              canManage={canManage}
-              onBack={() => setSubView({ mode: "list" })}
-              onEdit={() => setSubView({ mode: "edit", riskId: subView.riskId })}
-            />
-          )}
+      {subView.mode === "add" && (
+        <RiskForm
+          projectId={projectId}
+          projectName={project.project.name}
+          stages={project.stages}
+          team={team}
+          onDone={() => setSubView({ mode: "list" })}
+          onCancel={() => setSubView({ mode: "list" })}
+        />
+      )}
 
-          {subView.mode === "add" && (
-            <RiskForm
-              projectId={projectId}
-              projectName={project.project.name}
-              stages={project.stages}
-              team={team}
-              onDone={() => setSubView({ mode: "list" })}
-              onCancel={() => setSubView({ mode: "list" })}
-            />
-          )}
-
-          {subView.mode === "edit" && (
-            <EditRisk
-              projectId={projectId}
-              projectName={project.project.name}
-              riskId={subView.riskId}
-              stages={project.stages}
-              team={team}
-              onDone={(riskId) => setSubView({ mode: "detail", riskId })}
-              onCancel={() => setSubView({ mode: "detail", riskId: subView.riskId })}
-            />
-          )}
-        </main>
-      </div>
-    </div>
+      {subView.mode === "edit" && (
+        <EditRisk
+          projectId={projectId}
+          projectName={project.project.name}
+          riskId={subView.riskId}
+          stages={project.stages}
+          team={team}
+          onDone={(riskId) => setSubView({ mode: "detail", riskId })}
+          onCancel={() => setSubView({ mode: "detail", riskId: subView.riskId })}
+        />
+      )}
+    </main>
   );
 }
 
