@@ -69,7 +69,7 @@ export function ProjectTable({ projects, canEdit }: { projects: Project[]; canEd
               <div className="w-[68px] max-w-[68px] shrink-0">
                 {canEdit && (
                   <Link
-                    href={`/projects/${p.id}/edit`}
+                    href={`/projects/${p.id}/settings`}
                     className="flex size-[32px] items-center justify-center rounded-[8px] border border-gca-border text-gca-show hover:bg-gca-page-bg"
                   >
                     <Pencil className="size-[14px]" />

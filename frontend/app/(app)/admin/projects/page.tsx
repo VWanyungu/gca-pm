@@ -161,7 +161,7 @@ export default function AdminProjectsPage() {
                       <Eye className="size-[16px]" />
                     </button> */}
                     <button
-                      onClick={() => router.push(`/admin/projects/${p.project_id}/edit`)}
+                      onClick={() => router.push(`/projects/${p.project_id}/settings`)}
                       title="Edit project"
                       className="flex size-[34px] items-center justify-center rounded-[8px] text-gca-show hover:bg-gca-surface"
                     >
