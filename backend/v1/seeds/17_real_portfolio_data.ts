@@ -16,7 +16,7 @@ import type { Knex } from 'knex';
 const SEED_PASSWORD_HASH =
   '$2a$10$maT1oyfF3COMDjifizq7r.hGdKcbOV4UljqVjCbu7/ob4t5Q9UB02';
 
-const EXISTING_USER_IDS = {
+export const EXISTING_USER_IDS = {
   ADMIN: '10000000-0000-0000-0000-000000000001',
   PROJECT_CREATOR: '10000000-0000-0000-0000-000000000002',
   BENEDETTE_MARIGI: '10000000-0000-0000-0000-000000000005',
@@ -27,7 +27,7 @@ const EXISTING_USER_IDS = {
   E2E_SITE_ENGINEER: '10000000-0000-0000-0000-000000000007',
 };
 
-const PROGRAM_IDS = {
+export const PROGRAM_IDS = {
   OPEN_ACCESS_BOTTLING_PLANT: 2,
   AUTOGAS: 3,
   RETICULATION: 4,
@@ -56,7 +56,7 @@ export const NEW_USER_IDS = {
   MUTUMA: '12000000-0000-0000-0000-000000000017', // surname not given in source docs
 };
 
-const NEW_USERS: Array<{
+export const NEW_USERS: Array<{
   id: string;
   external_id: string;
   first_name: string;
@@ -127,7 +127,7 @@ interface RealProject {
   on_hold_reason?: string;
 }
 
-const REAL_PROJECTS: RealProject[] = [
+export const REAL_PROJECTS: RealProject[] = [
   {
     project_id: REAL_PROJECT_IDS.DOMINICAN_NUNS,
     project_code: '900-001.2026', code_is_placeholder: true,
@@ -278,7 +278,7 @@ interface TeamAssignment {
   is_team_lead: boolean;
 }
 
-const TEAM_ASSIGNMENTS: TeamAssignment[] = [
+export const TEAM_ASSIGNMENTS: TeamAssignment[] = [
   // Dominican Nuns
   { project_id: REAL_PROJECT_IDS.DOMINICAN_NUNS, user_id: NEW_USER_IDS.DAVID_MUTUA, role: 'PM', is_team_lead: true },
   { project_id: REAL_PROJECT_IDS.DOMINICAN_NUNS, user_id: NEW_USER_IDS.JOSPHAT_NJUGUNA, role: 'SiteEngineer', is_team_lead: false },
@@ -338,7 +338,7 @@ const TEAM_ASSIGNMENTS: TeamAssignment[] = [
 // Peace Junior's 3-day install plan from the kick-off deck is the only source
 // document with a concrete, dated schedule beyond a single current stage, so
 // it's the only project seeded with custom_milestones here.
-const PEACE_JUNIOR_MILESTONES = [
+export const PEACE_JUNIOR_MILESTONES = [
   { milestone_id: '67000000-0000-0000-0000-000000000001', title: 'Day 1 — Site set-up: induction, work-area prep, cylinder-area setup, route marking', planned_date: '2026-10-31' },
   { milestone_id: '67000000-0000-0000-0000-000000000002', title: 'Day 2 — Install & connect: piping reticulation, regulators, safety components, kitchen connections', planned_date: '2026-11-01' },
   { milestone_id: '67000000-0000-0000-0000-000000000003', title: 'Day 3 — Test & handover: pressure/leak testing, commissioning, user orientation', planned_date: '2026-11-02' },
