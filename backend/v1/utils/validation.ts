@@ -873,7 +873,11 @@ const PROJECT_STATUSES: ProjectStatus[] = [
   "on_hold",
   "complete",
   "cancelled",
+  "deleted",
 ];
+
+// 'deleted' is reached only through the dedicated delete flow (AC-PRJ-11), never set directly.
+const CREATABLE_PROJECT_STATUSES = PROJECT_STATUSES.filter((s) => s !== "deleted");
 
 export interface CreateProjectBody {
   project_code: string;
@@ -968,7 +972,7 @@ export const createProjectSchema = Joi.object<CreateProjectBody>({
   estimated_value: Joi.number().min(0).allow(null).optional(),
   currency: Joi.string().trim().length(3).uppercase().allow(null).optional(),
   status: Joi.string()
-    .valid(...PROJECT_STATUSES)
+    .valid(...CREATABLE_PROJECT_STATUSES)
     .default("active"),
   legacy_source_ref: Joi.string().trim().max(255).allow(null, "").optional(),
   holiday_calendar_id: Joi.number().integer().allow(null).optional(),

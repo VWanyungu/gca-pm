@@ -63,6 +63,7 @@
 | AC-PRJ-08 | Metadata edits (FR-M02-004) are audited with before/after. Changing `timezone` does not recompute stored late flags (they are fixed at the time they were set). | API | |
 | AC-PRJ-09 | At most one `project_team_member` per project has `is_team_lead = true` (DB). Changing the team lead clears the old one and sets the new one in one transaction. | API | |
 | AC-PRJ-10 | Legacy import (BR-17) uses the same create transaction as AC-PRJ-02, with `legacy_source_ref` set and the stage mapping from OQ-BP-02. | JOB | |
+| AC-PRJ-11 | **Project delete is a soft delete, Admin-only.** Only `Admin@global` may delete a project (mirrors AC-IAM-01), including via the generic project PATCH — no other role may set `status = 'deleted'` there. The row is never removed: set `status = 'deleted'` and write a `project_status_history` row (`to_status = 'deleted'`) in one transaction. A deleted project is excluded from `GET /projects` and all list/rollup views by default, and `GET /projects/:id` returns 404 for non-Admins. There is no reactivation path — deletion is terminal. | API | |
 
 ---
 

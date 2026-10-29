@@ -1613,7 +1613,7 @@ export class ProjectStageChecklistItems {
   }
 }
 
-export type ProjectStatus = 'active' | 'on_hold' | 'complete' | 'cancelled';
+export type ProjectStatus = 'active' | 'on_hold' | 'complete' | 'cancelled' | 'deleted';
 
 export interface ProjectRow {
   project_id: string;
@@ -2135,6 +2135,9 @@ export class Projects {
     }
     if (status !== undefined) {
       query.where('status', status);
+    } else {
+      // AC-PRJ-11: deleted projects are hidden unless explicitly asked for.
+      query.whereNot('status', 'deleted');
     }
     if (country) {
       query.whereILike('country', `%${country}%`);
@@ -2306,11 +2309,13 @@ export class Projects {
         // active -> complete
         // active or on_hold -> cancelled (reason required)
         // cancelled -> active (reason required)
+        // any non-deleted status -> deleted (AC-PRJ-11, Admin-only — enforced by the caller)
         const allowedTransitions: Record<ProjectStatus, ProjectStatus[]> = {
-          active: ['on_hold', 'complete', 'cancelled'],
-          on_hold: ['active', 'cancelled'],
-          complete: [],
-          cancelled: ['active'],
+          active: ['on_hold', 'complete', 'cancelled', 'deleted'],
+          on_hold: ['active', 'cancelled', 'deleted'],
+          complete: ['deleted'],
+          cancelled: ['active', 'deleted'],
+          deleted: [],
         };
 
         if (!allowedTransitions[fromStatus].includes(toStatus)) {
@@ -2365,12 +2370,6 @@ export class Projects {
     };
 
     return trx ? await execute(trx) : await db.transaction(execute);
-  }
-
-  static async delete(projectId: string, trx?: Knex.Transaction): Promise<boolean> {
-    const q = trx ? trx('projects') : db('projects');
-    const count = await q.where({ project_id: projectId }).del();
-    return count > 0;
   }
 
   static async suggestNextCode(programId: number, year?: number): Promise<string> {

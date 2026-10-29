@@ -44,7 +44,7 @@ export interface AdminUserDetail {
   roles: RoleGrantDetail[];
 }
 
-export type ProjectStatus = "active" | "on_hold" | "complete" | "cancelled";
+export type ProjectStatus = "active" | "on_hold" | "complete" | "cancelled" | "deleted";
 
 export interface AdminProjectListItem {
   project_id: string;
