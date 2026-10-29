@@ -5,12 +5,7 @@ import { ChartGantt, Plus, Search, Table, type LucideIcon } from "lucide-react";
 import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_MANAGE_PROJECT } from "@/lib/access-control";
-import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
-import {
-  useProjectDetail,
-  useProjectTeam,
-  useSidebarCounts,
-} from "@/components/project-overview/use-project-data";
+import { useProjectDetail, useProjectTeam } from "@/components/project-overview/use-project-data";
 import { MilestoneChart } from "./milestone-chart";
 import { MilestonesTable } from "./milestones-table";
 import { MilestoneForm } from "./milestone-form";
@@ -36,7 +31,6 @@ export function MilestonesView({ projectId }: { projectId: string }) {
   const { user } = useAuth();
   const { data: project } = useProjectDetail(projectId);
   const { data: team = [] } = useProjectTeam(projectId);
-  const { data: counts } = useSidebarCounts(projectId);
   const { data: milestones = [] } = useAllMilestones(projectId);
 
   const [viewMode, setViewMode] = useState<ViewMode>("chart");
@@ -56,126 +50,115 @@ export function MilestonesView({ projectId }: { projectId: string }) {
   if (!project) return null;
 
   return (
-    <div className="flex min-h-[calc(100vh-64px)] w-full">
-      <ProjectSidebar
-        projectId={projectId}
-        stages={project.stages}
-        counts={counts}
-        active="milestones"
-      />
-
-      <div className="flex w-full min-w-0 justify-center">
-        <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[20px] md:p-[40px]">
-          {subView.mode === "list" && (
-            <>
-              <div className="flex w-full flex-col gap-[16px] lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">
-                    Milestones
-                  </h1>
-                  <p className="mt-[2px] text-[13px] text-gca-show">
-                    {milestones.length} milestones · {customCount} custom
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-[12px] lg:justify-end">
-                  <SegmentedControl
-                    options={[
-                      { id: "chart", label: "Chart", icon: ChartGantt },
-                      { id: "table", label: "Table", icon: Table },
-                    ]}
-                    selected={viewMode}
-                    onSelect={(id) => setViewMode(id as ViewMode)}
+    <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[20px] md:p-[40px]">
+      {subView.mode === "list" && (
+        <>
+          <div className="flex w-full flex-col gap-[16px] lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">
+                Milestones
+              </h1>
+              <p className="mt-[2px] text-[13px] text-gca-show">
+                {milestones.length} milestones · {customCount} custom
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-[12px] lg:justify-end">
+              <SegmentedControl
+                options={[
+                  { id: "chart", label: "Chart", icon: ChartGantt },
+                  { id: "table", label: "Table", icon: Table },
+                ]}
+                selected={viewMode}
+                onSelect={(id) => setViewMode(id as ViewMode)}
+              />
+              <MobileFilterToggle>
+                <SegmentedControl
+                  options={SOURCE_TABS}
+                  selected={sourceFilter}
+                  onSelect={(value) => {
+                    setSourceFilter(value);
+                    setTablePage(1);
+                  }}
+                />
+                <label className="flex h-[40px] w-full items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] sm:w-[240px]">
+                  <Search className="size-[14px] shrink-0 text-gca-muted" />
+                  <input
+                    type="search"
+                    value={search}
+                    onChange={(event) => {
+                      setSearch(event.target.value);
+                      setTablePage(1);
+                    }}
+                    placeholder="Search milestones"
+                    aria-label="Search milestones"
+                    className="min-w-0 w-full bg-transparent text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
                   />
-                  <MobileFilterToggle>
-                    <SegmentedControl
-                      options={SOURCE_TABS}
-                      selected={sourceFilter}
-                      onSelect={(value) => {
-                        setSourceFilter(value);
-                        setTablePage(1);
-                      }}
-                    />
-                    <label className="flex h-[40px] w-full items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] sm:w-[240px]">
-                      <Search className="size-[14px] shrink-0 text-gca-muted" />
-                      <input
-                        type="search"
-                        value={search}
-                        onChange={(event) => {
-                          setSearch(event.target.value);
-                          setTablePage(1);
-                        }}
-                        placeholder="Search milestones"
-                        aria-label="Search milestones"
-                        className="min-w-0 w-full bg-transparent text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
-                      />
-                    </label>
-                  </MobileFilterToggle>
-                  {canManage && (
-                    <button
-                      onClick={() => setSubView({ mode: "add" })}
-                      className="flex w-full cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[12px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover sm:w-auto sm:py-[10px]"
-                    >
-                      <Plus className="size-[14px]" />
-                      Add milestone
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {viewMode === "chart" ? (
-                <MilestoneChart
-                  milestones={searchedMilestones}
-                  sourceFilter={sourceFilter}
-                  onSelect={(milestoneId) => setSubView({ mode: "detail", milestoneId })}
-                />
-              ) : (
-                <MilestonesTable
-                  milestones={searchedMilestones}
-                  sourceFilter={sourceFilter}
-                  canManage={canManage}
-                  page={tablePage}
-                  onPageChange={setTablePage}
-                  onEdit={(milestoneId) => setSubView({ mode: "edit", milestoneId })}
-                />
+                </label>
+              </MobileFilterToggle>
+              {canManage && (
+                <button
+                  onClick={() => setSubView({ mode: "add" })}
+                  className="flex w-full cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[12px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover sm:w-auto sm:py-[10px]"
+                >
+                  <Plus className="size-[14px]" />
+                  Add milestone
+                </button>
               )}
-            </>
-          )}
+            </div>
+          </div>
 
-          {subView.mode === "add" && (
-            <MilestoneForm
-              projectId={projectId}
-              stages={project.stages}
-              team={team}
-              onDone={() => setSubView({ mode: "list" })}
-              onCancel={() => setSubView({ mode: "list" })}
+          {viewMode === "chart" ? (
+            <MilestoneChart
+              milestones={searchedMilestones}
+              sourceFilter={sourceFilter}
+              onSelect={(milestoneId) => setSubView({ mode: "detail", milestoneId })}
             />
-          )}
-
-          {subView.mode === "edit" && (
-            <EditMilestone
-              projectId={projectId}
-              milestoneId={subView.milestoneId}
-              stages={project.stages}
-              team={team}
-              onDone={() => setSubView({ mode: "list" })}
-              onCancel={() => setSubView({ mode: "list" })}
-            />
-          )}
-
-          {subView.mode === "detail" && (
-            <MilestoneDetailById
-              projectId={projectId}
-              milestoneId={subView.milestoneId}
-              milestones={milestones}
-              team={team}
+          ) : (
+            <MilestonesTable
+              milestones={searchedMilestones}
+              sourceFilter={sourceFilter}
               canManage={canManage}
-              onBack={() => setSubView({ mode: "list" })}
-              onEdit={() => setSubView({ mode: "edit", milestoneId: subView.milestoneId })}
+              page={tablePage}
+              onPageChange={setTablePage}
+              onEdit={(milestoneId) => setSubView({ mode: "edit", milestoneId })}
             />
           )}
-        </main>
-      </div>
-    </div>
+        </>
+      )}
+
+      {subView.mode === "add" && (
+        <MilestoneForm
+          projectId={projectId}
+          stages={project.stages}
+          team={team}
+          onDone={() => setSubView({ mode: "list" })}
+          onCancel={() => setSubView({ mode: "list" })}
+        />
+      )}
+
+      {subView.mode === "edit" && (
+        <EditMilestone
+          projectId={projectId}
+          milestoneId={subView.milestoneId}
+          stages={project.stages}
+          team={team}
+          onDone={() => setSubView({ mode: "list" })}
+          onCancel={() => setSubView({ mode: "list" })}
+        />
+      )}
+
+      {subView.mode === "detail" && (
+        <MilestoneDetailById
+          projectId={projectId}
+          milestoneId={subView.milestoneId}
+          milestones={milestones}
+          team={team}
+          canManage={canManage}
+          onBack={() => setSubView({ mode: "list" })}
+          onEdit={() => setSubView({ mode: "edit", milestoneId: subView.milestoneId })}
+        />
+      )}
+    </main>
   );
 }
 

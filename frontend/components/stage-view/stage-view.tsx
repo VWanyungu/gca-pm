@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_MANAGE_PROJECT } from "@/lib/access-control";
 import { api } from "@/lib/api-client";
-import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
 import {
   useProjectDetail,
   useProjectTeam,
@@ -53,11 +52,7 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
   }
 
   if (isLoading) {
-    return (
-      <div className="flex h-[calc(100vh-64px)] w-full items-center justify-center text-[14px] text-gca-muted">
-        Loading stage…
-      </div>
-    );
+    return <p className="p-[40px] text-[14px] text-gca-muted">Loading stage…</p>;
   }
   if (error || !stage || !project) return null;
 
@@ -67,88 +62,75 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
       : undefined;
 
   return (
-    <div className="flex min-h-[calc(100vh-64px)] w-full">
-      <ProjectSidebar
-        projectId={projectId}
-        stages={project.stages}
-        active="stages"
-        activeStageNo={stageNo}
+    <main className="flex w-full max-w-[1200px] flex-col gap-[24px] p-[20px] md:p-[40px]">
+      <StageHeader
+        stage={stage}
+        stageNo={stageNo}
+        percentComplete={percentComplete}
+        canManage={canManage}
+        hasChecklist={checklistItems.length > 0}
+        onAddChecklist={() => setChecklistRevealed(true)}
+        onToggleComplete={toggleComplete}
       />
 
-      <div className="flex w-full min-w-0 justify-center">
-        <main className="flex w-full max-w-[1200px] flex-col gap-[24px] p-[20px] md:p-[40px]">
-          <StageHeader
-            stage={stage}
-            stageNo={stageNo}
-            percentComplete={percentComplete}
-            canManage={canManage}
-            hasChecklist={checklistItems.length > 0}
-            onAddChecklist={() => setChecklistRevealed(true)}
-            onToggleComplete={toggleComplete}
-          />
-
-          {(subView.mode === "list" || subView.mode === "detail") && (
-            <div className="flex w-full flex-col gap-[20px] lg:flex-row lg:items-start">
-              <div className="min-w-0 flex-1">
-                {subView.mode === "list" ? (
-                  <ActivitiesTable
-                    projectId={projectId}
-                    stageNo={stageNo}
-                    team={team}
-                    onAddActivity={() => setSubView({ mode: "add" })}
-                    onOpenActivity={(activityId) => setSubView({ mode: "detail", activityId })}
-                  />
-                ) : (
-                  <ActivityDetail
-                    projectId={projectId}
-                    stageNo={stageNo}
-                    activityId={subView.activityId}
-                    team={team}
-                    canManage={canManage}
-                    onBack={() => setSubView({ mode: "list" })}
-                    onEdit={() => setSubView({ mode: "edit", activityId: subView.activityId })}
-                  />
-                )}
-              </div>
-              <div className="flex w-full shrink-0 flex-col gap-[20px] lg:w-[362px]">
-                <ChecklistCard
-                  projectId={projectId}
-                  stageNo={stageNo}
-                  canManage={canManage}
-                  revealed={checklistRevealed}
-                  onRemoved={() => setChecklistRevealed(false)}
-                />
-                <StageRisksCard projectId={projectId} stageNo={stageNo} />
-              </div>
-            </div>
-          )}
-
-          {subView.mode === "add" && (
-            <AddActivityForm
+      {(subView.mode === "list" || subView.mode === "detail") && (
+        <div className="flex w-full flex-col gap-[20px] lg:flex-row lg:items-start">
+          <div className="min-w-0 flex-1">
+            {subView.mode === "list" ? (
+              <ActivitiesTable
+                projectId={projectId}
+                stageNo={stageNo}
+                team={team}
+                onAddActivity={() => setSubView({ mode: "add" })}
+                onOpenActivity={(activityId) => setSubView({ mode: "detail", activityId })}
+              />
+            ) : (
+              <ActivityDetail
+                projectId={projectId}
+                stageNo={stageNo}
+                activityId={subView.activityId}
+                team={team}
+                canManage={canManage}
+                onBack={() => setSubView({ mode: "list" })}
+                onEdit={() => setSubView({ mode: "edit", activityId: subView.activityId })}
+              />
+            )}
+          </div>
+          <div className="flex w-full shrink-0 flex-col gap-[20px] lg:w-[362px]">
+            <ChecklistCard
               projectId={projectId}
               stageNo={stageNo}
-              stageName={stage.stage_name}
-              team={team}
-              onDone={() => setSubView({ mode: "list" })}
-              onCancel={() => setSubView({ mode: "list" })}
+              canManage={canManage}
+              revealed={checklistRevealed}
+              onRemoved={() => setChecklistRevealed(false)}
             />
-          )}
+            <StageRisksCard projectId={projectId} stageNo={stageNo} />
+          </div>
+        </div>
+      )}
 
-          {subView.mode === "edit" && editingActivity && (
-            <AddActivityForm
-              projectId={projectId}
-              stageNo={stageNo}
-              stageName={stage.stage_name}
-              team={team}
-              editing={editingActivity}
-              onDone={() => setSubView({ mode: "detail", activityId: editingActivity.activity_id })}
-              onCancel={() =>
-                setSubView({ mode: "detail", activityId: editingActivity.activity_id })
-              }
-            />
-          )}
-        </main>
-      </div>
-    </div>
+      {subView.mode === "add" && (
+        <AddActivityForm
+          projectId={projectId}
+          stageNo={stageNo}
+          stageName={stage.stage_name}
+          team={team}
+          onDone={() => setSubView({ mode: "list" })}
+          onCancel={() => setSubView({ mode: "list" })}
+        />
+      )}
+
+      {subView.mode === "edit" && editingActivity && (
+        <AddActivityForm
+          projectId={projectId}
+          stageNo={stageNo}
+          stageName={stage.stage_name}
+          team={team}
+          editing={editingActivity}
+          onDone={() => setSubView({ mode: "detail", activityId: editingActivity.activity_id })}
+          onCancel={() => setSubView({ mode: "detail", activityId: editingActivity.activity_id })}
+        />
+      )}
+    </main>
   );
 }

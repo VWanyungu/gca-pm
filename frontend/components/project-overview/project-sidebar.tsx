@@ -19,7 +19,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useMobileNavigation } from "@/components/mobile-navigation-context";
-import { STAGE_SHORT_NAME, type StageRow } from "./types";
+import { STAGE_SHORT_NAME } from "./types";
+import { useProjectSidebarData } from "./project-sidebar-context";
 
 const ROLE_BLURB: Record<string, string> = {
   PM: "Full access to this project",
@@ -30,33 +31,11 @@ const ROLE_BLURB: Record<string, string> = {
   ProjectCreator: "Can create and configure projects",
 };
 
-interface ProjectSidebarProps {
-  projectId: string;
-  stages: StageRow[];
-  counts?: { submit: number; risks: number; changeRequests: number };
-  percentByStage?: Record<number, number>;
-  active:
-    | "overview"
-    | "team"
-    | "stages"
-    | "risks"
-    | "change-requests"
-    | "milestones"
-    | "schedule"
-    | "submit"
-    | "dpr"
-    | "settings";
-  activeStageNo?: number;
-}
-
-export function ProjectSidebar({
-  projectId,
-  stages,
-  counts,
-  percentByStage,
-  active,
-  activeStageNo,
-}: ProjectSidebarProps) {
+/** Reads its data from ProjectSidebarProvider (set up once in the `[projectId]` layout) instead
+ *  of props, so it renders once per project and survives navigation between its sub-pages. */
+export function ProjectSidebar() {
+  const { projectId, stages, counts, percentByStage, active, activeStageNo } =
+    useProjectSidebarData();
   const { user } = useAuth();
   const { isOpen, setIsOpen } = useMobileNavigation();
   const [stagesOpen, setStagesOpen] = useState(false);
