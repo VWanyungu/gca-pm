@@ -77,7 +77,7 @@ export function ProjectCard({ project, canEdit }: { project: Project; canEdit: b
         </div>
         {canEdit && (
           <Link
-            href={`/projects/${project.id}/edit`}
+            href={`/projects/${project.id}/settings`}
             className="flex size-[32px] items-center justify-center rounded-[8px] border border-gca-border text-gca-show hover:bg-gca-page-bg"
           >
             <Pencil className="size-[14px]" />

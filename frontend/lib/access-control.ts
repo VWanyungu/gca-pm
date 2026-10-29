@@ -88,6 +88,9 @@ export const CAN_MANAGE_PROJECT: Permission[] = [
  */
 export const CAN_UPLOAD_SCHEDULE: Permission[] = [{ role: "Planner", scopeType: "project" }];
 
+/** Mirrors the backend's canDeleteProject (projectsRouter.ts) exactly. */
+export const CAN_DELETE_PROJECT: Permission[] = [{ role: "Admin", scopeType: "global" }];
+
 export const CAN_VIEW_PROJECT: Permission[] = [
   { role: "Admin", scopeType: "global" },
   { role: "ExCo", scopeType: "global" },

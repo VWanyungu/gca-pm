@@ -1,14 +1,14 @@
 import { connection } from "next/server";
-import EditProjectForm from "./edit-form";
+import SettingsView from "./settings-view";
 
 export const instant = false;
 
-export default async function EditProjectPage({
+export default async function ProjectSettingsPage({
   params,
 }: {
   params: Promise<{ projectId: string }>;
 }) {
   await connection();
   const { projectId } = await params;
-  return <EditProjectForm projectId={projectId} />;
+  return <SettingsView projectId={projectId} />;
 }
