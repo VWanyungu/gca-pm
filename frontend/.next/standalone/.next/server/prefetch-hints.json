@@ -41,40 +41,6 @@
       }
     }
   },
-  "/admin/projects/[id]/edit": {
-    "hints": 49216,
-    "slots": {
-      "children": {
-        "hints": 49248,
-        "slots": {
-          "children": {
-            "hints": 49248,
-            "slots": {
-              "children": {
-                "hints": 49248,
-                "slots": {
-                  "children": {
-                    "hints": 49248,
-                    "slots": {
-                      "children": {
-                        "hints": 49248,
-                        "slots": {
-                          "children": {
-                            "hints": 49312,
-                            "slots": null
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
   "/admin/projects": {
     "hints": 49216,
     "slots": {
@@ -330,35 +296,6 @@
       }
     }
   },
-  "/projects/[projectId]/edit": {
-    "hints": 49216,
-    "slots": {
-      "children": {
-        "hints": 49248,
-        "slots": {
-          "children": {
-            "hints": 49248,
-            "slots": {
-              "children": {
-                "hints": 49248,
-                "slots": {
-                  "children": {
-                    "hints": 49248,
-                    "slots": {
-                      "children": {
-                        "hints": 49312,
-                        "slots": null
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
   "/projects/[projectId]/milestones": {
     "hints": 49216,
     "slots": {
@@ -442,6 +379,35 @@
     }
   },
   "/projects/[projectId]/schedule": {
+    "hints": 49216,
+    "slots": {
+      "children": {
+        "hints": 49248,
+        "slots": {
+          "children": {
+            "hints": 49248,
+            "slots": {
+              "children": {
+                "hints": 49248,
+                "slots": {
+                  "children": {
+                    "hints": 49248,
+                    "slots": {
+                      "children": {
+                        "hints": 49312,
+                        "slots": null
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/projects/[projectId]/settings": {
     "hints": 49216,
     "slots": {
       "children": {

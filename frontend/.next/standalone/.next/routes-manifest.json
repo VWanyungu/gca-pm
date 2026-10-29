@@ -23,23 +23,6 @@
   },
   "dynamicRoutes": [
     {
-      "page": "/admin/projects/[id]/edit",
-      "regex": "^/admin/projects/([^/]+?)/edit(?:/)?$",
-      "routeKeys": {
-        "nxtPid": "nxtPid"
-      },
-      "namedRegex": "^/admin/projects/(?<nxtPid>[^/]+?)/edit(?:/)?$",
-      "prefetchSegmentDataRoutes": [
-        {
-          "destination": "/admin/projects/[id]/edit.segments/!KGFwcCk/admin/projects/$d$id/edit$segment",
-          "source": "^/admin/projects/(?<nxtPid>[^/]+?)/edit\\.segments/!KGFwcCk/admin/projects/\\$d\\$id/edit(?<segment>/__PAGE__\\.segment\\.rsc|\\.segment\\.rsc)(?:/)?$",
-          "routeKeys": {
-            "nxtPid": "nxtPid"
-          }
-        }
-      ]
-    },
-    {
       "page": "/admin/users/[id]/edit",
       "regex": "^/admin/users/([^/]+?)/edit(?:/)?$",
       "routeKeys": {
@@ -144,23 +127,6 @@
       ]
     },
     {
-      "page": "/projects/[projectId]/edit",
-      "regex": "^/projects/([^/]+?)/edit(?:/)?$",
-      "routeKeys": {
-        "nxtPprojectId": "nxtPprojectId"
-      },
-      "namedRegex": "^/projects/(?<nxtPprojectId>[^/]+?)/edit(?:/)?$",
-      "prefetchSegmentDataRoutes": [
-        {
-          "destination": "/projects/[projectId]/edit.segments/!KGFwcCk/projects/$d$projectId/edit$segment",
-          "source": "^/projects/(?<nxtPprojectId>[^/]+?)/edit\\.segments/!KGFwcCk/projects/\\$d\\$projectId/edit(?<segment>/__PAGE__\\.segment\\.rsc|\\.segment\\.rsc)(?:/)?$",
-          "routeKeys": {
-            "nxtPprojectId": "nxtPprojectId"
-          }
-        }
-      ]
-    },
-    {
       "page": "/projects/[projectId]/milestones",
       "regex": "^/projects/([^/]+?)/milestones(?:/)?$",
       "routeKeys": {
@@ -205,6 +171,23 @@
         {
           "destination": "/projects/[projectId]/schedule.segments/!KGFwcCk/projects/$d$projectId/schedule$segment",
           "source": "^/projects/(?<nxtPprojectId>[^/]+?)/schedule\\.segments/!KGFwcCk/projects/\\$d\\$projectId/schedule(?<segment>/__PAGE__\\.segment\\.rsc|\\.segment\\.rsc)(?:/)?$",
+          "routeKeys": {
+            "nxtPprojectId": "nxtPprojectId"
+          }
+        }
+      ]
+    },
+    {
+      "page": "/projects/[projectId]/settings",
+      "regex": "^/projects/([^/]+?)/settings(?:/)?$",
+      "routeKeys": {
+        "nxtPprojectId": "nxtPprojectId"
+      },
+      "namedRegex": "^/projects/(?<nxtPprojectId>[^/]+?)/settings(?:/)?$",
+      "prefetchSegmentDataRoutes": [
+        {
+          "destination": "/projects/[projectId]/settings.segments/!KGFwcCk/projects/$d$projectId/settings$segment",
+          "source": "^/projects/(?<nxtPprojectId>[^/]+?)/settings\\.segments/!KGFwcCk/projects/\\$d\\$projectId/settings(?<segment>/__PAGE__\\.segment\\.rsc|\\.segment\\.rsc)(?:/)?$",
           "routeKeys": {
             "nxtPprojectId": "nxtPprojectId"
           }
