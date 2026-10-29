@@ -6,6 +6,7 @@ import 'dotenv/config';
 import './types.js';
 import checkVersion from './middlewares/version.js';
 import { recoverScheduleVersions } from './v1/utils/scheduleProcessor.js';
+import { parserIsReachable } from './v1/utils/mppParser.js';
 
 // shortcut: Vercel's Express framework preset type-checks this file with a resolver
 // that infers helmet's default export as the whole module namespace instead of the
@@ -24,8 +25,9 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use('/projects/:projectId/schedule/upload', express.json({ limit: '70mb' }));
 app.use(express.json());
 
-app.get('/health', (_req, res) => {
-  res.status(200).json({ status: 'success', data: null, message: 'ok' });
+app.get('/health', async (_req, res) => {
+  const mppParserReachable = await parserIsReachable();
+  res.status(200).json({ status: 'success', data: { mppParserReachable }, message: 'ok' });
 });
 
 app.use(checkVersion());

@@ -44,7 +44,8 @@ interface ProjectSidebarProps {
     | "milestones"
     | "schedule"
     | "submit"
-    | "dpr";
+    | "dpr"
+    | "settings";
   activeStageNo?: number;
 }
 
@@ -245,10 +246,18 @@ export function ProjectSidebar({
         <Link
           href={`${base}/settings`}
           onClick={() => setIsOpen(false)}
-          className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] hover:bg-gca-surface"
+          className={`flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] ${
+            active === "settings" ? "bg-gca-badge-bg" : "hover:bg-gca-surface"
+          }`}
         >
-          <Settings className="size-[16px] text-gca-show" />
-          <span className="text-[14px] font-medium text-gca-show">Project settings</span>
+          <Settings
+            className={`size-[16px] ${active === "settings" ? "text-gca-green" : "text-gca-show"}`}
+          />
+          <span
+            className={`text-[14px] ${active === "settings" ? "font-semibold text-gca-green-hover" : "font-medium text-gca-show"}`}
+          >
+            Project settings
+          </span>
         </Link>
       </div>
     </>

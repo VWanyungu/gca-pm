@@ -81,6 +81,9 @@ export function useUpdateProject(id: string) {
       expected_start_date?: string | null;
       expected_end_date?: string | null;
       site_location?: string | null;
+      is_mechanical?: boolean;
+      is_civil?: boolean;
+      is_electrical?: boolean;
     }) => unwrap(await api.patch<{ project: AdminProjectDetail }>(`/projects/${id}`, input)).project,
     onSuccess: () => invalidate(id),
   });

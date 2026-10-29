@@ -14,6 +14,9 @@ export interface ProjectDetail {
   status: ProjectStatus;
   created_at: string;
   timezone: string | null;
+  is_mechanical: boolean | null;
+  is_civil: boolean | null;
+  is_electrical: boolean | null;
 }
 
 export interface StageRow {
