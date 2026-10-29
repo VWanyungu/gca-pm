@@ -26,7 +26,7 @@ export function DeleteProjectModal({
       <div className="m-6 md:m-0 relative w-[392px] max-w-full rounded-[12px] bg-gca-surface p-[24px] shadow-[0px_12px_32px_0px_rgba(23,48,31,0.08)]">
         <h2 className="text-[18px] font-semibold text-gca-dark">Delete {project.name}?</h2>
         <p className="mt-[8px] text-[14px] text-gca-muted">
-          This permanently deletes the project and all its data. This cannot be undone.
+          This removes the project from view for everyone. Its data is kept, but this cannot be undone.
         </p>
         <div className="mt-[24px] flex justify-end gap-[12px]">
           <button

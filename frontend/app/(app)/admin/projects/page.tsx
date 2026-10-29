@@ -25,6 +25,7 @@ const STATUS_STYLES: Record<ProjectStatus, string> = {
   complete: "text-gca-green",
   on_hold: "text-gca-warning",
   cancelled: "text-error-text",
+  deleted: "text-error-text",
 };
 
 const STATUS_LABELS: Record<ProjectStatus, string> = {
@@ -32,6 +33,7 @@ const STATUS_LABELS: Record<ProjectStatus, string> = {
   on_hold: "On hold",
   complete: "Complete",
   cancelled: "Cancelled",
+  deleted: "Deleted",
 };
 
 export default function AdminProjectsPage() {

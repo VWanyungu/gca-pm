@@ -6,11 +6,14 @@ import { api } from "@/lib/api-client";
 import useOutsideClick from "@/hooks/use-outside-click";
 import type { ProjectStatus } from "./types";
 
+// Deletion isn't offered as a transition here — it's a dedicated Admin-only
+// action (DeleteProjectModal), not a status a PM/ExCo can pick from this menu.
 const TRANSITIONS: Record<ProjectStatus, ProjectStatus[]> = {
   active: ["on_hold", "complete", "cancelled"],
   on_hold: ["active", "cancelled"],
   complete: [],
   cancelled: ["active"],
+  deleted: [],
 };
 
 const LABELS: Record<ProjectStatus, string> = {
@@ -18,6 +21,7 @@ const LABELS: Record<ProjectStatus, string> = {
   on_hold: "On hold",
   complete: "Complete",
   cancelled: "Cancelled",
+  deleted: "Deleted",
 };
 
 const ACTION_LABELS: Record<ProjectStatus, string> = {
@@ -25,6 +29,7 @@ const ACTION_LABELS: Record<ProjectStatus, string> = {
   on_hold: "Put on hold",
   complete: "Mark complete",
   cancelled: "Cancel project",
+  deleted: "Delete project",
 };
 
 const REASON_REQUIRED: ProjectStatus[] = ["on_hold", "cancelled"];
@@ -40,6 +45,7 @@ const STATUS_COLOR: Record<ProjectStatus, string> = {
   on_hold: "text-gca-warning",
   complete: "text-gca-green",
   cancelled: "text-error-text",
+  deleted: "text-error-text",
 };
 
 interface StatusControlProps {
