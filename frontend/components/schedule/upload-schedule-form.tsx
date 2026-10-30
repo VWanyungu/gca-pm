@@ -84,8 +84,8 @@ export function UploadScheduleForm({
         </p>
       </div>
 
-      <div className="flex w-full items-start gap-[48px] border-t border-gca-border pt-[24px]">
-        <div className="w-[280px] shrink-0">
+      <div className="flex w-full flex-col items-start gap-[16px] border-t border-gca-border pt-[24px] lg:flex-row lg:gap-[48px]">
+        <div className="w-full shrink-0 lg:w-[280px]">
           <p className="text-[14px] font-semibold text-gca-dark">File</p>
           <p className="mt-[4px] text-[13px] text-gca-show">
             The latest MS Project schedule (.mpp).
@@ -137,8 +137,8 @@ export function UploadScheduleForm({
         </div>
       </div>
 
-      <div className="flex w-full items-start gap-[48px] border-t border-gca-border pt-[24px]">
-        <div className="w-[280px] shrink-0">
+      <div className="flex w-full flex-col items-start gap-[16px] border-t border-gca-border pt-[24px] lg:flex-row lg:gap-[48px]">
+        <div className="w-full shrink-0 lg:w-[280px]">
           <p className="text-[14px] font-semibold text-gca-dark">Scope mode</p>
           <p className="mt-[4px] text-[13px] text-gca-show">How much of the file to read.</p>
         </div>
@@ -164,8 +164,8 @@ export function UploadScheduleForm({
         </div>
       </div>
 
-      <div className="flex w-full items-start gap-[48px] border-t border-gca-border pt-[24px]">
-        <div className="w-[280px] shrink-0">
+      <div className="flex w-full flex-col items-start gap-[16px] border-t border-gca-border pt-[24px] lg:flex-row lg:gap-[48px]">
+        <div className="w-full shrink-0 lg:w-[280px]">
           <p className="text-[14px] font-semibold text-gca-dark">Rebaseline</p>
           <p className="mt-[4px] text-[13px] text-gca-show">Makes this version the new plan.</p>
         </div>
@@ -207,8 +207,8 @@ export function UploadScheduleForm({
         </button>
       </div>
 
-      <div className="flex w-full items-start gap-[48px] border-t border-gca-border pt-[24px]">
-        <div className="w-[280px] shrink-0">
+      <div className="flex w-full flex-col items-start gap-[16px] border-t border-gca-border pt-[24px] lg:flex-row lg:gap-[48px]">
+        <div className="w-full shrink-0 lg:w-[280px]">
           <p className="text-[14px] font-semibold text-gca-dark">Notes</p>
           <p className="mt-[4px] text-[13px] text-gca-show">Optional commentary</p>
         </div>
