@@ -1,6 +1,7 @@
 import express from 'express';
-import { Users } from '../database/utils/database.js';
+import { Users, Tokens } from '../database/utils/database.js';
 import type { AdminCreateUserInput, UpdateUserInput } from '../database/utils/database.js';
+import { Cache } from '../database/utils/cache.js';
 import authorize from '../middlewares/authorize.js';
 import { SEED_PASSWORD_HASH } from '../seeds/01_users.js';
 import {
@@ -164,6 +165,31 @@ router.patch('/:id/status', canWrite, async (req, res) => {
       return;
     }
     res.status(200).json({ status: 'success', data: { user }, message: 'User status updated' });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({ status: 'error', data: null, message });
+  }
+});
+
+// Forces the user to log in again everywhere: their refresh token is revoked outright,
+// and their current access token (wherever it's held) stops being honoured as soon as
+// it's next presented, via tokens_invalidated_at (see isSessionInvalidated).
+router.post('/:id/invalidate-sessions', canWrite, async (req, res) => {
+  const params = userIdParamSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const { id } = params.value as { id: string };
+  try {
+    const invalidatedAt = await Users.invalidateSessions(id);
+    if (!invalidatedAt) {
+      res.status(404).json({ status: 'error', data: null, message: 'User not found' });
+      return;
+    }
+    await Tokens.deleteAllRefreshTokensForUser(id);
+    await Cache.set(`session_invalidated_${id}`, invalidatedAt.getTime(), { ex: 900 });
+    res.status(200).json({ status: 'success', data: { invalidatedAt }, message: 'Sessions invalidated' });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     res.status(500).json({ status: 'error', data: null, message });

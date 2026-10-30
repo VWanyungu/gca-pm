@@ -33,8 +33,12 @@ FRONTEND_URL=
 BACKEND_URL=
 CORS_ORIGIN=
 
-SENDGRID_USER=
-SENDGRID_PASSWORD=
+# temporary: sending via a personal Gmail account until the company M365 mailbox is
+# wired up. GMAIL_USER is the full gmail.com address, GMAIL_APP_PASSWORD is a 16-char
+# App Password (Google Account -> Security -> 2-Step Verification -> App passwords),
+# not the account's login password. MAIL_FROM must match GMAIL_USER.
+GMAIL_USER=
+GMAIL_APP_PASSWORD=
 MAIL_FROM=
 
 PORT=
