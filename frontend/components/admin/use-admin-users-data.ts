@@ -96,6 +96,13 @@ export function useSetUserStatus(id: string) {
   });
 }
 
+export function useInvalidateUserSessions(id: string) {
+  return useMutation({
+    mutationFn: async () =>
+      unwrap(await api.post<{ invalidatedAt: string }>(`/users/${id}/invalidate-sessions`, {})),
+  });
+}
+
 export function useGrantRole(userId: string) {
   const invalidate = useInvalidateUsers();
   return useMutation({

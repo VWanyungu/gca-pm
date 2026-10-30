@@ -257,6 +257,22 @@ export class Users {
     return Users.getUserById(id);
   }
 
+  /** Marks every access token issued before now as invalid (checked against the token's
+   *  `iat` in authenticateToken). Returns the cutoff so the caller can seed the cache
+   *  immediately, or null if the user doesn't exist. */
+  static async invalidateSessions(id: string): Promise<Date | null> {
+    const [row] = await db('users')
+      .where({ id })
+      .update({ tokens_invalidated_at: db.fn.now(), updated_at: db.fn.now() })
+      .returning<{ tokens_invalidated_at: Date }[]>('tokens_invalidated_at');
+    return row ? row.tokens_invalidated_at : null;
+  }
+
+  static async getTokensInvalidatedAt(id: string): Promise<Date | null> {
+    const row = await db('users').select('tokens_invalidated_at').where({ id }).first();
+    return row?.tokens_invalidated_at ?? null;
+  }
+
   static async createUserAdmin(
     input: AdminCreateUserInput,
     passwordHash: string,
@@ -344,6 +360,10 @@ export class Tokens {
       .del()
       .returning<{ refresh_token: string }[]>('refresh_token');
     return { deletedToken: deleted ? deleted.refresh_token : null };
+  }
+
+  static async deleteAllRefreshTokensForUser(userId: string): Promise<void> {
+    await db('refreshTokens').where({ user_id: userId }).del();
   }
 
   static async blacklistToken(token: string): Promise<void> {

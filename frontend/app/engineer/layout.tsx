@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/components/protected-route";
 
 /**
  * Role gate only — shared by both the bottom-tab screens ((tabs)/) and the full-bleed DPR
@@ -13,19 +14,15 @@ import { useAuth } from "@/hooks/use-auth";
  * assigned projects), so the gate here just checks "does this user hold a SiteEngineer grant
  * at all" — the real per-project check still happens API-side on every DPR write.
  */
-export default function EngineerLayout({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) return null;
+function RoleGate({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
 
   const isSiteEngineer = user?.role?.some(
     (grant) =>
       grant.role === "SiteEngineer" || (grant.role === "Admin" && grant.scope_type === "global"),
   );
 
-  // No app-wide ProtectedRoute/unauthorized convention exists yet (see admin/layout.tsx) —
-  // gate inline here, matching the simplest pattern available.
-  if (!isAuthenticated || !isSiteEngineer) {
+  if (!isSiteEngineer) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-gca-page-bg p-[40px]">
         <p className="text-[14px] text-gca-muted">You don&apos;t have access to this page.</p>
@@ -39,5 +36,13 @@ export default function EngineerLayout({ children }: { children: React.ReactNode
         {children}
       </div>
     </div>
+  );
+}
+
+export default function EngineerLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ProtectedRoute>
+      <RoleGate>{children}</RoleGate>
+    </ProtectedRoute>
   );
 }

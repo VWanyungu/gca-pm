@@ -20,6 +20,7 @@ const TOKEN_ERROR_MESSAGES = new Set([
   "Expired or invalid token",
   "Token is blacklisted",
   "Authentication token not provided",
+  "Session invalidated, please log in again",
 ]);
 
 function isTokenError(status: number, message: string): boolean {
