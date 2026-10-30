@@ -322,13 +322,16 @@ export async function uploadDprPhoto(
 export async function createProjectContractor(
   projectId: string,
   input: { contractor_name: string; party_type?: "contractor" | "subcontractor" },
-) {
-  return unwrap(
-    await api.post<{ contractor: ProjectContractorOption }>(
+): Promise<ProjectContractorOption> {
+  // The link endpoint returns the project_contractors row, which has no contractor_name
+  // column — fill it in from what we just asked to create it with.
+  const { projectContractor } = unwrap(
+    await api.post<{ projectContractor: Omit<ProjectContractorOption, "contractor_name"> }>(
       `/projects/${projectId}/contractors`,
       input,
     ),
-  ).contractor;
+  );
+  return { ...projectContractor, contractor_name: input.contractor_name };
 }
 
 export async function createPersonnelRole(name: string) {

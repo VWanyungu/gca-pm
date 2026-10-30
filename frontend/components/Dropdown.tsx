@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import classNames from "classnames";
-import { ChevronDown, Check, Search } from "lucide-react";
+import { ChevronDown, Check, Plus, Search } from "lucide-react";
 import useOutsideClick from "../hooks/use-outside-click";
 
 interface DropdownItem {
@@ -17,6 +17,8 @@ interface DropdownProps {
   style?: string;
   selectedId?: string;
   onSelect?: (id: string, name: string, value: string) => void;
+  /** When set, typing a name with no match shows a "Create …" row that calls this instead. */
+  onCreate?: (name: string) => void | Promise<void>;
 }
 
 const Dropdown = ({
@@ -27,6 +29,7 @@ const Dropdown = ({
   style,
   selectedId,
   onSelect,
+  onCreate,
 }: DropdownProps) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [query, setQuery] = useState("");
@@ -50,6 +53,19 @@ const Dropdown = ({
   const filteredData = data?.filter((item) =>
     item.name.toLowerCase().includes(query.toLowerCase()),
   );
+
+  const trimmedQuery = query.trim();
+  const canCreate =
+    !!onCreate &&
+    trimmedQuery.length > 0 &&
+    !data?.some((item) => item.name.toLowerCase() === trimmedQuery.toLowerCase());
+
+  const handleCreate = async () => {
+    if (!onCreate || !trimmedQuery) return;
+    setIsOpen(false);
+    await onCreate(trimmedQuery);
+    setQuery("");
+  };
 
   useEffect(() => {
     if (selectedId && data) {
@@ -133,8 +149,17 @@ const Dropdown = ({
                 )}
               </li>
             ))}
-            {filteredData?.length === 0 && (
+            {filteredData?.length === 0 && !canCreate && (
               <li className="px-3 text-[13px] leading-8 text-gca-muted">No results</li>
+            )}
+            {canCreate && (
+              <li
+                onClick={handleCreate}
+                className="flex items-center gap-2 cursor-pointer rounded-lg px-3 text-gca-green hover:bg-gca-badge-bg"
+              >
+                <Plus size={14} className="shrink-0" />
+                <span>Create &quot;{trimmedQuery}&quot;</span>
+              </li>
             )}
           </ul>
         </div>

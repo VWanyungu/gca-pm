@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import Dropdown from "@/components/Dropdown";
@@ -54,10 +53,6 @@ export function PersonnelStep({ draft, update, projectId, errors = {} }: StepPro
   const { data: contractors = [] } = useProjectContractors(projectId);
   const { data: roles = [] } = usePersonnelRoles();
   const queryClient = useQueryClient();
-  const [addingContractorFor, setAddingContractorFor] = useState<number | null>(null);
-  const [newContractorName, setNewContractorName] = useState("");
-  const [addingRoleFor, setAddingRoleFor] = useState<string | null>(null);
-  const [newRoleName, setNewRoleName] = useState("");
 
   function updateGroup(index: number, patch: Partial<DraftPersonnelGroup>) {
     update({
@@ -114,29 +109,21 @@ export function PersonnelStep({ draft, update, projectId, errors = {} }: StepPro
     ]);
   }
 
-  async function confirmNewContractor(groupIndex: number) {
-    const name = newContractorName.trim();
-    if (!name) return;
+  async function createContractor(groupIndex: number, name: string) {
     const contractor = await createProjectContractor(projectId, { contractor_name: name });
     await queryClient.invalidateQueries({ queryKey: ["project", projectId, "contractors"] });
     updateGroup(groupIndex, {
       project_contractor_id: contractor.project_contractor_id,
       contractor_name: contractor.contractor_name,
     });
-    setNewContractorName("");
-    setAddingContractorFor(null);
   }
 
-  /** Mirrors confirmNewContractor: the new trade is created, then selected on the row that
+  /** Mirrors createContractor: the new trade is created, then selected on the row that
    *  asked for it, so the engineer never has to re-pick it. */
-  async function confirmNewRole(groupIndex: number, roleIndex: number) {
-    const name = newRoleName.trim();
-    if (!name) return;
+  async function createRole(groupIndex: number, roleIndex: number, name: string) {
     const role = await createPersonnelRole(name);
     await queryClient.invalidateQueries({ queryKey: ["personnel-roles"] });
     updateRoleCount(groupIndex, roleIndex, { personnel_role_id: role.personnel_role_id });
-    setNewRoleName("");
-    setAddingRoleFor(null);
   }
 
   return (
@@ -164,6 +151,7 @@ export function PersonnelStep({ draft, update, projectId, errors = {} }: StepPro
                   onSelect={(id, name) =>
                     updateGroup(groupIndex, { project_contractor_id: id, contractor_name: name })
                   }
+                  onCreate={(name) => createContractor(groupIndex, name)}
                 />
                 {groupErrors?.project_contractor_id && (
                   <span className="text-[12px] text-error-text">Contractor is required</span>
@@ -178,43 +166,6 @@ export function PersonnelStep({ draft, update, projectId, errors = {} }: StepPro
                 <Trash2 className="size-[16px] text-error-text" />
               </button>
             </div>
-
-            {addingContractorFor === groupIndex ? (
-              <div className="flex items-center gap-[8px]">
-                <input
-                  value={newContractorName}
-                  onChange={(e) => setNewContractorName(e.target.value)}
-                  placeholder="Contractor name"
-                  className="h-[40px] w-full rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
-                />
-                <button
-                  type="button"
-                  onClick={() => confirmNewContractor(groupIndex)}
-                  className="cursor-pointer rounded-[8px] bg-gca-green px-[12px] py-[10px] text-[13px] font-semibold text-gca-on-accent"
-                >
-                  Add
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAddingContractorFor(null)}
-                  className="cursor-pointer text-[13px] text-gca-show"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setAddingContractorFor(groupIndex);
-                  setNewContractorName("");
-                }}
-                className="flex w-fit cursor-pointer items-center gap-[6px] text-[13px] font-medium text-gca-green"
-              >
-                <Plus className="size-[12px]" />
-                Add contractor
-              </button>
-            )}
 
             <div className="flex items-center justify-between">
               <span className="text-[13px] font-medium text-gca-dark">Total headcount</span>
@@ -253,6 +204,7 @@ export function PersonnelStep({ draft, update, projectId, errors = {} }: StepPro
                               personnel_role_id: Number(id),
                             })
                           }
+                          onCreate={(name) => createRole(groupIndex, roleIndex, name)}
                         />
                       </div>
                       <Stepper
@@ -274,42 +226,6 @@ export function PersonnelStep({ draft, update, projectId, errors = {} }: StepPro
                       <span className="text-[12px] text-error-text">
                         Headcount must be at least 1
                       </span>
-                    )}
-                    {addingRoleFor === `${groupIndex}-${roleIndex}` ? (
-                      <div className="flex items-center gap-[8px]">
-                        <input
-                          value={newRoleName}
-                          onChange={(e) => setNewRoleName(e.target.value)}
-                          placeholder="Role name"
-                          className="h-[36px] w-full rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => confirmNewRole(groupIndex, roleIndex)}
-                          className="cursor-pointer rounded-[8px] bg-gca-green px-[12px] py-[8px] text-[13px] font-semibold text-gca-on-accent"
-                        >
-                          Add
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setAddingRoleFor(null)}
-                          className="cursor-pointer text-[13px] text-gca-show"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAddingRoleFor(`${groupIndex}-${roleIndex}`);
-                          setNewRoleName("");
-                        }}
-                        className="flex w-fit cursor-pointer items-center gap-[6px] text-[13px] font-medium text-gca-green"
-                      >
-                        <Plus className="size-[12px]" />
-                        New role
-                      </button>
                     )}
                   </div>
                 );
