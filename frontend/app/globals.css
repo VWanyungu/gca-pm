@@ -180,6 +180,15 @@ body {
   font-family: "Geist", sans-serif;
 }
 
+/* iOS Safari auto-zooms on focus when a form control's font-size is below 16px. */
+@media (max-width: 639px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 .schedule-gantt .calendar {
   border: 0 !important;
 }
