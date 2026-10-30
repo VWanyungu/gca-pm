@@ -47,8 +47,8 @@ export function UploadResultView({
 }: UploadResultViewProps) {
   return (
     <div className="flex w-full flex-col gap-[20px]">
-      <div className="flex w-full items-center justify-between">
-        <div>
+      <div className="flex w-full flex-col items-start gap-[16px] sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">
             Upload received
           </h1>
@@ -56,7 +56,7 @@ export function UploadResultView({
             {formatLongDateTime(uploadedAt)} · {fileName}
           </p>
         </div>
-        <div className="flex items-center gap-[12px]">
+        <div className="flex shrink-0 items-center gap-[12px]">
           <button
             onClick={onViewChanges}
             className="cursor-pointer rounded-[8px] border border-gca-border px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
@@ -114,8 +114,8 @@ export function UploadFailedView({
 }: UploadFailedViewProps) {
   return (
     <div className="flex w-full flex-col gap-[20px]">
-      <div className="flex w-full items-center justify-between">
-        <div>
+      <div className="flex w-full flex-col items-start gap-[16px] sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">
             Upload didn&apos;t go through
           </h1>
@@ -123,7 +123,7 @@ export function UploadFailedView({
             Nothing was saved. Fix these in MS Project and upload again.
           </p>
         </div>
-        <div className="flex items-center gap-[12px]">
+        <div className="flex shrink-0 items-center gap-[12px]">
           <button
             onClick={onDownloadReport}
             className="cursor-pointer rounded-[8px] border border-gca-border px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
