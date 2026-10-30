@@ -18,6 +18,7 @@ import {
   X,
   User,
   LogOut,
+  LoaderCircle,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
@@ -57,6 +58,7 @@ export function Navbar() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [mobileProjectsOpen, setMobileProjectsOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -88,6 +90,7 @@ export function Navbar() {
   async function handleSignOut() {
     setAccountMenuOpen(false);
     setMobileMenuOpen(false);
+    setSigningOut(true);
     await logout();
     router.push("/login");
   }
@@ -278,9 +281,14 @@ export function Navbar() {
                   </Link>
                   <button
                     onClick={handleSignOut}
-                    className="flex flex-1 items-center justify-center gap-[6px] rounded-[8px] border border-gca-border bg-gca-surface py-[9px] text-[13px] font-medium text-error-text hover:bg-gca-page-bg transition-colors duration-150 cursor-pointer"
+                    disabled={signingOut}
+                    className="flex flex-1 items-center justify-center gap-[6px] rounded-[8px] border border-gca-border bg-gca-surface py-[9px] text-[13px] font-medium text-error-text hover:bg-gca-page-bg transition-colors duration-150 cursor-pointer disabled:opacity-60"
                   >
-                    <LogOut className="size-[14px]" />
+                    {signingOut ? (
+                      <LoaderCircle className="size-[14px] animate-spin" />
+                    ) : (
+                      <LogOut className="size-[14px]" />
+                    )}
                     Sign out
                   </button>
                 </div>
@@ -465,8 +473,12 @@ export function Navbar() {
                 <div className="my-[4px] h-px bg-gca-border" />
                 <button
                   onClick={handleSignOut}
-                  className="block w-full rounded-[6px] px-[10px] py-[9px] text-left text-[14px] text-error-text hover:bg-gca-page-bg cursor-pointer"
+                  disabled={signingOut}
+                  className="flex w-full items-center gap-[6px] rounded-[6px] px-[10px] py-[9px] text-left text-[14px] text-error-text hover:bg-gca-page-bg cursor-pointer disabled:opacity-60"
                 >
+                  <span className="flex size-[13px] shrink-0 items-center justify-center">
+                    {signingOut && <LoaderCircle className="size-[13px] animate-spin" />}
+                  </span>
                   Sign out
                 </button>
               </div>

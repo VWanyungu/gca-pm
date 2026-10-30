@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useActivity, useActivityAttachments, useStageViewInvalidate } from "./use-stage-view-data";
 import type { TeamMember } from "@/components/project-overview/types";
@@ -40,15 +41,21 @@ export function ActivityDetail({
   const { data: activity } = useActivity(projectId, activityId);
   const { data: attachments = [] } = useActivityAttachments(projectId, activityId);
   const invalidate = useStageViewInvalidate(projectId, stageNo);
+  const [togglingDone, setTogglingDone] = useState(false);
 
   if (!activity) return null;
 
   async function toggleDone() {
     if (!activity) return;
-    await api.patch(`/projects/${projectId}/stage-activities/${activityId}`, {
-      status: activity.status === "done" ? "open" : "done",
-    });
-    invalidate();
+    setTogglingDone(true);
+    try {
+      await api.patch(`/projects/${projectId}/stage-activities/${activityId}`, {
+        status: activity.status === "done" ? "open" : "done",
+      });
+      invalidate();
+    } finally {
+      setTogglingDone(false);
+    }
   }
 
   return (
@@ -75,9 +82,18 @@ export function ActivityDetail({
             </button>
             <button
               onClick={toggleDone}
-              className={`${activity.status === "done" ? "border border-gca-green text-gca-dark hover:text-gca-green" : "bg-gca-green hover:bg-gca-green-hover text-gca-on-accent"} cursor-pointer rounded-[8px] px-[16px] py-[10px] text-[14px] font-semibold`}
+              disabled={togglingDone}
+              className={`${activity.status === "done" ? "border border-gca-green text-gca-dark hover:text-gca-green" : "bg-gca-green hover:bg-gca-green-hover text-gca-on-accent"} relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] px-[16px] py-[10px] text-[14px] font-semibold disabled:opacity-60`}
             >
-              {activity.status === "done" ? "Mark open" : "Mark done"}
+              <span className={togglingDone ? "invisible" : undefined}>
+                {activity.status === "done" ? "Mark open" : "Mark done"}
+              </span>
+              {togglingDone && (
+                <LoaderCircle
+                  className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                  aria-label={activity.status === "done" ? "Marking open" : "Marking done"}
+                />
+              )}
             </button>
           </div>
         )}

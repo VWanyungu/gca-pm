@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { Download, Search, Upload } from "lucide-react";
+import { Download, LoaderCircle, Search, Upload } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import useOutsideClick from "@/hooks/use-outside-click";
 import { canAccess, CAN_MANAGE_PROJECT, CAN_UPLOAD_SCHEDULE } from "@/lib/access-control";
@@ -97,8 +97,15 @@ function downloadProblemReport(fileName: string, problems: UploadProblem[]) {
 
 /** A single-item action menu, not a persisted-selection control like Dropdown — clicking XML
  *  exports immediately rather than leaving "XML" stuck as the button's label. */
-function ExportDropdown({ onExportXml, disabled }: { onExportXml: () => void; disabled: boolean }) {
+function ExportDropdown({
+  onExportXml,
+  disabled,
+}: {
+  onExportXml: () => Promise<void>;
+  disabled: boolean;
+}) {
   const [isOpen, setIsOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useOutsideClick({ ref, handler: () => setIsOpen(false) });
 
@@ -106,19 +113,28 @@ function ExportDropdown({ onExportXml, disabled }: { onExportXml: () => void; di
     <div ref={ref} className="relative">
       <button
         onClick={() => setIsOpen((v) => !v)}
-        disabled={disabled}
+        disabled={disabled || exporting}
         title={disabled ? "No schedule uploaded yet" : undefined}
         className="flex h-[40px] cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border px-[16px] text-[14px] font-semibold text-gca-dark disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <Download className="size-[14px]" />
+        {exporting ? (
+          <LoaderCircle className="size-[14px] animate-spin" aria-label="Exporting" />
+        ) : (
+          <Download className="size-[14px]" />
+        )}
         Export
       </button>
       {isOpen && (
         <div className="absolute right-0 top-full z-10 mt-[8px] min-w-[160px] rounded-[8px] border border-gca-border bg-gca-surface py-[6px] shadow-[0px_1px_10px_4px_rgba(23,48,31,0.08)]">
           <button
-            onClick={() => {
+            onClick={async () => {
               setIsOpen(false);
-              onExportXml();
+              setExporting(true);
+              try {
+                await onExportXml();
+              } finally {
+                setExporting(false);
+              }
             }}
             className="flex w-full cursor-pointer items-center px-[14px] py-[8px] text-left text-[13px] text-gca-dark hover:bg-gca-badge-bg"
           >

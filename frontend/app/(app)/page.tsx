@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Search, LayoutGrid, List, Plus, FolderOpen, ChevronDown } from "lucide-react";
 import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
 import {
@@ -108,6 +109,7 @@ export default function Home() {
   const [perPage, setPerPage] = useState(CARD_PAGE_SIZE);
   const [view, setView] = useState<"card" | "table">("card");
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [statusFilter, setStatusFilter] = useState("active");
   const [programFilter, setProgramFilter] = useState("");
 
@@ -156,14 +158,14 @@ export default function Home() {
       {
         page,
         limit: perPage,
-        search,
+        search: debouncedSearch,
         status: statusFilter,
         programId: programFilter !== "all" ? programFilter : "",
       },
     ],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), limit: String(perPage) });
-      if (search) params.set("search", search);
+      if (debouncedSearch) params.set("search", debouncedSearch);
       if (statusFilter) params.set("status", statusFilter);
       if (programFilter && programFilter !== "all") params.set("program_id", programFilter);
 
@@ -179,7 +181,7 @@ export default function Home() {
 
   const engineerProjectList = engineerProjects.data
     .map(mapEngineerProject)
-    .filter((p) => !search || p.name.toLowerCase().includes(search.toLowerCase()));
+    .filter((p) => !debouncedSearch || p.name.toLowerCase().includes(debouncedSearch.toLowerCase()));
 
   const projects = canListAll ? (projectsQuery.data?.projects ?? []) : engineerProjectList;
   const total = canListAll ? (projectsQuery.data?.total ?? 0) : engineerProjectList.length;

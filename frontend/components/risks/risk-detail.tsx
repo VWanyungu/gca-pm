@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, LoaderCircle, Pencil } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useRisk, useRiskCategories, useRisksInvalidate } from "./use-risks-data";
 import { formatShortDate, ratingFromScore, statusInfo } from "./types";
@@ -115,9 +115,15 @@ export function RiskDetail({
               <button
                 onClick={saveMitigation}
                 disabled={saving}
-                className="cursor-pointer rounded-[8px] bg-gca-green px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+                className="relative flex cursor-pointer items-center justify-center gap-[6px] rounded-[8px] bg-gca-green px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
               >
-                Save
+                <span className={saving ? "invisible" : undefined}>Save</span>
+                {saving && (
+                  <LoaderCircle
+                    className="absolute left-1/2 top-1/2 size-[14px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                    aria-label="Saving"
+                  />
+                )}
               </button>
             </div>
           </div>

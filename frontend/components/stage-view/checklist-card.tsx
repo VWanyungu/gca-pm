@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
+import { LoaderCircle, X } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useStageChecklist, useStageViewInvalidate } from "./use-stage-view-data";
 
@@ -24,6 +24,8 @@ export function ChecklistCard({
   const invalidate = useStageViewInvalidate(projectId, stageNo);
   const [newItemText, setNewItemText] = useState("");
   const [saving, setSaving] = useState(false);
+  const [removingItemId, setRemovingItemId] = useState<string | null>(null);
+  const [removingChecklist, setRemovingChecklist] = useState(false);
 
   if (!revealed && items.length === 0) return null;
 
@@ -48,14 +50,24 @@ export function ChecklistCard({
   }
 
   async function removeItem(itemId: string) {
-    await api.delete(`/projects/${projectId}/stages/${stageNo}/checklist/${itemId}`);
-    invalidate();
+    setRemovingItemId(itemId);
+    try {
+      await api.delete(`/projects/${projectId}/stages/${stageNo}/checklist/${itemId}`);
+      invalidate();
+    } finally {
+      setRemovingItemId(null);
+    }
   }
 
   async function removeChecklist() {
-    await api.delete(`/projects/${projectId}/stages/${stageNo}/checklist`);
-    invalidate();
-    onRemoved();
+    setRemovingChecklist(true);
+    try {
+      await api.delete(`/projects/${projectId}/stages/${stageNo}/checklist`);
+      invalidate();
+      onRemoved();
+    } finally {
+      setRemovingChecklist(false);
+    }
   }
 
   return (
@@ -104,9 +116,14 @@ export function ChecklistCard({
             {canManage && (
               <button
                 onClick={() => removeItem(item.item_id)}
-                className="cursor-pointer shrink-0 text-gca-muted"
+                disabled={removingItemId === item.item_id}
+                className="cursor-pointer shrink-0 text-gca-muted disabled:opacity-50"
               >
-                <X className="size-[18px]" />
+                {removingItemId === item.item_id ? (
+                  <LoaderCircle className="size-[18px] animate-spin" aria-label="Removing" />
+                ) : (
+                  <X className="size-[18px]" />
+                )}
               </button>
             )}
           </div>
@@ -126,16 +143,26 @@ export function ChecklistCard({
             <button
               onClick={addItem}
               disabled={saving || !newItemText.trim()}
-              className="cursor-pointer h-[39px] shrink-0 rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[13px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
+              className="relative flex h-[39px] shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[13px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
             >
-              Add
+              <span className={saving ? "invisible" : undefined}>Add</span>
+              {saving && (
+                <LoaderCircle
+                  className="absolute left-1/2 top-1/2 size-[14px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                  aria-label="Adding"
+                />
+              )}
             </button>
           </div>
 
           <button
             onClick={removeChecklist}
-            className="cursor-pointer text-left text-[13px] font-medium text-error-text"
+            disabled={removingChecklist}
+            className="flex cursor-pointer items-center gap-[6px] text-left text-[13px] font-medium text-error-text disabled:opacity-50"
           >
+            <span className="flex size-[13px] shrink-0 items-center justify-center">
+              {removingChecklist && <LoaderCircle className="size-[13px] animate-spin" />}
+            </span>
             Remove checklist
           </button>
         </>

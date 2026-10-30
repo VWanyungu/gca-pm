@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Check, Lock, ChevronsUpDown } from "lucide-react";
+import { ChevronDown, Check, LoaderCircle, Lock, ChevronsUpDown } from "lucide-react";
 import { api } from "@/lib/api-client";
 import useOutsideClick from "@/hooks/use-outside-click";
 import { STAGE_SHORT_NAME, type StageRow } from "./types";
@@ -177,9 +177,15 @@ export function StagePipeline({
               <button
                 onClick={saveScope}
                 disabled={saving}
-                className="rounded-[8px] bg-gca-green px-[14px] py-[7px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
+                className="relative flex items-center justify-center gap-[6px] rounded-[8px] bg-gca-green px-[14px] py-[7px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
               >
-                Save
+                <span className={saving ? "invisible" : undefined}>Save</span>
+                {saving && (
+                  <LoaderCircle
+                    className="absolute left-1/2 top-1/2 size-[14px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                    aria-label="Saving"
+                  />
+                )}
               </button>
             </div>
           ) : (

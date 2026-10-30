@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LoaderCircle } from "lucide-react";
 import Dropdown from "@/components/Dropdown";
 import { useAssignableUsers, useProjectRoles, useReassignMainRole } from "./use-admin-users-data";
 
@@ -146,9 +147,15 @@ export function ReassignMainRoleModal({
             type="button"
             onClick={handleReassign}
             disabled={!newUserId || reassign.isPending}
-            className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40"
+            className="relative flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40"
           >
-            Reassign
+            <span className={reassign.isPending ? "invisible" : undefined}>Reassign</span>
+            {reassign.isPending && (
+              <LoaderCircle
+                className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                aria-label="Reassigning"
+              />
+            )}
           </button>
         </div>
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { api } from "@/lib/api-client";
 import Dropdown from "@/components/Dropdown";
 import { useRiskCategories, useRisksInvalidate } from "./use-risks-data";
@@ -70,7 +70,8 @@ export function RiskForm({
   const [impact, setImpact] = useState(editing?.impact ?? 3);
   const [mitigation, setMitigation] = useState(editing?.mitigation ?? "");
   const [status, setStatus] = useState<RiskStatus>(editing?.status ?? "open");
-  const [saving, setSaving] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"save" | "delete" | null>(null);
+  const saving = pendingAction !== null;
   const [fieldErrors, setFieldErrors] = useState<{
     title?: string;
     ownerId?: string;
@@ -106,50 +107,54 @@ export function RiskForm({
     if (Object.values(nextErrors).some(Boolean)) {
       return;
     }
-    setSaving(true);
+    setPendingAction("save");
+    try {
+      const body: Record<string, unknown> = {
+        title: title.trim(),
+        description: description.trim() || null,
+        stage_no: stageNo ? Number(stageNo) : null,
+        owner_id: ownerId,
+        category_id: Number(categoryId),
+        review_by: reviewBy || null,
+        likelihood,
+        impact,
+        mitigation: mitigation.trim() || null,
+      };
 
-    const body: Record<string, unknown> = {
-      title: title.trim(),
-      description: description.trim() || null,
-      stage_no: stageNo ? Number(stageNo) : null,
-      owner_id: ownerId,
-      category_id: Number(categoryId),
-      review_by: reviewBy || null,
-      likelihood,
-      impact,
-      mitigation: mitigation.trim() || null,
-    };
-
-    if (editing) {
-      if (status !== editing.status) {
-        body.status = status;
+      if (editing) {
+        if (status !== editing.status) {
+          body.status = status;
+        }
+        const res = await api.patch(`/projects/${projectId}/risks/${editing.risk_id}`, body);
+        if (res.status !== "success") return;
+      } else {
+        const res = await api.post(`/projects/${projectId}/risks`, {
+          ...body,
+          kind: "risk",
+          source_task_id: initial?.sourceTaskId ?? null,
+        });
+        if (res.status !== "success") return;
       }
-      const res = await api.patch(`/projects/${projectId}/risks/${editing.risk_id}`, body);
-      setSaving(false);
-      if (res.status !== "success") return;
-    } else {
-      const res = await api.post(`/projects/${projectId}/risks`, {
-        ...body,
-        kind: "risk",
-        source_task_id: initial?.sourceTaskId ?? null,
-      });
-      setSaving(false);
-      if (res.status !== "success") return;
+      invalidate();
+      onDone();
+    } finally {
+      setPendingAction(null);
     }
-    invalidate();
-    onDone();
   }
 
   async function deleteRisk() {
     if (!editing || !deleteReason.trim()) return;
-    setSaving(true);
-    const res = await api.delete(`/projects/${projectId}/risks/${editing.risk_id}`, {
-      reason: deleteReason.trim(),
-    });
-    setSaving(false);
-    if (res.status !== "success") return;
-    invalidate();
-    onDone();
+    setPendingAction("delete");
+    try {
+      const res = await api.delete(`/projects/${projectId}/risks/${editing.risk_id}`, {
+        reason: deleteReason.trim(),
+      });
+      if (res.status !== "success") return;
+      invalidate();
+      onDone();
+    } finally {
+      setPendingAction(null);
+    }
   }
 
   return (
@@ -406,9 +411,17 @@ export function RiskForm({
             <button
               onClick={deleteRisk}
               disabled={saving || !deleteReason.trim()}
-              className="cursor-pointer rounded-[8px] bg-error-text px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
+              className="relative flex cursor-pointer items-center justify-center gap-[6px] rounded-[8px] bg-error-text px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
             >
-              Confirm delete
+              <span className={pendingAction === "delete" ? "invisible" : undefined}>
+                Confirm delete
+              </span>
+              {pendingAction === "delete" && (
+                <LoaderCircle
+                  className="absolute left-1/2 top-1/2 size-[14px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                  aria-label="Deleting"
+                />
+              )}
             </button>
           </div>
         </div>
@@ -435,9 +448,17 @@ export function RiskForm({
           <button
             onClick={submit}
             disabled={saving}
-            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+            className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
           >
-            {editing ? "Save changes" : "Save risk"}
+            <span className={pendingAction === "save" ? "invisible" : undefined}>
+              {editing ? "Save changes" : "Save risk"}
+            </span>
+            {pendingAction === "save" && (
+              <LoaderCircle
+                className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                aria-label="Saving"
+              />
+            )}
           </button>
         </div>
       </div>

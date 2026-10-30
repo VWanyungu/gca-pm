@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { X, Plus, ArrowLeft } from "lucide-react";
+import { X, Plus, ArrowLeft, LoaderCircle } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_MANAGE_PROJECT } from "@/lib/access-control";
@@ -61,6 +61,11 @@ export default function TeamView({ projectId }: { projectId: string }) {
   const [newPmId, setNewPmId] = useState("");
   const [addingContact, setAddingContact] = useState(false);
   const [contactDraft, setContactDraft] = useState({ name: "", title: "", email: "" });
+  const [removingRoleId, setRemovingRoleId] = useState<string | null>(null);
+  const [addingPmPending, setAddingPmPending] = useState(false);
+  const [addingEngineerPending, setAddingEngineerPending] = useState(false);
+  const [addingContactPending, setAddingContactPending] = useState(false);
+  const [removingContactId, setRemovingContactId] = useState<string | null>(null);
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["project", projectId] });
@@ -77,29 +82,44 @@ export default function TeamView({ projectId }: { projectId: string }) {
   const assignableForEngineer = users.filter((u) => !engineers.some((e) => e.user_id === u.id));
 
   async function removeRole(attributeId: string) {
-    await api.delete(`/roles/${attributeId}`);
-    invalidate();
+    setRemovingRoleId(attributeId);
+    try {
+      await api.delete(`/roles/${attributeId}`);
+      invalidate();
+    } finally {
+      setRemovingRoleId(null);
+    }
   }
 
   async function addEngineer() {
     if (!newEngineerId) return;
-    await api.post("/roles", {
-      userId: newEngineerId,
-      role: "SiteEngineer",
-      scopeType: "project",
-      projectId,
-    });
-    setNewEngineerId("");
-    setAddingEngineer(false);
-    invalidate();
+    setAddingEngineerPending(true);
+    try {
+      await api.post("/roles", {
+        userId: newEngineerId,
+        role: "SiteEngineer",
+        scopeType: "project",
+        projectId,
+      });
+      setNewEngineerId("");
+      setAddingEngineer(false);
+      invalidate();
+    } finally {
+      setAddingEngineerPending(false);
+    }
   }
 
   async function addPm() {
     if (!newPmId) return;
-    await api.post("/roles", { userId: newPmId, role: "PM", scopeType: "project", projectId });
-    setNewPmId("");
-    setAddingPm(false);
-    invalidate();
+    setAddingPmPending(true);
+    try {
+      await api.post("/roles", { userId: newPmId, role: "PM", scopeType: "project", projectId });
+      setNewPmId("");
+      setAddingPm(false);
+      invalidate();
+    } finally {
+      setAddingPmPending(false);
+    }
   }
 
   async function reassignMain(
@@ -116,20 +136,30 @@ export default function TeamView({ projectId }: { projectId: string }) {
 
   async function addContact() {
     if (!contactDraft.name.trim() || !contactDraft.email.trim()) return;
-    await api.post(`/projects/${projectId}/client-contacts`, {
-      name: contactDraft.name,
-      email: contactDraft.email,
-      title: contactDraft.title || null,
-    });
-    setContactDraft({ name: "", title: "", email: "" });
-    setAddingContact(false);
-    invalidate();
-    queryClient.invalidateQueries({ queryKey: ["project", projectId, "client-contacts"] });
+    setAddingContactPending(true);
+    try {
+      await api.post(`/projects/${projectId}/client-contacts`, {
+        name: contactDraft.name,
+        email: contactDraft.email,
+        title: contactDraft.title || null,
+      });
+      setContactDraft({ name: "", title: "", email: "" });
+      setAddingContact(false);
+      invalidate();
+      queryClient.invalidateQueries({ queryKey: ["project", projectId, "client-contacts"] });
+    } finally {
+      setAddingContactPending(false);
+    }
   }
 
   async function removeContact(contactId: string) {
-    await api.delete(`/projects/${projectId}/client-contacts/${contactId}`);
-    queryClient.invalidateQueries({ queryKey: ["project", projectId, "client-contacts"] });
+    setRemovingContactId(contactId);
+    try {
+      await api.delete(`/projects/${projectId}/client-contacts/${contactId}`);
+      queryClient.invalidateQueries({ queryKey: ["project", projectId, "client-contacts"] });
+    } finally {
+      setRemovingContactId(null);
+    }
   }
 
   if (!project) return null;
@@ -207,6 +237,7 @@ export default function TeamView({ projectId }: { projectId: string }) {
               roleLabel="Project Manager"
               site="All sites"
               editMode={editMode}
+              removing={removingRoleId === m.attribute_id}
               onRemove={() => removeRole(m.attribute_id)}
             />
           ))}
@@ -221,6 +252,7 @@ export default function TeamView({ projectId }: { projectId: string }) {
                 onChange={setNewPmId}
                 onAdd={addPm}
                 onCancel={() => setAddingPm(false)}
+                adding={addingPmPending}
               />
             ) : (
               <AddLink label="Add a project manager" onClick={() => setAddingPm(true)} />
@@ -244,6 +276,7 @@ export default function TeamView({ projectId }: { projectId: string }) {
               roleLabel="Planner"
               site="Schedule"
               editMode={editMode}
+              removing={removingRoleId === m.attribute_id}
               onRemove={() => removeRole(m.attribute_id)}
             />
           ))}
@@ -257,6 +290,7 @@ export default function TeamView({ projectId }: { projectId: string }) {
               roleLabel="Site Engineer"
               site="—"
               editMode={editMode}
+              removing={removingRoleId === m.attribute_id}
               onRemove={() => removeRole(m.attribute_id)}
             />
           ))}
@@ -271,6 +305,7 @@ export default function TeamView({ projectId }: { projectId: string }) {
                 onChange={setNewEngineerId}
                 onAdd={addEngineer}
                 onCancel={() => setAddingEngineer(false)}
+                adding={addingEngineerPending}
               />
             ) : (
               <AddLink label="Add an engineer" onClick={() => setAddingEngineer(true)} />
@@ -300,9 +335,14 @@ export default function TeamView({ projectId }: { projectId: string }) {
               {editMode ? (
                 <button
                   onClick={() => removeContact(c.contact_id)}
-                  className="flex size-[32px] items-center justify-center justify-self-end rounded-[8px] border border-gca-border bg-gca-surface"
+                  disabled={removingContactId === c.contact_id}
+                  className="flex size-[32px] items-center justify-center justify-self-end rounded-[8px] border border-gca-border bg-gca-surface disabled:opacity-50"
                 >
-                  <X className="size-[14px] text-gca-muted" />
+                  {removingContactId === c.contact_id ? (
+                    <LoaderCircle className="size-[14px] animate-spin text-gca-muted" />
+                  ) : (
+                    <X className="size-[14px] text-gca-muted" />
+                  )}
                 </button>
               ) : (
                 <span />
@@ -332,8 +372,12 @@ export default function TeamView({ projectId }: { projectId: string }) {
                 />
                 <button
                   onClick={addContact}
-                  className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[13px] font-semibold text-gca-on-accent"
+                  disabled={addingContactPending}
+                  className="flex items-center justify-center gap-[6px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-60"
                 >
+                  <span className="flex size-[14px] shrink-0 items-center justify-center">
+                    {addingContactPending && <LoaderCircle className="size-[14px] animate-spin" />}
+                  </span>
                   Add
                 </button>
                 <button
@@ -408,6 +452,7 @@ function PersonRow({
   roleLabel,
   site,
   editMode,
+  removing,
   onRemove,
 }: {
   member: TeamMember;
@@ -415,6 +460,7 @@ function PersonRow({
   roleLabel: string;
   site: string;
   editMode: boolean;
+  removing?: boolean;
   onRemove: () => void;
 }) {
   return (
@@ -445,9 +491,14 @@ function PersonRow({
       {editMode && !isMain ? (
         <button
           onClick={onRemove}
-          className="flex size-[32px] items-center justify-center justify-self-end rounded-[8px] border border-gca-border bg-gca-surface"
+          disabled={removing}
+          className="flex size-[32px] items-center justify-center justify-self-end rounded-[8px] border border-gca-border bg-gca-surface disabled:opacity-50"
         >
-          <X className="size-[14px] text-gca-muted" />
+          {removing ? (
+            <LoaderCircle className="size-[14px] animate-spin text-gca-muted" />
+          ) : (
+            <X className="size-[14px] text-gca-muted" />
+          )}
         </button>
       ) : (
         <span />
@@ -474,12 +525,14 @@ function AddRow({
   onChange,
   onAdd,
   onCancel,
+  adding,
 }: {
   options: { id: string; name: string }[];
   value: string;
   onChange: (id: string) => void;
   onAdd: () => void;
   onCancel: () => void;
+  adding?: boolean;
 }) {
   return (
     <div className="flex items-center gap-[12px] rounded-[10px] bg-gca-page-bg p-[12px]">
@@ -493,8 +546,12 @@ function AddRow({
       />
       <button
         onClick={onAdd}
-        className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[13px] font-semibold text-gca-on-accent"
+        disabled={adding}
+        className="flex items-center justify-center gap-[6px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-60"
       >
+        <span className="flex size-[14px] shrink-0 items-center justify-center">
+          {adding && <LoaderCircle className="size-[14px] animate-spin" />}
+        </span>
         Add
       </button>
       <button onClick={onCancel} className="text-[13px] font-medium text-gca-show">

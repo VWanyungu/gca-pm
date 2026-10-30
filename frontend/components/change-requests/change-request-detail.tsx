@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Download, Paperclip, Pencil } from "lucide-react";
+import { ArrowLeft, Download, LoaderCircle, Paperclip, Pencil } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useChangeRequest, useChangeRequestsInvalidate } from "./use-change-requests-data";
 import {
@@ -47,7 +47,10 @@ export function ChangeRequestDetail({
 
   const [rejecting, setRejecting] = useState(false);
   const [comment, setComment] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"approve" | "reject" | "withdraw" | null>(
+    null,
+  );
+  const saving = pendingAction !== null;
 
   if (!cr) return null;
 
@@ -65,21 +68,27 @@ export function ChangeRequestDetail({
       setRejecting(true);
       return;
     }
-    setSaving(true);
-    await api.post(`/projects/${projectId}/change-requests/${cr!.change_id}/decide`, {
-      decision,
-      comment: comment.trim() || undefined,
-    });
-    setSaving(false);
-    setRejecting(false);
-    invalidate();
+    setPendingAction(decision);
+    try {
+      await api.post(`/projects/${projectId}/change-requests/${cr!.change_id}/decide`, {
+        decision,
+        comment: comment.trim() || undefined,
+      });
+      setRejecting(false);
+      invalidate();
+    } finally {
+      setPendingAction(null);
+    }
   }
 
   async function withdraw() {
-    setSaving(true);
-    await api.post(`/projects/${projectId}/change-requests/${cr!.change_id}/withdraw`, {});
-    setSaving(false);
-    invalidate();
+    setPendingAction("withdraw");
+    try {
+      await api.post(`/projects/${projectId}/change-requests/${cr!.change_id}/withdraw`, {});
+      invalidate();
+    } finally {
+      setPendingAction(null);
+    }
   }
 
   return (
@@ -115,9 +124,17 @@ export function ChangeRequestDetail({
               <button
                 onClick={withdraw}
                 disabled={saving}
-                className="cursor-pointer rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
+                className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
               >
-                Withdraw
+                <span className={pendingAction === "withdraw" ? "invisible" : undefined}>
+                  Withdraw
+                </span>
+                {pendingAction === "withdraw" && (
+                  <LoaderCircle
+                    className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                    aria-label="Withdrawing"
+                  />
+                )}
               </button>
             )}
             {canAct && (
@@ -131,9 +148,17 @@ export function ChangeRequestDetail({
                 <button
                   onClick={() => decide("approve")}
                   disabled={saving}
-                  className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+                  className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
                 >
-                  Approve
+                  <span className={pendingAction === "approve" ? "invisible" : undefined}>
+                    Approve
+                  </span>
+                  {pendingAction === "approve" && (
+                    <LoaderCircle
+                      className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                      aria-label="Approving"
+                    />
+                  )}
                 </button>
               </>
             )}
@@ -159,9 +184,17 @@ export function ChangeRequestDetail({
               <button
                 onClick={() => decide("reject")}
                 disabled={saving || !comment.trim()}
-                className="cursor-pointer rounded-[8px] bg-error-text px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
+                className="relative flex cursor-pointer items-center justify-center gap-[6px] rounded-[8px] bg-error-text px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
               >
-                Confirm reject
+                <span className={pendingAction === "reject" ? "invisible" : undefined}>
+                  Confirm reject
+                </span>
+                {pendingAction === "reject" && (
+                  <LoaderCircle
+                    className="absolute left-1/2 top-1/2 size-[14px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                    aria-label="Rejecting"
+                  />
+                )}
               </button>
             </div>
           </div>

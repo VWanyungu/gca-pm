@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { api } from "@/lib/api-client";
 import Dropdown from "@/components/Dropdown";
 import { uniquePeople, type StageActivity, TeamMember } from "@/components/project-overview/types";
@@ -236,9 +236,17 @@ export function AddActivityForm({
         <button
           onClick={submit}
           disabled={saving}
-          className={`cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50`}
+          className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
         >
-          {editing ? "Save changes" : "Add activity"}
+          <span className={saving ? "invisible" : undefined}>
+            {editing ? "Save changes" : "Add activity"}
+          </span>
+          {saving && (
+            <LoaderCircle
+              className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+              aria-label={editing ? "Saving changes" : "Adding activity"}
+            />
+          )}
         </button>
       </div>
     </div>

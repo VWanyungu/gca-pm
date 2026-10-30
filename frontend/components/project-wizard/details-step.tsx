@@ -7,7 +7,7 @@ import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import Dropdown from "@/components/Dropdown";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, LoaderCircle } from "lucide-react";
 
 export const detailsSchema = z.object({
   name: z.string().trim().min(1, "Project name is required").max(500),
@@ -227,9 +227,15 @@ export const DetailsStep = forwardRef<DetailsStepHandle, DetailsStepProps>(funct
               type="button"
               disabled={saving}
               onClick={handleSubmit(onSave)}
-              className="cursor-pointer rounded-[8px] border border-gca-border px-[18px] py-[11px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
+              className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-gca-border px-[18px] py-[11px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
             >
-              Save changes
+              <span className={saving ? "invisible" : undefined}>Save changes</span>
+              {saving && (
+                <LoaderCircle
+                  className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                  aria-label="Saving"
+                />
+              )}
             </button>
           )}
           <button

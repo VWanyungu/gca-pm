@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ClipboardList, FilePlus2, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Check, ClipboardList, FilePlus2, LoaderCircle, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_CREATE_DPR } from "@/lib/access-control";
 import { reportError } from "@/lib/toast";
@@ -83,9 +83,15 @@ function DprDeleteModal({
             type="button"
             onClick={() => void handleConfirm()}
             disabled={deleteDpr.isPending}
-            className="rounded-[8px] bg-error-border px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40"
+            className="relative flex items-center justify-center gap-[8px] rounded-[8px] bg-error-border px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40"
           >
-            Delete draft
+            <span className={deleteDpr.isPending ? "invisible" : undefined}>Delete draft</span>
+            {deleteDpr.isPending && (
+              <LoaderCircle
+                className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                aria-label="Deleting"
+              />
+            )}
           </button>
         </div>
       </div>
@@ -344,7 +350,12 @@ export function DprListView({ projectId }: { projectId: string }) {
                         disabled={decideAmendment.isPending}
                         className="flex cursor-pointer items-center gap-[6px] rounded-[8px] bg-gca-green px-[12px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
                       >
-                        <Check className="size-[14px]" />
+                        {decideAmendment.isPending &&
+                        decideAmendment.variables?.amendmentId === amendment.amendment_id ? (
+                          <LoaderCircle className="size-[14px] animate-spin" />
+                        ) : (
+                          <Check className="size-[14px]" />
+                        )}
                         Approve
                       </button>
                     </div>
@@ -389,8 +400,14 @@ export function DprListView({ projectId }: { projectId: string }) {
                           type="button"
                           onClick={() => void decide(amendment, "reject")}
                           disabled={!decisionNote.trim() || decideAmendment.isPending}
-                          className="cursor-pointer rounded-[6px] bg-error-text px-[12px] py-[7px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
+                          className="flex cursor-pointer items-center gap-[6px] rounded-[6px] bg-error-text px-[12px] py-[7px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
                         >
+                          <span className="flex size-[13px] shrink-0 items-center justify-center">
+                            {decideAmendment.isPending &&
+                              decideAmendment.variables?.amendmentId === amendment.amendment_id && (
+                                <LoaderCircle className="size-[13px] animate-spin" />
+                              )}
+                          </span>
                           Confirm rejection
                         </button>
                       </div>

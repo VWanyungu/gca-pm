@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LoaderCircle } from "lucide-react";
 import {
   useAccessRoles,
   useCreateAccessRole,
@@ -44,9 +45,15 @@ export default function AdminRolesPage() {
         <button
           onClick={handleAdd}
           disabled={createRole.isPending || !name.trim()}
-          className="h-[40px] rounded-[8px] bg-gca-green px-[16px] text-[14px] font-medium text-gca-on-accent disabled:opacity-60"
+          className="relative flex h-[40px] items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] text-[14px] font-medium text-gca-on-accent disabled:opacity-60"
         >
-          Add role
+          <span className={createRole.isPending ? "invisible" : undefined}>Add role</span>
+          {createRole.isPending && (
+            <LoaderCircle
+              className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+              aria-label="Adding role"
+            />
+          )}
         </button>
       </div>
 
@@ -129,14 +136,19 @@ function RoleRow({ role }: { role: AccessRole }) {
       <td className="px-[16px] py-[12px] text-right">
         <button
           type="button"
-          disabled={role.is_system && role.is_active}
+          disabled={(role.is_system && role.is_active) || deactivateRole.isPending || updateRole.isPending}
           onClick={() =>
             role.is_active
               ? deactivateRole.mutate(role.access_role_id)
               : updateRole.mutate({ is_active: true })
           }
-          className="text-[13px] font-medium text-error-text disabled:opacity-40"
+          className="inline-flex items-center gap-[6px] text-[13px] font-medium text-error-text disabled:opacity-40"
         >
+          <span className="flex size-[13px] shrink-0 items-center justify-center">
+            {(deactivateRole.isPending || updateRole.isPending) && (
+              <LoaderCircle className="size-[13px] animate-spin" />
+            )}
+          </span>
           {role.is_active ? "Deactivate" : "Activate"}
         </button>
       </td>

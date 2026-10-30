@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, LoaderCircle } from "lucide-react";
 import { api } from "@/lib/api-client";
 import useOutsideClick from "@/hooks/use-outside-click";
 import type { ProjectStatus } from "./types";
@@ -204,13 +204,21 @@ export function StatusControl({
                   type="button"
                   onClick={confirmChange}
                   disabled={submitting}
-                  className={`rounded-[8px] px-[12px] py-[7px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50 ${
+                  className={`relative flex items-center justify-center gap-[6px] rounded-[8px] px-[12px] py-[7px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50 ${
                     target === "cancelled"
                       ? "bg-error-text"
                       : "bg-gca-green hover:bg-gca-green-hover"
                   }`}
                 >
-                  {ACTION_LABELS[target]}
+                  <span className={submitting ? "invisible" : undefined}>
+                    {ACTION_LABELS[target]}
+                  </span>
+                  {submitting && (
+                    <LoaderCircle
+                      className="absolute left-1/2 top-1/2 size-[14px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                      aria-label="Saving"
+                    />
+                  )}
                 </button>
               </div>
             </>

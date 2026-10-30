@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { api } from "@/lib/api-client";
 import Dropdown from "@/components/Dropdown";
 import { useMilestonesInvalidate } from "./use-milestones-data";
@@ -49,7 +49,8 @@ export function MilestoneForm({
     return stageOptions.some((option) => option.id === initialStageNo) ? initialStageNo : "";
   });
   const [notes, setNotes] = useState(editing?.notes ?? "");
-  const [saving, setSaving] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"save" | "delete" | null>(null);
+  const saving = pendingAction !== null;
   const [fieldErrors, setFieldErrors] = useState<{ title?: string; plannedDate?: string }>({});
   const [deleting, setDeleting] = useState(false);
 
@@ -68,38 +69,43 @@ export function MilestoneForm({
     if (nextErrors.title || nextErrors.plannedDate) {
       return;
     }
-    setSaving(true);
+    setPendingAction("save");
+    try {
+      const body = {
+        title: title.trim(),
+        planned_date: plannedDate,
+        stage_no: stageNo ? Number(stageNo) : null,
+        notes: notes.trim() || null,
+      };
 
-    const body = {
-      title: title.trim(),
-      planned_date: plannedDate,
-      stage_no: stageNo ? Number(stageNo) : null,
-      notes: notes.trim() || null,
-    };
+      const res = editing
+        ? await api.patch(`/projects/${projectId}/custom-milestones/${editing.milestone_id}`, {
+            ...body,
+            actual_date: actualDate || null,
+          })
+        : await api.post(`/projects/${projectId}/custom-milestones`, body);
 
-    const res = editing
-      ? await api.patch(`/projects/${projectId}/custom-milestones/${editing.milestone_id}`, {
-          ...body,
-          actual_date: actualDate || null,
-        })
-      : await api.post(`/projects/${projectId}/custom-milestones`, body);
-
-    setSaving(false);
-    if (res.status !== "success") return;
-    invalidate();
-    onDone();
+      if (res.status !== "success") return;
+      invalidate();
+      onDone();
+    } finally {
+      setPendingAction(null);
+    }
   }
 
   async function deleteMilestone() {
     if (!editing) return;
-    setSaving(true);
-    const res = await api.delete(
-      `/projects/${projectId}/custom-milestones/${editing.milestone_id}`,
-    );
-    setSaving(false);
-    if (res.status !== "success") return;
-    invalidate();
-    onDone();
+    setPendingAction("delete");
+    try {
+      const res = await api.delete(
+        `/projects/${projectId}/custom-milestones/${editing.milestone_id}`,
+      );
+      if (res.status !== "success") return;
+      invalidate();
+      onDone();
+    } finally {
+      setPendingAction(null);
+    }
   }
 
   return (
@@ -228,9 +234,17 @@ export function MilestoneForm({
             <button
               onClick={deleteMilestone}
               disabled={saving}
-              className="cursor-pointer rounded-[8px] bg-error-text px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
+              className="relative flex cursor-pointer items-center justify-center gap-[6px] rounded-[8px] bg-error-text px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
             >
-              Confirm delete
+              <span className={pendingAction === "delete" ? "invisible" : undefined}>
+                Confirm delete
+              </span>
+              {pendingAction === "delete" && (
+                <LoaderCircle
+                  className="absolute left-1/2 top-1/2 size-[14px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                  aria-label="Deleting"
+                />
+              )}
             </button>
           </div>
         </div>
@@ -257,9 +271,17 @@ export function MilestoneForm({
           <button
             onClick={submit}
             disabled={saving}
-            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+            className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
           >
-            {editing ? "Save changes" : "Add milestone"}
+            <span className={pendingAction === "save" ? "invisible" : undefined}>
+              {editing ? "Save changes" : "Add milestone"}
+            </span>
+            {pendingAction === "save" && (
+              <LoaderCircle
+                className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                aria-label="Saving"
+              />
+            )}
           </button>
         </div>
       </div>

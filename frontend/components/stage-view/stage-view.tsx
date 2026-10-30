@@ -34,6 +34,7 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
   const invalidate = useStageViewInvalidate(projectId, stageNo);
   const [subView, setSubView] = useState<SubView>({ mode: "list" });
   const [checklistRevealed, setChecklistRevealed] = useState(false);
+  const [togglingComplete, setTogglingComplete] = useState(false);
 
   const canManage = canAccess(user?.role, CAN_MANAGE_PROJECT, { projectId });
 
@@ -46,9 +47,14 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
 
   async function toggleComplete() {
     if (!stage) return;
-    const toState = stage.state === "complete" ? "active" : "complete";
-    await api.patch(`/projects/${projectId}/stages/${stageNo}`, { state: toState });
-    invalidate();
+    setTogglingComplete(true);
+    try {
+      const toState = stage.state === "complete" ? "active" : "complete";
+      await api.patch(`/projects/${projectId}/stages/${stageNo}`, { state: toState });
+      invalidate();
+    } finally {
+      setTogglingComplete(false);
+    }
   }
 
   if (isLoading) {
@@ -75,6 +81,7 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
         hasChecklist={checklistItems.length > 0}
         onAddChecklist={() => setChecklistRevealed(true)}
         onToggleComplete={toggleComplete}
+        togglingComplete={togglingComplete}
       />
 
       {(subView.mode === "list" || subView.mode === "detail") && (

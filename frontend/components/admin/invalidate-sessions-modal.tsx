@@ -1,5 +1,6 @@
 "use client";
 
+import { LoaderCircle } from "lucide-react";
 import { useInvalidateUserSessions } from "./use-admin-users-data";
 import type { AdminUserDetail } from "./types";
 
@@ -38,9 +39,15 @@ export function InvalidateSessionsModal({
           <button
             onClick={handleConfirm}
             disabled={invalidateSessions.isPending}
-            className="rounded-[8px] bg-error-border px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40"
+            className="relative flex items-center justify-center gap-[8px] rounded-[8px] bg-error-border px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40"
           >
-            Sign out
+            <span className={invalidateSessions.isPending ? "invisible" : undefined}>Sign out</span>
+            {invalidateSessions.isPending && (
+              <LoaderCircle
+                className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                aria-label="Signing out"
+              />
+            )}
           </button>
         </div>
       </div>

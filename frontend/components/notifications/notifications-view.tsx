@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { LoaderCircle } from "lucide-react";
 import {
   useNotifications,
   useMarkNotificationRead,
@@ -41,8 +42,11 @@ export function NotificationsView() {
           <button
             onClick={() => markAllRead.mutate()}
             disabled={markAllRead.isPending || unreadCount === 0}
-            className="text-[13px] font-medium text-gca-green disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+            className="flex items-center gap-[6px] text-[13px] font-medium text-gca-green disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
           >
+            <span className="flex size-[13px] shrink-0 items-center justify-center">
+              {markAllRead.isPending && <LoaderCircle className="size-[13px] animate-spin" />}
+            </span>
             Mark all as read
           </button>
         </div>

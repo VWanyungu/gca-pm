@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LoaderCircle } from "lucide-react";
 import Dropdown from "@/components/Dropdown";
 import {
   type AdminUserDetail,
@@ -100,9 +101,14 @@ export function AccessPanelContent({ user }: { user: AdminUserDetail }) {
               <button
                 type="button"
                 onClick={() => revokeRole.mutate(grant.attribute_id)}
-                disabled={revokeRole.isPending}
-                className="text-[13px] font-medium text-error-text disabled:opacity-60"
+                disabled={revokeRole.isPending && revokeRole.variables === grant.attribute_id}
+                className="flex items-center gap-[6px] text-[13px] font-medium text-error-text disabled:opacity-60"
               >
+                <span className="flex size-[13px] shrink-0 items-center justify-center">
+                  {revokeRole.isPending && revokeRole.variables === grant.attribute_id && (
+                    <LoaderCircle className="size-[13px] animate-spin" />
+                  )}
+                </span>
                 Remove
               </button>
             )}
@@ -158,9 +164,15 @@ export function AccessPanelContent({ user }: { user: AdminUserDetail }) {
           type="button"
           onClick={handleAdd}
           disabled={grantRole.isPending || (level !== "global" && !scopeId)}
-          className="w-full rounded-[8px] bg-gca-green px-[14px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-60"
+          className="relative flex w-full items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[14px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-60"
         >
-          Add access
+          <span className={grantRole.isPending ? "invisible" : undefined}>Add access</span>
+          {grantRole.isPending && (
+            <LoaderCircle
+              className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+              aria-label="Adding access"
+            />
+          )}
         </button>
       </div>
 

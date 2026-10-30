@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { LoaderCircle, Plus } from "lucide-react";
 import type { StageDetail } from "@/components/project-overview/types";
 
 const STATE_SUBTITLE: Record<StageDetail["state"], (pct: number, date: string) => string> = {
@@ -26,6 +26,7 @@ interface StageHeaderProps {
   hasChecklist: boolean;
   onAddChecklist: () => void;
   onToggleComplete: () => void;
+  togglingComplete: boolean;
 }
 
 export function StageHeader({
@@ -36,6 +37,7 @@ export function StageHeader({
   hasChecklist,
   onAddChecklist,
   onToggleComplete,
+  togglingComplete,
 }: StageHeaderProps) {
   const subtitle = STATE_SUBTITLE[stage.state](
     percentComplete,
@@ -68,10 +70,18 @@ export function StageHeader({
           )}
           <button
             onClick={onToggleComplete}
-            disabled={stage.state === "not_started"}
-            className={`${stage.state === "complete" ? "border border-gca-green text-gca-dark hover:text-gca-green" : "bg-gca-green hover:bg-gca-green-hover text-gca-on-accent"} w-full cursor-pointer rounded-[8px] px-[16px] py-[11px] text-[14px] font-semibold disabled:opacity-50 sm:w-auto sm:py-[10px]`}
+            disabled={stage.state === "not_started" || togglingComplete}
+            className={`${stage.state === "complete" ? "border border-gca-green text-gca-dark hover:text-gca-green" : "bg-gca-green hover:bg-gca-green-hover text-gca-on-accent"} relative flex w-full cursor-pointer items-center justify-center gap-[8px] rounded-[8px] px-[16px] py-[11px] text-[14px] font-semibold disabled:opacity-50 sm:w-auto sm:py-[10px]`}
           >
-            {stage.state === "complete" ? "Reopen stage" : "Mark as complete"}
+            <span className={togglingComplete ? "invisible" : undefined}>
+              {stage.state === "complete" ? "Reopen stage" : "Mark as complete"}
+            </span>
+            {togglingComplete && (
+              <LoaderCircle
+                className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                aria-label={stage.state === "complete" ? "Reopening stage" : "Marking complete"}
+              />
+            )}
           </button>
         </div>
       )}

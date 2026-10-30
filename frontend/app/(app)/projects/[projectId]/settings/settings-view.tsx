@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LoaderCircle } from "lucide-react";
 import Dropdown from "@/components/Dropdown";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_MANAGE_PROJECT, CAN_DELETE_PROJECT } from "@/lib/access-control";
@@ -285,9 +285,14 @@ export default function SettingsView({ projectId }: { projectId: string }) {
                 <button
                   type="submit"
                   disabled={updateProject.isPending}
-                  className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-60"
+                  className="flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-60"
                 >
-                  {updateProject.isPending ? "Saving…" : "Save changes"}
+                  <span className="flex size-[16px] shrink-0 items-center justify-center">
+                    {updateProject.isPending && (
+                      <LoaderCircle className="size-[16px] animate-spin" aria-label="Saving" />
+                    )}
+                  </span>
+                  Save changes
                 </button>
               </div>
             )}

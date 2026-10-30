@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, Percent, Shield, X } from "lucide-react";
+import { Check, LoaderCircle, Percent, Shield, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { reportError } from "@/lib/toast";
@@ -392,9 +392,15 @@ export function SubmitMode({
                   <button
                     onClick={submit}
                     disabled={!ready || submitting}
-                    className="cursor-pointer rounded-[8px] bg-gca-green py-[10px] text-[14px] font-semibold text-gca-on-accent disabled:opacity-50"
+                    className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green py-[10px] text-[14px] font-semibold text-gca-on-accent disabled:opacity-50"
                   >
-                    Submit
+                    <span className={submitting ? "invisible" : undefined}>Submit</span>
+                    {submitting && (
+                      <LoaderCircle
+                        className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                        aria-label="Submitting"
+                      />
+                    )}
                   </button>
                   {!ready && (
                     <p className="text-[12px] text-error-text">
@@ -434,9 +440,15 @@ export function SubmitMode({
               <button
                 onClick={submit}
                 disabled={!ready || submitting}
-                className="cursor-pointer rounded-[8px] bg-gca-green py-[12px] text-[15px] font-semibold text-gca-on-accent disabled:opacity-50"
+                className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green py-[12px] text-[15px] font-semibold text-gca-on-accent disabled:opacity-50"
               >
-                Submit
+                <span className={submitting ? "invisible" : undefined}>Submit</span>
+                {submitting && (
+                  <LoaderCircle
+                    className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                    aria-label="Submitting"
+                  />
+                )}
               </button>
               {!ready && (
                 <p className="text-[12px] text-error-text">

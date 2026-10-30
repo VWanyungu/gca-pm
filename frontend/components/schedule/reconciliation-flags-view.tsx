@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LoaderCircle } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { Pagination } from "@/components/pagination";
 import { useScheduleInvalidate } from "./use-schedule-data";
@@ -32,14 +33,17 @@ export function ReconciliationFlagsView({
   const [perPage, setPerPage] = useState(PER_PAGE);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
+  const [savingFlagId, setSavingFlagId] = useState<string | null>(null);
   const invalidate = useScheduleInvalidate(projectId);
 
   async function acknowledge(flagIds: string[]) {
     setSaving(true);
+    if (flagIds.length === 1) setSavingFlagId(flagIds[0]);
     const res = await api.post(`/projects/${projectId}/schedule/reconciliation-flags/acknowledge`, {
       flag_ids: flagIds,
     });
     setSaving(false);
+    setSavingFlagId(null);
     if (res.status !== "success") return;
     setSelected((prev) => {
       const next = new Set(prev);
@@ -90,8 +94,11 @@ export function ReconciliationFlagsView({
           <button
             onClick={() => acknowledge(Array.from(selected))}
             disabled={saving}
-            className="cursor-pointer rounded-[8px] bg-gca-green px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+            className="flex cursor-pointer items-center gap-[6px] rounded-[8px] bg-gca-green px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
           >
+            <span className="flex size-[13px] shrink-0 items-center justify-center">
+              {saving && !savingFlagId && <LoaderCircle className="size-[13px] animate-spin" />}
+            </span>
             Acknowledge selected
           </button>
         </div>
@@ -153,8 +160,13 @@ export function ReconciliationFlagsView({
                     <button
                       onClick={() => acknowledge([f.flag_id])}
                       disabled={saving}
-                      className="cursor-pointer rounded-[8px] border border-gca-border px-[12px] py-[6px] text-[13px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
+                      className="flex cursor-pointer items-center gap-[6px] rounded-[8px] border border-gca-border px-[12px] py-[6px] text-[13px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
                     >
+                      <span className="flex size-[13px] shrink-0 items-center justify-center">
+                        {savingFlagId === f.flag_id && (
+                          <LoaderCircle className="size-[13px] animate-spin" />
+                        )}
+                      </span>
                       Acknowledge
                     </button>
                   </div>

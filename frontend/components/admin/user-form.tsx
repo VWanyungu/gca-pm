@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { LoaderCircle } from "lucide-react";
 import Dropdown from "@/components/Dropdown";
 import { type AdminUserDetail, type RoleName } from "./types";
 import { useCreateUser, useUpdateUser } from "./use-admin-users-data";
@@ -209,9 +210,17 @@ export function UserForm({ editing }: UserFormProps) {
             <button
               type="submit"
               disabled={saving}
-              className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-60"
+              className="relative flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-60"
             >
-              {currentUser ? "Save" : "Create user"}
+              <span className={saving ? "invisible" : undefined}>
+                {currentUser ? "Save" : "Create user"}
+              </span>
+              {saving && (
+                <LoaderCircle
+                  className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                  aria-label={currentUser ? "Saving" : "Creating user"}
+                />
+              )}
             </button>
           </div>
         </div>
