@@ -60,18 +60,17 @@ export interface OverdueTask extends ScheduleTask {
 }
 
 /**
- * Whether the task's risk still stands for it. A dismissed risk was thrown out by the PM and
- * an auto-resolved one closed itself when the task stopped being overdue — if the task is
- * overdue again, neither speaks for it, so the PM can raise a fresh one.
+ * Whether the task's risk still stands for it. A closed risk — whether the PM closed it or it
+ * closed itself once the task caught up — no longer speaks for the task, so the PM can raise a
+ * fresh one if it falls overdue again.
  */
 export function hasOpenRisk(task: OverdueTask): boolean {
-  if (!task.risk_id) return false;
-  return task.risk_status !== "dismissed" && task.risk_status !== "auto_resolved";
+  return task.risk_status === "open";
 }
 
-/** How a spent risk is described next to the button that offers to raise another. */
-export function spentRiskLabel(status: string | null): string {
-  return status === "auto_resolved" ? "Previous risk auto-resolved" : "Previous risk dismissed";
+/** Shown next to the button that offers to raise another risk, once the previous one closed. */
+export function spentRiskLabel(): string {
+  return "Previous risk closed";
 }
 
 export interface VersionChange {

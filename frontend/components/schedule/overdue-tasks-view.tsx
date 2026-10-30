@@ -169,7 +169,7 @@ export function OverdueTasksView({
                 <div className="flex shrink-0 items-center gap-[12px]">
                   {t.risk_id && (
                     <span className="text-[13px] text-gca-muted">
-                      {spentRiskLabel(t.risk_status)}
+                      {spentRiskLabel()}
                     </span>
                   )}
                   <button

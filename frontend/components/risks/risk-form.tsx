@@ -70,14 +70,11 @@ export function RiskForm({
   const [impact, setImpact] = useState(editing?.impact ?? 3);
   const [mitigation, setMitigation] = useState(editing?.mitigation ?? "");
   const [status, setStatus] = useState<RiskStatus>(editing?.status ?? "open");
-  const [dismissalReason, setDismissalReason] = useState(editing?.dismissal_reason ?? "");
   const [saving, setSaving] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{
     title?: string;
-    stageNo?: string;
     ownerId?: string;
     categoryId?: string;
-    dismissalReason?: string;
   }>({});
   const [deleting, setDeleting] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
@@ -102,13 +99,8 @@ export function RiskForm({
   async function submit() {
     const nextErrors = {
       title: title.trim() ? undefined : "Title is required",
-      stageNo: stageNo ? undefined : "Stage is required",
       ownerId: ownerId ? undefined : "Owner is required",
       categoryId: categoryId ? undefined : "Category is required",
-      dismissalReason:
-        status === "dismissed" && !dismissalReason.trim()
-          ? "A reason is required to dismiss a risk"
-          : undefined,
     };
     setFieldErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) {
@@ -119,7 +111,7 @@ export function RiskForm({
     const body: Record<string, unknown> = {
       title: title.trim(),
       description: description.trim() || null,
-      stage_no: Number(stageNo),
+      stage_no: stageNo ? Number(stageNo) : null,
       owner_id: ownerId,
       category_id: Number(categoryId),
       review_by: reviewBy || null,
@@ -131,7 +123,6 @@ export function RiskForm({
     if (editing) {
       if (status !== editing.status) {
         body.status = status;
-        body.dismissal_reason = status === "dismissed" ? dismissalReason.trim() : null;
       }
       const res = await api.patch(`/projects/${projectId}/risks/${editing.risk_id}`, body);
       setSaving(false);
@@ -233,25 +224,15 @@ export function RiskForm({
         <div className="flex w-full max-w-[792px] flex-col gap-[16px]">
           <div className="flex flex-col gap-[16px] sm:flex-row">
             <div className="flex w-full flex-col gap-[6px]">
-              <label className="text-[14px] text-gca-dark">
-                Stage<span className="text-error-text">*</span>
-              </label>
+              <label className="text-[14px] text-gca-dark">Stage</label>
               <Dropdown
                 id="risk-stage"
                 title="Choose stage"
                 data={stageOptions}
                 selectedId={stageNo}
-                style={`h-[40px] w-full rounded-[8px] border px-[13px] text-[14px] ${
-                  fieldErrors.stageNo ? "border-error-border" : "border-gca-border"
-                }`}
-                onSelect={(id) => {
-                  setStageNo(id);
-                  setFieldErrors((current) => ({ ...current, stageNo: undefined }));
-                }}
+                style="h-[40px] w-full rounded-[8px] border border-gca-border px-[13px] text-[14px]"
+                onSelect={(id) => setStageNo(id)}
               />
-              {fieldErrors.stageNo && (
-                <span className="text-[12px] text-error-text">{fieldErrors.stageNo}</span>
-              )}
             </div>
             <div className="flex w-full flex-col gap-[6px]">
               <label className="text-[14px] text-gca-dark">
@@ -315,7 +296,7 @@ export function RiskForm({
           <div className="w-[280px] shrink-0">
             <p className="text-[14px] font-semibold text-gca-dark">Status</p>
             <p className="mt-[4px] text-[13px] text-gca-show">
-              Addressed risks stay visible until closed.
+              Closed risks stay visible and can be reopened.
             </p>
           </div>
           <div className="flex w-full max-w-[792px] flex-col gap-[16px]">
@@ -331,28 +312,6 @@ export function RiskForm({
                 onSelect={(id) => setStatus(id as RiskStatus)}
               />
             </div>
-            {status === "dismissed" && (
-              <div className="flex flex-col gap-[6px]">
-                <label className="text-[14px] text-gca-dark">
-                  Dismissal reason<span className="text-error-text">*</span>
-                </label>
-                <textarea
-                  value={dismissalReason}
-                  onChange={(e) => {
-                    setDismissalReason(e.target.value);
-                    setFieldErrors((current) => ({ ...current, dismissalReason: undefined }));
-                  }}
-                  rows={2}
-                  aria-invalid={!!fieldErrors.dismissalReason}
-                  className={`rounded-[8px] border px-[13px] py-[11px] text-[14px] outline-none focus:border-gca-green ${
-                    fieldErrors.dismissalReason ? "border-error-border" : "border-gca-border"
-                  }`}
-                />
-                {fieldErrors.dismissalReason && (
-                  <span className="text-[12px] text-error-text">{fieldErrors.dismissalReason}</span>
-                )}
-              </div>
-            )}
           </div>
         </div>
       )}
