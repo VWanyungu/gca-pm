@@ -137,6 +137,44 @@ async function request<T = unknown>(
   }
 }
 
+/**
+ * For a binary response (a file to save), not a JSON API call. Triggers a browser download of
+ * whatever the endpoint returns. Reuses the same bearer token but skips the refresh-on-401
+ * dance in request() above — a download is a secondary action, a toast and a retry is enough.
+ */
+export async function downloadFile(path: string, fallbackFilename: string): Promise<void> {
+  const { token } = getTokens();
+  const headers: Record<string, string> = { "api-v": "v1" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { headers });
+    if (!res.ok) {
+      let message = "Could not download the file";
+      try {
+        const body: ApiResponse = await res.json();
+        if (body.message) message = body.message;
+      } catch {
+        // Response wasn't JSON; keep the generic message.
+      }
+      reportError(message);
+      return;
+    }
+
+    const match = res.headers.get("Content-Disposition")?.match(/filename="([^"]*)"/);
+    const filename = match ? match[1] : fallbackFilename;
+
+    const url = URL.createObjectURL(await res.blob());
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch {
+    reportError("An unexpected error occurred");
+  }
+}
+
 export const api = {
   get: <T = unknown>(path: string, opts?: { silent?: boolean }) =>
     request<T>(path, "GET", undefined, opts),
