@@ -168,20 +168,15 @@ export const updateRiskIssueSchema = Joi.object({
     mitigation: Joi.string().trim().max(10000).allow(null, "").optional(),
     review_by: Joi.string().isoDate().allow(null).optional(),
     status: Joi.string()
-        .valid("open", "mitigated", "closed", "dismissed")
+        .valid("open", "closed")
         .optional(),
-    // Required when transitioning to dismissed (AC-RSK-02).
-    dismissal_reason: Joi.when("status", {
-        is: "dismissed",
-        then: Joi.string().trim().min(1).max(10000).required(),
-        otherwise: Joi.string().trim().max(10000).allow(null, "").optional(),
-    }),
+    dismissal_reason: Joi.string().trim().max(10000).allow(null, "").optional(),
     // AC-RSK-03: risk → issue conversion is one-way; kind can only ever be set to 'issue'.
     kind: Joi.string().valid("issue").optional(),
 }).min(1);
 export const listRiskIssuesQuerySchema = Joi.object({
     status: Joi.string()
-        .valid("open", "mitigated", "closed", "dismissed", "auto_resolved")
+        .valid("open", "closed")
         .optional(),
     kind: Joi.string().valid("risk", "issue").optional(),
     stage_no: Joi.number().integer().min(1).max(10).optional(),
@@ -488,7 +483,10 @@ const PROJECT_STATUSES = [
     "on_hold",
     "complete",
     "cancelled",
+    "deleted",
 ];
+// 'deleted' is reached only through the dedicated delete flow (AC-PRJ-11), never set directly.
+const CREATABLE_PROJECT_STATUSES = PROJECT_STATUSES.filter((s) => s !== "deleted");
 export const projectIdParamSchema = Joi.object({
     projectId: Joi.string().uuid().required(),
 });
@@ -519,7 +517,7 @@ export const createProjectSchema = Joi.object({
     estimated_value: Joi.number().min(0).allow(null).optional(),
     currency: Joi.string().trim().length(3).uppercase().allow(null).optional(),
     status: Joi.string()
-        .valid(...PROJECT_STATUSES)
+        .valid(...CREATABLE_PROJECT_STATUSES)
         .default("active"),
     legacy_source_ref: Joi.string().trim().max(255).allow(null, "").optional(),
     holiday_calendar_id: Joi.number().integer().allow(null).optional(),
