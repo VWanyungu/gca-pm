@@ -49,3 +49,7 @@ MPP_PARSER_URL=
 CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
+
+# Push-style heartbeat (e.g. an Uptime Kuma push monitor URL) pinged after the nightly
+# 3am project-metrics refresh. Leave unset to skip pinging.
+CRON_HEARTBEAT_URL=

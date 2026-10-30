@@ -5,7 +5,11 @@ import morgan from 'morgan';
 import 'dotenv/config';
 import './types.js';
 import checkVersion from './middlewares/version.js';
-import { recoverScheduleVersions } from './v1/utils/scheduleProcessor.js';
+import {
+  recoverScheduleVersions,
+  refreshAllProjectMetrics,
+  nextThreeAm,
+} from './v1/utils/scheduleProcessor.js';
 import { parserIsReachable } from './v1/utils/mppParser.js';
 
 // shortcut: Vercel's Express framework preset type-checks this file with a resolver
@@ -40,6 +44,34 @@ const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
 };
 app.use(errorHandler);
 
+// Push-style heartbeat (e.g. an Uptime Kuma push monitor): pinged after every nightly run so
+// a missed or failed 3am refresh shows up as a gap/down alert instead of only a log line. A
+// no-op until CRON_HEARTBEAT_URL is provisioned.
+function pingHeartbeat(ok: boolean, msg: string): void {
+  const url = process.env.CRON_HEARTBEAT_URL;
+  if (!url) return;
+  const status = ok ? 'up' : 'down';
+  fetch(`${url}?status=${status}&msg=${encodeURIComponent(msg)}`).catch((err) =>
+    console.error('Heartbeat ping failed', err),
+  );
+}
+
+// shortcut: a 24h setInterval drifts a few ms per tick and never catches up to a missed
+// 3am if the process was down; re-arm from the real clock each time instead of trusting
+// the interval to stay exact forever.
+function scheduleNightlyMetricsRefresh(): void {
+  const now = new Date();
+  setTimeout(() => {
+    void refreshAllProjectMetrics()
+      .then(() => pingHeartbeat(true, 'Nightly metrics refresh completed'))
+      .catch((err) => {
+        console.error('Nightly metrics refresh failed', err);
+        pingHeartbeat(false, String(err?.message ?? err));
+      });
+    scheduleNightlyMetricsRefresh();
+  }, nextThreeAm(now).getTime() - now.getTime());
+}
+
 const port = Number(process.env.PORT) || 3000;
 app.listen(port, () => {
   console.log(`App live on port ${port}`);
@@ -48,4 +80,5 @@ app.listen(port, () => {
   void recoverScheduleVersions().catch((err) =>
     console.error('Schedule recovery failed', err),
   );
+  scheduleNightlyMetricsRefresh();
 });
