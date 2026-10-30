@@ -39,6 +39,7 @@ export interface ScheduleTask {
   duration_minutes: number;
   start: string;
   expected_finish: string;
+  baseline_finish: string | null;
   actual_start: string | null;
   actual_finish: string | null;
   pct_work_complete: string;
@@ -122,6 +123,12 @@ export function workDays(durationMinutes: number): number {
 export function daysLate(expectedFinish: string): number {
   const ms = Date.now() - new Date(expectedFinish).getTime();
   return Math.max(1, Math.round(ms / 86_400_000));
+}
+
+/** The planned finish date shown in the Table and Gantt's "Finish" column — the baseline date
+ *  from the uploaded schedule, falling back to the forecast finish when not yet baselined. */
+export function plannedFinish(t: ScheduleTask): string {
+  return t.baseline_finish ?? t.expected_finish;
 }
 
 export function formatShortDate(iso: string): string {

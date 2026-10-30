@@ -3477,6 +3477,7 @@ export interface ScheduleTaskRow {
   duration_minutes: number;
   start: Date;
   expected_finish: Date;
+  baseline_finish: Date | null;
   actual_start: Date | null;
   actual_finish: Date | null;
   pct_work_complete: string;
@@ -3496,7 +3497,7 @@ export interface ScheduleTaskRow {
 const SCHEDULE_TASK_COLS = [
   't.task_id', 't.mpp_unique_id',
   'r.parent_task_id', 'r.outline_level', 'r.wbs', 'r.task_name', 'r.duration_minutes',
-  'r.start', 'r.expected_finish', 'r.actual_start', 'r.actual_finish',
+  'r.start', 'r.expected_finish', 'r.baseline_finish', 'r.actual_start', 'r.actual_finish',
   'r.pct_work_complete', 'r.planned_pct_complete',
   'r.is_milestone', 'r.is_summary', 'r.is_critical',
   'r.predecessors', 'r.resource_names', 'r.responsible_user_id',
