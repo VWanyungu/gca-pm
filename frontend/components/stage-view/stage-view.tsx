@@ -52,7 +52,11 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
   }
 
   if (isLoading) {
-    return <p className="p-[40px] text-[14px] text-gca-muted">Loading stage…</p>;
+    return (
+      <main className="flex w-full max-w-[1200px] flex-col gap-[24px] p-[20px] md:p-[40px]">
+        <p className="text-[14px] text-gca-muted">Loading stage…</p>
+      </main>
+    );
   }
   if (error || !stage || !project) return null;
 
