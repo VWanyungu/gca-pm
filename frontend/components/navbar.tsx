@@ -6,7 +6,6 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Search,
   Sun,
   Moon,
   HelpCircle,
@@ -27,7 +26,7 @@ import useOutsideClick from "@/hooks/use-outside-click";
 import { useUnreadCount } from "@/components/notifications/use-notifications";
 import { useMobileNavigation } from "@/components/mobile-navigation-context";
 import { useTheme } from "@/components/theme-provider";
-import { GlobalSearch } from "@/components/global-search";
+import { GlobalSearch, type GlobalSearchHandle } from "@/components/global-search";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/" },
@@ -54,7 +53,7 @@ export function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const { isOpen: mobileMenuOpen, setIsOpen: setMobileMenuOpen } = useMobileNavigation();
   const { toggle: toggleTheme } = useTheme();
-  const [searchOpen, setSearchOpen] = useState(false);
+  const desktopSearchRef = useRef<GlobalSearchHandle>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [mobileProjectsOpen, setMobileProjectsOpen] = useState(false);
@@ -64,7 +63,7 @@ export function Navbar() {
     function onKeyDown(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
-        setSearchOpen(true);
+        desktopSearchRef.current?.focus();
       }
     }
     window.addEventListener("keydown", onKeyDown);
@@ -170,17 +169,10 @@ export function Navbar() {
               <div className="flex flex-1 flex-col overflow-y-auto">
                 {/* Search */}
                 <div className="px-[16px] pt-[16px] pb-[8px]">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      setSearchOpen(true);
-                    }}
-                    className="flex w-full items-center gap-[10px] rounded-[8px] border border-gca-border bg-gca-page-bg px-[14px] py-[10px] text-left"
-                  >
-                    <Search className="size-[16px] text-gca-muted" />
-                    <span className="text-[14px] text-gca-muted">Search projects, risks, changes</span>
-                  </button>
+                  <GlobalSearch
+                    className="w-full"
+                    inputBoxClassName="border border-gca-border px-[14px] py-[10px]"
+                  />
                 </div>
 
                 {/* Main navigation */}
@@ -390,18 +382,8 @@ export function Navbar() {
         {/* Right: search + actions */}
         <div className="flex shrink-0 items-center gap-[2px] sm:gap-[8px]">
           {/* Global search */}
-          <button
-            type="button"
-            onClick={() => setSearchOpen(true)}
-            aria-label="Search"
-            className="hidden w-[300px] cursor-pointer items-center justify-between rounded-[8px] bg-gca-page-bg px-[12px] py-[8px] lg:flex"
-          >
-            <Search className="size-[16px] text-gca-muted" />
-            <span className="text-[14px] text-gca-muted">Search projects, risks, changes</span>
-            <kbd className="rounded-[4px] border border-gca-border bg-gca-surface px-[6px] py-[2px] text-[11px] font-medium text-gca-show">
-              Ctrl K
-            </kbd>
-          </button>
+          <GlobalSearch ref={desktopSearchRef} className="hidden w-[300px] lg:block" showShortcutHint />
+
 
           {/* Theme switcher */}
           <button
@@ -486,7 +468,6 @@ export function Navbar() {
           </div>
         </div>
       </header>
-      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   );
 }

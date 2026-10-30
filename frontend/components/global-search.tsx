@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, FolderKanban, GitPullRequest, Flag, Search, X } from "lucide-react";
+import { AlertTriangle, FolderKanban, GitPullRequest, Flag, Search } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import useOutsideClick from "@/hooks/use-outside-click";
 
 interface SearchHit {
   id: string;
@@ -45,18 +46,29 @@ function hrefFor(group: (typeof GROUPS)[number]["key"], hit: SearchHit): string 
   }
 }
 
-/** Mounting the dialog only while it is open means its query and selection start fresh every
- *  time, with no effect to reset them on close. */
-export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => void }) {
-  if (!open) return null;
-  return <SearchDialog onClose={onClose} />;
+export interface GlobalSearchHandle {
+  focus: () => void;
 }
 
-function SearchDialog({ onClose }: { onClose: () => void }) {
+/** The navbar's own search field — not a button that opens one. Results drop down
+ *  beneath it while focused; blurring outside or Escape just collapses the dropdown. */
+export const GlobalSearch = forwardRef<
+  GlobalSearchHandle,
+  { className?: string; inputBoxClassName?: string; showShortcutHint?: boolean }
+>(function GlobalSearch({ className, inputBoxClassName, showShortcutHint }, ref) {
   const router = useRouter();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const debounced = useDebouncedValue(query.trim(), 200);
+
+  useImperativeHandle(ref, () => ({
+    focus: () => inputRef.current?.focus(),
+  }));
+
+  useOutsideClick({ ref: containerRef, handler: () => setIsOpen(false) });
 
   const { data, isFetching } = useQuery({
     queryKey: ["search", debounced],
@@ -82,13 +94,15 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
   }, [data]);
 
   function go(href: string) {
-    onClose();
+    setIsOpen(false);
+    setQuery("");
     router.push(href);
   }
 
   function onKeyDown(event: React.KeyboardEvent) {
     if (event.key === "Escape") {
-      onClose();
+      setIsOpen(false);
+      inputRef.current?.blur();
       return;
     }
     if (event.key === "ArrowDown") {
@@ -109,106 +123,102 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
   const noResults = !isFetching && debounced.length >= MIN_QUERY && flat.length === 0;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-gca-dark/30 p-[16px] pt-[12vh]"
-      onClick={onClose}
-      role="presentation"
-    >
+    <div ref={containerRef} className={`relative ${className ?? ""}`}>
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Search"
-        onClick={(event) => event.stopPropagation()}
-        onKeyDown={onKeyDown}
-        className="flex w-full max-w-[640px] flex-col overflow-hidden rounded-[12px] border border-gca-border bg-gca-surface shadow-[0px_10px_28px_0px_rgba(23,48,31,0.18)]"
+        className={`flex items-center gap-[10px] rounded-[8px] bg-gca-page-bg ${inputBoxClassName ?? "px-[12px] py-[8px]"}`}
       >
-        <div className="flex items-center gap-[10px] border-b border-gca-border px-[16px] py-[12px]">
-          <Search className="size-[16px] shrink-0 text-gca-muted" />
-          <input
-            // Focus belongs in a search dialog the user just opened.
-            autoFocus
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              // A new query means a new result list, so the highlight goes back to the top.
-              setActiveIndex(0);
-            }}
-            placeholder="Search projects, risks, change requests, milestones"
-            aria-label="Search projects, risks, change requests and milestones"
-            className="min-w-0 w-full bg-transparent text-[15px] text-gca-dark outline-none placeholder:text-gca-muted"
-          />
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close search"
-            className="flex size-[24px] shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-gca-muted hover:bg-gca-page-bg"
-          >
-            <X className="size-[16px]" />
-          </button>
-        </div>
-
-        <div className="max-h-[52vh] overflow-y-auto">
-          {query.length === 0 && (
-            <p className="px-[16px] py-[20px] text-[13px] text-gca-muted">
-              Type to search across every project you can see.
-            </p>
-          )}
-          {tooShort && (
-            <p className="px-[16px] py-[20px] text-[13px] text-gca-muted">
-              Keep typing — at least {MIN_QUERY} characters.
-            </p>
-          )}
-          {noResults && (
-            <p className="px-[16px] py-[20px] text-[13px] text-gca-muted">
-              Nothing matches “{debounced}”.
-            </p>
-          )}
-
-          {GROUPS.map((group) => {
-            const hits = data?.[group.key] ?? [];
-            if (hits.length === 0) return null;
-            const Icon = group.icon;
-            return (
-              <div key={group.key} className="flex flex-col">
-                <p className="bg-gca-page-bg px-[16px] py-[6px] text-[12px] font-semibold text-gca-muted">
-                  {group.label}
-                </p>
-                {hits.map((hit) => {
-                  const index = flat.findIndex((f) => f.group === group.key && f.hit.id === hit.id);
-                  return (
-                    <button
-                      key={`${group.key}-${hit.id}`}
-                      type="button"
-                      onMouseEnter={() => setActiveIndex(index)}
-                      onClick={() => go(hrefFor(group.key, hit))}
-                      className={`flex w-full cursor-pointer items-center gap-[10px] px-[16px] py-[10px] text-left ${
-                        index === activeIndex ? "bg-gca-badge-bg" : "hover:bg-gca-page-bg"
-                      }`}
-                    >
-                      <Icon className="size-[15px] shrink-0 text-gca-green" />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[14px] font-medium text-gca-dark">
-                          {hit.title}
-                        </span>
-                        <span className="block truncate text-[12px] text-gca-muted">
-                          {group.key === "projects"
-                            ? (hit.subtitle ?? "Project")
-                            : `${hit.project_name}${hit.subtitle ? ` · ${hit.subtitle}` : ""}`}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="flex items-center justify-between border-t border-gca-border px-[16px] py-[8px] text-[11px] text-gca-muted">
-          <span>↑↓ to move · ↵ to open · Esc to close</span>
-          {isFetching && <span>Searching…</span>}
-        </div>
+        <Search className="size-[16px] shrink-0 text-gca-muted" />
+        <input
+          ref={inputRef}
+          value={query}
+          onFocus={() => setIsOpen(true)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            // A new query means a new result list, so the highlight goes back to the top.
+            setActiveIndex(0);
+            setIsOpen(true);
+          }}
+          onKeyDown={onKeyDown}
+          placeholder="Search projects, risks, changes"
+          aria-label="Search projects, risks, change requests and milestones"
+          className="min-w-0 w-full bg-transparent text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
+        />
+        {showShortcutHint && !query && (
+          <kbd className="shrink-0 rounded-[4px] border border-gca-border bg-gca-surface px-[6px] py-[2px] text-[11px] font-medium text-gca-show">
+            Ctrl K
+          </kbd>
+        )}
       </div>
+
+      {isOpen && (
+        <div
+          role="listbox"
+          aria-label="Search results"
+          className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 flex max-h-[70vh] flex-col overflow-hidden rounded-[12px] border border-gca-border bg-gca-surface shadow-[0px_10px_28px_0px_rgba(23,48,31,0.18)]"
+        >
+          <div className="max-h-[52vh] overflow-y-auto">
+            {query.length === 0 && (
+              <p className="px-[16px] py-[20px] text-[13px] text-gca-muted">
+                Type to search across every project you can see.
+              </p>
+            )}
+            {tooShort && (
+              <p className="px-[16px] py-[20px] text-[13px] text-gca-muted">
+                Keep typing — at least {MIN_QUERY} characters.
+              </p>
+            )}
+            {noResults && (
+              <p className="px-[16px] py-[20px] text-[13px] text-gca-muted">
+                Nothing matches “{debounced}”.
+              </p>
+            )}
+
+            {GROUPS.map((group) => {
+              const hits = data?.[group.key] ?? [];
+              if (hits.length === 0) return null;
+              const Icon = group.icon;
+              return (
+                <div key={group.key} className="flex flex-col">
+                  <p className="bg-gca-page-bg px-[16px] py-[6px] text-[12px] font-semibold text-gca-muted">
+                    {group.label}
+                  </p>
+                  {hits.map((hit) => {
+                    const index = flat.findIndex((f) => f.group === group.key && f.hit.id === hit.id);
+                    return (
+                      <button
+                        key={`${group.key}-${hit.id}`}
+                        type="button"
+                        onMouseEnter={() => setActiveIndex(index)}
+                        onClick={() => go(hrefFor(group.key, hit))}
+                        className={`flex w-full cursor-pointer items-center gap-[10px] px-[16px] py-[10px] text-left ${
+                          index === activeIndex ? "bg-gca-badge-bg" : "hover:bg-gca-page-bg"
+                        }`}
+                      >
+                        <Icon className="size-[15px] shrink-0 text-gca-green" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[14px] font-medium text-gca-dark">
+                            {hit.title}
+                          </span>
+                          <span className="block truncate text-[12px] text-gca-muted">
+                            {group.key === "projects"
+                              ? (hit.subtitle ?? "Project")
+                              : `${hit.project_name}${hit.subtitle ? ` · ${hit.subtitle}` : ""}`}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between border-t border-gca-border px-[16px] py-[8px] text-[11px] text-gca-muted">
+            <span>↑↓ to move · ↵ to open · Esc to close</span>
+            {isFetching && <span>Searching…</span>}
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+});
