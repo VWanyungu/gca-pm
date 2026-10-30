@@ -108,7 +108,7 @@ export default function Home() {
   const [perPage, setPerPage] = useState(CARD_PAGE_SIZE);
   const [view, setView] = useState<"card" | "table">("card");
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("active");
   const [programFilter, setProgramFilter] = useState("");
 
   const showCreate = canAccess(user?.role, CAN_CREATE_PROJECT);
