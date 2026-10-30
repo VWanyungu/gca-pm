@@ -10,7 +10,7 @@ import {
   type DprDetail,
 } from "@/components/weekly-submission/types";
 import { ArrowLeft, ChevronDown, ChevronUp, Download } from "lucide-react";
-import { SectionChips } from "@/components/ui/section-chips";
+import { SectionTocSheet } from "@/components/ui/section-toc-sheet";
 import { DprReportDocument } from "./dpr-report-document";
 
 const SECTIONS = [
@@ -285,14 +285,14 @@ export function DprDetailView({
         </div>
       </div>
 
-      {/* Below lg the details read as a band under the heading and the section list
-              becomes a swipeable strip — a 260px rail would leave no room for the report. */}
+      {/* Below lg the details read as a band under the heading and the section list moves
+              into the floating Contents sheet — a 260px rail would leave no room for the report. */}
       <div className="flex flex-col gap-[16px] rounded-[12px] border border-gca-border bg-gca-surface p-[16px] lg:hidden">
         <p className="text-[14px] font-semibold text-gca-dark">DPR details</p>
         <div className="grid grid-cols-2 gap-x-[24px] gap-y-[16px]">{dprDetailFields}</div>
       </div>
 
-      <SectionChips
+      <SectionTocSheet
         sections={SECTIONS}
         activeId={activeSection}
         onSelect={(id) => goToSection(id as SectionId)}

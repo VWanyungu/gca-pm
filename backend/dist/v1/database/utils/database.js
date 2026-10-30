@@ -147,6 +147,20 @@ export class Users {
             return null;
         return Users.getUserById(id);
     }
+    /** Marks every access token issued before now as invalid (checked against the token's
+     *  `iat` in authenticateToken). Returns the cutoff so the caller can seed the cache
+     *  immediately, or null if the user doesn't exist. */
+    static async invalidateSessions(id) {
+        const [row] = await db('users')
+            .where({ id })
+            .update({ tokens_invalidated_at: db.fn.now(), updated_at: db.fn.now() })
+            .returning('tokens_invalidated_at');
+        return row ? row.tokens_invalidated_at : null;
+    }
+    static async getTokensInvalidatedAt(id) {
+        const row = await db('users').select('tokens_invalidated_at').where({ id }).first();
+        return row?.tokens_invalidated_at ?? null;
+    }
     static async createUserAdmin(input, passwordHash, actorId) {
         const id = randomUUID();
         await db('users').insert({
@@ -217,6 +231,9 @@ export class Tokens {
             .del()
             .returning('refresh_token');
         return { deletedToken: deleted ? deleted.refresh_token : null };
+    }
+    static async deleteAllRefreshTokensForUser(userId) {
+        await db('refreshTokens').where({ user_id: userId }).del();
     }
     static async blacklistToken(token) {
         await db('tokens').insert({ token }).onConflict('token').ignore();
@@ -1233,6 +1250,10 @@ export class Projects {
         if (status !== undefined) {
             query.where('status', status);
         }
+        else {
+            // AC-PRJ-11: deleted projects are hidden unless explicitly asked for.
+            query.whereNot('status', 'deleted');
+        }
         if (country) {
             query.whereILike('country', `%${country}%`);
         }
@@ -1376,11 +1397,13 @@ export class Projects {
                 // active -> complete
                 // active or on_hold -> cancelled (reason required)
                 // cancelled -> active (reason required)
+                // any non-deleted status -> deleted (AC-PRJ-11, Admin-only — enforced by the caller)
                 const allowedTransitions = {
-                    active: ['on_hold', 'complete', 'cancelled'],
-                    on_hold: ['active', 'cancelled'],
-                    complete: [],
-                    cancelled: ['active'],
+                    active: ['on_hold', 'complete', 'cancelled', 'deleted'],
+                    on_hold: ['active', 'cancelled', 'deleted'],
+                    complete: ['deleted'],
+                    cancelled: ['active', 'deleted'],
+                    deleted: [],
                 };
                 if (!allowedTransitions[fromStatus].includes(toStatus)) {
                     throw new Error(`Invalid project status transition from '${fromStatus}' to '${toStatus}'`);
@@ -1425,11 +1448,6 @@ export class Projects {
             return updated ?? null;
         };
         return trx ? await execute(trx) : await db.transaction(execute);
-    }
-    static async delete(projectId, trx) {
-        const q = trx ? trx('projects') : db('projects');
-        const count = await q.where({ project_id: projectId }).del();
-        return count > 0;
     }
     static async suggestNextCode(programId, year) {
         const currentYear = year ?? new Date().getFullYear();
@@ -2045,7 +2063,7 @@ export class ScheduleUploadInFlightError extends Error {
 const SCHEDULE_TASK_COLS = [
     't.task_id', 't.mpp_unique_id',
     'r.parent_task_id', 'r.outline_level', 'r.wbs', 'r.task_name', 'r.duration_minutes',
-    'r.start', 'r.expected_finish', 'r.actual_start', 'r.actual_finish',
+    'r.start', 'r.expected_finish', 'r.baseline_finish', 'r.actual_start', 'r.actual_finish',
     'r.pct_work_complete', 'r.planned_pct_complete',
     'r.is_milestone', 'r.is_summary', 'r.is_critical',
     'r.predecessors', 'r.resource_names', 'r.responsible_user_id',
@@ -2090,19 +2108,35 @@ export class ScheduleTasks {
             .select(...SCHEDULE_TASK_COLS, db.raw("(r.is_summary = false AND r.pct_work_complete < 100 AND r.expected_finish < now()) as is_overdue"), db.raw(PLANNED_PCT_SQL))
             .orderBy('t.mpp_unique_id', 'asc');
     }
-    /** Overdue tasks (AC-SCH-20), each left-joined to its auto-raised risk (if any) so the
-     *  Overdue tab can show "Add as risk" vs. "Risk raised · View". */
+    /** Current revision of every live task, for building a fresh MS Project export (ScheduleBuilder)
+     *  that reflects today's DB state — including write-backs a re-upload wouldn't know about.
+     *  Dates come back as the project-local wall-clock strings MS Project originally wrote,
+     *  reversing the `AT TIME ZONE` conversion scheduleProcessor applied on upload (see
+     *  resolveLocalTimestamps), since that is the format the exporter's writer expects. */
+    static async listCurrentForExport(projectId) {
+        const local = (col, alias) => db.raw(`to_char(${col} AT TIME ZONE p.timezone, 'YYYY-MM-DD"T"HH24:MI:SS') as ${alias}`);
+        return db('schedule_task_revision as r')
+            .join('schedule_task as t', 't.task_id', 'r.task_id')
+            .join('projects as p', 'p.project_id', 't.project_id')
+            .leftJoin('schedule_task as parent', 'parent.task_id', 'r.parent_task_id')
+            .where('t.project_id', projectId)
+            .whereNull('r.valid_to')
+            .whereNull('t.removed_in_version_id')
+            .select('t.mpp_unique_id', 'parent.mpp_unique_id as parent_mpp_unique_id', 'r.outline_level', 'r.wbs', 'r.task_name', 'r.duration_minutes', local('r.start', 'start'), local('r.expected_finish', 'expected_finish'), 
+        // to_char of a NULL timestamp is NULL, so these fall through correctly unbaselined/not-yet-actual.
+        local('r.baseline_start', 'baseline_start'), local('r.baseline_finish', 'baseline_finish'), local('r.actual_start', 'actual_start'), local('r.actual_finish', 'actual_finish'), 'r.pct_work_complete', 'r.planned_pct_complete', 'r.is_milestone', 'r.is_summary', 'r.is_critical', 'r.is_active', 'r.task_type', 'r.predecessors', 'r.resource_names')
+            .orderBy('t.mpp_unique_id', 'asc');
+    }
     /**
      * AC-SCH-20, and the list the PM works from: tasks past their expected finish and not
      * finished. "Past" is a project-local calendar question — a task due today is not overdue
      * at 09:00 just because the server is in UTC — so the comparison runs in the project's zone.
      *
-     * Each task appears once. A task can carry several risks over time (one dismissed, another
-     * raised after the planner moved it), so the most relevant one is picked: a risk that still
-     * covers the task first, then the most recently raised. Dismissed and auto-resolved risks
-     * do not cover anything — the PM threw one out, the other closed itself when the task
-     * stopped being overdue — so a task holding only those reads as uncovered and can be
-     * raised again.
+     * Each task appears once. A task can carry several risks over time (one closed, another
+     * raised after the planner moved it), so the one that still covers it is picked first — an
+     * open risk if there is one, else the most recently raised — and the Overdue tab reads
+     * "covered" straight off that status (AC-SCH-23 closes a risk once its task catches up; the
+     * PM can raise a fresh one if the same task falls overdue again).
      */
     static async listOverdue(projectId) {
         const { rows } = await db.raw(`
@@ -2117,7 +2151,7 @@ export class ScheduleTasks {
         SELECT risk_id, status
         FROM risk
         WHERE source_task_id = t.task_id AND source = 'overdue_task'
-        ORDER BY (status IN ('open', 'mitigated', 'closed')) DESC, opened_at DESC
+        ORDER BY (status = 'open') DESC, opened_at DESC
         LIMIT 1
       ) k ON true
       WHERE t.project_id = :projectId
@@ -3490,7 +3524,7 @@ export class WeeklySubmissions {
             for (const sar of addressed) {
                 if (sar.method === 'dismissed') {
                     await t('risk').where('risk_id', sar.risk_id).update({
-                        status: 'dismissed',
+                        status: 'closed',
                         closed_at: approvedAt,
                     });
                 }
@@ -4021,7 +4055,7 @@ export class Search {
             scope(db('risk as r'), 'r.project_id')
                 .join('projects as p', 'p.project_id', 'r.project_id')
                 .whereILike('r.title', pattern)
-                .whereNotIn('r.status', ['closed', 'dismissed', 'auto_resolved'])
+                .where('r.status', 'open')
                 .orderBy('r.score', 'desc')
                 .limit(limit)
                 .select('r.risk_id as id', 'r.project_id', 'p.name as project_name', 'r.title', 'r.kind as subtitle'),

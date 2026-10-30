@@ -1,9 +1,10 @@
 import express from 'express';
-import { Projects, ScheduleVersions, ScheduleTasks, ScheduleReconciliationFlags, ScheduleUploadInFlightError, ChangeRequests, } from '../database/utils/database.js';
+import { Projects, ScheduleVersions, ScheduleTasks, ScheduleReconciliationFlags, ScheduleUploadInFlightError, ChangeRequests, FileObjects, } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
 import { scheduleProjectParamsSchema, scheduleVersionParamsSchema, listReconciliationFlagsQuerySchema, acknowledgeReconciliationFlagsSchema, uploadScheduleSchema, } from '../utils/validation.js';
-import { storeObject, discardObject, FileValidationError, FileStorageError, } from '../utils/objectStorage.js';
+import { storeObject, discardObject, fetchObjectBytes, FileValidationError, FileStorageError, } from '../utils/objectStorage.js';
 import { processScheduleVersion } from '../utils/scheduleProcessor.js';
+import { buildScheduleExport, MppParserUnavailableError } from '../utils/mppParser.js';
 // mergeParams so :projectId reaches authorize and handlers
 const router = express.Router({ mergeParams: true });
 const canView = authorize([
@@ -22,6 +23,11 @@ const canManage = authorize([
 ]);
 // AC-SCH-01 narrows uploading to the project's Planner; authorize() always lets Admin@global through.
 const canUpload = authorize([{ role: 'Planner', scopeType: 'project' }]);
+/** RFC 6266 quoted-string: escape backslashes/quotes and strip control characters so a
+ *  user-supplied filename can't break out of the Content-Disposition header value. */
+function contentDispositionFilename(name) {
+    return name.replace(/[\x00-\x1f\x7f]/g, '').replace(/(["\\])/g, '\\$1');
+}
 // GET /projects/:projectId/schedule/versions
 router.get('/versions', canView, async (req, res) => {
     const params = scheduleProjectParamsSchema.validate(req.params);
@@ -85,6 +91,112 @@ router.get('/versions/:versionId/changes', canView, async (req, res) => {
         res.status(200).json({ status: 'success', data: { changes }, message: 'Version changes retrieved' });
     }
     catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        res.status(500).json({ status: 'error', data: null, message });
+    }
+});
+// GET /projects/:projectId/schedule/versions/:versionId/download
+// AC-SCH-42 / AC-FIL-04: the exact bytes this version was uploaded from. Streamed through this
+// authorized route rather than handing back the storage provider's own URL, since that URL is
+// unsigned and never expires.
+router.get('/versions/:versionId/download', canView, async (req, res) => {
+    const params = scheduleVersionParamsSchema.validate(req.params);
+    if (params.error) {
+        res.status(400).json({ status: 'error', data: null, message: params.error.message });
+        return;
+    }
+    const { projectId, versionId } = params.value;
+    try {
+        const project = await Projects.getById(projectId);
+        if (!project) {
+            res.status(404).json({ status: 'error', data: null, message: 'Project not found' });
+            return;
+        }
+        const version = await ScheduleVersions.getById(projectId, versionId);
+        if (!version || version.status !== 'applied') {
+            res.status(404).json({ status: 'error', data: null, message: 'No file available for this version' });
+            return;
+        }
+        const fileObject = await FileObjects.getById(version.source_file_id);
+        if (!fileObject) {
+            res
+                .status(404)
+                .json({ status: 'error', data: null, message: 'The uploaded file is no longer available' });
+            return;
+        }
+        const bytes = await fetchObjectBytes(fileObject);
+        res.setHeader('Content-Type', fileObject.mime_type || 'application/vnd.ms-project');
+        res.setHeader('Content-Disposition', `attachment; filename="${contentDispositionFilename(fileObject.original_filename)}"`);
+        res.send(bytes);
+    }
+    catch (err) {
+        if (err instanceof FileStorageError) {
+            res.status(502).json({ status: 'error', data: null, message: err.message });
+            return;
+        }
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        res.status(500).json({ status: 'error', data: null, message });
+    }
+});
+// GET /projects/:projectId/schedule/export
+// The main schedule screen's export: current task state, including write-backs no uploaded
+// file knows about, built into MSPDI XML (MPXJ has no binary .mpp writer — see ScheduleBuilder).
+router.get('/export', canView, async (req, res) => {
+    const params = scheduleProjectParamsSchema.validate(req.params);
+    if (params.error) {
+        res.status(400).json({ status: 'error', data: null, message: params.error.message });
+        return;
+    }
+    const { projectId } = params.value;
+    try {
+        const project = await Projects.getById(projectId);
+        if (!project) {
+            res.status(404).json({ status: 'error', data: null, message: 'Project not found' });
+            return;
+        }
+        const rows = await ScheduleTasks.listCurrentForExport(projectId);
+        if (rows.length === 0) {
+            res.status(404).json({ status: 'error', data: null, message: 'No schedule uploaded for this project' });
+            return;
+        }
+        const latestApplied = await ScheduleVersions.latestApplied(projectId);
+        const tasks = rows.map((row) => ({
+            mpp_unique_id: row.mpp_unique_id,
+            parent_mpp_unique_id: row.parent_mpp_unique_id,
+            outline_level: row.outline_level,
+            wbs: row.wbs,
+            task_name: row.task_name,
+            duration_minutes: row.duration_minutes,
+            baseline_start: row.baseline_start,
+            baseline_finish: row.baseline_finish,
+            start: row.start,
+            expected_finish: row.expected_finish,
+            actual_start: row.actual_start,
+            actual_finish: row.actual_finish,
+            pct_work_complete: Number(row.pct_work_complete),
+            planned_pct_complete: Number(row.planned_pct_complete),
+            is_milestone: row.is_milestone,
+            is_summary: row.is_summary,
+            is_critical: row.is_critical,
+            is_active: row.is_active,
+            task_type: row.task_type,
+            predecessors: row.predecessors,
+            resource_names: row.resource_names,
+        }));
+        const xml = await buildScheduleExport({
+            project_name: project.name,
+            status_date: latestApplied?.status_date ?? null,
+            tasks,
+        });
+        res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${contentDispositionFilename(`${project.name}-schedule.xml`)}"`);
+        res.send(xml);
+    }
+    catch (err) {
+        if (err instanceof MppParserUnavailableError) {
+            res.status(502).json({ status: 'error', data: null, message: err.message });
+            return;
+        }
         const message = err instanceof Error ? err.message : 'Unknown error';
         res.status(500).json({ status: 'error', data: null, message });
     }

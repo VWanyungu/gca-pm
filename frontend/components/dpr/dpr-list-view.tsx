@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ClipboardList, FilePlus2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useIsMobile } from "@/hooks/use-is-mobile";
 import { canAccess, CAN_CREATE_DPR } from "@/lib/access-control";
 import { reportError } from "@/lib/toast";
 import Dropdown from "@/components/Dropdown";
@@ -113,9 +112,6 @@ function statusInfo(dpr: DprSummary): { label: string; className: string } {
 export function DprListView({ projectId }: { projectId: string }) {
   const router = useRouter();
   const { user } = useAuth();
-  // The inline wizard borrows the engineers' one-step-at-a-time flow on a phone; the
-  // full-page layout needs the width its section rail assumes.
-  const isMobile = useIsMobile();
   const { data: project } = useProjectDetail(projectId);
   const [subView, setSubView] = useState<SubView>({ mode: "list" });
   const invalidateDprs = useDprInvalidate(projectId);
@@ -219,7 +215,7 @@ export function DprListView({ projectId }: { projectId: string }) {
           key={subView.reportDate}
           projectId={projectId}
           reportDate={subView.reportDate}
-          layout={isMobile ? "steps" : "full"}
+          layout="full"
           onClose={backToList}
           onSubmitted={(dprId) => router.push(`/projects/${projectId}/dpr/${dprId}?back=dpr`)}
         />
@@ -229,7 +225,7 @@ export function DprListView({ projectId }: { projectId: string }) {
           projectId={projectId}
           dprId={subView.dprId}
           amendmentMode={subView.amendmentMode}
-          layout={isMobile ? "steps" : "full"}
+          layout="full"
           onClose={backToList}
           onSubmitted={(dprId) => router.push(`/projects/${projectId}/dpr/${dprId}?back=dpr`)}
           onAmendmentRequested={backToList}

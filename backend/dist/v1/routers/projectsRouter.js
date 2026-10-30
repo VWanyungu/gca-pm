@@ -134,7 +134,8 @@ router.get('/:projectId', canViewProject, async (req, res) => {
     const { projectId } = params.value;
     try {
         const project = await Projects.getById(projectId);
-        if (!project) {
+        const isGlobalAdmin = (req.user?.role ?? []).some((grant) => grant.role === 'Admin' && grant.scope_type === 'global');
+        if (!project || (project.status === 'deleted' && !isGlobalAdmin)) {
             res.status(404).json({ status: 'error', data: null, message: 'Project not found' });
             return;
         }
@@ -174,6 +175,14 @@ router.patch('/:projectId', canManageProject, async (req, res) => {
     }
     const { projectId } = params.value;
     const input = body.value;
+    // AC-PRJ-11: deletion is Admin-only even through this general-purpose route.
+    if (input.status === 'deleted') {
+        const isGlobalAdmin = (req.user?.role ?? []).some((grant) => grant.role === 'Admin' && grant.scope_type === 'global');
+        if (!isGlobalAdmin) {
+            res.status(403).json({ status: 'error', data: null, message: 'Not authorized' });
+            return;
+        }
+    }
     try {
         const existing = await Projects.getById(projectId);
         if (!existing) {
@@ -215,11 +224,13 @@ router.delete('/:projectId', canDeleteProject, async (req, res) => {
     const { projectId } = params.value;
     try {
         const existing = await Projects.getById(projectId);
-        if (!existing) {
+        if (!existing || existing.status === 'deleted') {
             res.status(404).json({ status: 'error', data: null, message: 'Project not found' });
             return;
         }
-        await Projects.delete(projectId);
+        // AC-PRJ-11: soft delete — the row stays, status flips to 'deleted' and the
+        // transition is logged like any other (via Projects.update), it's just hidden from view.
+        await Projects.update(projectId, { status: 'deleted' }, req.user.userId, null);
         res.status(200).json({
             status: 'success',
             data: null,

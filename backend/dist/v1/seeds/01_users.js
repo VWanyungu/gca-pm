@@ -1,4 +1,9 @@
 export const SEED_PASSWORD_HASH = "$2a$10$maT1oyfF3COMDjifizq7r.hGdKcbOV4UljqVjCbu7/ob4t5Q9UB02";
+// Only governance/test-infrastructure accounts remain here: Admin, ProjectCreator
+// and ExCo are needed for the app to be administerable at all (AC-IAM-01,
+// AC-PRJ-01), PM and SITE_ENGINEER back the e2e role-access suite (e2e/fixtures.ts),
+// and PM_2 (Benedette Marigi) is a real person. The fictional demo project staff
+// (Planner/SiteEngineer_2) were removed along with the fake demo projects.
 export const USER_IDS = {
     SYSTEM: "00000000-0000-0000-0000-000000000000",
     ADMIN: "10000000-0000-0000-0000-000000000001",
@@ -6,9 +11,7 @@ export const USER_IDS = {
     EXCO: "10000000-0000-0000-0000-000000000003",
     PM: "10000000-0000-0000-0000-000000000004",
     PM_2: "10000000-0000-0000-0000-000000000005",
-    PLANNER: "10000000-0000-0000-0000-000000000006",
     SITE_ENGINEER: "10000000-0000-0000-0000-000000000007",
-    SITE_ENGINEER_2: "10000000-0000-0000-0000-000000000008",
 };
 export async function seed(knex) {
     const users = [
@@ -78,19 +81,6 @@ export async function seed(knex) {
             updated_at: knex.fn.now(),
         },
         {
-            id: USER_IDS.PLANNER,
-            external_id: "USR-0006",
-            first_name: "Paul",
-            last_name: "Kimani",
-            email: "planner@gasconnectafrica.com",
-            username: "planner",
-            phone_number: "+254700000006",
-            password_hash: SEED_PASSWORD_HASH,
-            status: "active",
-            is_verified: true,
-            updated_at: knex.fn.now(),
-        },
-        {
             id: USER_IDS.SITE_ENGINEER,
             external_id: "USR-0007",
             first_name: "Samuel",
@@ -98,19 +88,6 @@ export async function seed(knex) {
             email: "site.engineer@gasconnectafrica.com",
             username: "site_engineer",
             phone_number: "+254700000007",
-            password_hash: SEED_PASSWORD_HASH,
-            status: "active",
-            is_verified: true,
-            updated_at: knex.fn.now(),
-        },
-        {
-            id: USER_IDS.SITE_ENGINEER_2,
-            external_id: "USR-0008",
-            first_name: "Sarah",
-            last_name: "Wanjiru",
-            email: "site.engineer2@gasconnectafrica.com",
-            username: "site_engineer2",
-            phone_number: "+254700000008",
             password_hash: SEED_PASSWORD_HASH,
             status: "active",
             is_verified: true,

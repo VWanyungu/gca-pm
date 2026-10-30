@@ -19,11 +19,8 @@ const canManage = authorize([
     { role: 'Admin', scopeType: 'global' },
 ]);
 const STATUS_TRANSITIONS = {
-    open: ['mitigated', 'closed', 'dismissed'],
-    mitigated: ['open', 'closed'],
+    open: ['closed'],
     closed: ['open'],
-    dismissed: ['open'],
-    auto_resolved: [],
 };
 router.post('/', canManage, async (req, res) => {
     const params = riskIssueProjectParamsSchema.validate(req.params);
@@ -224,12 +221,12 @@ router.delete('/:riskId', canManage, async (req, res) => {
             res.status(404).json({ status: 'error', data: null, message: 'Risk/issue not found' });
             return;
         }
-        if (!STATUS_TRANSITIONS[existing.status].includes('dismissed')) {
+        if (!STATUS_TRANSITIONS[existing.status].includes('closed')) {
             res.status(400).json({ status: 'error', data: null, message: `Cannot dismiss from status ${existing.status}` });
             return;
         }
         const dismissed = await RiskIssues.update(projectId, riskId, {
-            status: 'dismissed',
+            status: 'closed',
             dismissal_reason: reason,
             closed_at: new Date(),
         });

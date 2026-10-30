@@ -355,6 +355,46 @@ export async function recoverScheduleVersions(stuckAfterMinutes = 15) {
         console.log(`Schedule recovery: failed ${abandoned.length} abandoned, re-ran ${queued.length} queued`);
     }
 }
+/**
+ * The nightly metrics job AC-SCH-30 to AC-SCH-34 expects: planned % drifts with the calendar
+ * even when nobody uploads a schedule, so each project with an applied schedule gets today's
+ * snapshot recomputed, not just the day it was last uploaded.
+ */
+export async function refreshAllProjectMetrics() {
+    const projects = await db
+        .select('p.project_id', 'sv.schedule_version_id', 'p.timezone')
+        .from('projects as p')
+        .join(db('schedule_version')
+        .select('project_id', 'schedule_version_id')
+        .distinctOn('project_id')
+        .where({ status: 'applied' })
+        .orderBy('project_id')
+        .orderBy('applied_at', 'desc')
+        .as('sv'), 'sv.project_id', 'p.project_id');
+    let refreshed = 0;
+    for (const project of projects) {
+        try {
+            await db.transaction(async (trx) => {
+                await trx.raw('SELECT pg_advisory_xact_lock(hashtext(?))', [project.project_id]);
+                const snapshot = await refreshProjectMetrics(trx, project.project_id, project.schedule_version_id, project.timezone);
+                if (snapshot)
+                    refreshed += 1;
+            });
+        }
+        catch (err) {
+            console.error('Nightly metrics refresh failed for project', project.project_id, err);
+        }
+    }
+    console.log(`Nightly metrics refresh: updated ${refreshed}/${projects.length} projects`);
+}
+/** Next 3am strictly after `now`, so a run already in progress at 3:00:00.000 isn't repeated. */
+export function nextThreeAm(now) {
+    const next = new Date(now);
+    next.setHours(3, 0, 0, 0);
+    if (next <= now)
+        next.setDate(next.getDate() + 1);
+    return next;
+}
 export const __testing = { revisionDiffers, toRevisionFields };
 /**
  * AC-SCH-12. Sent after the apply transaction commits, so nothing announces a change that
