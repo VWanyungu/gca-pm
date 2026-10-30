@@ -98,7 +98,7 @@ export async function autoResolveOverdueRisks(
 
   for (const resolution of resolutions) {
     await trx('risk').where({ risk_id: resolution.risk_id }).update({
-      status: 'auto_resolved',
+      status: 'closed',
       auto_resolution_reason: resolution.reason,
       closed_at: trx.fn.now(),
     });

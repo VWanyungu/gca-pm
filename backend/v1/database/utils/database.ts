@@ -822,7 +822,7 @@ export class PersonnelRoles {
   }
 }
 
-export type RiskStatus = 'open' | 'mitigated' | 'closed' | 'dismissed' | 'auto_resolved';
+export type RiskStatus = 'open' | 'closed';
 export type RiskKind = 'risk' | 'issue';
 export type RiskSource = 'manual' | 'overdue_task';
 
@@ -3591,19 +3591,16 @@ export class ScheduleTasks {
       .orderBy('t.mpp_unique_id', 'asc');
   }
 
-  /** Overdue tasks (AC-SCH-20), each left-joined to its auto-raised risk (if any) so the
-   *  Overdue tab can show "Add as risk" vs. "Risk raised · View". */
   /**
    * AC-SCH-20, and the list the PM works from: tasks past their expected finish and not
    * finished. "Past" is a project-local calendar question — a task due today is not overdue
    * at 09:00 just because the server is in UTC — so the comparison runs in the project's zone.
    *
-   * Each task appears once. A task can carry several risks over time (one dismissed, another
-   * raised after the planner moved it), so the most relevant one is picked: a risk that still
-   * covers the task first, then the most recently raised. Dismissed and auto-resolved risks
-   * do not cover anything — the PM threw one out, the other closed itself when the task
-   * stopped being overdue — so a task holding only those reads as uncovered and can be
-   * raised again.
+   * Each task appears once. A task can carry several risks over time (one closed, another
+   * raised after the planner moved it), so the one that still covers it is picked first — an
+   * open risk if there is one, else the most recently raised — and the Overdue tab reads
+   * "covered" straight off that status (AC-SCH-23 closes a risk once its task catches up; the
+   * PM can raise a fresh one if the same task falls overdue again).
    */
   static async listOverdue(
     projectId: string,
@@ -3621,7 +3618,7 @@ export class ScheduleTasks {
         SELECT risk_id, status
         FROM risk
         WHERE source_task_id = t.task_id AND source = 'overdue_task'
-        ORDER BY (status IN ('open', 'mitigated', 'closed')) DESC, opened_at DESC
+        ORDER BY (status = 'open') DESC, opened_at DESC
         LIMIT 1
       ) k ON true
       WHERE t.project_id = :projectId
@@ -5835,7 +5832,7 @@ export class WeeklySubmissions {
       for (const sar of addressed) {
         if (sar.method === 'dismissed') {
           await t('risk').where('risk_id', sar.risk_id).update({
-            status: 'dismissed',
+            status: 'closed',
             closed_at: approvedAt,
           });
         } else {
@@ -6714,7 +6711,7 @@ export class Search {
       scope(db('risk as r'), 'r.project_id')
         .join('projects as p', 'p.project_id', 'r.project_id')
         .whereILike('r.title', pattern)
-        .whereNotIn('r.status', ['closed', 'dismissed', 'auto_resolved'])
+        .where('r.status', 'open')
         .orderBy('r.score', 'desc')
         .limit(limit)
         .select('r.risk_id as id', 'r.project_id', 'p.name as project_name', 'r.title', 'r.kind as subtitle'),

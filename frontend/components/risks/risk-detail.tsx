@@ -35,8 +35,6 @@ export function RiskDetail({
 
   const [editingMitigation, setEditingMitigation] = useState(false);
   const [mitigationDraft, setMitigationDraft] = useState("");
-  const [dismissing, setDismissing] = useState(false);
-  const [dismissReason, setDismissReason] = useState("");
   const [saving, setSaving] = useState(false);
 
   if (!risk) return null;
@@ -44,7 +42,6 @@ export function RiskDetail({
   const rating = ratingFromScore(risk.score);
   const status = statusInfo(risk);
   const categoryName = categories.find((c) => c.risk_category_id === risk.category_id)?.name ?? "—";
-  const canQuickAct = canManage && risk.source === "overdue_task" && risk.status === "open";
 
   async function saveMitigation() {
     if (!risk) return;
@@ -54,24 +51,6 @@ export function RiskDetail({
     });
     setSaving(false);
     setEditingMitigation(false);
-    invalidate();
-  }
-
-  async function address() {
-    if (!risk) return;
-    await api.patch(`/projects/${projectId}/risks/${risk.risk_id}`, { status: "mitigated" });
-    invalidate();
-  }
-
-  async function confirmDismiss() {
-    if (!risk || !dismissReason.trim()) return;
-    setSaving(true);
-    await api.patch(`/projects/${projectId}/risks/${risk.risk_id}`, {
-      status: "dismissed",
-      dismissal_reason: dismissReason.trim(),
-    });
-    setSaving(false);
-    setDismissing(false);
     invalidate();
   }
 
@@ -88,7 +67,7 @@ export function RiskDetail({
 
         <div className="flex items-start justify-between">
           <p className="text-[20px] font-semibold tracking-[-0.3px] text-gca-dark">{risk.title}</p>
-          {canManage && !canQuickAct && (
+          {canManage && (
             <button
               onClick={onEdit}
               className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
@@ -97,50 +76,7 @@ export function RiskDetail({
               Edit
             </button>
           )}
-          {canQuickAct && (
-            <div className="flex items-center gap-[12px]">
-              <button
-                onClick={() => setDismissing((d) => !d)}
-                className="cursor-pointer rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
-              >
-                Dismiss
-              </button>
-              <button
-                onClick={address}
-                className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
-              >
-                Address
-              </button>
-            </div>
-          )}
         </div>
-
-        {dismissing && (
-          <div className="flex flex-col gap-[10px] rounded-[10px] bg-gca-page-bg p-[16px]">
-            <label className="text-[13px] font-medium text-gca-dark">Reason for dismissing</label>
-            <textarea
-              value={dismissReason}
-              onChange={(e) => setDismissReason(e.target.value)}
-              rows={2}
-              className="rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[10px] text-[14px] outline-none focus:border-gca-green"
-            />
-            <div className="flex justify-end gap-[12px]">
-              <button
-                onClick={() => setDismissing(false)}
-                className="cursor-pointer text-[13px] font-medium text-gca-show"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDismiss}
-                disabled={saving || !dismissReason.trim()}
-                className="cursor-pointer rounded-[8px] bg-gca-dark px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
-              >
-                Confirm dismiss
-              </button>
-            </div>
-          </div>
-        )}
 
         {risk.description && <p className="text-[14px] text-gca-dark">{risk.description}</p>}
 

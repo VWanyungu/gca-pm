@@ -119,7 +119,7 @@ export interface ChecklistItem {
 export interface StageRisk {
   risk_id: string;
   title: string;
-  status: "open" | "mitigated" | "closed" | "dismissed" | "auto_resolved";
+  status: "open" | "closed";
   kind: "risk" | "issue";
   impact: number;
   source: "manual" | "overdue_task";

@@ -211,7 +211,7 @@ export const listRiskCategoriesQuerySchema =
     limit: Joi.number().integer().min(1).max(100).default(50),
   });
 
-export type RiskStatusLiteral = "open" | "mitigated" | "closed" | "dismissed";
+export type RiskStatusLiteral = "open" | "closed";
 export type RiskKindLiteral = "risk" | "issue";
 
 export interface CreateRiskIssueBody {
@@ -246,7 +246,7 @@ export interface UpdateRiskIssueBody {
 }
 
 export interface ListRiskIssuesQuery {
-  status?: RiskStatusLiteral | "auto_resolved";
+  status?: RiskStatusLiteral;
   kind?: RiskKindLiteral;
   stage_no?: number;
   source?: "manual" | "overdue_task";
@@ -300,21 +300,16 @@ export const updateRiskIssueSchema = Joi.object<UpdateRiskIssueBody>({
   mitigation: Joi.string().trim().max(10000).allow(null, "").optional(),
   review_by: Joi.string().isoDate().allow(null).optional(),
   status: Joi.string()
-    .valid("open", "mitigated", "closed", "dismissed")
+    .valid("open", "closed")
     .optional(),
-  // Required when transitioning to dismissed (AC-RSK-02).
-  dismissal_reason: Joi.when("status", {
-    is: "dismissed",
-    then: Joi.string().trim().min(1).max(10000).required(),
-    otherwise: Joi.string().trim().max(10000).allow(null, "").optional(),
-  }),
+  dismissal_reason: Joi.string().trim().max(10000).allow(null, "").optional(),
   // AC-RSK-03: risk → issue conversion is one-way; kind can only ever be set to 'issue'.
   kind: Joi.string().valid("issue").optional(),
 }).min(1);
 
 export const listRiskIssuesQuerySchema = Joi.object<ListRiskIssuesQuery>({
   status: Joi.string()
-    .valid("open", "mitigated", "closed", "dismissed", "auto_resolved")
+    .valid("open", "closed")
     .optional(),
   kind: Joi.string().valid("risk", "issue").optional(),
   stage_no: Joi.number().integer().min(1).max(10).optional(),

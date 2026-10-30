@@ -22,9 +22,7 @@ const RATING_FILTER_ALL = "all";
 const STATUS_OPTIONS = [
   { id: STATUS_FILTER_ALL, name: "All statuses" },
   { id: "open", name: "Open" },
-  { id: "mitigated", name: "Addressed" },
   { id: "closed", name: "Closed" },
-  { id: "dismissed", name: "Dismissed" },
 ];
 
 const RATING_OPTIONS = [
