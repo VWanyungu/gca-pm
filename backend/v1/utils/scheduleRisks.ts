@@ -136,7 +136,9 @@ export async function refreshProjectMetrics(
       SELECT r.duration_minutes::numeric            AS weight,
              r.pct_work_complete                    AS actual_i,
              ${PLANNED_I_EXPR}                      AS planned_i,
+             r.baseline_start,
              r.baseline_finish,
+             r.start,
              r.expected_finish
       FROM schedule_task t
       JOIN schedule_task_revision r ON r.task_id = t.task_id AND r.valid_to IS NULL
@@ -150,7 +152,9 @@ export async function refreshProjectMetrics(
            SUM(weight * actual_i)                                    AS actual_weighted,
            SUM(weight * planned_i)                                   AS planned_weighted,
            (MAX(baseline_finish) AT TIME ZONE :tz)::date             AS baseline_finish,
-           (MAX(expected_finish) AT TIME ZONE :tz)::date             AS forecast_finish
+           (MAX(expected_finish) AT TIME ZONE :tz)::date             AS forecast_finish,
+           (MIN(COALESCE(baseline_start, start)) AT TIME ZONE :tz)::date   AS project_start,
+           (MAX(COALESCE(baseline_finish, expected_finish)) AT TIME ZONE :tz)::date AS project_planned_finish
     FROM qualifying
     `,
     { projectId, tz: timezone },
@@ -207,6 +211,15 @@ export async function refreshProjectMetrics(
       'forecast_finish',
       'computed_at',
     ]);
+
+  // A schedule upload overwrites the project's own start/planned-end dates from the uploaded
+  // plan, same as it overwrites progress — `start`/`expected_finish` are NOT NULL on every
+  // qualifying revision, so these are always present once weightTotal > 0.
+  await trx('projects').where({ project_id: projectId }).update({
+    expected_start_date: toDateString(row.project_start),
+    expected_end_date: toDateString(row.project_planned_finish),
+    updated_at: trx.fn.now(),
+  });
 
   return snapshot;
 }
