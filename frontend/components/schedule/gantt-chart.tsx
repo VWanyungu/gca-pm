@@ -9,6 +9,7 @@ import {
   groupProgress,
   isHiddenByCollapse,
   phaseLevel,
+  plannedFinish,
   rootGroupName,
   topicOrder,
   visibleScheduleRows,
@@ -72,7 +73,7 @@ export function GanttChart({ tasks, window }: GanttChartProps) {
         const groupName = rootGroupName(t, byId, level);
         const topicIndex = groupName ? topics.indexOf(groupName) : -1;
         const rawStart = new Date(t.start);
-        const rawEnd = t.is_milestone ? rawStart : new Date(t.expected_finish);
+        const rawEnd = t.is_milestone ? rawStart : new Date(plannedFinish(t));
         const { start, end } = window
           ? clampToWindow(rawStart, rawEnd, window)
           : { start: rawStart, end: rawEnd < rawStart ? rawStart : rawEnd };

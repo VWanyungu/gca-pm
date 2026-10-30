@@ -7,6 +7,7 @@ import {
   groupProgress,
   isHiddenByCollapse,
   phaseLevel,
+  plannedFinish,
   taskStatusLabel,
   visibleScheduleRows,
   workDays,
@@ -95,17 +96,18 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
 
   return (
     <div className="flex w-full flex-col gap-[16px]">
-      {/* Seven date and percentage columns need ~900px to stay readable, so below md the
+      {/* Eight date and percentage columns need ~980px to stay readable, so below md the
           table scrolls sideways with its header rather than squeezing every column. */}
       <div className="no-scrollbar flex w-full min-w-0 flex-col overflow-x-auto">
-        <div className="flex w-full min-w-[900px] flex-col">
+        <div className="flex w-full min-w-[980px] flex-col">
           <div className="sticky top-0 z-9 flex w-full items-center gap-[10px] border-b border-gca-border bg-gca-surface px-[16px] py-[8px] text-[12px] font-medium text-gca-muted">
-            <p className="w-[28%]">Task</p>
-            <p className="w-[11%]">Progress</p>
-            <p className="w-[11%]">Planned</p>
-            <p className="w-[11%]">Work days</p>
-            <p className="w-[12%]">Start</p>
-            <p className="w-[12%]">Finish</p>
+            <p className="w-[24%]">Task</p>
+            <p className="w-[9%]">Progress</p>
+            <p className="w-[9%]">Planned</p>
+            <p className="w-[9%]">Work days</p>
+            <p className="w-[10%]">Start</p>
+            <p className="w-[11%]">Planned finish</p>
+            <p className="w-[11%]">Forecast</p>
             <p className="w-[15%]">Status</p>
           </div>
 
@@ -129,7 +131,7 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
                   } ${i > 0 ? "border-t border-gca-border" : ""}`}
                 >
                   <div
-                    className="flex w-[28%] items-center gap-[8px] truncate pr-[8px]"
+                    className="flex w-[24%] items-center gap-[8px] truncate pr-[8px]"
                     style={{ paddingLeft: (t.outline_level - baseLevel) * INDENT_PER_LEVEL }}
                   >
                     {isGroup ? (
@@ -174,22 +176,25 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
                   </div>
 
                   <p
-                    className={`w-[11%] text-[13px] ${isGroup ? "font-medium" : ""} text-gca-dark`}
+                    className={`w-[9%] text-[13px] ${isGroup ? "font-medium" : ""} text-gca-dark`}
                   >
                     {Math.round(progress)}%
                   </p>
                   <p
-                    className={`w-[11%] text-[13px] ${isGroup ? "font-medium text-gca-dark" : "text-gca-show"}`}
+                    className={`w-[9%] text-[13px] ${isGroup ? "font-medium text-gca-dark" : "text-gca-show"}`}
                   >
                     {planned !== null ? `${Math.round(planned)}%` : "—"}
                   </p>
-                  <p className="w-[11%] font-mono text-[13px] text-gca-dark">
+                  <p className="w-[9%] font-mono text-[13px] text-gca-dark">
                     {workDays(t.duration_minutes)}
                   </p>
-                  <p className="w-[12%] font-mono text-[13px] text-gca-dark">
+                  <p className="w-[10%] font-mono text-[13px] text-gca-dark">
                     {formatShortDate(t.start)}
                   </p>
-                  <p className="w-[12%] font-mono text-[13px] text-gca-dark">
+                  <p className="w-[11%] font-mono text-[13px] text-gca-dark">
+                    {formatShortDate(plannedFinish(t))}
+                  </p>
+                  <p className="w-[11%] font-mono text-[13px] text-gca-show">
                     {formatShortDate(t.expected_finish)}
                   </p>
                   {/* A summary row's status is the roll-up of its children, which the Status column
