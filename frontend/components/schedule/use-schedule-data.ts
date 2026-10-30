@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { api, downloadFile } from "@/lib/api-client";
 import type { OverdueTask, ReconciliationFlag, ScheduleTask, ScheduleVersion, ScopeMode, VersionChange } from "./types";
 
 function unwrap<T>(res: { status: string; data: T | null; message: string }): T {
@@ -105,6 +105,20 @@ export function useUploadSchedule(projectId: string) {
         ),
       ),
   });
+}
+
+/** The exact bytes a version was uploaded from (AC-SCH-42) — history's byte-for-byte download. */
+export function downloadScheduleVersionFile(projectId: string, version: ScheduleVersion) {
+  return downloadFile(
+    `/projects/${projectId}/schedule/versions/${version.schedule_version_id}/download`,
+    `schedule-v${version.version_no}.mpp`,
+  );
+}
+
+/** Current task data, including write-backs no uploaded file knows about, as MSPDI XML — the
+ *  main schedule screen's "Export" action. Not a .mpp: MPXJ has no binary .mpp writer. */
+export function exportScheduleFile(projectId: string, projectName: string) {
+  return downloadFile(`/projects/${projectId}/schedule/export`, `${projectName}-schedule.xml`);
 }
 
 /** Polls one version while it is queued or parsing, then stops. */

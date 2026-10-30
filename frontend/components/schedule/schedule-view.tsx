@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Download, Search, Upload } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import useOutsideClick from "@/hooks/use-outside-click";
 import { canAccess, CAN_MANAGE_PROJECT, CAN_UPLOAD_SCHEDULE } from "@/lib/access-control";
 import { useProjectDetail, useProjectTeam } from "@/components/project-overview/use-project-data";
 import Dropdown from "@/components/Dropdown";
@@ -18,6 +19,7 @@ import { UploadScheduleForm, type UploadDraft } from "./upload-schedule-form";
 import { UploadProcessingBanner } from "./upload-processing-banner";
 import { UploadResultView, UploadFailedView, type UploadProblem } from "./upload-outcome-views";
 import {
+  exportScheduleFile,
   useOverdueTasks,
   useReconciliationFlags,
   useScheduleInvalidate,
@@ -91,6 +93,41 @@ function downloadProblemReport(fileName: string, problems: UploadProblem[]) {
   link.download = `${fileName.replace(/\.mpp$/i, "")}-upload-problems.txt`;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+/** A single-item action menu, not a persisted-selection control like Dropdown — clicking XML
+ *  exports immediately rather than leaving "XML" stuck as the button's label. */
+function ExportDropdown({ onExportXml, disabled }: { onExportXml: () => void; disabled: boolean }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useOutsideClick({ ref, handler: () => setIsOpen(false) });
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setIsOpen((v) => !v)}
+        disabled={disabled}
+        title={disabled ? "No schedule uploaded yet" : undefined}
+        className="flex h-[40px] cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border px-[16px] text-[14px] font-semibold text-gca-dark disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <Download className="size-[14px]" />
+        Export
+      </button>
+      {isOpen && (
+        <div className="absolute right-0 top-full z-10 mt-[8px] min-w-[160px] rounded-[8px] border border-gca-border bg-gca-surface py-[6px] shadow-[0px_1px_10px_4px_rgba(23,48,31,0.08)]">
+          <button
+            onClick={() => {
+              setIsOpen(false);
+              onExportXml();
+            }}
+            className="flex w-full cursor-pointer items-center px-[14px] py-[8px] text-left text-[13px] text-gca-dark hover:bg-gca-badge-bg"
+          >
+            XML (MS Project)
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ScheduleView({ projectId }: { projectId: string }) {
@@ -275,14 +312,10 @@ export function ScheduleView({ projectId }: { projectId: string }) {
           )}
         </div>
         <div className="flex items-center gap-[12px]">
-          <button
-            disabled
-            title="Downloading the original upload needs the schedule file service — coming soon"
-            className="flex size-[40px] cursor-not-allowed items-center justify-center rounded-[8px] border border-gca-border opacity-50"
-            aria-label="Download schedule"
-          >
-            <Download className="size-[16px] text-gca-dark" />
-          </button>
+          <ExportDropdown
+            disabled={!currentVersion}
+            onExportXml={() => exportScheduleFile(projectId, project?.project.name ?? "schedule")}
+          />
           {canUpload && (
             <button
               onClick={() => setSubView({ mode: "upload-form" })}

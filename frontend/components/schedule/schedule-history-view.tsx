@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ArrowLeft, Upload } from "lucide-react";
 import { Pagination } from "@/components/pagination";
-import { useScheduleVersions } from "./use-schedule-data";
+import { downloadScheduleVersionFile, useScheduleVersions } from "./use-schedule-data";
 import { formatLongDateTime, type ScheduleVersion } from "./types";
 import type { TeamMember } from "@/components/project-overview/types";
 
@@ -125,9 +125,8 @@ export function ScheduleHistoryView({
                         Changes
                       </button>
                       <button
-                        disabled
-                        title="Downloading the original upload needs the schedule file service — coming soon"
-                        className="cursor-not-allowed text-gca-muted"
+                        onClick={() => downloadScheduleVersionFile(projectId, v)}
+                        className="cursor-pointer text-gca-green hover:underline"
                       >
                         Download
                       </button>

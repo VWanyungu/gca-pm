@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Pagination } from "@/components/pagination";
-import { useVersionChanges } from "./use-schedule-data";
+import { downloadScheduleVersionFile, useVersionChanges } from "./use-schedule-data";
 import { formatLongDateTime, type ScheduleVersion, type VersionChange } from "./types";
 import type { TeamMember } from "@/components/project-overview/types";
 
@@ -68,9 +68,8 @@ export function VersionChangesView({ projectId, version, team, onBack }: Version
           </p>
         </div>
         <button
-          disabled
-          title="Downloading the original upload needs the schedule file service — coming soon"
-          className="cursor-not-allowed rounded-[8px] border border-gca-border px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark opacity-50"
+          onClick={() => downloadScheduleVersionFile(projectId, version)}
+          className="cursor-pointer rounded-[8px] border border-gca-border px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
         >
           Download v{version.version_no} .mpp
         </button>

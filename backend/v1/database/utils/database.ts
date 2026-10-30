@@ -3482,6 +3482,33 @@ const SCHEDULE_TASK_COLS = [
   'r.predecessors', 'r.resource_names', 'r.responsible_user_id',
 ];
 
+/** Shaped for the "export with current data" download: hierarchy by mpp_unique_id (what the
+ *  MSPDI writer expects) rather than the resolved task_id, and every field ParsedTask has,
+ *  including the ones listCurrent's columns leave out (baselines, task_type, is_active). */
+export interface ScheduleTaskExportRow {
+  mpp_unique_id: number;
+  parent_mpp_unique_id: number | null;
+  outline_level: number;
+  wbs: string | null;
+  task_name: string;
+  duration_minutes: number;
+  baseline_start: string | null;
+  baseline_finish: string | null;
+  start: string;
+  expected_finish: string;
+  actual_start: string | null;
+  actual_finish: string | null;
+  pct_work_complete: string;
+  planned_pct_complete: string;
+  is_milestone: boolean;
+  is_summary: boolean;
+  is_critical: boolean;
+  is_active: boolean;
+  task_type: 'fixed_units' | 'fixed_duration' | 'fixed_work';
+  predecessors: number[];
+  resource_names: string[];
+}
+
 /** "Where this task should be today" per AC-SCH-32: 0 before the planned window, 100 after,
  *  linear in calendar time between. Window = baseline_start/finish, falling back to
  *  start/expected_finish when not yet baselined (never null — every task has start/expected_finish).
@@ -3527,6 +3554,39 @@ export class ScheduleTasks {
           "(r.is_summary = false AND r.pct_work_complete < 100 AND r.expected_finish < now()) as is_overdue",
         ),
         db.raw(PLANNED_PCT_SQL),
+      )
+      .orderBy('t.mpp_unique_id', 'asc');
+  }
+
+  /** Current revision of every live task, for building a fresh MS Project export (ScheduleBuilder)
+   *  that reflects today's DB state — including write-backs a re-upload wouldn't know about.
+   *  Dates come back as the project-local wall-clock strings MS Project originally wrote,
+   *  reversing the `AT TIME ZONE` conversion scheduleProcessor applied on upload (see
+   *  resolveLocalTimestamps), since that is the format the exporter's writer expects. */
+  static async listCurrentForExport(projectId: string): Promise<ScheduleTaskExportRow[]> {
+    const local = (col: string, alias: string) =>
+      db.raw(`to_char(${col} AT TIME ZONE p.timezone, 'YYYY-MM-DD"T"HH24:MI:SS') as ${alias}`);
+    return db('schedule_task_revision as r')
+      .join('schedule_task as t', 't.task_id', 'r.task_id')
+      .join('projects as p', 'p.project_id', 't.project_id')
+      .leftJoin('schedule_task as parent', 'parent.task_id', 'r.parent_task_id')
+      .where('t.project_id', projectId)
+      .whereNull('r.valid_to')
+      .whereNull('t.removed_in_version_id')
+      .select(
+        't.mpp_unique_id',
+        'parent.mpp_unique_id as parent_mpp_unique_id',
+        'r.outline_level', 'r.wbs', 'r.task_name', 'r.duration_minutes',
+        local('r.start', 'start'),
+        local('r.expected_finish', 'expected_finish'),
+        // to_char of a NULL timestamp is NULL, so these fall through correctly unbaselined/not-yet-actual.
+        local('r.baseline_start', 'baseline_start'),
+        local('r.baseline_finish', 'baseline_finish'),
+        local('r.actual_start', 'actual_start'),
+        local('r.actual_finish', 'actual_finish'),
+        'r.pct_work_complete', 'r.planned_pct_complete',
+        'r.is_milestone', 'r.is_summary', 'r.is_critical', 'r.is_active',
+        'r.task_type', 'r.predecessors', 'r.resource_names',
       )
       .orderBy('t.mpp_unique_id', 'asc');
   }
