@@ -56,8 +56,8 @@ export function ProjectCard({ project, canEdit }: { project: Project; canEdit: b
       {/* Progress */}
       <div className="flex flex-col gap-[8px]">
         <div className="flex items-center justify-between text-[12px]">
-          <span className="font-medium text-gca-dark">Completed {project.completed}%</span>
-          <span className="text-gca-muted">Planned {project.planned}%</span>
+          <span className="font-medium text-gca-dark">Completed {Math.round(project.completed)}%</span>
+          <span className="text-gca-muted">Planned {Math.round(project.planned)}%</span>
         </div>
         <ProgressBar completed={project.completed} planned={project.planned} />
       </div>

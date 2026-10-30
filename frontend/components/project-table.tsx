@@ -61,7 +61,7 @@ export function ProjectTable({ projects, canEdit }: { projects: Project[]; canEd
               </span>
               <div className="flex w-[200px] max-w-[200px] shrink-0 items-center gap-[8px] overflow-hidden">
                 <ProgressBar completed={p.completed} planned={p.planned} width="w-[120px]" />
-                <span className="font-mono text-[12px] text-gca-show">{p.completed}%</span>
+                <span className="font-mono text-[12px] text-gca-show">{Math.round(p.completed)}%</span>
               </div>
               <span className="w-[212px] max-w-[212px] shrink-0 truncate pr-3 text-[13px] text-gca-dark">
                 {p.nextMilestone ?? "—"}

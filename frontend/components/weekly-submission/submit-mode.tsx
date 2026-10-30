@@ -219,7 +219,7 @@ export function SubmitMode({
                     <p className="text-[12px] font-medium text-gca-muted">Planned</p>
 
                     <p className="font-mono text-[22px] font-semibold tracking-[-0.33px] text-gca-dark flex items-center gap-[4px]">
-                      {Math.trunc(latestMetric.planned_pct)} <Percent className="size-[18px]" />
+                      {Math.round(latestMetric.planned_pct)} <Percent className="size-[18px]" />
                     </p>
                   </div>
 
@@ -227,7 +227,7 @@ export function SubmitMode({
                     <p className="text-[12px] font-medium text-gca-muted">Actual</p>
 
                     <p className="font-mono text-[22px] font-semibold tracking-[-0.33px] text-gca-dark flex items-center gap-[4px]">
-                      {Math.trunc(latestMetric.actual_pct)} <Percent className="size-[18px]" />
+                      {Math.round(latestMetric.actual_pct)} <Percent className="size-[18px]" />
                     </p>
                   </div>
 

@@ -37,7 +37,7 @@ function ProgressRing({ pct }: { pct: number }) {
     <span
       className="relative inline-flex size-[14px] shrink-0 items-center justify-center rounded-full"
       style={{
-        background: `conic-gradient(var(--gca-green) ${pct * 3.6}deg, var(--gca-border) 0deg)`,
+        background: `conic-gradient(var(--gca-green) ${Math.round(pct * 3.6)}deg, var(--gca-border) 0deg)`,
       }}
     >
       <span className="absolute inset-[2px] rounded-full bg-gca-surface" />

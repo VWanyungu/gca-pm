@@ -65,7 +65,7 @@ function twoWeeksFrom(date: Date) {
 }
 
 function formatFileSize(bytes: number): string {
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${Math.round(bytes / (1024 * 1024))} MB`;
 }
 
 /** The parser reports a column and a message; the failure view wants a task, the problem and

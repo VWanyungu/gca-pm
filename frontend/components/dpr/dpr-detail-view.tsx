@@ -170,8 +170,8 @@ export function DprDetailView({
           ["Schedule task", "Completion today", "Completion total"],
           ...dpr!.activity_progress.map((a) => [
             a.task_name ?? a.free_text ?? "",
-            `${a.today_pct}%`,
-            `${a.total_pct}%`,
+            `${Math.round(a.today_pct)}%`,
+            `${Math.round(a.total_pct)}%`,
           ]),
         ],
         `${dpr!.dpr_ref ?? dpr!.dpr_id}-activities.csv`,
@@ -446,12 +446,12 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 function ConditionsSection({ dpr }: { dpr: DprDetail }) {
   const temp =
     dpr.temp_min_c != null && dpr.temp_max_c != null
-      ? `${dpr.temp_min_c}°C – ${dpr.temp_max_c}°C`
+      ? `${Math.round(dpr.temp_min_c)}°C – ${Math.round(dpr.temp_max_c)}°C`
       : null;
   const fields = [
     detail("Weather", dpr.weather_category_name),
     detail("Temperature", temp),
-    detail("Humidity", dpr.humidity_pct != null ? `${dpr.humidity_pct}%` : null),
+    detail("Humidity", dpr.humidity_pct != null ? `${Math.round(dpr.humidity_pct)}%` : null),
     detail("Wind", dpr.wind),
     detail("Contract no.", dpr.contract_no),
   ].filter(Boolean);

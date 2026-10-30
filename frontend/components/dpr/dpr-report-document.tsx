@@ -67,7 +67,7 @@ export function DprReportDocument({
   const stageName = stages.find((s) => s.stage_no === dpr.stage_no)?.stage_name;
   const temp =
     dpr.temp_min_c != null && dpr.temp_max_c != null
-      ? `${dpr.temp_min_c}°C – ${dpr.temp_max_c}°C`
+      ? `${Math.round(dpr.temp_min_c)}°C – ${Math.round(dpr.temp_max_c)}°C`
       : "—";
   const totalHeadcount = dpr.personnel_groups.reduce((sum, g) => sum + g.total_headcount, 0);
 
@@ -124,7 +124,7 @@ export function DprReportDocument({
               <RecordRow
                 alt
                 label="Humidity"
-                value={dpr.humidity_pct != null ? `${dpr.humidity_pct}%` : "—"}
+                value={dpr.humidity_pct != null ? `${Math.round(dpr.humidity_pct)}%` : "—"}
                 label2="Wind"
                 value2={dpr.wind ?? "—"}
               />

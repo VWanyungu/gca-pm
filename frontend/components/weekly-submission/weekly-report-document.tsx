@@ -131,7 +131,7 @@ function fmtDays(n: number | null): string {
 }
 
 function fmtPct1(n: number | null): string {
-  return n != null ? `${n.toFixed(1)}%` : "—";
+  return n != null ? `${Math.round(n)}%` : "—";
 }
 
 export const WeeklyReportDocument = forwardRef<HTMLDivElement, WeeklyReportDocumentProps>(
@@ -167,9 +167,7 @@ export const WeeklyReportDocument = forwardRef<HTMLDivElement, WeeklyReportDocum
     const hasFigures = actualPct != null && plannedPct != null;
     const prevActualPct = previousWeekActualPct != null ? Number(previousWeekActualPct) : null;
     const gainPoints =
-      actualPct != null && prevActualPct != null
-        ? Math.round((actualPct - prevActualPct) * 10) / 10
-        : null;
+      actualPct != null && prevActualPct != null ? Math.round(actualPct - prevActualPct) : null;
 
     const spi = submission.spi != null ? Number(submission.spi) : null;
     const prevSpi = previousSpi != null ? Number(previousSpi) : null;
@@ -198,7 +196,7 @@ export const WeeklyReportDocument = forwardRef<HTMLDivElement, WeeklyReportDocum
 
     const positionSentences: string[] = [];
     if (hasFigures) {
-      let s = `${actualPct}% of the work is built against a plan of ${plannedPct}%`;
+      let s = `${Math.round(actualPct)}% of the work is built against a plan of ${Math.round(plannedPct)}%`;
       if (forecast.forecastDate) {
         s += `, and completion now forecasts to ${formatLongDate(toIsoDate(forecast.forecastDate))}`;
         if (forecast.overrunDays != null && forecast.overrunDays > 0) {
@@ -356,22 +354,22 @@ export const WeeklyReportDocument = forwardRef<HTMLDivElement, WeeklyReportDocum
                   Work complete
                 </p>
                 <p className="text-[23px] font-medium text-gca-badge-text">
-                  {actualPct}
+                  {Math.round(actualPct ?? 0)}
                   <span className="text-[13px] font-medium text-gca-show">%</span>
                 </p>
                 <div className="relative my-[7px] h-[5px] overflow-hidden border-[0.8px] border-gca-border bg-white">
                   <div
                     className="absolute inset-y-0 left-0 bg-gca-badge-bg"
-                    style={{ width: `${plannedPct}%` }}
+                    style={{ width: `${Math.round(plannedPct ?? 0)}%` }}
                   />
                   <div
                     className="absolute inset-y-0 left-0 bg-gca-green"
-                    style={{ width: `${actualPct}%` }}
+                    style={{ width: `${Math.round(actualPct ?? 0)}%` }}
                   />
                 </div>
                 <div className="flex justify-between text-[9.3px] text-gca-muted">
-                  <span>Actual {actualPct}%</span>
-                  <span>Planned {plannedPct}%</span>
+                  <span>Actual {Math.round(actualPct ?? 0)}%</span>
+                  <span>Planned {Math.round(plannedPct ?? 0)}%</span>
                 </div>
               </div>
 
@@ -770,11 +768,11 @@ export const WeeklyReportDocument = forwardRef<HTMLDivElement, WeeklyReportDocum
                       <Td>{d.weather_category_name ?? "—"}</Td>
                       <Td center num>
                         {d.temp_min_c != null && d.temp_max_c != null
-                          ? `${d.temp_min_c} – ${d.temp_max_c}°C`
+                          ? `${Math.round(d.temp_min_c)} – ${Math.round(d.temp_max_c)}°C`
                           : "—"}
                       </Td>
                       <Td center num>
-                        {d.humidity_pct != null ? `${d.humidity_pct}%` : "—"}
+                        {d.humidity_pct != null ? `${Math.round(d.humidity_pct)}%` : "—"}
                       </Td>
                       <Td center>
                         <Tag kind={d.effects_severity === "none" ? "ok" : "warn"}>
@@ -826,15 +824,15 @@ export const WeeklyReportDocument = forwardRef<HTMLDivElement, WeeklyReportDocum
                   </thead>
                   <tbody>
                     {Array.from(progressRows.values()).map((row, i) => {
-                      const gain = Math.round((row.toDate - row.atLast) * 10) / 10;
+                      const gain = Math.round(row.toDate - row.atLast);
                       return (
                         <Tr key={row.label} alt={i % 2 === 1}>
                           <Td>{row.label}</Td>
                           <Td center num dim>
-                            {row.atLast}%
+                            {Math.round(row.atLast)}%
                           </Td>
                           <Td center num>
-                            {row.toDate}%
+                            {Math.round(row.toDate)}%
                           </Td>
                           <Td center num>
                             {gain >= 0 ? "+" : ""}
@@ -853,10 +851,10 @@ export const WeeklyReportDocument = forwardRef<HTMLDivElement, WeeklyReportDocum
                         </span>
                       </Td>
                       <Td center num dim className="bg-gca-stepper-from font-semibold">
-                        {prevActualPct != null ? `${prevActualPct.toFixed(1)}%` : "—"}
+                        {prevActualPct != null ? `${Math.round(prevActualPct)}%` : "—"}
                       </Td>
                       <Td center num className="bg-gca-stepper-from font-semibold">
-                        {actualPct != null ? `${actualPct.toFixed(1)}%` : "—"}
+                        {actualPct != null ? `${Math.round(actualPct)}%` : "—"}
                       </Td>
                       <Td center num className="bg-gca-stepper-from font-semibold">
                         {gainPoints != null ? `${gainPoints >= 0 ? "+" : ""}${gainPoints}` : "—"}
@@ -888,7 +886,7 @@ export const WeeklyReportDocument = forwardRef<HTMLDivElement, WeeklyReportDocum
                       <Tr key={contractor} alt={i % 2 === 1}>
                         <Td>{contractor}</Td>
                         <Td center num>
-                          {row.manDays}
+                          {Math.round(row.manDays)}
                         </Td>
                         <Td dim>
                           {Array.from(row.roles.entries())

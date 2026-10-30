@@ -75,7 +75,7 @@ function slotsToPath(slots: Slot[], key: "planned_pct" | "actual_pct"): string {
     }
     const x = i * step;
     const y = CHART_H - (slot.row[key] / 100) * CHART_H;
-    path += `${started ? "L" : "M"} ${x.toFixed(1)} ${y.toFixed(1)} `;
+    path += `${started ? "L" : "M"} ${Math.round(x)} ${Math.round(y)} `;
     started = true;
   });
   return path.trim();
@@ -123,7 +123,7 @@ export function ProgressCard({ metrics }: { metrics: MetricRow[] }) {
     );
   }
 
-  const delta = Number((latest.actual_pct - latest.planned_pct).toFixed(1));
+  const delta = Math.round(latest.actual_pct - latest.planned_pct);
   const spiOk = latest.spi !== null && latest.spi >= 0.95;
 
   const plannedPath = slotsToPath(slots, "planned_pct");
@@ -165,14 +165,14 @@ export function ProgressCard({ metrics }: { metrics: MetricRow[] }) {
         <Divider />
         <Tile
           label="Planned"
-          value={`${Math.trunc(latest.planned_pct)}%`}
+          value={`${Math.round(latest.planned_pct)}%`}
           note="Cumulative"
           noteColor="text-gca-show"
         />
         <Divider />
         <Tile
           label="Actual"
-          value={`${Math.trunc(latest.actual_pct)}%`}
+          value={`${Math.round(latest.actual_pct)}%`}
           note={delta >= 0 ? `${delta} pts ahead` : `${Math.abs(delta)} pts behind`}
           noteColor={delta >= 0 ? "text-gca-green" : "text-gca-warning"}
         />
@@ -221,7 +221,7 @@ export function ProgressCard({ metrics }: { metrics: MetricRow[] }) {
                 fill="#2e7d45"
                 fontWeight={800}
               >
-                {` ${lastFilled.actual_pct.toFixed(1)}`}
+                {` ${Math.round(lastFilled.actual_pct)}`}
               </text>
             </g>
           )}

@@ -11,7 +11,7 @@ function uploaderName(userId: string, team: TeamMember[]) {
 }
 
 function formatSize(bytes: number): string {
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${Math.round(bytes / (1024 * 1024))} MB`;
 }
 
 export interface UploadDraft {
