@@ -10,6 +10,7 @@ import refreshTokenRouter from './routers/refreshTokenRouter.js';
 import forgotPasswordRouter from './routers/forgotPasswordRouter.js';
 import resetUserPasswordRouter from './routers/resetUserPasswordRouter.js';
 import rolesRouter from './routers/rolesRouter.js';
+import accessRolesRouter from './routers/accessRolesRouter.js';
 import riskCategoriesRouter from './routers/riskCategoriesRouter.js';
 import riskRouter from './routers/riskRouter.js';
 import programsRouter from './routers/programsRouter.js';
@@ -49,6 +50,7 @@ router.use(authenticateToken());
 router.use('/search', searchRouter);
 router.use('/users', usersRouter);
 router.use('/roles', rolesRouter);
+router.use('/access-roles', accessRolesRouter);
 
 router.use('/programs', programsRouter);
 router.use('/pdm-stages', pdmStagesRouter);

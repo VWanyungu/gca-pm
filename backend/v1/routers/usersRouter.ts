@@ -1,6 +1,6 @@
 import express from 'express';
-import { Users, Tokens } from '../database/utils/database.js';
-import type { AdminCreateUserInput, UpdateUserInput } from '../database/utils/database.js';
+import { Users, Tokens, AccessRoles } from '../database/utils/database.js';
+import type { AdminCreateUserInput, UpdateUserInput, RoleName } from '../database/utils/database.js';
 import { Cache } from '../database/utils/cache.js';
 import authorize from '../middlewares/authorize.js';
 import { SEED_PASSWORD_HASH } from '../seeds/01_users.js';
@@ -22,6 +22,13 @@ const canRead = authorize([
 ]);
 
 const canWrite = authorize([{ role: 'Admin', scopeType: 'global' }]);
+
+/** Global role must be a currently-active entry in the access_role catalog. */
+async function isGrantableRole(role: string | null | undefined): Promise<boolean> {
+  if (!role) return true;
+  const accessRole = await AccessRoles.getByName(role);
+  return !!accessRole && accessRole.is_active;
+}
 
 router.get('/', canRead, async (req, res) => {
   const type = (req.query.type as string | undefined) ?? (req.body as { type?: string })?.type;
@@ -109,6 +116,10 @@ router.post('/', canWrite, async (req, res) => {
     res.status(400).json({ status: 'error', data: null, message: error.message });
     return;
   }
+  if (!(await isGrantableRole((value as AdminCreateUserInput).globalRole as RoleName | null))) {
+    res.status(400).json({ status: 'error', data: null, message: 'Unknown or inactive role' });
+    return;
+  }
   try {
     const user = await Users.createUserAdmin(value as AdminCreateUserInput, SEED_PASSWORD_HASH, req.user!.userId);
     res.status(201).json({ status: 'success', data: { user }, message: 'User created' });
@@ -127,6 +138,10 @@ router.put('/:id', canWrite, async (req, res) => {
   const body = updateUserSchema.validate(req.body ?? {}, { abortEarly: false, stripUnknown: true });
   if (body.error) {
     res.status(400).json({ status: 'error', data: null, message: body.error.message });
+    return;
+  }
+  if (!(await isGrantableRole((body.value as UpdateUserInput).globalRole as RoleName | null))) {
+    res.status(400).json({ status: 'error', data: null, message: 'Unknown or inactive role' });
     return;
   }
   try {

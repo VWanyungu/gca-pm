@@ -1,6 +1,6 @@
 import express from 'express';
 import { randomUUID } from 'crypto';
-import { Roles } from '../database/utils/database.js';
+import { Roles, AccessRoles } from '../database/utils/database.js';
 import type { RoleName, ScopeType, RoleGrant } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
 import {
@@ -58,6 +58,12 @@ router.post('/', canCreateOrRevoke, async (req, res) => {
 
     if (!actorCanActOnScope(req.user!.role, scopeType, programId != null ? String(programId) : null, projectId ?? null)) {
         res.status(403).json({ status: 'error', data: null, message: 'Not authorized to role at this scope' });
+        return;
+    }
+
+    const accessRole = await AccessRoles.getByName(role);
+    if (!accessRole || !accessRole.is_active) {
+        res.status(400).json({ status: 'error', data: null, message: 'Unknown or inactive role' });
         return;
     }
 
