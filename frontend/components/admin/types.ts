@@ -1,7 +1,8 @@
-export type RoleName = "PM" | "Planner" | "SiteEngineer" | "ExCo" | "Admin" | "ProjectCreator";
+// Grantable role names now live in the access_role table (see use-access-roles-data.ts) —
+// kept as a string alias rather than a hardcoded union so roles added via the admin CRUD screen
+// type-check too.
+export type RoleName = string;
 export type ScopeType = "global" | "program" | "project";
-
-export const ROLE_NAMES: RoleName[] = ["PM", "Planner", "SiteEngineer", "ExCo", "Admin", "ProjectCreator"];
 
 export interface AdminUserListItem {
   id: string;

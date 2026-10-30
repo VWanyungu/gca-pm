@@ -8,6 +8,7 @@ import { useMobileNavigation } from "@/components/mobile-navigation-context";
 const NAV_ITEMS = [
   { label: "Users", href: "/admin/users", active: true },
   { label: "Projects", href: "/admin/projects", active: true },
+  { label: "Roles", href: "/admin/roles", active: true },
   { label: "Reference data", href: "#", active: false },
   { label: "Stage checklists", href: "#", active: false },
   { label: "Approvals", href: "#", active: false, count: 2 },

@@ -6,8 +6,9 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Dropdown from "@/components/Dropdown";
-import { ROLE_NAMES, type AdminUserDetail, type RoleName } from "./types";
+import { type AdminUserDetail, type RoleName } from "./types";
 import { useCreateUser, useUpdateUser } from "./use-admin-users-data";
+import { useAccessRoles } from "./use-access-roles-data";
 import { AccessPanelContent } from "./access-panel";
 
 const baseUserFormSchema = z.object({
@@ -41,11 +42,6 @@ const editUserFormSchema = baseUserFormSchema;
 
 type UserFormValues = z.infer<typeof createUserFormSchema>;
 
-const GLOBAL_ROLE_OPTIONS = [
-  { id: "none", name: "None" },
-  ...ROLE_NAMES.map((r) => ({ id: r, name: r })),
-];
-
 function splitName(fullName: string): { firstName: string; lastName: string } {
   const [firstName, ...rest] = fullName.trim().split(/\s+/);
   return { firstName: firstName ?? "", lastName: rest.join(" ") };
@@ -57,6 +53,11 @@ interface UserFormProps {
 
 export function UserForm({ editing }: UserFormProps) {
   const router = useRouter();
+  const { data: accessRoles = [] } = useAccessRoles();
+  const globalRoleOptions = [
+    { id: "none", name: "None" },
+    ...accessRoles.map((r) => ({ id: r.name, name: r.name })),
+  ];
   const [createdUser, setCreatedUser] = useState<AdminUserDetail>();
   const currentUser = editing ?? createdUser;
   const createUser = useCreateUser();
@@ -185,7 +186,7 @@ export function UserForm({ editing }: UserFormProps) {
                 <Dropdown
                   id="globalRole"
                   title="None"
-                  data={GLOBAL_ROLE_OPTIONS}
+                  data={globalRoleOptions}
                   selectedId={field.value || "none"}
                   style="h-[42px] w-full rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
                   onSelect={(id) => field.onChange(id)}

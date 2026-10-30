@@ -639,6 +639,68 @@ export class RiskCategories {
   }
 }
 
+export interface AccessRoleRow {
+  access_role_id: number;
+  name: string;
+  is_system: boolean;
+  sort_order: number;
+  is_active: boolean;
+}
+
+export interface AccessRoleCreateInput {
+  name: string;
+  sort_order: number;
+  is_active?: boolean;
+}
+
+export interface AccessRoleUpdateInput {
+  name?: string;
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+/** Catalog of grantable role names (PM, Planner, ...) backing the `roles` grant table's FK. */
+export class AccessRoles {
+  static async list({ includeInactive = false }: { includeInactive?: boolean } = {}): Promise<AccessRoleRow[]> {
+    const base = db('access_role');
+    if (!includeInactive) base.where({ is_active: true });
+    return base.select('access_role_id', 'name', 'is_system', 'sort_order', 'is_active').orderBy('sort_order', 'asc');
+  }
+
+  static async getById(id: number): Promise<AccessRoleRow | null> {
+    const row = await db('access_role').where({ access_role_id: id }).first();
+    return row ?? null;
+  }
+
+  static async getByName(name: string): Promise<AccessRoleRow | null> {
+    const row = await db('access_role').where({ name }).first();
+    return row ?? null;
+  }
+
+  static async create(input: AccessRoleCreateInput): Promise<AccessRoleRow> {
+    const [row] = await db('access_role')
+      .insert({ ...input, is_active: input.is_active ?? true })
+      .returning(['access_role_id', 'name', 'is_system', 'sort_order', 'is_active']);
+    return row;
+  }
+
+  static async update(id: number, input: AccessRoleUpdateInput): Promise<AccessRoleRow | null> {
+    const [row] = await db('access_role')
+      .where({ access_role_id: id })
+      .update(input)
+      .returning(['access_role_id', 'name', 'is_system', 'sort_order', 'is_active']);
+    return row ?? null;
+  }
+
+  static async deactivate(id: number): Promise<AccessRoleRow | null> {
+    const [row] = await db('access_role')
+      .where({ access_role_id: id })
+      .update({ is_active: false })
+      .returning(['access_role_id', 'name', 'is_system', 'sort_order', 'is_active']);
+    return row ?? null;
+  }
+}
+
 export interface PdmStageRow {
   stage_no: number;
   name: string;

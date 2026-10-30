@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Dropdown from "@/components/Dropdown";
 import {
-  ROLE_NAMES,
   type AdminUserDetail,
   type RoleGrantDetail,
   type RoleName,
@@ -15,6 +14,7 @@ import {
   useProgramsList,
   useProjectsList,
 } from "./use-admin-users-data";
+import { useAccessRoles } from "./use-access-roles-data";
 import { ReassignMainRoleModal } from "./reassign-main-role-modal";
 
 const LEVELS: { id: ScopeType; label: string }[] = [
@@ -29,7 +29,8 @@ const LEVELS: { id: ScopeType; label: string }[] = [
  * standalone wrapper to keep alive).
  */
 export function AccessPanelContent({ user }: { user: AdminUserDetail }) {
-  const [role, setRole] = useState<RoleName>("PM");
+  const { data: accessRoles = [] } = useAccessRoles();
+  const [role, setRole] = useState<RoleName>("");
   const [level, setLevel] = useState<ScopeType>("global");
   const [scopeId, setScopeId] = useState<string>("");
   const [reassigning, setReassigning] = useState<RoleGrantDetail | null>(null);
@@ -38,6 +39,7 @@ export function AccessPanelContent({ user }: { user: AdminUserDetail }) {
   const revokeRole = useRevokeRole(user.id);
   const { data: programs = [] } = useProgramsList();
   const { data: projects = [] } = useProjectsList();
+  const selectedRole = role || accessRoles[0]?.name || "";
 
   const scopeOptions =
     level === "program"
@@ -49,7 +51,7 @@ export function AccessPanelContent({ user }: { user: AdminUserDetail }) {
   async function handleAdd() {
     if (level !== "global" && !scopeId) return;
     await grantRole.mutateAsync({
-      role,
+      role: selectedRole,
       scopeType: level,
       programId: level === "program" ? Number(scopeId) : null,
       projectId: level === "project" ? scopeId : null,
@@ -115,8 +117,8 @@ export function AccessPanelContent({ user }: { user: AdminUserDetail }) {
         <Dropdown
           id="add-access-role"
           title="Role"
-          data={ROLE_NAMES.map((r) => ({ id: r, name: r }))}
-          selectedId={role}
+          data={accessRoles.map((r) => ({ id: r.name, name: r.name }))}
+          selectedId={selectedRole}
           style="h-[42px] w-full rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
           onSelect={(id) => setRole(id as RoleName)}
         />

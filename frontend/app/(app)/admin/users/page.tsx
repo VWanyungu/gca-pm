@@ -7,13 +7,10 @@ import Dropdown from "@/components/Dropdown";
 import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import { Pagination } from "@/components/pagination";
 import { useAdminUsers } from "@/components/admin/use-admin-users-data";
+import { useAccessRoles } from "@/components/admin/use-access-roles-data";
 import { summarizeProjectAccess } from "@/components/admin/format";
-import { ROLE_NAMES, type RoleName } from "@/components/admin/types";
+import { type RoleName } from "@/components/admin/types";
 
-const ROLE_OPTIONS = [
-  { id: "all", name: "All roles" },
-  ...ROLE_NAMES.map((r) => ({ id: r, name: r })),
-];
 const STATUS_OPTIONS = [
   { id: "all", name: "All statuses" },
   { id: "active", name: "Active" },
@@ -22,6 +19,11 @@ const STATUS_OPTIONS = [
 
 export default function AdminUsersPage() {
   const router = useRouter();
+  const { data: accessRoles = [] } = useAccessRoles();
+  const roleOptions = [
+    { id: "all", name: "All roles" },
+    ...accessRoles.map((r) => ({ id: r.name, name: r.name })),
+  ];
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 300);
   const [roleFilter, setRoleFilter] = useState<RoleName | undefined>();
@@ -71,7 +73,7 @@ export default function AdminUsersPage() {
           <Dropdown
             id="role-filter"
             title="All roles"
-            data={ROLE_OPTIONS}
+            data={roleOptions}
             selectedId={roleFilter ?? "all"}
             style="h-[40px] w-full sm:w-[180px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
             onSelect={(id) => {
