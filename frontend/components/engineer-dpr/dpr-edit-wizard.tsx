@@ -34,7 +34,7 @@ export function DprEditWizard({
   onClose,
   onSubmitted,
   onAmendmentRequested,
-  layout = "steps",
+  layout = "full",
 }: DprEditWizardProps) {
   const router = useRouter();
   const { user } = useAuth();

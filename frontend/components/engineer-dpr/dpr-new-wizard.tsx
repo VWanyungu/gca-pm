@@ -29,7 +29,7 @@ export function DprNewWizard({
   reportDate: requestedReportDate,
   onClose,
   onSubmitted,
-  layout = "steps",
+  layout = "full",
 }: DprNewWizardProps) {
   const router = useRouter();
   const { user } = useAuth();

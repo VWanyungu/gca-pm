@@ -9,7 +9,7 @@ import {
   CloudUpload,
   LoaderCircle,
 } from "lucide-react";
-import { SectionChips } from "@/components/ui/section-chips";
+import { SectionTocSheet } from "@/components/ui/section-toc-sheet";
 import { StepNavigator } from "./step-navigator";
 import {
   getDprValidationErrors,
@@ -36,9 +36,10 @@ interface DprWizardFormProps {
   draft: DprDraftInput;
   update: (patch: Partial<DprDraftInput>) => void;
   projectId: string;
-  /** "steps": one step at a time, for the mobile flow. "full": every section on one
-   *  scrollable page with a sidebar table of contents, like the DPR viewer — the desktop
-   *  inline wizard has the width for it. */
+  /** "full" (the default everywhere now) shows every section on one scrollable page with a
+   *  table of contents, like the DPR viewer — a sidebar rail from `lg`, a floating button below
+   *  it. "steps" (one step at a time) is unused but kept for now rather than ripping out the
+   *  wizard's save-draft-per-step flow along with it. */
   layout: "steps" | "full";
   currentStep: number;
   setCurrentStep: (step: number) => void;
@@ -243,7 +244,7 @@ export function DprWizardForm({
 
       {isFullLayout ? (
         <div className="flex flex-1 flex-col items-stretch gap-[16px] py-[16px] lg:flex-row lg:items-start lg:gap-[24px]">
-          <SectionChips
+          <SectionTocSheet
             sections={steps.map((step) => ({ id: step.key, label: step.label }))}
             activeId={activeSectionKey}
             onSelect={scrollToSection}
