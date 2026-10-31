@@ -5,6 +5,7 @@ import {
   type StageState,
 } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import {
   projectStageProjectParamsSchema,
   projectStageParamsSchema,
@@ -87,8 +88,7 @@ router.post('/', canManage, async (req, res) => {
       message: 'Project stage created',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -119,8 +119,7 @@ router.get('/', canView, async (req, res) => {
       message: 'Project stages retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -145,8 +144,7 @@ router.get('/:stageNo', canView, async (req, res) => {
       message: 'Project stage retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -225,8 +223,7 @@ router.patch('/:stageNo', canManage, async (req, res) => {
       message: 'Project stage updated',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -252,8 +249,7 @@ router.delete('/:stageNo', canManage, async (req, res) => {
       message: 'Project stage deleted',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 

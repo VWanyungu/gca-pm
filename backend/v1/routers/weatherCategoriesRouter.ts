@@ -1,6 +1,7 @@
 import express from 'express';
 import { WeatherCategories } from '../database/utils/database.js';
 import authorize, { authorizeAnyRole } from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import {
     createWeatherCategorySchema,
     updateWeatherCategorySchema,
@@ -46,8 +47,7 @@ router.post('/', canManage, async (req, res) => {
         const category = await WeatherCategories.create(input);
         res.status(201).json({ status: 'success', data: { category }, message: 'Weather category created' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -63,8 +63,7 @@ router.get('/', canListWeatherCategories, async (req, res) => {
         const result = await WeatherCategories.list({ includeInactive, page, limit });
         res.status(200).json({ status: 'success', data: result, message: 'Weather categories retrieved' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -84,8 +83,7 @@ router.get('/:id', canListWeatherCategories, async (req, res) => {
         }
         res.status(200).json({ status: 'success', data: { category }, message: 'Weather category retrieved' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -120,8 +118,7 @@ router.patch('/:id', canManage, async (req, res) => {
         const category = await WeatherCategories.update(id, patch);
         res.status(200).json({ status: 'success', data: { category }, message: 'Weather category updated' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -142,8 +139,7 @@ router.delete('/:id', canManage, async (req, res) => {
         const category = await WeatherCategories.deactivate(id);
         res.status(200).json({ status: 'success', data: { category }, message: 'Weather category deactivated' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 

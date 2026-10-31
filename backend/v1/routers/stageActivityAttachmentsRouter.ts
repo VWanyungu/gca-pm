@@ -18,6 +18,7 @@ import {
   type ListStageActivityAttachmentsQuery,
 } from '../utils/validation.js';
 import { uploadAttachmentToCloudinary } from '../utils/cloudinary.js';
+import { sendRouteError } from '../utils/errors.js';
 
 // mergeParams so :projectId and :activityId reach authorize + handlers.
 const router = express.Router({ mergeParams: true });
@@ -112,8 +113,7 @@ router.post('/', canManage, async (req, res) => {
       message: 'Stage activity attachment created',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -149,8 +149,7 @@ router.get('/', canView, async (req, res) => {
       message: 'Stage activity attachments retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -185,8 +184,7 @@ router.get('/:attachmentId', canView, async (req, res) => {
       message: 'Stage activity attachment retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -230,8 +228,7 @@ router.patch('/:attachmentId', canManage, async (req, res) => {
       message: 'Stage activity attachment updated',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -269,8 +266,7 @@ router.delete('/:attachmentId', canManage, async (req, res) => {
       message: 'Stage activity attachment removed',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 

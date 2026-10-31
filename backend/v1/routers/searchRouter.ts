@@ -3,6 +3,7 @@ import { Search } from '../database/utils/database.js';
 import { authorizeAnyRole } from '../middlewares/authorize.js';
 import { searchQuerySchema, type SearchQuery } from '../utils/validation.js';
 import type { TokenGrant } from '../../types.js';
+import { sendRouteError } from '../utils/errors.js';
 
 const router = express.Router();
 
@@ -47,8 +48,7 @@ router.get('/', canSearch, async (req, res) => {
     });
     res.status(200).json({ status: 'success', data: results, message: 'Search results' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 

@@ -1,6 +1,7 @@
 import express from 'express';
 import { Programs } from '../database/utils/database.js';
 import authorize, { authorizeAnyRole } from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import {
     createProgramSchema,
     updateProgramSchema,
@@ -40,8 +41,7 @@ router.post('/', canManage, async (req, res) => {
         const program = await Programs.create(input);
         res.status(201).json({ status: 'success', data: { program }, message: 'Program created' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -57,8 +57,7 @@ router.get('/', canListPrograms, async (req, res) => {
         const result = await Programs.list({ includeInactive, page, limit });
         res.status(200).json({ status: 'success', data: result, message: 'Programs retrieved' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -78,8 +77,7 @@ router.get('/:id', canManage, async (req, res) => {
         }
         res.status(200).json({ status: 'success', data: { program }, message: 'Program retrieved' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -114,8 +112,7 @@ router.patch('/:id', canManage, async (req, res) => {
         const program = await Programs.update(id, patch);
         res.status(200).json({ status: 'success', data: { program }, message: 'Program updated' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -136,8 +133,7 @@ router.delete('/:id', canManage, async (req, res) => {
         const program = await Programs.deactivate(id);
         res.status(200).json({ status: 'success', data: { program }, message: 'Program deactivated' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 

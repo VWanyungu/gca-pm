@@ -6,6 +6,7 @@ import {
   type WeeklySubmissionStatus,
 } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import {
   weeklySubmissionProjectParamsSchema,
   weeklySubmissionParamsSchema,
@@ -99,8 +100,7 @@ router.post('/', canManage, async (req, res) => {
       message: 'Weekly submission created',
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -144,8 +144,7 @@ router.get('/', canView, async (req, res) => {
       message: 'Weekly submissions retrieved',
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -179,8 +178,7 @@ router.get('/:submissionId', canView, async (req, res) => {
       message: 'Weekly submission retrieved',
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -244,8 +242,7 @@ router.patch('/:submissionId', canManage, async (req, res) => {
       message: 'Weekly submission updated',
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -287,8 +284,7 @@ router.delete('/:submissionId', canManage, async (req, res) => {
       message: 'Weekly submission deleted',
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -359,8 +355,7 @@ router.post('/:submissionId/approve', canManage, async (req, res) => {
       message: 'Weekly submission approved',
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -426,8 +421,7 @@ router.post('/:submissionId/supersede', canSupersede, async (req, res) => {
       message: 'Weekly submission superseded; new draft created',
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -484,8 +478,7 @@ router.post('/:submissionId/addressed-risks', canManage, async (req, res) => {
       message: 'Addressed risk added',
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -524,8 +517,7 @@ router.delete('/:submissionId/addressed-risks/:riskId', canManage, async (req, r
       message: 'Addressed risk removed',
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -547,8 +539,7 @@ router.get('/:submissionId/photos', canView, async (req, res) => {
 
     res.status(200).json({ status: 'success', data: { photos }, message: 'Submission photos retrieved' });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -586,8 +577,7 @@ router.put('/:submissionId/photos', canManage, async (req, res) => {
     const photos = await SubmissionClientPhotos.listForSubmission(submissionId, projectId);
     res.status(200).json({ status: 'success', data: { photos }, message: 'Submission photos updated' });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 

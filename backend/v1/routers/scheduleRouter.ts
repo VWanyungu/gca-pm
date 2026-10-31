@@ -26,6 +26,7 @@ import {
 } from '../utils/objectStorage.js';
 import { processScheduleVersion } from '../utils/scheduleProcessor.js';
 import { buildScheduleExport, MppParserUnavailableError, type ParsedTask } from '../utils/mppParser.js';
+import { sendRouteError } from '../utils/errors.js';
 
 // mergeParams so :projectId reaches authorize and handlers
 const router = express.Router({ mergeParams: true });
@@ -74,8 +75,7 @@ router.get('/versions', canView, async (req, res) => {
     const versions = await ScheduleVersions.listApplied(projectId);
     res.status(200).json({ status: 'success', data: { versions }, message: 'Schedule versions retrieved' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -98,8 +98,7 @@ router.get('/versions/:versionId', canView, async (req, res) => {
     }
     res.status(200).json({ status: 'success', data: { version }, message: 'Schedule version retrieved' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -122,8 +121,7 @@ router.get('/versions/:versionId/changes', canView, async (req, res) => {
     const changes = await ScheduleVersions.getChanges(projectId, versionId);
     res.status(200).json({ status: 'success', data: { changes }, message: 'Version changes retrieved' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -172,8 +170,7 @@ router.get('/versions/:versionId/download', canView, async (req, res) => {
       res.status(502).json({ status: 'error', data: null, message: err.message });
       return;
     }
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -243,8 +240,7 @@ router.get('/export', canView, async (req, res) => {
       res.status(502).json({ status: 'error', data: null, message: err.message });
       return;
     }
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -267,8 +263,7 @@ router.get('/tasks', canView, async (req, res) => {
     const tasks = await ScheduleTasks.listCurrent(projectId);
     res.status(200).json({ status: 'success', data: { tasks }, message: 'Schedule tasks retrieved' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -291,8 +286,7 @@ router.get('/overdue', canView, async (req, res) => {
     const tasks = await ScheduleTasks.listOverdue(projectId);
     res.status(200).json({ status: 'success', data: { tasks }, message: 'Overdue tasks retrieved' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -327,8 +321,7 @@ router.get('/reconciliation-flags', canView, async (req, res) => {
 
     res.status(200).json({ status: 'success', data: result, message: 'Reconciliation flags retrieved' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -357,8 +350,7 @@ router.post('/reconciliation-flags/acknowledge', canManage, async (req, res) => 
     const acknowledged = await ScheduleReconciliationFlags.acknowledge(projectId, flag_ids, req.user!.userId);
     res.status(200).json({ status: 'success', data: { acknowledged }, message: 'Flags acknowledged' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -485,8 +477,7 @@ router.post('/upload', canUpload, async (req, res) => {
       });
       return;
     }
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 

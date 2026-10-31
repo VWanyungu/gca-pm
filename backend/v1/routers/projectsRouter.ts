@@ -7,6 +7,7 @@ import {
   ProjectMetrics,
 } from '../database/utils/database.js';
 import authorize, { authorizeAnyRole } from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import {
   createProjectSchema,
   updateProjectSchema,
@@ -68,8 +69,7 @@ router.get('/suggest-code', canCreate, async (req, res) => {
       message: 'Suggested project code generated',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -118,8 +118,7 @@ router.post('/', canCreate, async (req, res) => {
       });
       return;
     }
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -149,8 +148,7 @@ router.get('/', canListProjects, async (req, res) => {
       message: 'Projects retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -191,8 +189,7 @@ router.get('/:projectId', canViewProject, async (req, res) => {
       message: 'Project retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -251,13 +248,16 @@ router.patch('/:projectId', canManageProject, async (req, res) => {
       message: 'Project updated',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
     // Validation or transition errors return 400
-    if (message.includes('Invalid project status transition') || message.includes('Reason is required')) {
-      res.status(400).json({ status: 'error', data: null, message });
+    if (
+      err instanceof Error &&
+      err.constructor === Error &&
+      (err.message.includes('Invalid project status transition') || err.message.includes('Reason is required'))
+    ) {
+      res.status(400).json({ status: 'error', data: null, message: err.message });
       return;
     }
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -287,8 +287,7 @@ router.delete('/:projectId', canDeleteProject, async (req, res) => {
       message: 'Project deleted',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 

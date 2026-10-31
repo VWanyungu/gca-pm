@@ -20,6 +20,7 @@ import {
   type ListStageActivitiesQuery,
 } from '../utils/validation.js';
 import { uploadAttachmentToCloudinary } from '../utils/cloudinary.js';
+import { sendRouteError } from '../utils/errors.js';
 
 // mergeParams so :projectId from the parent mount reaches authorize + handlers.
 const router = express.Router({ mergeParams: true });
@@ -171,8 +172,7 @@ router.post('/', canManage, async (req, res) => {
       message: 'Stage activity created',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -206,8 +206,7 @@ router.get('/', canView, async (req, res) => {
       message: 'Stage activities retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -232,8 +231,7 @@ router.get('/:activityId', canView, async (req, res) => {
       message: 'Stage activity retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -290,8 +288,7 @@ router.patch('/:activityId', canManage, async (req, res) => {
       message: 'Stage activity updated',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -318,8 +315,7 @@ router.delete('/:activityId', canManage, async (req, res) => {
       message: 'Stage activity deleted',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
