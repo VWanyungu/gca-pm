@@ -1,6 +1,7 @@
 import express from 'express';
 import { PersonnelRoles } from '../database/utils/database.js';
 import { authorizeAnyRole } from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import {
     listPersonnelRolesQuerySchema,
     createPersonnelRoleSchema,
@@ -35,8 +36,7 @@ router.get('/', canListPersonnelRoles, async (req, res) => {
         const result = await PersonnelRoles.list({ includeInactive: include_inactive });
         res.status(200).json({ status: 'success', data: result, message: 'Personnel roles retrieved' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -57,8 +57,7 @@ router.post('/', canCreatePersonnelRole, async (req, res) => {
         const role = await PersonnelRoles.findOrCreate(name);
         res.status(201).json({ status: 'success', data: { role }, message: 'Personnel role saved' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 

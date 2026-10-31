@@ -5,6 +5,7 @@ import {
   ProjectStages,
 } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import {
   customMilestoneProjectParamsSchema,
   customMilestoneParamsSchema,
@@ -87,8 +88,7 @@ router.post('/', canManage, async (req, res) => {
       message: 'Custom milestone created',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -139,8 +139,7 @@ router.get('/', canView, async (req, res) => {
       message: 'Custom milestones retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -175,8 +174,7 @@ router.get('/:milestoneId', canView, async (req, res) => {
       message: 'Custom milestone retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -226,8 +224,7 @@ router.patch('/:milestoneId', canManage, async (req, res) => {
       message: 'Custom milestone updated',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -255,8 +252,7 @@ router.delete('/:milestoneId', canManage, async (req, res) => {
       message: 'Custom milestone removed',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -284,8 +280,7 @@ router.post('/:milestoneId/restore', canManage, async (req, res) => {
       message: 'Custom milestone restored',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 

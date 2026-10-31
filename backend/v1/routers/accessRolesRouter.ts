@@ -2,6 +2,7 @@ import express from 'express';
 import { AccessRoles } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
 import { authorizeAnyRole } from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import {
     createAccessRoleSchema,
     updateAccessRoleSchema,
@@ -33,8 +34,7 @@ router.get('/', canList, async (req, res) => {
         const roles = await AccessRoles.list({ includeInactive });
         res.status(200).json({ status: 'success', data: { roles }, message: 'Roles retrieved' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -54,8 +54,7 @@ router.post('/', canManage, async (req, res) => {
         const role = await AccessRoles.create(value as CreateAccessRoleBody);
         res.status(201).json({ status: 'success', data: { role }, message: 'Role created' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -98,8 +97,7 @@ router.patch('/:id', canManage, async (req, res) => {
         const role = await AccessRoles.update(id, update);
         res.status(200).json({ status: 'success', data: { role }, message: 'Role updated' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -125,8 +123,7 @@ router.delete('/:id', canManage, async (req, res) => {
         const role = await AccessRoles.deactivate(id);
         res.status(200).json({ status: 'success', data: { role }, message: 'Role deactivated' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 

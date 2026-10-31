@@ -4,6 +4,7 @@ import type { AdminCreateUserInput, UpdateUserInput, RoleName } from '../databas
 import { Cache } from '../database/utils/cache.js';
 import authorize from '../middlewares/authorize.js';
 import { SEED_PASSWORD_HASH } from '../seeds/01_users.js';
+import { sendRouteError } from '../utils/errors.js';
 import {
   userIdParamSchema,
   listUsersQuerySchema,
@@ -51,8 +52,7 @@ router.get('/', canRead, async (req, res) => {
           message: 'Users retrieved successfully',
         });
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
       }
       return;
     }
@@ -74,8 +74,7 @@ router.get('/', canRead, async (req, res) => {
           message: 'User retrieved successfully',
         });
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
       }
       return;
     }
@@ -103,8 +102,7 @@ router.get('/:id', canRead, async (req, res) => {
     }
     res.status(200).json({ status: 'success', data: { user }, message: 'User retrieved successfully' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -124,8 +122,7 @@ router.post('/', canWrite, async (req, res) => {
     const user = await Users.createUserAdmin(value as AdminCreateUserInput, SEED_PASSWORD_HASH, req.user!.userId);
     res.status(201).json({ status: 'success', data: { user }, message: 'User created' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -156,8 +153,7 @@ router.put('/:id', canWrite, async (req, res) => {
     }
     res.status(200).json({ status: 'success', data: { user }, message: 'User updated' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -181,8 +177,7 @@ router.patch('/:id/status', canWrite, async (req, res) => {
     }
     res.status(200).json({ status: 'success', data: { user }, message: 'User status updated' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -206,8 +201,7 @@ router.post('/:id/invalidate-sessions', canWrite, async (req, res) => {
     await Cache.set(`session_invalidated_${id}`, invalidatedAt.getTime(), { ex: 900 });
     res.status(200).json({ status: 'success', data: { invalidatedAt }, message: 'Sessions invalidated' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 

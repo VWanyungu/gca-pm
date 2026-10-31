@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { Roles, AccessRoles } from '../database/utils/database.js';
 import type { RoleName, ScopeType, RoleGrant } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import {
     createRoleSchema,
     revokeRoleParamsSchema,
@@ -79,8 +80,7 @@ router.post('/', canCreateOrRevoke, async (req, res) => {
         });
         res.status(201).json({ status: 'success', data: { attributeId }, message: 'Role granted' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -115,8 +115,7 @@ router.get('/', async (req, res) => {
         const result = await Roles.list({ userId, projectId, page, limit });
         res.status(200).json({ status: 'success', data: result, message: 'Roles retrieved' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -149,8 +148,7 @@ router.delete('/:attributeId', canCreateOrRevoke, async (req, res) => {
         const revokedRole = await Roles.revoke(attributeId, req.user!.userId, reason);
         res.status(200).json({ status: 'success', data: { revokedRole }, message: 'Role revoked' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -174,8 +172,7 @@ router.post('/reassign-main', canCreateOrRevoke, async (req, res) => {
         const attributeId = await Roles.reassignMain({ projectId, role, newUserId, actorId: req.user!.userId, reason });
         res.status(200).json({ status: 'success', data: { attributeId }, message: 'Main role reassigned' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 

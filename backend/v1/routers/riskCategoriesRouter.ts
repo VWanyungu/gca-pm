@@ -1,6 +1,7 @@
 import express from 'express';
 import { RiskCategories } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import {
     createRiskCategorySchema,
     updateRiskCategorySchema,
@@ -36,8 +37,7 @@ router.post('/', canManage, async (req, res) => {
         const category = await RiskCategories.create(value as CreateRiskCategoryBody);
         res.status(201).json({ status: 'success', data: { category }, message: 'Risk category created' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -53,8 +53,7 @@ router.get('/', canManage, async (req, res) => {
         const result = await RiskCategories.list({ includeInactive, page, limit });
         res.status(200).json({ status: 'success', data: result, message: 'Risk categories retrieved' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -74,8 +73,7 @@ router.get('/:id', canManage, async (req, res) => {
         }
         res.status(200).json({ status: 'success', data: { category }, message: 'Risk category retrieved' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -119,8 +117,7 @@ router.patch('/:id', canManage, async (req, res) => {
         const category = await RiskCategories.update(id, update);
         res.status(200).json({ status: 'success', data: { category }, message: 'Risk category updated' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
@@ -147,8 +144,7 @@ router.delete('/:id', canManage, async (req, res) => {
         const category = await RiskCategories.deactivate(id);
         res.status(200).json({ status: 'success', data: { category }, message: 'Risk category deactivated' });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 
