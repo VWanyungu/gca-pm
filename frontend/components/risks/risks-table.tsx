@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 import { Plus, Search, ShieldCheck } from "lucide-react";
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
 import Dropdown from "@/components/Dropdown";
 import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -11,6 +17,7 @@ import {
   formatShortDate,
   ratingFromScore,
   statusInfo,
+  type Risk,
   type RiskRating,
   type RiskStatus,
 } from "./types";
@@ -35,6 +42,77 @@ const RATING_OPTIONS = [
 function ownerName(ownerId: string, team: TeamMember[]) {
   const member = team.find((m) => m.user_id === ownerId);
   return member ? `${member.first_name[0]}. ${member.last_name}` : "—";
+}
+
+function buildColumns(team: TeamMember[]): ColumnDef<Risk>[] {
+  return [
+    {
+      accessorKey: "title",
+      header: "Risk",
+      meta: { className: "w-full md:w-[32%]" },
+      cell: ({ row }) => {
+        const risk = row.original;
+        const rating = ratingFromScore(risk.score);
+        const status = statusInfo(risk);
+        return (
+          <div className="flex w-full flex-col gap-[4px]">
+            {/* Phone: title on its own line, the five attributes fold under it. */}
+            <p className="w-full text-[15px] font-medium text-gca-dark md:truncate md:text-[13px]">
+              {risk.title}
+            </p>
+            <p className="flex flex-wrap items-center gap-x-[8px] text-[12px] md:hidden">
+              <span className={`font-semibold ${rating.className}`}>{rating.label}</span>
+              <span className={`font-semibold ${status.className}`}>{status.label}</span>
+              <span className="text-gca-muted">
+                {risk.stage_no ? (STAGE_SHORT_NAME[risk.stage_no] ?? risk.stage_no) : "—"} ·{" "}
+                {ownerName(risk.owner_id, team)} · {formatShortDate(risk.opened_at)}
+              </span>
+            </p>
+          </div>
+        );
+      },
+    },
+    {
+      id: "stage",
+      header: "Stage",
+      meta: { className: "hidden md:block md:w-[13%]" },
+      cell: ({ row }) => (
+        <p className="text-[13px] text-gca-dark">
+          {row.original.stage_no ? (STAGE_SHORT_NAME[row.original.stage_no] ?? row.original.stage_no) : "—"}
+        </p>
+      ),
+    },
+    {
+      id: "rating",
+      header: "Rating",
+      meta: { className: "hidden md:block md:w-[11%]" },
+      cell: ({ row }) => {
+        const rating = ratingFromScore(row.original.score);
+        return <p className={`text-[13px] font-semibold ${rating.className}`}>{rating.label}</p>;
+      },
+    },
+    {
+      id: "owner",
+      header: "Owner",
+      meta: { className: "hidden md:block md:w-[16%]" },
+      cell: ({ row }) => <p className="text-[13px] text-gca-dark">{ownerName(row.original.owner_id, team)}</p>,
+    },
+    {
+      id: "status",
+      header: "Status",
+      meta: { className: "hidden md:block md:w-[16%]" },
+      cell: ({ row }) => {
+        const status = statusInfo(row.original);
+        return <p className={`text-[13px] font-semibold ${status.className}`}>{status.label}</p>;
+      },
+    },
+    {
+      id: "raised",
+      header: "Raised",
+      meta: { className: "hidden md:block md:w-[12%]" },
+      cell: ({ row }) => <p className="text-[13px] text-gca-dark">{formatShortDate(row.original.opened_at)}</p>,
+    },
+  ];
 }
 
 interface RisksTableProps {
@@ -65,6 +143,9 @@ export function RisksTable({ projectId, team, canManage, onAddRisk, onOpenRisk }
   const risks = data?.riskIssues ?? [];
   const total = data?.pagination.total ?? 0;
   const pages = data?.pagination.pages ?? 1;
+
+  const columns = buildColumns(team);
+  const table = useReactTable({ data: risks, columns, getCoreRowModel: getCoreRowModel() });
 
   function changeFilter(setter: (v: string) => void, value: string) {
     setter(value);
@@ -135,56 +216,30 @@ export function RisksTable({ projectId, team, canManage, onAddRisk, onOpenRisk }
         <>
           <div className="flex w-full flex-col">
             <div className="hidden w-full items-center gap-[10px] border-b border-gca-border py-[8px] text-[12px] font-medium text-gca-muted md:flex">
-              <p className="w-[32%]">Risk</p>
-              <p className="w-[13%]">Stage</p>
-              <p className="w-[11%]">Rating</p>
-              <p className="w-[16%]">Owner</p>
-              <p className="w-[16%]">Status</p>
-              <p className="w-[12%]">Raised</p>
+              {table.getFlatHeaders().map((header) => (
+                <p key={header.id} className={(header.column.columnDef.meta as { className?: string } | undefined)?.className}>
+                  {flexRender(header.column.columnDef.header, header.getContext())}
+                </p>
+              ))}
             </div>
-            {risks.map((risk, i) => {
-              const rating = ratingFromScore(risk.score);
-              const status = statusInfo(risk);
-              return (
-                <button
-                  key={risk.risk_id}
-                  onClick={() => onOpenRisk(risk.risk_id)}
-                  className={`flex w-full cursor-pointer flex-col items-start gap-[4px] py-[14px] text-left md:flex-row md:items-center md:gap-[10px] md:py-[12px] ${
-                    i > 0 ? "border-t border-gca-border" : ""
-                  }`}
-                >
-                  {/* Phone: title on its own line, the five attributes fold under it. */}
-                  <p className="w-full text-[15px] font-medium text-gca-dark md:w-[32%] md:truncate md:text-[13px]">
-                    {risk.title}
-                  </p>
-                  <p className="flex flex-wrap items-center gap-x-[8px] text-[12px] md:hidden">
-                    <span className={`font-semibold ${rating.className}`}>{rating.label}</span>
-                    <span className={`font-semibold ${status.className}`}>{status.label}</span>
-                    <span className="text-gca-muted">
-                      {risk.stage_no ? (STAGE_SHORT_NAME[risk.stage_no] ?? risk.stage_no) : "—"} ·{" "}
-                      {ownerName(risk.owner_id, team)} · {formatShortDate(risk.opened_at)}
-                    </span>
-                  </p>
-                  <span className="hidden md:contents">
-                    <p className="w-[13%] text-[13px] text-gca-dark">
-                      {risk.stage_no ? (STAGE_SHORT_NAME[risk.stage_no] ?? risk.stage_no) : "—"}
-                    </p>
-                    <p className={`w-[11%] text-[13px] font-semibold ${rating.className}`}>
-                      {rating.label}
-                    </p>
-                    <p className="w-[16%] text-[13px] text-gca-dark">
-                      {ownerName(risk.owner_id, team)}
-                    </p>
-                    <p className={`w-[16%] text-[13px] font-semibold ${status.className}`}>
-                      {status.label}
-                    </p>
-                    <p className="w-[12%] text-[13px] text-gca-dark">
-                      {formatShortDate(risk.opened_at)}
-                    </p>
+            {table.getRowModel().rows.map((row, i) => (
+              <button
+                key={row.id}
+                onClick={() => onOpenRisk(row.original.risk_id)}
+                className={`flex w-full cursor-pointer flex-col items-start gap-[4px] py-[14px] text-left md:flex-row md:items-center md:gap-[10px] md:py-[12px] ${
+                  i > 0 ? "border-t border-gca-border" : ""
+                }`}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <span
+                    key={cell.id}
+                    className={(cell.column.columnDef.meta as { className?: string } | undefined)?.className}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </span>
-                </button>
-              );
-            })}
+                ))}
+              </button>
+            ))}
           </div>
 
           {pages > 1 && (

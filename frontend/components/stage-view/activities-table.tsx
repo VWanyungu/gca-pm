@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 import { Plus, ClipboardList, Check } from "lucide-react";
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
 import { Pagination } from "@/components/pagination";
 import { api } from "@/lib/api-client";
 import { useStageActivitiesPaged, useStageViewInvalidate } from "./use-stage-view-data";
@@ -31,6 +37,89 @@ function ownerName(ownerId: string | null, team: TeamMember[]) {
   if (!ownerId) return "Unassigned";
   const member = team.find((m) => m.user_id === ownerId);
   return member ? `${member.first_name[0]}. ${member.last_name}` : "—";
+}
+
+function buildColumns(
+  team: TeamMember[],
+  selected: Set<string>,
+  allSelected: boolean,
+  selectableCount: number,
+  toggleSelected: (activityId: string) => void,
+  toggleSelectAll: () => void,
+): ColumnDef<StageActivity>[] {
+  const sideWidth = selectableCount > 0 ? "w-[21%]" : "w-[22.5%]";
+  return [
+    {
+      id: "select",
+      header: () => (
+        <span className="flex size-[16px] shrink-0 items-center justify-center">
+          <button
+            onClick={toggleSelectAll}
+            className={`cursor-pointer flex size-[16px] items-center justify-center rounded-[4px] border-2 ${
+              allSelected ? "border-gca-green bg-gca-green" : "border-gca-border"
+            }`}
+          >
+            {allSelected && <Check className="size-[11px] text-gca-on-accent" />}
+          </button>
+        </span>
+      ),
+      cell: ({ row }) => (
+        <span className="flex size-[16px] shrink-0 items-center justify-center">
+          <button
+            onClick={() => toggleSelected(row.original.activity_id)}
+            className={`cursor-pointer flex size-[16px] items-center justify-center rounded-[4px] border-2 ${
+              selected.has(row.original.activity_id) ? "border-gca-green bg-gca-green" : "border-gca-border"
+            }`}
+          >
+            {selected.has(row.original.activity_id) && (
+              <Check className="size-[11px] text-gca-on-accent" />
+            )}
+          </button>
+        </span>
+      ),
+    },
+    {
+      accessorKey: "title",
+      header: "Activity",
+      cell: ({ row }) => (
+        <div className="flex w-[60%] items-center gap-[10px]">
+          <div className="flex flex-col gap-[2px]">
+            <p className="text-[13px] font-medium text-gca-dark">{row.original.title}</p>
+            <p className="text-[12px] text-gca-muted">{ownerName(row.original.owner_id, team)}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: "due",
+      header: "Due",
+      cell: ({ row }) => (
+        <p className={`${sideWidth} text-[13px] text-center text-gca-dark`}>
+          {row.original.due_date
+            ? new Date(row.original.due_date).toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "short",
+              })
+            : "—"}
+        </p>
+      ),
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <p
+          className={`${sideWidth} text-[13px] text-center font-semibold ${
+            isOverdue(row.original)
+              ? "text-error-text"
+              : (STATUS_STYLE[row.original.status] ?? "text-gca-show")
+          }`}
+        >
+          {statusLabel(row.original)}
+        </p>
+      ),
+    },
+  ];
 }
 
 interface ActivitiesTableProps {
@@ -69,6 +158,9 @@ export function ActivitiesTable({
   const doneCount = activities.filter((a) => a.status === "done").length;
   const selectableIds = activities.filter((a) => a.status !== "done").map((a) => a.activity_id);
   const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
+
+  const columns = buildColumns(team, selected, allSelected, selectableIds.length, toggleSelected, toggleSelectAll);
+  const table = useReactTable({ data: activities, columns, getCoreRowModel: getCoreRowModel() });
 
   function changeTab(next: "all" | "open" | "done") {
     setTab(next);
@@ -197,84 +289,44 @@ export function ActivitiesTable({
 
           <div className="flex w-full flex-col">
             <div className="flex w-full items-center gap-[10px] py-[8px] text-[12px] font-medium text-gca-muted border-b border-gca-border">
-              {selectableIds.length > 0 && (
-                <span className="flex size-[16px] shrink-0 items-center justify-center">
-                  <button
-                    onClick={toggleSelectAll}
-                    className={`cursor-pointer flex size-[16px] items-center justify-center rounded-[4px] border-2 ${
-                      allSelected ? "border-gca-green bg-gca-green" : "border-gca-border"
-                    }`}
-                  >
-                    {allSelected && <Check className="size-[11px] text-gca-on-accent" />}
-                  </button>
-                </span>
-              )}
-              <p className="w-[57%]">Activity</p>
-              <p className="w-[20%] text-center">Due</p>
-              <p className="w-[20%] text-center">Status</p>
+              {(() => {
+                const [selectHeader, activityHeader, dueHeader, statusHeader] = table.getFlatHeaders();
+                return (
+                  <>
+                    {selectableIds.length > 0 &&
+                      flexRender(selectHeader.column.columnDef.header, selectHeader.getContext())}
+                    <p className="w-[57%]">
+                      {flexRender(activityHeader.column.columnDef.header, activityHeader.getContext())}
+                    </p>
+                    <p className="w-[20%] text-center">
+                      {flexRender(dueHeader.column.columnDef.header, dueHeader.getContext())}
+                    </p>
+                    <p className="w-[20%] text-center">
+                      {flexRender(statusHeader.column.columnDef.header, statusHeader.getContext())}
+                    </p>
+                  </>
+                );
+              })()}
             </div>
-            {activities.map((activity, i) => (
-              <div
-                key={activity.activity_id}
-                className={`*:cursor-pointer flex w-full items-center gap-[10px] py-[12px] ${i > 0 ? "border-t border-gca-border" : ""}`}
-              >
-                <span className="flex size-[16px] shrink-0 items-center justify-center">
-                  {/* {activity.status !== "done" && ( */}
-                  <button
-                    onClick={() => toggleSelected(activity.activity_id)}
-                    className={`cursor-pointer flex size-[16px] items-center justify-center rounded-[4px] border-2 ${
-                      selected.has(activity.activity_id)
-                        ? "border-gca-green bg-gca-green"
-                        : "border-gca-border"
-                    }`}
-                  >
-                    {selected.has(activity.activity_id) && (
-                      <Check className="size-[11px] text-gca-on-accent" />
-                    )}
-                  </button>
-                  {/* )} */}
-                </span>
-                <button
-                  onClick={() => onOpenActivity(activity.activity_id)}
-                  className="cursor-pointer flex flex-1 items-center text-left"
+            {table.getRowModel().rows.map((row, i) => {
+              const [selectCell, activityCell, dueCell, statusCell] = row.getVisibleCells();
+              return (
+                <div
+                  key={row.id}
+                  className={`*:cursor-pointer flex w-full items-center gap-[10px] py-[12px] ${i > 0 ? "border-t border-gca-border" : ""}`}
                 >
-                  <div className="flex w-[60%] items-center gap-[10px]">
-                    {/* <span
-                      className={`flex size-[16px] shrink-0 items-center justify-center rounded-[4px] border-2 ${
-                        activity.status === "done"
-                          ? "border-gca-green bg-gca-green"
-                          : "border-gca-border"
-                      }`}
-                    /> */}
-                    <div className="flex flex-col gap-[2px]">
-                      <p className="text-[13px] font-medium text-gca-dark">{activity.title}</p>
-                      <p className="text-[12px] text-gca-muted">
-                        {ownerName(activity.owner_id, team)}
-                      </p>
-                    </div>
-                  </div>
-                  <p
-                    className={`${selectableIds.length > 0 ? "w-[21%]" : "w-[22.5%]"} text-[13px] text-center text-gca-dark`}
+                  {flexRender(selectCell.column.columnDef.cell, selectCell.getContext())}
+                  <button
+                    onClick={() => onOpenActivity(row.original.activity_id)}
+                    className="cursor-pointer flex flex-1 items-center text-left"
                   >
-                    {activity.due_date
-                      ? new Date(activity.due_date).toLocaleDateString("en-GB", {
-                          day: "numeric",
-                          month: "short",
-                        })
-                      : "—"}
-                  </p>
-                  <p
-                    className={`${selectableIds.length > 0 ? "w-[21%]" : "w-[22.5%]"} text-[13px] text-center font-semibold ${
-                      isOverdue(activity)
-                        ? "text-error-text"
-                        : (STATUS_STYLE[activity.status] ?? "text-gca-show")
-                    }`}
-                  >
-                    {statusLabel(activity)}
-                  </p>
-                </button>
-              </div>
-            ))}
+                    {flexRender(activityCell.column.columnDef.cell, activityCell.getContext())}
+                    {flexRender(dueCell.column.columnDef.cell, dueCell.getContext())}
+                    {flexRender(statusCell.column.columnDef.cell, statusCell.getContext())}
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
           {pages > 1 && (
