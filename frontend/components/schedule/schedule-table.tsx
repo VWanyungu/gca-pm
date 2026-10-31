@@ -2,6 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import {
   formatShortDate,
   groupPlannedProgress,
   groupProgress,
@@ -19,6 +25,152 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 const INITIAL_ROWS = 24;
 const LOAD_MORE_ROWS = 24;
 const INDENT_PER_LEVEL = 16;
+
+function buildColumns(
+  tasks: ScheduleTask[],
+  level: number,
+  baseLevel: number,
+  collapsed: Set<string>,
+  toggleGroup: (groupId: string) => void,
+): ColumnDef<ScheduleTask>[] {
+  return [
+    {
+      id: "task",
+      header: "Task",
+      meta: { className: "w-[24%]" },
+      cell: ({ row }) => {
+        const t = row.original;
+        const isPhase = t.outline_level === level;
+        const isGroup = t.is_summary;
+        return (
+          <div
+            className="flex items-center gap-[8px] truncate pr-[8px]"
+            style={{ paddingLeft: (t.outline_level - baseLevel) * INDENT_PER_LEVEL }}
+          >
+            {isGroup ? (
+              <button
+                type="button"
+                onClick={() => toggleGroup(t.task_id)}
+                className="cursor-pointer text-gca-muted"
+                aria-label={collapsed.has(t.task_id) ? "Expand" : "Collapse"}
+              >
+                {collapsed.has(t.task_id) ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
+              </button>
+            ) : (
+              <span className="w-[10px]" aria-hidden />
+            )}
+            {/* A milestone is a dated marker rather than work, and MS Project lets a summary
+              row carry the flag too, so the diamond is drawn independently of the row type. */}
+            {t.is_milestone && (
+              <span
+                className="shrink-0 text-[10px] text-gca-green"
+                title="Milestone"
+                aria-label="Milestone"
+              >
+                ◆
+              </span>
+            )}
+            <span
+              className={`truncate text-[13px] ${
+                isPhase
+                  ? "font-medium tracking-[0.04em] text-gca-badge-text"
+                  : isGroup
+                    ? "font-semibold text-gca-dark"
+                    : "font-medium text-gca-dark"
+              }`}
+              title={t.task_name}
+            >
+              {t.task_name}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "progress",
+      header: "Progress",
+      meta: { className: "w-[9%]" },
+      cell: ({ row }) => {
+        const t = row.original;
+        const isGroup = t.is_summary;
+        const progress = isGroup ? groupProgress(t, tasks) : Number(t.pct_work_complete);
+        return (
+          <p className={`text-[13px] ${isGroup ? "font-medium" : ""} text-gca-dark`}>
+            {Math.round(progress)}%
+          </p>
+        );
+      },
+    },
+    {
+      id: "planned",
+      header: "Planned",
+      meta: { className: "w-[9%]" },
+      cell: ({ row }) => {
+        const t = row.original;
+        const isGroup = t.is_summary;
+        const planned = isGroup
+          ? groupPlannedProgress(t, tasks)
+          : t.planned_pct !== null
+            ? Number(t.planned_pct)
+            : null;
+        return (
+          <p className={`text-[13px] ${isGroup ? "font-medium text-gca-dark" : "text-gca-show"}`}>
+            {planned !== null ? `${Math.round(planned)}%` : "—"}
+          </p>
+        );
+      },
+    },
+    {
+      id: "workDays",
+      header: "Work days",
+      meta: { className: "w-[9%]" },
+      cell: ({ row }) => (
+        <p className="font-mono text-[13px] text-gca-dark">{workDays(row.original.duration_minutes)}</p>
+      ),
+    },
+    {
+      id: "start",
+      header: "Start",
+      meta: { className: "w-[10%]" },
+      cell: ({ row }) => (
+        <p className="font-mono text-[13px] text-gca-dark">{formatShortDate(row.original.start)}</p>
+      ),
+    },
+    {
+      id: "plannedFinish",
+      header: "Planned finish",
+      meta: { className: "w-[11%]" },
+      cell: ({ row }) => (
+        <p className="font-mono text-[13px] text-gca-dark">{formatShortDate(plannedFinish(row.original))}</p>
+      ),
+    },
+    {
+      id: "forecast",
+      header: "Forecast",
+      meta: { className: "w-[11%]" },
+      cell: ({ row }) => (
+        <p className="font-mono text-[13px] text-gca-show">{formatShortDate(row.original.expected_finish)}</p>
+      ),
+    },
+    {
+      id: "status",
+      header: "Status",
+      meta: { className: "w-[15%]" },
+      cell: ({ row }) => {
+        const t = row.original;
+        const isGroup = t.is_summary;
+        // A summary row's status is the roll-up of its children, which the Status column
+        // cannot express, so only real work carries one.
+        const status = taskStatusLabel(t);
+        return (
+          <p className={`text-[13px] font-semibold ${isGroup ? "" : status.className}`}>
+            {isGroup ? "" : status.label}
+          </p>
+        );
+      },
+    },
+  ];
+}
 
 interface ScheduleTableProps {
   tasks: ScheduleTask[];
@@ -54,6 +206,9 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
 
   const total = rows.length;
   const visibleRows = rows.slice(0, visibleCount);
+
+  const columns = buildColumns(tasks, level, baseLevel, collapsed, toggleGroup);
+  const table = useReactTable({ data: visibleRows, columns, getCoreRowModel: getCoreRowModel() });
 
   useEffect(() => {
     const root = scrollContainerRef.current;
@@ -101,109 +256,34 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
       <div className="no-scrollbar flex w-full min-w-0 flex-col overflow-x-auto">
         <div className="flex w-full min-w-[980px] flex-col">
           <div className="sticky top-0 z-9 flex w-full items-center gap-[10px] border-b border-gca-border bg-gca-surface px-[16px] py-[8px] text-[12px] font-medium text-gca-muted">
-            <p className="w-[24%]">Task</p>
-            <p className="w-[9%]">Progress</p>
-            <p className="w-[9%]">Planned</p>
-            <p className="w-[9%]">Work days</p>
-            <p className="w-[10%]">Start</p>
-            <p className="w-[11%]">Planned finish</p>
-            <p className="w-[11%]">Forecast</p>
-            <p className="w-[15%]">Status</p>
+            {table.getFlatHeaders().map((header) => (
+              <p
+                key={header.id}
+                className={(header.column.columnDef.meta as { className?: string } | undefined)?.className}
+              >
+                {flexRender(header.column.columnDef.header, header.getContext())}
+              </p>
+            ))}
           </div>
 
           <div ref={scrollContainerRef} className="max-h-[520px] overflow-y-auto">
-            {visibleRows.map((t, i) => {
-              const isPhase = t.outline_level === level;
-              const isGroup = t.is_summary;
-              const status = taskStatusLabel(t);
-              const progress = isGroup ? groupProgress(t, tasks) : Number(t.pct_work_complete);
-              const planned = isGroup
-                ? groupPlannedProgress(t, tasks)
-                : t.planned_pct !== null
-                  ? Number(t.planned_pct)
-                  : null;
-
+            {table.getRowModel().rows.map((row, i) => {
+              const isPhase = row.original.outline_level === level;
               return (
                 <div
-                  key={t.task_id}
+                  key={row.id}
                   className={`flex w-full items-center gap-[10px] px-[16px] ${
                     isPhase ? "bg-gca-badge-bg py-[10px]" : "py-[12px]"
                   } ${i > 0 ? "border-t border-gca-border" : ""}`}
                 >
-                  <div
-                    className="flex w-[24%] items-center gap-[8px] truncate pr-[8px]"
-                    style={{ paddingLeft: (t.outline_level - baseLevel) * INDENT_PER_LEVEL }}
-                  >
-                    {isGroup ? (
-                      <button
-                        type="button"
-                        onClick={() => toggleGroup(t.task_id)}
-                        className="cursor-pointer text-gca-muted"
-                        aria-label={collapsed.has(t.task_id) ? "Expand" : "Collapse"}
-                      >
-                        {collapsed.has(t.task_id) ? (
-                          <ChevronRight size={18} />
-                        ) : (
-                          <ChevronDown size={18} />
-                        )}
-                      </button>
-                    ) : (
-                      <span className="w-[10px]" aria-hidden />
-                    )}
-                    {/* A milestone is a dated marker rather than work, and MS Project lets a summary
-                      row carry the flag too, so the diamond is drawn independently of the row type. */}
-                    {t.is_milestone && (
-                      <span
-                        className="shrink-0 text-[10px] text-gca-green"
-                        title="Milestone"
-                        aria-label="Milestone"
-                      >
-                        ◆
-                      </span>
-                    )}
+                  {row.getVisibleCells().map((cell) => (
                     <span
-                      className={`truncate text-[13px] ${
-                        isPhase
-                          ? "font-medium tracking-[0.04em] text-gca-badge-text"
-                          : isGroup
-                            ? "font-semibold text-gca-dark"
-                            : "font-medium text-gca-dark"
-                      }`}
-                      title={t.task_name}
+                      key={cell.id}
+                      className={(cell.column.columnDef.meta as { className?: string } | undefined)?.className}
                     >
-                      {t.task_name}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </span>
-                  </div>
-
-                  <p
-                    className={`w-[9%] text-[13px] ${isGroup ? "font-medium" : ""} text-gca-dark`}
-                  >
-                    {Math.round(progress)}%
-                  </p>
-                  <p
-                    className={`w-[9%] text-[13px] ${isGroup ? "font-medium text-gca-dark" : "text-gca-show"}`}
-                  >
-                    {planned !== null ? `${Math.round(planned)}%` : "—"}
-                  </p>
-                  <p className="w-[9%] font-mono text-[13px] text-gca-dark">
-                    {workDays(t.duration_minutes)}
-                  </p>
-                  <p className="w-[10%] font-mono text-[13px] text-gca-dark">
-                    {formatShortDate(t.start)}
-                  </p>
-                  <p className="w-[11%] font-mono text-[13px] text-gca-dark">
-                    {formatShortDate(plannedFinish(t))}
-                  </p>
-                  <p className="w-[11%] font-mono text-[13px] text-gca-show">
-                    {formatShortDate(t.expected_finish)}
-                  </p>
-                  {/* A summary row's status is the roll-up of its children, which the Status column
-                    cannot express, so only real work carries one. */}
-                  <p
-                    className={`w-[15%] text-[13px] font-semibold ${isGroup ? "" : status.className}`}
-                  >
-                    {isGroup ? "" : status.label}
-                  </p>
+                  ))}
                 </div>
               );
             })}

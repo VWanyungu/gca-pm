@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 import { Plus, GitPullRequest, Search } from "lucide-react";
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
 import Dropdown from "@/components/Dropdown";
 import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -13,6 +19,7 @@ import {
   formatScheduleImpact,
   formatShortDate,
   statusInfo,
+  type ChangeRequest,
   type ChangeRequestStatus,
   type ChangeRequestType,
 } from "./types";
@@ -36,6 +43,82 @@ const STATUS_OPTIONS = [
   { id: "rejected", name: "Rejected" },
   { id: "withdrawn", name: "Withdrawn" },
 ];
+
+function buildColumns(): ColumnDef<ChangeRequest>[] {
+  return [
+    {
+      accessorKey: "title",
+      header: "Change request",
+      meta: { className: "w-full min-w-0 md:w-[28%]" },
+      cell: ({ row }) => {
+        const cr = row.original;
+        const status = statusInfo(cr.status);
+        return (
+          <div className="flex w-full flex-col gap-[4px]">
+            <div>
+              <p className="text-[15px] font-medium text-gca-dark md:truncate md:text-[13px]">
+                {cr.title}
+              </p>
+              <p className="truncate text-[12px] text-gca-muted">
+                {cr.stage_no ? (STAGE_SHORT_NAME[cr.stage_no] ?? cr.stage_no) : "—"}
+              </p>
+            </div>
+            {/* Phone: type, impacts and status fold into one line under the title. */}
+            <p className="flex flex-wrap items-center gap-x-[8px] text-[12px] md:hidden">
+              <span className={`font-semibold ${status.className}`}>{status.label}</span>
+              <span className="text-gca-muted">
+                {TYPE_LABEL[cr.type]} · {formatScheduleImpact(cr.schedule_impact_days)} ·{" "}
+                {formatCostImpact(cr.cost_impact, cr.cost_currency)} ·{" "}
+                {formatShortDate(cr.raised_at)}
+              </span>
+            </p>
+          </div>
+        );
+      },
+    },
+    {
+      id: "type",
+      header: "Type",
+      meta: { className: "hidden md:block md:w-[12%]" },
+      cell: ({ row }) => <p className="text-[13px] text-gca-dark">{TYPE_LABEL[row.original.type]}</p>,
+    },
+    {
+      id: "schedule",
+      header: "Schedule",
+      meta: { className: "hidden md:block md:w-[14%]" },
+      cell: ({ row }) => (
+        <p className="font-mono text-[13px] text-gca-dark">
+          {formatScheduleImpact(row.original.schedule_impact_days)}
+        </p>
+      ),
+    },
+    {
+      id: "cost",
+      header: "Cost",
+      meta: { className: "hidden md:block md:w-[14%]" },
+      cell: ({ row }) => (
+        <p className="font-mono text-[13px] text-gca-dark">
+          {formatCostImpact(row.original.cost_impact, row.original.cost_currency)}
+        </p>
+      ),
+    },
+    {
+      id: "raised",
+      header: "Raised",
+      meta: { className: "hidden md:block md:w-[14%]" },
+      cell: ({ row }) => <p className="text-[13px] text-gca-dark">{formatShortDate(row.original.raised_at)}</p>,
+    },
+    {
+      id: "status",
+      header: "Status",
+      meta: { className: "hidden md:block md:w-[18%]" },
+      cell: ({ row }) => {
+        const status = statusInfo(row.original.status);
+        return <p className={`text-[13px] font-semibold ${status.className}`}>{status.label}</p>;
+      },
+    },
+  ];
+}
 
 interface ChangeRequestsTableProps {
   projectId: string;
@@ -73,6 +156,9 @@ export function ChangeRequestsTable({
   const changeRequests = data?.changeRequests ?? [];
   const total = data?.pagination.total ?? 0;
   const pages = data?.pagination.pages ?? 1;
+
+  const columns = buildColumns();
+  const table = useReactTable({ data: changeRequests, columns, getCoreRowModel: getCoreRowModel() });
 
   const stageOptions = [
     { id: STAGE_FILTER_ALL, name: "All stages" },
@@ -164,58 +250,30 @@ export function ChangeRequestsTable({
         <>
           <div className="flex w-full flex-col">
             <div className="hidden w-full items-center gap-[10px] border-b border-gca-border py-[8px] text-[12px] font-medium text-gca-muted md:flex">
-              <p className="w-[28%]">Change request</p>
-              <p className="w-[12%]">Type</p>
-              <p className="w-[14%]">Schedule</p>
-              <p className="w-[14%]">Cost</p>
-              <p className="w-[14%]">Raised</p>
-              <p className="w-[18%]">Status</p>
+              {table.getFlatHeaders().map((header) => (
+                <p key={header.id} className={(header.column.columnDef.meta as { className?: string } | undefined)?.className}>
+                  {flexRender(header.column.columnDef.header, header.getContext())}
+                </p>
+              ))}
             </div>
-            {changeRequests.map((cr, i) => {
-              const status = statusInfo(cr.status);
-              return (
-                <button
-                  key={cr.change_id}
-                  onClick={() => onOpen(cr.change_id)}
-                  className={`flex w-full cursor-pointer flex-col items-start gap-[4px] py-[14px] text-left md:flex-row md:items-center md:gap-[10px] md:py-[12px] ${
-                    i > 0 ? "border-t border-gca-border" : ""
-                  }`}
-                >
-                  <div className="w-full min-w-0 md:w-[28%]">
-                    <p className="text-[15px] font-medium text-gca-dark md:truncate md:text-[13px]">
-                      {cr.title}
-                    </p>
-                    <p className="truncate text-[12px] text-gca-muted">
-                      {cr.stage_no ? (STAGE_SHORT_NAME[cr.stage_no] ?? cr.stage_no) : "—"}
-                    </p>
-                  </div>
-                  {/* Phone: type, impacts and status fold into one line under the title. */}
-                  <p className="flex flex-wrap items-center gap-x-[8px] text-[12px] md:hidden">
-                    <span className={`font-semibold ${status.className}`}>{status.label}</span>
-                    <span className="text-gca-muted">
-                      {TYPE_LABEL[cr.type]} · {formatScheduleImpact(cr.schedule_impact_days)} ·{" "}
-                      {formatCostImpact(cr.cost_impact, cr.cost_currency)} ·{" "}
-                      {formatShortDate(cr.raised_at)}
-                    </span>
-                  </p>
-                  <span className="hidden md:contents">
-                    <p className="w-[12%] text-[13px] text-gca-dark">{TYPE_LABEL[cr.type]}</p>
-                    <p className="w-[14%] font-mono text-[13px] text-gca-dark">
-                      {formatScheduleImpact(cr.schedule_impact_days)}
-                    </p>
-                    <p className="w-[14%] font-mono text-[13px] text-gca-dark">
-                      {formatCostImpact(cr.cost_impact, cr.cost_currency)}
-                    </p>
-                    <p className="w-[14%] text-[13px] text-gca-dark">
-                      {formatShortDate(cr.raised_at)}
-                    </p>
-                    <p className={`w-[18%] text-[13px] font-semibold ${status.className}`}>
-                      {status.label}
-                    </p>
+            {table.getRowModel().rows.map((row, i) => (
+              <button
+                key={row.id}
+                onClick={() => onOpen(row.original.change_id)}
+                className={`flex w-full cursor-pointer flex-col items-start gap-[4px] py-[14px] text-left md:flex-row md:items-center md:gap-[10px] md:py-[12px] ${
+                  i > 0 ? "border-t border-gca-border" : ""
+                }`}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <span
+                    key={cell.id}
+                    className={(cell.column.columnDef.meta as { className?: string } | undefined)?.className}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </span>
-                </button>
-              );
-            })}
+                ))}
+              </button>
+            ))}
           </div>
 
           {pages > 1 && (

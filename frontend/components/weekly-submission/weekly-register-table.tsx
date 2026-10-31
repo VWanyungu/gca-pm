@@ -1,13 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
 import Dropdown from "@/components/Dropdown";
 import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import { Pagination } from "@/components/pagination";
 import { useWeeklySubmissions } from "./use-weekly-submission-data";
-import { formatWeekPeriod, weekNumber, type WeeklySubmissionStatus } from "./types";
+import {
+  formatWeekPeriod,
+  weekNumber,
+  type WeeklySubmission,
+  type WeeklySubmissionStatus,
+} from "./types";
 
 const STATUS_FILTER_ALL = "all";
 const STATUS_OPTIONS = [
@@ -22,6 +33,45 @@ const STATUS_OPTIONS = [
  *  shortcut: a project with more than 100 weeks shows only its most recent 100, upgrade to a
  *  server-side week_start range filter when any project nears two years of submissions. */
 const ALL_SUBMISSIONS_LIMIT = 100;
+
+function buildColumns(projectId: string): ColumnDef<WeeklySubmission>[] {
+  return [
+    {
+      id: "week",
+      header: () => <span>Week</span>,
+      cell: ({ row }) => (
+        <span className="font-mono font-medium">{weekNumber(row.original.week_start)}</span>
+      ),
+    },
+    {
+      id: "period",
+      header: () => <span>Period</span>,
+      cell: ({ row }) => <span>{formatWeekPeriod(row.original.week_start)}</span>,
+    },
+    {
+      id: "submittedBy",
+      header: () => <span>Submitted by</span>,
+      cell: ({ row }) => <span>{row.original.creator_name ?? "—"}</span>,
+    },
+    {
+      id: "status",
+      header: () => <span>Status</span>,
+      cell: ({ row }) => <span className="capitalize">{row.original.status}</span>,
+    },
+    {
+      id: "view",
+      header: () => <span />,
+      cell: ({ row }) => (
+        <Link
+          href={`/projects/${projectId}/weekly-submission/${row.original.submission_id}`}
+          className="justify-self-end text-[13px] font-medium text-gca-green"
+        >
+          View
+        </Link>
+      ),
+    },
+  ];
+}
 
 export function WeeklyRegisterTable({
   projectId,
@@ -68,6 +118,9 @@ export function WeeklyRegisterTable({
   const currentPage = Math.min(page, totalPages);
   const submissions = matching.slice((currentPage - 1) * perPage, currentPage * perPage);
   const hasActiveFilters = statusFilter !== STATUS_FILTER_ALL || !!fromDate || !!toDate || !!query;
+
+  const columns = buildColumns(projectId);
+  const table = useReactTable({ data: submissions, columns, getCoreRowModel: getCoreRowModel() });
 
   function changeFilter<T>(set: (value: T) => void, value: T) {
     set(value);
@@ -174,54 +227,52 @@ export function WeeklyRegisterTable({
 
       <div className="w-full">
         <div className="hidden grid-cols-5 gap-[16px] py-[8px] text-[12px] font-medium text-gca-muted md:grid">
-          <span>Week</span>
-          <span>Period</span>
-          <span>Submitted by</span>
-          <span>Status</span>
-          <span />
+          {table.getFlatHeaders().map((header) => (
+            <Fragment key={header.id}>
+              {flexRender(header.column.columnDef.header, header.getContext())}
+            </Fragment>
+          ))}
         </div>
         {submissions.length === 0 ? (
           <p className="py-[24px] text-[13px] text-gca-muted">
             {hasActiveFilters ? "No weeks match these filters." : "No weeks submitted yet."}
           </p>
         ) : (
-          submissions.map((s) => (
-            <div
-              key={s.submission_id}
-              className="border-t border-gca-border text-[13px] text-gca-dark"
-            >
-              {/* Phone: the week leads, the three attributes fold into one meta line. */}
-              <Link
-                href={`/projects/${projectId}/weekly-submission/${s.submission_id}`}
-                className="flex items-center justify-between gap-[12px] py-[14px] md:hidden"
+          table.getRowModel().rows.map((row) => {
+            const s = row.original;
+            return (
+              <div
+                key={row.id}
+                className="border-t border-gca-border text-[13px] text-gca-dark"
               >
-                <span className="flex min-w-0 flex-col gap-[2px]">
-                  <span className="text-[15px] font-semibold text-gca-dark">
-                    Week {weekNumber(s.week_start)}
-                  </span>
-                  <span className="truncate text-[12px] text-gca-muted">
-                    {formatWeekPeriod(s.week_start)} · {s.creator_name ?? "—"}
-                  </span>
-                </span>
-                <span className="shrink-0 text-[12px] font-medium capitalize text-gca-green">
-                  {s.status}
-                </span>
-              </Link>
-
-              <div className="hidden grid-cols-5 items-center gap-[16px] py-[12px] md:grid">
-                <span className="font-mono font-medium">{weekNumber(s.week_start)}</span>
-                <span>{formatWeekPeriod(s.week_start)}</span>
-                <span>{s.creator_name ?? "—"}</span>
-                <span className="capitalize">{s.status}</span>
+                {/* Phone: the week leads, the three attributes fold into one meta line. */}
                 <Link
                   href={`/projects/${projectId}/weekly-submission/${s.submission_id}`}
-                  className="justify-self-end text-[13px] font-medium text-gca-green"
+                  className="flex items-center justify-between gap-[12px] py-[14px] md:hidden"
                 >
-                  View
+                  <span className="flex min-w-0 flex-col gap-[2px]">
+                    <span className="text-[15px] font-semibold text-gca-dark">
+                      Week {weekNumber(s.week_start)}
+                    </span>
+                    <span className="truncate text-[12px] text-gca-muted">
+                      {formatWeekPeriod(s.week_start)} · {s.creator_name ?? "—"}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-[12px] font-medium capitalize text-gca-green">
+                    {s.status}
+                  </span>
                 </Link>
+
+                <div className="hidden grid-cols-5 items-center gap-[16px] py-[12px] md:grid">
+                  {row.getVisibleCells().map((cell) => (
+                    <Fragment key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </Fragment>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
