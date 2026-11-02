@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Star } from "lucide-react";
+import { ChevronDown, ChevronRight, Star, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_REQUEST_CLIENT_FEEDBACK } from "@/lib/access-control";
 import { useProjectDetail, useClientContacts } from "@/components/project-overview/use-project-data";
 import { useFeedbackRequests } from "./use-client-feedback";
 import { RequestFeedbackPopover } from "./request-feedback-popover";
+import { DeleteFeedbackRequestModal } from "./delete-feedback-request-modal";
 import { statusLabel, formatShortDate } from "./types";
 import type { FeedbackRequest } from "./types";
 
@@ -51,6 +52,7 @@ export function ClientFeedbackView({ projectId }: { projectId: string }) {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<FeedbackRequest | null>(null);
 
   const canRequest = canAccess(user?.role, CAN_REQUEST_CLIENT_FEEDBACK, { projectId });
 
@@ -126,10 +128,12 @@ export function ClientFeedbackView({ projectId }: { projectId: string }) {
                     <RequestRow
                       key={request.request_id}
                       request={request}
+                      canDelete={canRequest}
                       expanded={expandedId === request.request_id}
                       onToggle={() =>
                         setExpandedId((current) => (current === request.request_id ? null : request.request_id))
                       }
+                      onDelete={() => setDeleteTarget(request)}
                     />
                   ))}
                 </tbody>
@@ -162,6 +166,15 @@ export function ClientFeedbackView({ projectId }: { projectId: string }) {
                           <Stars value={request.rating_overall} />
                         </span>
                       </button>
+                      {canRequest && request.status === "sent" && (
+                        <button
+                          onClick={() => setDeleteTarget(request)}
+                          aria-label={`Delete request for ${request.contact_name}`}
+                          className="mt-[6px] flex cursor-pointer items-center gap-[6px] text-[12px] font-medium text-error-text"
+                        >
+                          <Trash2 className="size-[13px]" /> Delete
+                        </button>
+                      )}
                       {expandedId === request.request_id && request.comment && (
                         <p className="mt-[8px] rounded-[8px] bg-gca-page-bg p-[10px] text-[12px] text-gca-show">
                           “{request.comment}”
@@ -219,18 +232,30 @@ export function ClientFeedbackView({ projectId }: { projectId: string }) {
           )}
         </div>
       </div>
+
+      {deleteTarget && (
+        <DeleteFeedbackRequestModal
+          projectId={projectId}
+          request={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+        />
+      )}
     </main>
   );
 }
 
 function RequestRow({
   request,
+  canDelete,
   expanded,
   onToggle,
+  onDelete,
 }: {
   request: FeedbackRequest;
+  canDelete: boolean;
   expanded: boolean;
   onToggle: () => void;
+  onDelete: () => void;
 }) {
   const status = statusLabel(request.status);
   return (
@@ -253,8 +278,22 @@ function RequestRow({
         <td className="px-[12px] py-[12px]">
           <Stars value={request.rating_overall} />
         </td>
-        <td className="px-[12px] py-[12px] text-gca-muted">
-          {expanded ? <ChevronDown className="size-[16px]" /> : <ChevronRight className="size-[16px]" />}
+        <td className="px-[12px] py-[12px]">
+          <span className="flex items-center gap-[10px] text-gca-muted">
+            {canDelete && request.status === "sent" && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                aria-label={`Delete request for ${request.contact_name}`}
+                className="cursor-pointer hover:text-error-text"
+              >
+                <Trash2 className="size-[15px]" />
+              </button>
+            )}
+            {expanded ? <ChevronDown className="size-[16px]" /> : <ChevronRight className="size-[16px]" />}
+          </span>
         </td>
       </tr>
       {expanded && request.comment && (

@@ -6,6 +6,7 @@ import { sendRouteError } from '../utils/errors.js';
 import {
   projectIdParamSchema,
   createFeedbackRequestsSchema,
+  feedbackRequestParamsSchema,
   type CreateFeedbackRequestsBody,
 } from '../utils/validation.js';
 
@@ -88,6 +89,39 @@ router.post('/', requireKickoffComplete(), canManage, async (req, res) => {
       data: { requests: requests.map((row) => ({ ...row, status: feedbackRequestStatus(row) })) },
       message: 'Feedback requested',
     });
+  } catch (err) {
+    sendRouteError(res, err);
+  }
+});
+
+// DELETE /projects/:projectId/feedback-requests/:requestId
+// Only a request that hasn't been opened yet can be withdrawn — once the client has seen
+// (or answered) the link, pulling it out from under them would be confusing.
+router.delete('/:requestId', canManage, async (req, res) => {
+  const params = feedbackRequestParamsSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const { projectId, requestId } = params.value as { projectId: string; requestId: string };
+
+  try {
+    const request = await ClientFeedbackRequests.getById(projectId, requestId);
+    if (!request) {
+      res.status(404).json({ status: 'error', data: null, message: 'Feedback request not found' });
+      return;
+    }
+    if (feedbackRequestStatus(request) !== 'sent') {
+      res.status(409).json({
+        status: 'error',
+        data: null,
+        message: 'Only a request that has not been opened yet can be deleted',
+      });
+      return;
+    }
+
+    await ClientFeedbackRequests.delete(requestId);
+    res.status(200).json({ status: 'success', data: null, message: 'Feedback request deleted' });
   } catch (err) {
     sendRouteError(res, err);
   }

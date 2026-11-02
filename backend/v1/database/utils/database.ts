@@ -2312,6 +2312,10 @@ export class ClientFeedbackRequests {
       schedule: avg('rating_schedule'),
     };
   }
+
+  static async delete(requestId: string): Promise<void> {
+    await db('client_feedback_request').where({ request_id: requestId }).del();
+  }
 }
 
 export class Projects {

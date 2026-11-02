@@ -31,6 +31,11 @@ export async function createFeedbackRequests(
   ).requests;
 }
 
+export async function deleteFeedbackRequest(projectId: string, requestId: string): Promise<void> {
+  const res = await api.delete(`/projects/${projectId}/feedback-requests/${requestId}`);
+  if (res.status !== "success") throw new Error(res.message);
+}
+
 export function useFeedbackRequestsInvalidate(projectId: string) {
   const queryClient = useQueryClient();
   return () => queryClient.invalidateQueries({ queryKey: ["project", projectId, "feedback-requests"] });
