@@ -12,6 +12,7 @@ export type ActiveKey =
   | "risks"
   | "change-requests"
   | "milestones"
+  | "feedback"
   | "schedule"
   | "submit"
   | "dpr"
@@ -23,6 +24,7 @@ const ACTIVE_KEYS_BY_SEGMENT: Record<string, ActiveKey> = {
   risks: "risks",
   "change-requests": "change-requests",
   milestones: "milestones",
+  feedback: "feedback",
   schedule: "schedule",
   "weekly-submission": "submit",
   dpr: "dpr",

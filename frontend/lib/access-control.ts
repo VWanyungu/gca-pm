@@ -107,6 +107,12 @@ export const CAN_RAISE_CHANGE_REQUEST: Permission[] = [
 
 export const CAN_DECIDE_CHANGE_REQUEST: Permission[] = [{ role: "ExCo", scopeType: "global" }];
 
+/** Mirrors feedbackRequestRouter.ts's canManage exactly. */
+export const CAN_REQUEST_CLIENT_FEEDBACK: Permission[] = [
+  { role: "PM", scopeType: "project" },
+  { role: "ExCo", scopeType: "global" },
+];
+
 export const CAN_MANAGE_USERS: Permission[] = [{ role: "Admin", scopeType: "global" }];
 
 export const CAN_VIEW_REPORTS: Permission[] = [
