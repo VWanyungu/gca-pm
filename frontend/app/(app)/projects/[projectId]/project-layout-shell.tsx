@@ -13,11 +13,11 @@ export function ProjectLayoutShell({
 }) {
   return (
     <ProjectSidebarProvider projectId={projectId}>
-      <div className="flex w-full flex-col">
-        <KickoffBanner />
-        <div className="flex min-h-[calc(100vh-64px)] w-full">
-          <ProjectSidebar />
-          <div className="flex w-full min-w-0 justify-center">{children}</div>
+      <div className="flex min-h-[calc(100vh-64px)] w-full">
+        <ProjectSidebar />
+        <div className="flex w-full min-w-0 flex-col">
+          <KickoffBanner />
+          <div className="flex w-full justify-center">{children}</div>
         </div>
       </div>
     </ProjectSidebarProvider>
