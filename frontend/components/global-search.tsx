@@ -125,7 +125,7 @@ export const GlobalSearch = forwardRef<
   return (
     <div ref={containerRef} className={`relative ${className ?? ""}`}>
       <div
-        className={`flex items-center gap-[10px] rounded-[8px] bg-gca-page-bg ${inputBoxClassName ?? "px-[12px] py-[8px]"}`}
+        className={`flex items-center gap-[10px] rounded-lg bg-gca-page-bg ${inputBoxClassName ?? "px-[12px] py-[8px]"}`}
       >
         <Search className="size-[16px] shrink-0 text-gca-muted" />
         <input
@@ -154,7 +154,7 @@ export const GlobalSearch = forwardRef<
         <div
           role="listbox"
           aria-label="Search results"
-          className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 flex max-h-[70vh] flex-col overflow-hidden rounded-[12px] border border-gca-border bg-gca-surface shadow-[0px_10px_28px_0px_rgba(23,48,31,0.18)]"
+          className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 flex max-h-[70vh] flex-col overflow-hidden rounded-lg border border-gca-border bg-gca-surface shadow-[0px_10px_28px_0px_rgba(23,48,31,0.18)]"
         >
           <div className="max-h-[52vh] overflow-y-auto">
             {query.length === 0 && (

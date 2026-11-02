@@ -40,18 +40,15 @@ export default function StagesListView({ projectId }: { projectId: string }) {
           >
             <div className="flex flex-col gap-[2px]">
               <div className="flex items-center gap-[8px]">
-                {gateColor && (
-                  <span
-                    className={`shrink-0 rounded-[4px] px-[6px] py-[1px] text-[10px] font-semibold uppercase ${
-                      gateColor === "blue"
-                        ? "bg-blue-50 text-blue-600"
-                        : "bg-orange-50 text-orange-600"
-                    }`}
-                  >
-                    {stage.kind}
-                  </span>
-                )}
-                <p className="text-[14px] font-medium text-gca-dark">
+                <p
+                  className={`text-[14px] font-medium ${
+                    gateColor === "blue"
+                      ? "text-blue-600/45"
+                      : gateColor === "orange"
+                        ? "text-orange-600/45"
+                        : "text-gca-dark"
+                  }`}
+                >
                   {STAGE_SHORT_NAME[stage.stage_no] ?? stage.stage_name}
                 </p>
               </div>
