@@ -207,6 +207,8 @@ export function ProjectSidebar() {
                 )}
                 {visibleStages.map((s) => {
                   const viewing = s.stage_no === activeStageNo;
+                  const gateColor =
+                    s.kind === "kickoff" ? "blue" : s.kind === "closure" ? "orange" : null;
                   return (
                     <Link
                       key={s.stage_no}
@@ -217,11 +219,15 @@ export function ProjectSidebar() {
                       }`}
                     >
                       <span
-                        className={
-                          viewing
-                            ? "font-semibold text-gca-badge-text"
-                            : "font-normal text-gca-show"
-                        }
+                        className={`${viewing ? "font-semibold" : "font-normal"} ${
+                          gateColor === "blue"
+                            ? "text-blue-600"
+                            : gateColor === "orange"
+                              ? "text-orange-600"
+                              : viewing
+                                ? "text-gca-badge-text"
+                                : "text-gca-show"
+                        }`}
                       >
                         {STAGE_SHORT_NAME[s.stage_no]}
                       </span>
