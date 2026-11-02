@@ -37,8 +37,8 @@ const GATE_LABEL: Record<string, string> = {
 };
 
 const GATE_TEXT_CLASS: Record<string, string> = {
-  kickoff: "text-blue-600",
-  closure: "text-orange-600",
+  kickoff: "text-blue-600/70",
+  closure: "text-orange-600/70",
 };
 
 export function StageHeader({

@@ -105,9 +105,9 @@ export function ProjectSidebar() {
 
   const sidebarContent = (
     <>
-      <div className="flex flex-col gap-[2px] px-[12px] pt-[0px]">
+      <div className="flex flex-col gap-[2px] px-[12px] pt-[12px]">
         {myRole && (
-          <div className="mb-[0px] flex flex-col gap-[2px] rounded-[10px] px-[12px] pt-[10px] pb-[8px] text-gca-show">
+          <div className="mb-[0px] flex flex-col gap-[2px] rounded-[10px] px-[12px] pb-[8px] text-gca-show">
             <p className="text-[14px] font-semibold text-gca-dark">
               {myRole === "PM" ? "Main PM" : myRole === "Planner" ? "Main Planner" : myRole}
             </p>
@@ -221,9 +221,9 @@ export function ProjectSidebar() {
                       <span
                         className={`${viewing ? "font-semibold" : "font-normal"} ${
                           gateColor === "blue"
-                            ? "text-blue-600"
+                            ? "text-blue-600/70"
                             : gateColor === "orange"
-                              ? "text-orange-600"
+                              ? "text-orange-600/70"
                               : viewing
                                 ? "text-gca-badge-text"
                                 : "text-gca-show"
