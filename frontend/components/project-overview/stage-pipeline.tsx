@@ -221,9 +221,9 @@ export function StagePipeline({
                   <div
                     className={`h-[6px] rounded-[3px] ${
                       gateColor === "blue"
-                        ? "bg-blue-500/60"
+                        ? "bg-blue-500/35"
                         : gateColor === "orange"
-                          ? "bg-orange-500/60"
+                          ? "bg-orange-500/35"
                           : s.state === "complete"
                             ? "bg-gca-green/55"
                             : "bg-gca-green"
@@ -254,9 +254,9 @@ export function StagePipeline({
                 <p
                   className={`text-[12px] w-[98px] truncate font-medium ${
                     gateColor === "blue"
-                      ? "text-blue-600/70"
+                      ? "text-blue-600/45"
                       : gateColor === "orange"
-                        ? "text-orange-600/70"
+                        ? "text-orange-600/45"
                         : s.state === "active"
                           ? "font-semibold text-gca-dark"
                           : "text-gca-muted"
@@ -269,9 +269,9 @@ export function StagePipeline({
               <p
                 className={`text-[12px] w-[98px] ${
                   gateColor === "blue"
-                    ? "text-blue-600/70"
+                    ? "text-blue-600/45"
                     : gateColor === "orange"
-                      ? "text-orange-600/70"
+                      ? "text-orange-600/45"
                       : s.state === "active"
                         ? "text-gca-green"
                         : "text-gca-muted"

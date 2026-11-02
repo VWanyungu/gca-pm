@@ -221,9 +221,9 @@ export function ProjectSidebar() {
                       <span
                         className={`${viewing ? "font-semibold" : "font-normal"} ${
                           gateColor === "blue"
-                            ? "text-blue-600/70"
+                            ? "text-blue-600/45"
                             : gateColor === "orange"
-                              ? "text-orange-600/70"
+                              ? "text-orange-600/45"
                               : viewing
                                 ? "text-gca-badge-text"
                                 : "text-gca-show"
