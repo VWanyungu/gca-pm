@@ -1995,3 +1995,38 @@ export const listGateActivityTemplatesQuerySchema =
     stage_no: Joi.number().valid(0, 11).optional(),
     includeInactive: Joi.boolean().default(false),
   });
+
+export interface CreateFeedbackRequestsBody {
+  contact_ids: string[];
+  expires_in_days: number;
+}
+
+export const createFeedbackRequestsSchema = Joi.object<CreateFeedbackRequestsBody>({
+  contact_ids: Joi.array().items(Joi.string().uuid()).min(1).required(),
+  expires_in_days: Joi.number().integer().min(1).max(90).default(14),
+});
+
+export const feedbackRequestParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+  requestId: Joi.string().uuid().required(),
+});
+
+export const feedbackTokenParamSchema = Joi.object({
+  token: Joi.string().uuid().required(),
+});
+
+export interface SubmitFeedbackResponseBody {
+  rating_overall: number;
+  rating_quality: number;
+  rating_updates: number;
+  rating_schedule: number;
+  comment?: string | null;
+}
+
+export const submitFeedbackResponseSchema = Joi.object<SubmitFeedbackResponseBody>({
+  rating_overall: Joi.number().integer().min(1).max(5).required(),
+  rating_quality: Joi.number().integer().min(1).max(5).required(),
+  rating_updates: Joi.number().integer().min(1).max(5).required(),
+  rating_schedule: Joi.number().integer().min(1).max(5).required(),
+  comment: Joi.string().trim().max(5000).allow(null, "").optional(),
+});

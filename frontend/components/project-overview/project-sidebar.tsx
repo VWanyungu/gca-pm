@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardList,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useMobileNavigation } from "@/components/mobile-navigation-context";
@@ -93,6 +94,13 @@ export function ProjectSidebar() {
         locked: !kickoffComplete,
       },
       { key: "team", label: "Team", icon: Users, href: `${base}/team` },
+      {
+        key: "feedback",
+        label: "Client feedback",
+        icon: MessageSquare,
+        href: `${base}/feedback`,
+        locked: !kickoffComplete,
+      },
     ] as const
   ).filter((item) => !("hidden" in item && item.hidden));
 

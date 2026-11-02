@@ -2135,6 +2135,189 @@ export class ClientContacts {
   }
 }
 
+export interface ClientFeedbackRequestRow {
+  request_id: string;
+  project_id: string;
+  contact_id: string;
+  requested_by: string;
+  about: string;
+  token: string;
+  expires_at: Date;
+  opened_at: Date | null;
+  responded_at: Date | null;
+  rating_overall: number | null;
+  rating_quality: number | null;
+  rating_updates: number | null;
+  rating_schedule: number | null;
+  comment: string | null;
+  created_at: Date;
+}
+
+export type ClientFeedbackRequestStatus = 'responded' | 'expired' | 'opened' | 'sent';
+
+export function feedbackRequestStatus(
+  row: Pick<ClientFeedbackRequestRow, 'responded_at' | 'opened_at' | 'expires_at'>,
+): ClientFeedbackRequestStatus {
+  if (row.responded_at) return 'responded';
+  if (new Date(row.expires_at) < new Date()) return 'expired';
+  if (row.opened_at) return 'opened';
+  return 'sent';
+}
+
+const FEEDBACK_REQUEST_COLS = [
+  'request_id', 'project_id', 'contact_id', 'requested_by', 'about', 'token',
+  'expires_at', 'opened_at', 'responded_at',
+  'rating_overall', 'rating_quality', 'rating_updates', 'rating_schedule', 'comment', 'created_at',
+];
+
+export class ClientFeedbackRequests {
+  static async create(input: {
+    project_id: string;
+    contact_ids: string[];
+    requested_by: string;
+    about: string;
+    expires_in_days: number;
+  }): Promise<(ClientFeedbackRequestRow & { contact_name: string; contact_title: string | null; contact_email: string })[]> {
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + input.expires_in_days);
+
+    const inserted: { request_id: string }[] = await db('client_feedback_request')
+      .insert(
+        input.contact_ids.map((contactId) => ({
+          request_id: randomUUID(),
+          project_id: input.project_id,
+          contact_id: contactId,
+          requested_by: input.requested_by,
+          about: input.about,
+          token: randomUUID(),
+          expires_at: expiresAt,
+        })),
+      )
+      .returning('request_id');
+
+    return db('client_feedback_request as r')
+      .join('client_contacts as c', 'c.contact_id', 'r.contact_id')
+      .whereIn(
+        'r.request_id',
+        inserted.map((row) => row.request_id),
+      )
+      .select(
+        ...FEEDBACK_REQUEST_COLS.map((col) => `r.${col}`),
+        'c.name as contact_name',
+        'c.title as contact_title',
+        'c.email as contact_email',
+      );
+  }
+
+  static async listByProjectId(
+    projectId: string,
+  ): Promise<(ClientFeedbackRequestRow & { contact_name: string; contact_title: string | null; contact_email: string })[]> {
+    return db('client_feedback_request as r')
+      .join('client_contacts as c', 'c.contact_id', 'r.contact_id')
+      .where({ 'r.project_id': projectId })
+      .select(
+        ...FEEDBACK_REQUEST_COLS.map((col) => `r.${col}`),
+        'c.name as contact_name',
+        'c.title as contact_title',
+        'c.email as contact_email',
+      )
+      .orderBy('r.created_at', 'desc');
+  }
+
+  static async getById(projectId: string, requestId: string): Promise<ClientFeedbackRequestRow | null> {
+    const row = await db('client_feedback_request')
+      .where({ project_id: projectId, request_id: requestId })
+      .first(FEEDBACK_REQUEST_COLS);
+    return row ?? null;
+  }
+
+  static async getByToken(token: string): Promise<
+    | (ClientFeedbackRequestRow & {
+        project_name: string;
+        contact_name: string;
+        pm_name: string | null;
+        pm_email: string | null;
+      })
+    | null
+  > {
+    const row = await db('client_feedback_request as r')
+      .join('client_contacts as c', 'c.contact_id', 'r.contact_id')
+      .join('projects as p', 'p.project_id', 'r.project_id')
+      .join('users as u', 'u.id', 'r.requested_by')
+      .where({ 'r.token': token })
+      .select(
+        ...FEEDBACK_REQUEST_COLS.map((col) => `r.${col}`),
+        'p.name as project_name',
+        'c.name as contact_name',
+        'u.first_name as pm_first_name',
+        'u.last_name as pm_last_name',
+        'u.email as pm_email',
+      )
+      .first();
+    if (!row) return null;
+    const { pm_first_name, pm_last_name, ...rest } = row;
+    return { ...rest, pm_name: pm_first_name ? `${pm_first_name} ${pm_last_name}` : null };
+  }
+
+  static async markOpened(requestId: string): Promise<void> {
+    await db('client_feedback_request')
+      .where({ request_id: requestId })
+      .whereNull('opened_at')
+      .update({ opened_at: new Date() });
+  }
+
+  static async submitResponse(
+    requestId: string,
+    input: {
+      rating_overall: number;
+      rating_quality: number;
+      rating_updates: number;
+      rating_schedule: number;
+      comment?: string | null;
+    },
+  ): Promise<ClientFeedbackRequestRow> {
+    const [row] = await db('client_feedback_request')
+      .where({ request_id: requestId })
+      .update({
+        rating_overall: input.rating_overall,
+        rating_quality: input.rating_quality,
+        rating_updates: input.rating_updates,
+        rating_schedule: input.rating_schedule,
+        comment: input.comment ?? null,
+        responded_at: new Date(),
+      })
+      .returning(FEEDBACK_REQUEST_COLS);
+    return row;
+  }
+
+  /** Averages are over answered requests only, rounded to one decimal. */
+  static ratingSummary(rows: ClientFeedbackRequestRow[]): {
+    count: number;
+    overall: number | null;
+    quality: number | null;
+    updates: number | null;
+    schedule: number | null;
+  } {
+    const answered = rows.filter((r) => r.responded_at);
+    const avg = (key: 'rating_overall' | 'rating_quality' | 'rating_updates' | 'rating_schedule') => {
+      const values = answered.map((r) => r[key]).filter((v): v is number => v != null);
+      if (values.length === 0) return null;
+      return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
+    };
+    return {
+      count: answered.length,
+      overall: avg('rating_overall'),
+      quality: avg('rating_quality'),
+      updates: avg('rating_updates'),
+      schedule: avg('rating_schedule'),
+    };
+  }
+
+  static async delete(requestId: string): Promise<void> {
+    await db('client_feedback_request').where({ request_id: requestId }).del();
+  }
+}
+
 export class Projects {
   static async create(
     input: CreateProjectInput,
