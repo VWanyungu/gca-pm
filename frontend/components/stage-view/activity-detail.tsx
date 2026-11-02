@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowLeft, LoaderCircle, Paperclip } from "lucide-react";
+import { ArrowLeft, Download, LoaderCircle, Paperclip } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useActivity, useActivityAttachments, useStageViewInvalidate } from "./use-stage-view-data";
 import type { TeamMember } from "@/components/project-overview/types";
@@ -163,17 +163,25 @@ export function ActivityDetail({
             )}
           </p>
           {attachments.map((att) => (
-            <a
+            <div
               key={att.attachment_id}
-              href={att.access_url}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center justify-between rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[10px]"
+              className="flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[10px]"
             >
-              <span className="text-[13px] font-medium text-gca-dark">
+              <Paperclip className="size-[14px] shrink-0 text-gca-muted" />
+              <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-gca-dark">
                 {att.caption || "Attachment"}
               </span>
-            </a>
+              <a
+                href={att.access_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                download={att.caption || true}
+                aria-label={`Download ${att.caption || "attachment"}`}
+                className="flex size-[28px] shrink-0 items-center justify-center rounded-[6px] text-gca-show hover:bg-gca-page-bg hover:text-gca-dark"
+              >
+                <Download className="size-[14px]" />
+              </a>
+            </div>
           ))}
           {canManage && (
             <>
