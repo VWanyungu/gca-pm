@@ -251,20 +251,16 @@ export function StagePipeline({
                   </>
                 )}
 
-                {gateColor && (
-                  <span
-                    className={`shrink-0 rounded-[4px] px-[5px] py-[1px] text-[10px] font-semibold uppercase ${
-                      gateColor === "blue"
-                        ? "bg-blue-50 text-blue-600"
-                        : "bg-orange-50 text-orange-600"
-                    }`}
-                  >
-                    {s.kind}
-                  </span>
-                )}
-
                 <p
-                  className={`text-[12px] w-[98px] truncate ${s.state === "active" ? "font-semibold text-gca-dark" : "font-medium text-gca-muted"}`}
+                  className={`text-[12px] w-[98px] truncate font-medium ${
+                    gateColor === "blue"
+                      ? "text-blue-600"
+                      : gateColor === "orange"
+                        ? "text-orange-600"
+                        : s.state === "active"
+                          ? "font-semibold text-gca-dark"
+                          : "text-gca-muted"
+                  }`}
                 >
                   {STAGE_SHORT_NAME[s.stage_no]}
                 </p>
