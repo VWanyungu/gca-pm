@@ -1,6 +1,6 @@
 "use client";
 
-import { LoaderCircle, Plus } from "lucide-react";
+import { LoaderCircle, Plus, RefreshCw } from "lucide-react";
 import type { StageDetail } from "@/components/project-overview/types";
 
 const STATE_SUBTITLE: Record<StageDetail["state"], (pct: number, date: string) => string> = {
@@ -29,6 +29,8 @@ interface StageHeaderProps {
   onAddChecklist: () => void;
   onToggleComplete: () => void;
   togglingComplete: boolean;
+  onSync?: () => void;
+  syncing?: boolean;
 }
 
 const GATE_LABEL: Record<string, string> = {
@@ -52,6 +54,8 @@ export function StageHeader({
   onAddChecklist,
   onToggleComplete,
   togglingComplete,
+  onSync,
+  syncing,
 }: StageHeaderProps) {
   const isGateStage = stage.kind !== "pdm";
   const subtitle = STATE_SUBTITLE[stage.state](
@@ -80,6 +84,17 @@ export function StageHeader({
       </div>
       {canManage && (
         <div className="flex shrink-0 flex-col gap-[10px] sm:flex-row sm:items-center sm:gap-[12px]">
+          {isGateStage && onSync && (
+            <button
+              onClick={onSync}
+              disabled={syncing}
+              aria-label="Refetch activities from templates"
+              title="Refetch activities from templates"
+              className="flex size-[40px] shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-gca-border bg-gca-surface text-gca-dark hover:bg-gca-page-bg disabled:opacity-50 sm:size-[38px]"
+            >
+              <RefreshCw className={`size-[16px] ${syncing ? "animate-spin" : ""}`} />
+            </button>
+          )}
           {!hasChecklist && (
             <button
               onClick={onAddChecklist}
