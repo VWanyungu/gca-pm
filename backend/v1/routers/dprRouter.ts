@@ -8,6 +8,7 @@ import {
   type DprAmendmentStatus,
 } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import requireKickoffComplete from '../middlewares/requireKickoffComplete.js';
 import { globalAdministrators, notify, projectManagers } from '../utils/notifications.js';
 import {
   projectIdParamSchema,
@@ -235,7 +236,7 @@ router.get('/amendments', async (req, res) => {
   }
 });
 
-router.post('/:dprId/amendments', canRequestAmendment, async (req, res) => {
+router.post('/:dprId/amendments', requireKickoffComplete(), canRequestAmendment, async (req, res) => {
   const params = dprIdParamSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -305,7 +306,7 @@ router.post('/:dprId/amendments', canRequestAmendment, async (req, res) => {
   }
 });
 
-router.post('/amendments/:amendmentId/decide', canDecideAmendment, async (req, res) => {
+router.post('/amendments/:amendmentId/decide', requireKickoffComplete(), canDecideAmendment, async (req, res) => {
   const params = dprAmendmentIdParamSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -358,7 +359,7 @@ router.post('/amendments/:amendmentId/decide', canDecideAmendment, async (req, r
 
 // POST /projects/:projectId/dpr/photos/upload - AC-DPR-09
 // Registered before /:dprId routes so "photos" isn't captured as a dprId param.
-router.post('/photos/upload', canCreateOrEdit, async (req, res) => {
+router.post('/photos/upload', requireKickoffComplete(), canCreateOrEdit, async (req, res) => {
   const params = projectIdParamSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -410,7 +411,7 @@ router.post('/photos/upload', canCreateOrEdit, async (req, res) => {
 });
 
 // POST /projects/:projectId/dpr
-router.post('/', canCreateOrEdit, async (req, res) => {
+router.post('/', requireKickoffComplete(), canCreateOrEdit, async (req, res) => {
   const params = projectIdParamSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -662,7 +663,7 @@ router.get('/:dprId', canView, async (req, res) => {
 });
 
 // PATCH /projects/:projectId/dpr/:dprId
-router.patch('/:dprId', canCreateOrEdit, async (req, res) => {
+router.patch('/:dprId', requireKickoffComplete(), canCreateOrEdit, async (req, res) => {
   const params = dprIdParamSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -843,7 +844,7 @@ router.patch('/:dprId', canCreateOrEdit, async (req, res) => {
 });
 
 // POST /projects/:projectId/dpr/:dprId/submit - AC-DPR-05
-router.post('/:dprId/submit', canCreateOrEdit, async (req, res) => {
+router.post('/:dprId/submit', requireKickoffComplete(), canCreateOrEdit, async (req, res) => {
   const params = dprIdParamSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });

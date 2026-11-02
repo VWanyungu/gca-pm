@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { RiskIssues, RiskCategories, ScheduleTasks, ScheduleVersions } from '../database/utils/database.js';
 import type { RiskStatus } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import requireKickoffComplete from '../middlewares/requireKickoffComplete.js';
 import { sendRouteError } from '../utils/errors.js';
 import {
     createRiskIssueSchema,
@@ -38,7 +39,7 @@ const STATUS_TRANSITIONS: Record<RiskStatus, RiskStatus[]> = {
     closed: ['open'],
 };
 
-router.post('/', canManage, async (req, res) => {
+router.post('/', requireKickoffComplete(), canManage, async (req, res) => {
     const params = riskIssueProjectParamsSchema.validate(req.params);
     if (params.error) {
         res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -170,7 +171,7 @@ router.get('/:riskId', canView, async (req, res) => {
     }
 });
 
-router.patch('/:riskId', canManage, async (req, res) => {
+router.patch('/:riskId', requireKickoffComplete(), canManage, async (req, res) => {
     const params = riskIssueParamsSchema.validate(req.params);
     if (params.error) {
         res.status(400).json({ status: 'error', data: null, message: params.error.message });

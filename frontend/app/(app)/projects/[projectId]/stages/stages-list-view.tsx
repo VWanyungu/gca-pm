@@ -26,7 +26,11 @@ export default function StagesListView({ projectId }: { projectId: string }) {
       <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">All stages</h1>
 
       <div className="flex flex-col">
-        {sorted.map((stage, i) => (
+        {sorted.map((stage, i) => {
+          const gateColor =
+            stage.kind === "kickoff" ? "blue" : stage.kind === "closure" ? "orange" : null;
+
+          return (
           <Link
             key={stage.stage_no}
             href={`/projects/${projectId}/stages/${stage.stage_no}`}
@@ -35,9 +39,19 @@ export default function StagesListView({ projectId }: { projectId: string }) {
             }`}
           >
             <div className="flex flex-col gap-[2px]">
-              <p className="text-[14px] font-medium text-gca-dark">
-                {STAGE_SHORT_NAME[stage.stage_no] ?? stage.stage_name}
-              </p>
+              <div className="flex items-center gap-[8px]">
+                <p
+                  className={`text-[14px] font-medium ${
+                    gateColor === "blue"
+                      ? "text-blue-600/45"
+                      : gateColor === "orange"
+                        ? "text-orange-600/45"
+                        : "text-gca-dark"
+                  }`}
+                >
+                  {STAGE_SHORT_NAME[stage.stage_no] ?? stage.stage_name}
+                </p>
+              </div>
               <p className="text-[12px] text-gca-muted">
                 {stage.in_scope ? "In scope" : "Out of scope"}
               </p>
@@ -51,7 +65,8 @@ export default function StagesListView({ projectId }: { projectId: string }) {
               <ChevronRight className="size-[14px] text-gca-muted" />
             </div>
           </Link>
-        ))}
+          );
+        })}
       </div>
     </main>
   );

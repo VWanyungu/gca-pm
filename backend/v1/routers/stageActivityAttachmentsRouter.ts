@@ -4,6 +4,7 @@ import {
   StageActivityAttachments,
   StageActivities,
   Projects,
+  FileObjects,
   type UpdateStageActivityAttachmentFields,
 } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
@@ -17,7 +18,7 @@ import {
   type UpdateStageActivityAttachmentBody,
   type ListStageActivityAttachmentsQuery,
 } from '../utils/validation.js';
-import { uploadAttachmentToCloudinary } from '../utils/cloudinary.js';
+import { storeObject, objectUrl, FileValidationError, FileStorageError } from '../utils/objectStorage.js';
 import { sendRouteError } from '../utils/errors.js';
 
 // mergeParams so :projectId and :activityId reach authorize + handlers.
@@ -76,33 +77,40 @@ router.post('/', canManage, async (req, res) => {
       return;
     }
 
-    let attachmentId = input.attachment_id;
+    // AC-STG-09: attachments register a real file_object (purpose/variant/status, sha256, size)
+    // before being linked here — either freshly uploaded now, or a file_id from a prior upload.
+    let fileId: string;
+    let accessUrl: string;
     if (input.file) {
-      try {
-        const uploadResult = await uploadAttachmentToCloudinary(input.file, {
-          folder: `projects/${projectId}/activities/${activityId}`,
-        });
-        attachmentId = uploadResult.secureUrl;
-      } catch (uploadError) {
-        const message = uploadError instanceof Error ? uploadError.message : 'Upload failed';
-        res.status(502).json({
-          status: 'error',
-          data: null,
-          message: `Failed to upload attachment to Cloudinary: ${message}`,
-        });
+      const { fileObject, url } = await storeObject({
+        file: input.file,
+        purpose: 'activity_attachment',
+        projectId,
+        uploadedBy: req.user!.userId,
+        originalFilename: input.caption || 'attachment',
+      });
+      fileId = fileObject.file_id;
+      accessUrl = url;
+    } else if (input.file_id) {
+      // AC-GEN-10: the referenced file must belong to this same project.
+      const fileObject = await FileObjects.getById(input.file_id);
+      if (!fileObject || fileObject.project_id !== projectId) {
+        res.status(404).json({ status: 'error', data: null, message: 'File not found' });
         return;
       }
-    }
-
-    if (!attachmentId) {
-      attachmentId = randomUUID();
+      fileId = fileObject.file_id;
+      accessUrl = objectUrl(fileObject);
+    } else {
+      res.status(400).json({ status: 'error', data: null, message: 'file or file_id is required' });
+      return;
     }
 
     const created = await StageActivityAttachments.create({
-      attachment_id: attachmentId,
+      attachment_id: randomUUID(),
       activity_id: activityId,
-      file_id: input.file_id ?? randomUUID(),
+      file_id: fileId,
       caption: input.caption ?? null,
+      access_url: accessUrl,
       sort_order: input.sort_order ?? 0,
       uploaded_by: req.user!.userId,
     });
@@ -113,6 +121,14 @@ router.post('/', canManage, async (req, res) => {
       message: 'Stage activity attachment created',
     });
   } catch (err) {
+    if (err instanceof FileValidationError) {
+      res.status(400).json({ status: 'error', data: null, message: err.message });
+      return;
+    }
+    if (err instanceof FileStorageError) {
+      res.status(502).json({ status: 'error', data: null, message: `Could not store the file: ${err.message}` });
+      return;
+    }
     sendRouteError(res, err);
   }
 });

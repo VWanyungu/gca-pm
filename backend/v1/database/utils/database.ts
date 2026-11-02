@@ -701,12 +701,15 @@ export class AccessRoles {
   }
 }
 
+export type PdmStageKind = 'kickoff' | 'pdm' | 'closure';
+
 export interface PdmStageRow {
   stage_no: number;
   name: string;
   phase_id: number;
   phase_code: string;
   phase_name: string;
+  kind: PdmStageKind;
 }
 
 export class PdmStages {
@@ -719,8 +722,115 @@ export class PdmStages {
         'pdm_stage.phase_id',
         'pdm_phase.code as phase_code',
         'pdm_phase.name as phase_name',
+        'pdm_stage.kind',
       )
       .orderBy('pdm_stage.stage_no', 'asc');
+  }
+}
+
+export interface GateActivityTemplateRow {
+  template_id: string;
+  stage_no: number;
+  title: string;
+  description: string | null;
+  requires_attachment: boolean;
+  due_offset_days: number | null;
+  sort_order: number;
+  is_active: boolean;
+  created_by: string;
+  created_at: Date;
+  updated_by: string | null;
+  updated_at: Date;
+}
+
+const GATE_ACTIVITY_TEMPLATE_COLS = [
+  'template_id',
+  'stage_no',
+  'title',
+  'description',
+  'requires_attachment',
+  'due_offset_days',
+  'sort_order',
+  'is_active',
+  'created_by',
+  'created_at',
+  'updated_by',
+  'updated_at',
+];
+
+/** Admin-managed predefined activities instantiated onto a project's Kickoff/Closure gate stages at creation. */
+export class PdmGateActivityTemplates {
+  static async list({
+    stageNo,
+    includeInactive = false,
+  }: {
+    stageNo?: 0 | 11;
+    includeInactive?: boolean;
+  } = {}): Promise<GateActivityTemplateRow[]> {
+    const query = db('pdm_gate_activity_template').select(GATE_ACTIVITY_TEMPLATE_COLS);
+    if (stageNo !== undefined) query.andWhere('stage_no', stageNo);
+    if (!includeInactive) query.andWhere('is_active', true);
+    return query.orderBy(['stage_no', 'sort_order']);
+  }
+
+  static async getById(templateId: string): Promise<GateActivityTemplateRow | null> {
+    const row = await db('pdm_gate_activity_template').where({ template_id: templateId }).first();
+    return row ?? null;
+  }
+
+  static async create(
+    input: {
+      stage_no: 0 | 11;
+      title: string;
+      description?: string | null;
+      requires_attachment?: boolean;
+      due_offset_days?: number | null;
+      sort_order?: number;
+      is_active?: boolean;
+    },
+    actorId: string,
+  ): Promise<GateActivityTemplateRow> {
+    const [row] = await db('pdm_gate_activity_template')
+      .insert({
+        template_id: randomUUID(),
+        stage_no: input.stage_no,
+        title: input.title,
+        description: input.description ?? null,
+        requires_attachment: input.requires_attachment ?? false,
+        due_offset_days: input.due_offset_days ?? null,
+        sort_order: input.sort_order ?? 0,
+        is_active: input.is_active ?? true,
+        created_by: actorId,
+      })
+      .returning(GATE_ACTIVITY_TEMPLATE_COLS);
+    return row;
+  }
+
+  static async update(
+    templateId: string,
+    patch: {
+      title?: string;
+      description?: string | null;
+      requires_attachment?: boolean;
+      due_offset_days?: number | null;
+      sort_order?: number;
+      is_active?: boolean;
+    },
+    actorId: string,
+  ): Promise<GateActivityTemplateRow | null> {
+    const [row] = await db('pdm_gate_activity_template')
+      .where({ template_id: templateId })
+      .update({ ...patch, updated_by: actorId, updated_at: db.fn.now() })
+      .returning(GATE_ACTIVITY_TEMPLATE_COLS);
+    return row ?? null;
+  }
+
+  static async deactivate(templateId: string, actorId: string): Promise<GateActivityTemplateRow | null> {
+    const [row] = await db('pdm_gate_activity_template')
+      .where({ template_id: templateId })
+      .update({ is_active: false, updated_by: actorId, updated_at: db.fn.now() })
+      .returning(GATE_ACTIVITY_TEMPLATE_COLS);
+    return row ?? null;
   }
 }
 
@@ -1318,6 +1428,7 @@ const PROJECT_STAGE_COLS = [
 export interface ProjectStageWithDetailsRow extends ProjectStageRow {
   stage_name: string;
   phase_id: number;
+  kind: PdmStageKind;
 }
 
 export class ProjectStages {
@@ -1335,6 +1446,7 @@ export class ProjectStages {
         'project_stage.stage_no',
         'pdm_stage.name as stage_name',
         'pdm_stage.phase_id',
+        'pdm_stage.kind',
         'project_stage.in_scope',
         'project_stage.state',
         'project_stage.added_to_scope_by',
@@ -1363,6 +1475,7 @@ export class ProjectStages {
         'project_stage.stage_no',
         'pdm_stage.name as stage_name',
         'pdm_stage.phase_id',
+        'pdm_stage.kind',
         'project_stage.in_scope',
         'project_stage.state',
         'project_stage.added_to_scope_by',
@@ -1431,6 +1544,7 @@ export class ProjectStages {
         ...stageRow,
         stage_name: pdmStage?.name ?? '',
         phase_id: pdmStage?.phase_id ?? 1,
+        kind: pdmStage?.kind ?? 'pdm',
       };
     });
   }
@@ -1456,26 +1570,29 @@ export class ProjectStages {
     return row ?? null;
   }
 
-  static async transition({
-    projectId,
-    stageNo,
-    toState,
-    inScope,
-    actorId,
-    reason,
-    checklistSnapshot,
-    closureNotes,
-  }: {
-    projectId: string;
-    stageNo: number;
-    toState?: StageState;
-    inScope?: boolean;
-    actorId: string;
-    reason?: string | null;
-    checklistSnapshot?: Record<string, unknown> | null;
-    closureNotes?: string | null;
-  }): Promise<{ stage: ProjectStageWithDetailsRow; event: StageStateHistoryRow | null }> {
-    return await db.transaction(async (trx) => {
+  static async transition(
+    {
+      projectId,
+      stageNo,
+      toState,
+      inScope,
+      actorId,
+      reason,
+      checklistSnapshot,
+      closureNotes,
+    }: {
+      projectId: string;
+      stageNo: number;
+      toState?: StageState;
+      inScope?: boolean;
+      actorId: string;
+      reason?: string | null;
+      checklistSnapshot?: Record<string, unknown> | null;
+      closureNotes?: string | null;
+    },
+    trx?: Knex.Transaction,
+  ): Promise<{ stage: ProjectStageWithDetailsRow; event: StageStateHistoryRow | null }> {
+    const exec = async (trx: Knex.Transaction) => {
       const existing = await trx('project_stage')
         .where({ project_id: projectId, stage_no: stageNo })
         .first();
@@ -1543,7 +1660,9 @@ export class ProjectStages {
 
       // Completing a stage hands the project on to whatever's next in scope, so "current
       // stage" never goes blank mid-project (only once every in-scope stage is done).
-      if (historyEvent === 'completed') {
+      // Kickoff (stage 0) is excluded: the regular PDM stages are activated by the PM by
+      // hand once kickoff completes, never automatically.
+      if (historyEvent === 'completed' && stageNo !== 0) {
         const nextStage = await trx('project_stage')
           .where({ project_id: projectId, in_scope: true, state: 'not_started' })
           .andWhere('stage_no', '>', stageNo)
@@ -1578,10 +1697,13 @@ export class ProjectStages {
           ...updatedStage,
           stage_name: pdmStage?.name ?? '',
           phase_id: pdmStage?.phase_id ?? 1,
+          kind: pdmStage?.kind ?? 'pdm',
         },
         event: createdEvent,
       };
-    });
+    };
+
+    return trx ? await exec(trx) : await db.transaction(exec);
   }
 
   static async delete(
@@ -2119,6 +2241,75 @@ export class Projects {
         });
       }
 
+      // Kickoff (0) and Closure (11) are always in scope and active from day one —
+      // Kickoff gates every other project feature, Closure can be worked at any time.
+      await t('project_stage').insert([
+        {
+          project_id: projectId,
+          stage_no: 0,
+          in_scope: true,
+          state: 'active',
+          added_to_scope_by: input.created_by,
+          added_to_scope_at: t.fn.now(),
+          last_changed_by: input.created_by,
+          last_changed_at: t.fn.now(),
+        },
+        {
+          project_id: projectId,
+          stage_no: 11,
+          in_scope: true,
+          state: 'active',
+          added_to_scope_by: input.created_by,
+          added_to_scope_at: t.fn.now(),
+          last_changed_by: input.created_by,
+          last_changed_at: t.fn.now(),
+        },
+      ]);
+
+      for (const s of [0, 11]) {
+        await t('stage_state_history').insert({
+          event_id: randomUUID(),
+          project_id: projectId,
+          stage_no: s,
+          event: 'activated',
+          from_state: null,
+          to_state: 'active',
+          reason: s === 0 ? 'Kickoff active on project setup' : 'Closure active on project setup',
+          checklist_snapshot: null,
+          closure_notes: null,
+          actor_id: input.created_by,
+          occurred_at: new Date(),
+        });
+      }
+
+      const gateTemplates = await t('pdm_gate_activity_template')
+        .whereIn('stage_no', [0, 11])
+        .andWhere('is_active', true)
+        .orderBy('sort_order', 'asc');
+
+      for (const template of gateTemplates) {
+        const dueDate =
+          input.expected_start_date && template.due_offset_days != null
+            ? new Date(
+                new Date(input.expected_start_date).getTime() +
+                  template.due_offset_days * 24 * 60 * 60 * 1000,
+              )
+            : null;
+
+        await t('stage_activity').insert({
+          activity_id: randomUUID(),
+          project_id: projectId,
+          stage_no: template.stage_no,
+          title: template.title,
+          description: template.description,
+          status: 'open',
+          due_date: dueDate,
+          owner_id: pmUserId,
+          requires_attachment: template.requires_attachment,
+          created_by: input.created_by,
+        });
+      }
+
       await t('project_stage').insert(stageRows);
 
       // Log stage state history for in_scope stages
@@ -2165,6 +2356,7 @@ export class Projects {
           'project_stage.stage_no',
           'pdm_stage.name as stage_name',
           'pdm_stage.phase_id',
+          'pdm_stage.kind',
           'project_stage.in_scope',
           'project_stage.state',
           'project_stage.added_to_scope_by',
@@ -2406,6 +2598,16 @@ export class Projects {
           );
         }
 
+        // AC-PRJ-12: the project cannot be marked complete until the Closure gate stage is.
+        if (toStatus === 'complete') {
+          const closureStage = await t('project_stage')
+            .where({ project_id: projectId, stage_no: 11 })
+            .first();
+          if (closureStage && closureStage.state !== 'complete') {
+            throw new Error('Closure stage must be complete before the project can be marked complete');
+          }
+        }
+
         if (['on_hold', 'cancelled'].includes(toStatus) && !reason) {
           throw new Error(`Reason is required when transitioning to '${toStatus}'`);
         }
@@ -2491,6 +2693,7 @@ export interface StageActivityRow {
   due_date: string | null;
   owner_id: string | null;
   completed_at: Date | null;
+  requires_attachment: boolean;
   created_by: string;
   created_at: Date;
   updated_at: Date;
@@ -2506,6 +2709,7 @@ export interface CreateStageActivityInput {
   due_date?: string | null;
   owner_id?: string | null;
   completed_at?: Date | null;
+  requires_attachment?: boolean;
   created_by: string;
 }
 
@@ -2529,6 +2733,7 @@ const STAGE_ACTIVITY_COLS = [
   'due_date',
   'owner_id',
   'completed_at',
+  'requires_attachment',
   'created_by',
   'created_at',
   'updated_at',
@@ -2593,6 +2798,17 @@ export class StageActivities {
     return row ?? null;
   }
 
+  /** True once every activity on the stage is done/cancelled and at least one exists — used to auto-complete Kickoff/Closure. */
+  static async isStageFullyDone(
+    projectId: string,
+    stageNo: number,
+    trx?: Knex.Transaction,
+  ): Promise<boolean> {
+    const q = trx ? trx('stage_activity') : db('stage_activity');
+    const rows = await q.where({ project_id: projectId, stage_no: stageNo }).select('status');
+    return rows.length > 0 && rows.every((r) => r.status === 'done' || r.status === 'cancelled');
+  }
+
   static async update(
     projectId: string,
     activityId: string,
@@ -2605,6 +2821,45 @@ export class StageActivities {
       .update(patch)
       .returning(STAGE_ACTIVITY_COLS);
     return row ?? null;
+  }
+
+  /**
+   * AC-STG-12: updates the activity, and if that completes every activity on a Kickoff/Closure
+   * stage, auto-transitions the stage to complete in the same transaction (no manual button).
+   */
+  static async updateAndAutoComplete(
+    projectId: string,
+    activityId: string,
+    patch: UpdateStageActivityFields,
+    actorId: string,
+  ): Promise<{ activity: StageActivityRow | null; completedStage: ProjectStageWithDetailsRow | null }> {
+    return db.transaction(async (trx) => {
+      const activity = await StageActivities.update(projectId, activityId, patch, trx);
+      if (!activity) return { activity: null, completedStage: null };
+
+      let completedStage: ProjectStageWithDetailsRow | null = null;
+      if (patch.status === 'done') {
+        const stage = await ProjectStages.get(projectId, activity.stage_no, trx);
+        if (stage && stage.kind !== 'pdm' && stage.state !== 'complete') {
+          const fullyDone = await StageActivities.isStageFullyDone(projectId, activity.stage_no, trx);
+          if (fullyDone) {
+            const result = await ProjectStages.transition(
+              {
+                projectId,
+                stageNo: activity.stage_no,
+                toState: 'complete',
+                actorId,
+                reason: 'auto: all activities done',
+              },
+              trx,
+            );
+            completedStage = result.stage;
+          }
+        }
+      }
+
+      return { activity, completedStage };
+    });
   }
 
   static async delete(
@@ -2626,6 +2881,7 @@ export interface StageActivityAttachmentRow {
   activity_id: string;
   file_id: string;
   caption: string | null;
+  access_url: string;
   sort_order: number;
   uploaded_by: string;
   uploaded_at: Date;
@@ -2638,6 +2894,7 @@ export interface CreateStageActivityAttachmentInput {
   activity_id: string;
   file_id: string;
   caption?: string | null;
+  access_url: string;
   sort_order?: number;
   uploaded_by: string;
 }
@@ -2652,6 +2909,7 @@ const STAGE_ACTIVITY_ATTACHMENT_COLS = [
   'activity_id',
   'file_id',
   'caption',
+  'access_url',
   'sort_order',
   'uploaded_by',
   'uploaded_at',

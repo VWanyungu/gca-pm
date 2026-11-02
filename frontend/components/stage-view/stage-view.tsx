@@ -38,12 +38,13 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
 
   const canManage = canAccess(user?.role, CAN_MANAGE_PROJECT, { projectId });
 
-  const percentComplete = useMemo(() => {
-    const stageActivities = allActivities.filter((a: StageActivity) => a.stage_no === stageNo);
-    if (stageActivities.length === 0) return 0;
-    const done = stageActivities.filter((a) => a.status === "done").length;
-    return Math.round((done / stageActivities.length) * 100);
-  }, [allActivities, stageNo]);
+  const stageActivities = useMemo(
+    () => allActivities.filter((a: StageActivity) => a.stage_no === stageNo),
+    [allActivities, stageNo],
+  );
+  const doneCount = stageActivities.filter((a) => a.status === "done").length;
+  const percentComplete =
+    stageActivities.length === 0 ? 0 : Math.round((doneCount / stageActivities.length) * 100);
 
   async function toggleComplete() {
     if (!stage) return;
@@ -66,6 +67,10 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
   }
   if (error || !stage || !project) return null;
 
+  // Kickoff/Closure activities are predefined and self-contained — no risks card, and the
+  // checklist is always active rather than something the PM opts into.
+  const isGateStage = stage.kind !== "pdm";
+
   const editingActivity =
     subView.mode === "edit"
       ? allActivities.find((a) => a.activity_id === subView.activityId)
@@ -77,8 +82,10 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
         stage={stage}
         stageNo={stageNo}
         percentComplete={percentComplete}
+        doneCount={doneCount}
+        totalCount={stageActivities.length}
         canManage={canManage}
-        hasChecklist={checklistItems.length > 0}
+        hasChecklist={isGateStage || checklistItems.length > 0}
         onAddChecklist={() => setChecklistRevealed(true)}
         onToggleComplete={toggleComplete}
         togglingComplete={togglingComplete}
@@ -92,6 +99,7 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
                 projectId={projectId}
                 stageNo={stageNo}
                 team={team}
+                allowAdd={stage.kind === "pdm"}
                 onAddActivity={() => setSubView({ mode: "add" })}
                 onOpenActivity={(activityId) => setSubView({ mode: "detail", activityId })}
               />
@@ -112,10 +120,10 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
               projectId={projectId}
               stageNo={stageNo}
               canManage={canManage}
-              revealed={checklistRevealed}
+              revealed={isGateStage || checklistRevealed}
               onRemoved={() => setChecklistRevealed(false)}
             />
-            <StageRisksCard projectId={projectId} stageNo={stageNo} />
+            {!isGateStage && <StageRisksCard projectId={projectId} stageNo={stageNo} />}
           </div>
         </div>
       )}

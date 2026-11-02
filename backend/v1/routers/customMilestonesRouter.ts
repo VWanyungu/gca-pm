@@ -5,6 +5,7 @@ import {
   ProjectStages,
 } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import requireKickoffComplete from '../middlewares/requireKickoffComplete.js';
 import { sendRouteError } from '../utils/errors.js';
 import {
   customMilestoneProjectParamsSchema,
@@ -36,7 +37,7 @@ const canManage = authorize([
 ]);
 
 // POST /projects/:projectId/custom-milestones
-router.post('/', canManage, async (req, res) => {
+router.post('/', requireKickoffComplete(), canManage, async (req, res) => {
   const params = customMilestoneProjectParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -179,7 +180,7 @@ router.get('/:milestoneId', canView, async (req, res) => {
 });
 
 // PATCH /projects/:projectId/custom-milestones/:milestoneId
-router.patch('/:milestoneId', canManage, async (req, res) => {
+router.patch('/:milestoneId', requireKickoffComplete(), canManage, async (req, res) => {
   const params = customMilestoneParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -257,7 +258,7 @@ router.delete('/:milestoneId', canManage, async (req, res) => {
 });
 
 // POST /projects/:projectId/custom-milestones/:milestoneId/restore
-router.post('/:milestoneId/restore', canManage, async (req, res) => {
+router.post('/:milestoneId/restore', requireKickoffComplete(), canManage, async (req, res) => {
   const params = customMilestoneParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });

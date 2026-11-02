@@ -128,6 +128,8 @@ interface ActivitiesTableProps {
   team: TeamMember[];
   onAddActivity: () => void;
   onOpenActivity: (activityId: string) => void;
+  /** Kickoff/Closure activities are predefined by admin — PMs can't add ad-hoc ones there. */
+  allowAdd?: boolean;
 }
 
 export function ActivitiesTable({
@@ -136,6 +138,7 @@ export function ActivitiesTable({
   team,
   onAddActivity,
   onOpenActivity,
+  allowAdd = true,
 }: ActivitiesTableProps) {
   const [tab, setTab] = useState<"all" | "open" | "done">("all");
   const [page, setPage] = useState(1);
@@ -219,13 +222,15 @@ export function ActivitiesTable({
                 </button>
               ))}
             </div>
-            <button
-              onClick={onAddActivity}
-              className="flex cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
-            >
-              <Plus className="size-[10px]" />
-              Add activity
-            </button>
+            {allowAdd && (
+              <button
+                onClick={onAddActivity}
+                className="flex cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+              >
+                <Plus className="size-[10px]" />
+                Add activity
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -252,7 +257,7 @@ export function ActivitiesTable({
                     : "Completed activities will show up here."}
               </p>
             </div>
-            {tab === "all" && (
+            {tab === "all" && allowAdd && (
               <button
                 onClick={onAddActivity}
                 className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
