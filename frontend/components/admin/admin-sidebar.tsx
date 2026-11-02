@@ -9,7 +9,7 @@ const NAV_ITEMS = [
   { label: "Users", href: "/admin/users", active: true },
   { label: "Projects", href: "/admin/projects", active: true },
   { label: "Roles", href: "/admin/roles", active: true },
-  { label: "Reference data", href: "#", active: false },
+  { label: "Reference data", href: "/admin/gate-activities", active: true },
   { label: "Stage checklists", href: "#", active: false },
   { label: "Approvals", href: "#", active: false, count: 2 },
   { label: "Audit log", href: "#", active: false },

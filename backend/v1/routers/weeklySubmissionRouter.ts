@@ -6,6 +6,7 @@ import {
   type WeeklySubmissionStatus,
 } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import requireKickoffComplete from '../middlewares/requireKickoffComplete.js';
 import { sendRouteError } from '../utils/errors.js';
 import {
   weeklySubmissionProjectParamsSchema,
@@ -49,7 +50,7 @@ const canSupersede = authorize([
 ]);
 
 // POST / (create weekly submission draft)
-router.post('/', canManage, async (req, res) => {
+router.post('/', requireKickoffComplete(), canManage, async (req, res) => {
   const params = weeklySubmissionProjectParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -183,7 +184,7 @@ router.get('/:submissionId', canView, async (req, res) => {
 });
 
 // PATCH /:submissionId (update weekly submission draft)
-router.patch('/:submissionId', canManage, async (req, res) => {
+router.patch('/:submissionId', requireKickoffComplete(), canManage, async (req, res) => {
   const params = weeklySubmissionParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -289,7 +290,7 @@ router.delete('/:submissionId', canManage, async (req, res) => {
 });
 
 // POST /:submissionId/approve (AC-WKS-04 & AC-WKS-05: approve submission)
-router.post('/:submissionId/approve', canManage, async (req, res) => {
+router.post('/:submissionId/approve', requireKickoffComplete(), canManage, async (req, res) => {
   const params = weeklySubmissionParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -360,7 +361,7 @@ router.post('/:submissionId/approve', canManage, async (req, res) => {
 });
 
 // POST /:submissionId/supersede (AC-WKS-07: Admin authorises supersede)
-router.post('/:submissionId/supersede', canSupersede, async (req, res) => {
+router.post('/:submissionId/supersede', requireKickoffComplete(), canSupersede, async (req, res) => {
   const params = weeklySubmissionParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -426,7 +427,7 @@ router.post('/:submissionId/supersede', canSupersede, async (req, res) => {
 });
 
 // POST /:submissionId/addressed-risks (AC-WKS-03: Add addressed risk while drafting)
-router.post('/:submissionId/addressed-risks', canManage, async (req, res) => {
+router.post('/:submissionId/addressed-risks', requireKickoffComplete(), canManage, async (req, res) => {
   const params = weeklySubmissionParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -544,7 +545,7 @@ router.get('/:submissionId/photos', canView, async (req, res) => {
 });
 
 // PUT /:submissionId/photos — replace the selected DPR photos for this submission's client report
-router.put('/:submissionId/photos', canManage, async (req, res) => {
+router.put('/:submissionId/photos', requireKickoffComplete(), canManage, async (req, res) => {
   const params = weeklySubmissionParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });

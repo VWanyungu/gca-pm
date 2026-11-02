@@ -169,6 +169,16 @@ router.patch('/:stageNo', canManage, async (req, res) => {
       return;
     }
 
+    // AC-STG-12: Kickoff/Closure complete themselves once every activity is done — no manual button
+    if (patch.state === 'complete' && existing.kind !== 'pdm') {
+      res.status(400).json({
+        status: 'error',
+        data: null,
+        message: 'Kickoff/Closure stages complete automatically once every activity is done',
+      });
+      return;
+    }
+
     // AC-STG-03 & FR-M03-001: Stage must be in scope to be activated
     const effectiveInScope = patch.in_scope !== undefined ? patch.in_scope : existing.in_scope;
     if (patch.state === 'active' && !effectiveInScope) {

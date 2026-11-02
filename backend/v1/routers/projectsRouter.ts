@@ -252,7 +252,9 @@ router.patch('/:projectId', canManageProject, async (req, res) => {
     if (
       err instanceof Error &&
       err.constructor === Error &&
-      (err.message.includes('Invalid project status transition') || err.message.includes('Reason is required'))
+      (err.message.includes('Invalid project status transition') ||
+        err.message.includes('Reason is required') ||
+        err.message.includes('Closure stage must be complete'))
     ) {
       res.status(400).json({ status: 'error', data: null, message: err.message });
       return;

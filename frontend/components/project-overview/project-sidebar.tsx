@@ -34,7 +34,7 @@ const ROLE_BLURB: Record<string, string> = {
 /** Reads its data from ProjectSidebarProvider (set up once in the `[projectId]` layout) instead
  *  of props, so it renders once per project and survives navigation between its sub-pages. */
 export function ProjectSidebar() {
-  const { projectId, stages, counts, percentByStage, active, activeStageNo } =
+  const { projectId, stages, counts, percentByStage, active, activeStageNo, kickoffComplete } =
     useProjectSidebarData();
   const { user } = useAuth();
   const { isOpen, setIsOpen } = useMobileNavigation();
@@ -52,7 +52,13 @@ export function ProjectSidebar() {
     [
       { key: "overview", label: "Overview", icon: LayoutGrid, href: base },
       { key: "schedule", label: "Schedule", icon: CalendarRange, href: `${base}/schedule` },
-      { key: "dpr", label: "Daily Report", icon: ClipboardList, href: `${base}/dpr` },
+      {
+        key: "dpr",
+        label: "Daily Report",
+        icon: ClipboardList,
+        href: `${base}/dpr`,
+        locked: !kickoffComplete,
+      },
       // Weekly submission is the PM's report to ExCo — not an engineer's concern.
       {
         key: "submit",
@@ -61,6 +67,7 @@ export function ProjectSidebar() {
         href: `${base}/weekly-submission`,
         count: counts?.submit,
         hidden: isEngineer,
+        locked: !kickoffComplete,
       },
       {
         key: "risks",
@@ -68,6 +75,7 @@ export function ProjectSidebar() {
         icon: AlertTriangle,
         href: `${base}/risks`,
         count: counts?.risks,
+        locked: !kickoffComplete,
       },
       {
         key: "change-requests",
@@ -75,8 +83,15 @@ export function ProjectSidebar() {
         icon: GitPullRequest,
         href: `${base}/change-requests`,
         count: counts?.changeRequests,
+        locked: !kickoffComplete,
       },
-      { key: "milestones", label: "Milestones", icon: Flag, href: `${base}/milestones` },
+      {
+        key: "milestones",
+        label: "Milestones",
+        icon: Flag,
+        href: `${base}/milestones`,
+        locked: !kickoffComplete,
+      },
       { key: "team", label: "Team", icon: Users, href: `${base}/team` },
     ] as const
   ).filter((item) => !("hidden" in item && item.hidden));
@@ -103,6 +118,20 @@ export function ProjectSidebar() {
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = active === item.key;
+
+          if ("locked" in item && item.locked) {
+            return (
+              <span
+                key={item.key}
+                title="Complete Kickoff first"
+                className="flex cursor-not-allowed items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] opacity-50"
+              >
+                <Icon className="size-[16px] text-gca-show" />
+                <span className="text-[14px] font-medium text-gca-show">{item.label}</span>
+              </span>
+            );
+          }
+
           return (
             <Link
               key={item.key}

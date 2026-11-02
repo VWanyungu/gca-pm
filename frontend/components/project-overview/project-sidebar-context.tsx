@@ -52,6 +52,10 @@ interface ProjectSidebarData {
   percentByStage: Record<number, number>;
   active: ActiveKey;
   activeStageNo?: number;
+  /** AC-STG-11: DPR, weekly, risks, change requests, milestones and schedule upload stay
+   *  disabled client-side until Kickoff (stage_no 0) is complete. The API enforces this for
+   *  real; a project created before this gate existed (no stage_no 0 row) is unlocked. */
+  kickoffComplete: boolean;
 }
 
 const ProjectSidebarContext = createContext<ProjectSidebarData | null>(null);
@@ -85,6 +89,9 @@ export function ProjectSidebarProvider({
     [pathname, projectId],
   );
 
+  const kickoffStage = data?.stages.find((s) => s.stage_no === 0);
+  const kickoffComplete = kickoffStage ? kickoffStage.state === "complete" : true;
+
   const value = useMemo<ProjectSidebarData>(
     () => ({
       projectId,
@@ -93,8 +100,9 @@ export function ProjectSidebarProvider({
       percentByStage,
       active,
       activeStageNo,
+      kickoffComplete,
     }),
-    [projectId, data?.stages, counts, percentByStage, active, activeStageNo],
+    [projectId, data?.stages, counts, percentByStage, active, activeStageNo, kickoffComplete],
   );
 
   return <ProjectSidebarContext.Provider value={value}>{children}</ProjectSidebarContext.Provider>;

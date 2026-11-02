@@ -9,6 +9,7 @@ import {
   FileObjects,
 } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import requireKickoffComplete from '../middlewares/requireKickoffComplete.js';
 import {
   scheduleProjectParamsSchema,
   scheduleVersionParamsSchema,
@@ -326,7 +327,7 @@ router.get('/reconciliation-flags', canView, async (req, res) => {
 });
 
 // POST /projects/:projectId/schedule/reconciliation-flags/acknowledge
-router.post('/reconciliation-flags/acknowledge', canManage, async (req, res) => {
+router.post('/reconciliation-flags/acknowledge', requireKickoffComplete(), canManage, async (req, res) => {
   const params = scheduleProjectParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -357,7 +358,7 @@ router.post('/reconciliation-flags/acknowledge', canManage, async (req, res) => 
 // POST /projects/:projectId/schedule/upload
 // AC-SCH-01: store the file, queue a version, and answer. The parse and the apply
 // transaction happen after this request; the client polls the version for the outcome.
-router.post('/upload', canUpload, async (req, res) => {
+router.post('/upload', requireKickoffComplete(), canUpload, async (req, res) => {
   const params = scheduleProjectParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });

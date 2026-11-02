@@ -44,9 +44,11 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
   const { percentByStage } = useProjectSidebarData();
 
   const currentStage = useMemo(() => {
-    const stages = data?.stages ?? [];
-    // AC-STG-10: the highest-numbered active stage; if every in-scope stage is complete,
-    // fall back to the last one completed rather than showing nothing.
+    // AC-STG-10: the highest-numbered active regular PDM stage (Kickoff/Closure are gate
+    // stages, not part of this progression, and Closure is active for most of the project's
+    // life, so both are excluded here); if every in-scope stage is complete, fall back to the
+    // last one completed rather than showing nothing.
+    const stages = (data?.stages ?? []).filter((s) => s.kind === "pdm");
     return (
       [...stages].reverse().find((s) => s.state === "active") ??
       [...stages].reverse().find((s) => s.state === "complete")

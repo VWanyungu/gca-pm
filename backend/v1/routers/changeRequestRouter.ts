@@ -1,6 +1,7 @@
 import express from 'express';
 import { ChangeRequests } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import requireKickoffComplete from '../middlewares/requireKickoffComplete.js';
 import {
   createChangeRequestSchema,
   updateChangeRequestSchema,
@@ -47,7 +48,7 @@ const canDecide = authorize([
 // Registered before /:changeId routes so "attachments" isn't captured as a changeId param.
 // Mirrors dprRouter.ts's /photos/upload: the change request may not exist yet (raised in the
 // same form submission), so this just stores the object and hands back a file_id to attach.
-router.post('/attachments/upload', canRaise, async (req, res) => {
+router.post('/attachments/upload', requireKickoffComplete(), canRaise, async (req, res) => {
   const params = changeRequestProjectParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -88,7 +89,7 @@ router.post('/attachments/upload', canRaise, async (req, res) => {
   }
 });
 
-router.post('/', canRaise, async (req, res) => {
+router.post('/', requireKickoffComplete(), canRaise, async (req, res) => {
   const params = changeRequestProjectParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -166,7 +167,7 @@ router.get('/:changeId', canView, async (req, res) => {
   }
 });
 
-router.patch('/:changeId', canRaise, async (req, res) => {
+router.patch('/:changeId', requireKickoffComplete(), canRaise, async (req, res) => {
   const params = changeRequestParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -211,7 +212,7 @@ router.patch('/:changeId', canRaise, async (req, res) => {
 });
 
 // POST /:changeId/decide (AC-CHG-02 & AC-CHG-03: ExCo only)
-router.post('/:changeId/decide', canDecide, async (req, res) => {
+router.post('/:changeId/decide', requireKickoffComplete(), canDecide, async (req, res) => {
   const params = changeRequestParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -254,7 +255,7 @@ router.post('/:changeId/decide', canDecide, async (req, res) => {
 });
 
 // POST /:changeId/withdraw (AC-CHG-04: only the raiser, only while pending)
-router.post('/:changeId/withdraw', canRaise, async (req, res) => {
+router.post('/:changeId/withdraw', requireKickoffComplete(), canRaise, async (req, res) => {
   const params = changeRequestParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });

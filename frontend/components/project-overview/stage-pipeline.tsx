@@ -115,7 +115,7 @@ export function StagePipeline({
                     Set current stage
                   </p>
                   {sorted
-                    .filter((s) => s.in_scope)
+                    .filter((s) => s.in_scope && s.kind === "pdm")
                     .map((s) => {
                       const selected = s.stage_no === selectedStageNo;
                       return (
@@ -199,7 +199,7 @@ export function StagePipeline({
           ))}
       </div>
 
-      <div className="no-scrollbar -mx-[20px] flex w-[calc(100%+40px)] items-start gap-[12px] overflow-x-auto px-[20px] xl:mx-0 xl:w-full xl:justify-between xl:gap-0 xl:overflow-visible">
+      <div className="no-scrollbar -mx-[20px] flex w-[calc(100%+40px)] items-start gap-[12px] overflow-x-auto px-[20px]">
         {sorted.map((s) => {
           const locked = s.state !== "not_started";
           const checked = editMode ? pendingScope.has(s.stage_no) : s.in_scope;
@@ -210,13 +210,24 @@ export function StagePipeline({
                 ? (percentByStage[s.stage_no] ?? 0)
                 : 0;
 
+          const gateColor =
+            s.kind === "kickoff" ? "blue" : s.kind === "closure" ? "orange" : null;
+
           const columnClassName = "flex w-[98px] shrink-0 flex-col gap-[6px]";
           const columnContent = (
             <>
               {s.in_scope ? (
                 <div className="h-[6px] w-[98px] overflow-hidden rounded-[3px] bg-gca-border">
                   <div
-                    className={`h-[6px] rounded-[3px] ${s.state === "complete" ? "bg-gca-green/55" : "bg-gca-green"}`}
+                    className={`h-[6px] rounded-[3px] ${
+                      gateColor === "blue"
+                        ? "bg-blue-500"
+                        : gateColor === "orange"
+                          ? "bg-orange-500"
+                          : s.state === "complete"
+                            ? "bg-gca-green/55"
+                            : "bg-gca-green"
+                    }`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -240,15 +251,35 @@ export function StagePipeline({
                   </>
                 )}
 
+                {gateColor && (
+                  <span
+                    className={`shrink-0 rounded-[4px] px-[5px] py-[1px] text-[10px] font-semibold uppercase ${
+                      gateColor === "blue"
+                        ? "bg-blue-50 text-blue-600"
+                        : "bg-orange-50 text-orange-600"
+                    }`}
+                  >
+                    {s.kind}
+                  </span>
+                )}
+
                 <p
-                  className={`text-[12px] w-[98px] ${s.state === "active" ? "font-semibold text-gca-dark" : "font-medium text-gca-muted"}`}
+                  className={`text-[12px] w-[98px] truncate ${s.state === "active" ? "font-semibold text-gca-dark" : "font-medium text-gca-muted"}`}
                 >
                   {STAGE_SHORT_NAME[s.stage_no]}
                 </p>
               </div>
 
               <p
-                className={`text-[12px] w-[98px] ${s.state === "active" ? "text-gca-green" : "text-gca-muted"}`}
+                className={`text-[12px] w-[98px] ${
+                  gateColor === "blue"
+                    ? "text-blue-600"
+                    : gateColor === "orange"
+                      ? "text-orange-600"
+                      : s.state === "active"
+                        ? "text-gca-green"
+                        : "text-gca-muted"
+                }`}
               >
                 {!checked
                   ? "Out of scope"

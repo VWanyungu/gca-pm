@@ -15,6 +15,7 @@ import riskCategoriesRouter from './routers/riskCategoriesRouter.js';
 import riskRouter from './routers/riskRouter.js';
 import programsRouter from './routers/programsRouter.js';
 import pdmStagesRouter from './routers/pdmStagesRouter.js';
+import pdmGateActivityTemplatesRouter from './routers/pdmGateActivityTemplatesRouter.js';
 import weatherCategoriesRouter from './routers/weatherCategoriesRouter.js';
 import personnelRolesRouter from './routers/personnelRolesRouter.js';
 import stageStateHistoryRouter from './routers/stageStateHistoryRouter.js';
@@ -54,6 +55,7 @@ router.use('/access-roles', accessRolesRouter);
 
 router.use('/programs', programsRouter);
 router.use('/pdm-stages', pdmStagesRouter);
+router.use('/pdm-gate-activity-templates', pdmGateActivityTemplatesRouter);
 router.use('/risk-categories', riskCategoriesRouter);
 router.use('/weather-categories', weatherCategoriesRouter);
 router.use('/personnel-roles', personnelRolesRouter);
