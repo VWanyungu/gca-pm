@@ -36,9 +36,9 @@ const GATE_LABEL: Record<string, string> = {
   closure: "Closure",
 };
 
-const GATE_BADGE_CLASS: Record<string, string> = {
-  kickoff: "bg-blue-50 text-blue-600",
-  closure: "bg-orange-50 text-orange-600",
+const GATE_TEXT_CLASS: Record<string, string> = {
+  kickoff: "text-blue-600",
+  closure: "text-orange-600",
 };
 
 export function StageHeader({
@@ -65,8 +65,8 @@ export function StageHeader({
     <div className="flex w-full flex-col gap-[16px] lg:flex-row lg:items-start lg:justify-between">
       <div className="flex min-w-0 flex-col gap-[4px]">
         <p
-          className={`w-fit rounded-[4px] px-[6px] py-[1px] text-[12px] font-semibold uppercase tracking-[0.06em] ${
-            isGateStage ? GATE_BADGE_CLASS[stage.kind] : "text-gca-muted"
+          className={`text-[12px] font-semibold uppercase tracking-[0.06em] ${
+            isGateStage ? GATE_TEXT_CLASS[stage.kind] : "text-gca-muted"
           }`}
         >
           {isGateStage ? GATE_LABEL[stage.kind] : `Stage ${stageNo}`}
