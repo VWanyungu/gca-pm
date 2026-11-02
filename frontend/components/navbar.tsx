@@ -411,7 +411,7 @@ export function Navbar() {
           >
             <Bell className="size-[18px] text-gca-show" />
             {unreadCount > 0 && (
-              <span className="absolute left-[30px] top-[-6px] flex items-center rounded-[6px] bg-gca-green px-[4px] py-px text-[11px] font-semibold text-gca-on-accent">
+              <span className="absolute -right-[2px] -top-[2px] flex min-w-[16px] items-center justify-center rounded-full bg-gca-green px-[4px] py-px text-[10px] font-semibold text-gca-on-accent">
                 {unreadCount}
               </span>
             )}
@@ -426,7 +426,7 @@ export function Navbar() {
               <div className="flex size-[32px] items-center justify-center rounded-[8px] bg-gca-badge-bg">
                 <span className="text-[12px] font-semibold text-gca-badge-text">{initials}</span>
               </div>
-              <ChevronDown className="hidden size-[8px] text-gca-show sm:block" />
+              {/* <ChevronDown className="hidden size-[8px] text-gca-show sm:block" /> */}
             </button>
 
             {accountMenuOpen && (
