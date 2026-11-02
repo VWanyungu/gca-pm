@@ -1,10 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowLeft, LoaderCircle } from "lucide-react";
+import { useRef, useState } from "react";
+import { ArrowLeft, LoaderCircle, Paperclip } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useActivity, useActivityAttachments, useStageViewInvalidate } from "./use-stage-view-data";
 import type { TeamMember } from "@/components/project-overview/types";
+
+function fileToDataUri(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 function personName(userId: string | null | undefined, team: TeamMember[]) {
   const member = team.find((m) => m.user_id === userId);
@@ -42,6 +51,8 @@ export function ActivityDetail({
   const { data: attachments = [] } = useActivityAttachments(projectId, activityId);
   const invalidate = useStageViewInvalidate(projectId, stageNo);
   const [togglingDone, setTogglingDone] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!activity) return null;
 
@@ -55,6 +66,21 @@ export function ActivityDetail({
       invalidate();
     } finally {
       setTogglingDone(false);
+    }
+  }
+
+  async function uploadAttachment(file: File) {
+    setUploading(true);
+    try {
+      const dataUri = await fileToDataUri(file);
+      await api.post(`/projects/${projectId}/stage-activities/${activityId}/attachments`, {
+        file: dataUri,
+        caption: file.name,
+      });
+      invalidate();
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
@@ -126,13 +152,20 @@ export function ActivityDetail({
         </div>
       )}
 
-      {attachments.length > 0 && (
-        <div className="flex flex-col gap-[6px]">
-          <p className="text-[14px] font-semibold text-gca-dark">Attachments</p>
+      {(attachments.length > 0 || canManage) && (
+        <div className="flex flex-col gap-[6px] border-t border-gca-border pt-[16px]">
+          <p className="text-[14px] font-semibold text-gca-dark">
+            Attachments
+            {activity.requires_attachment && attachments.length === 0 && (
+              <span className="ml-[8px] text-[12px] font-normal text-error-text">
+                Required before this can be marked done
+              </span>
+            )}
+          </p>
           {attachments.map((att) => (
             <a
               key={att.attachment_id}
-              href={att.attachment_id}
+              href={att.access_url}
               target="_blank"
               rel="noreferrer"
               className="flex items-center justify-between rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[10px]"
@@ -142,6 +175,34 @@ export function ActivityDetail({
               </span>
             </a>
           ))}
+          {canManage && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) uploadAttachment(file);
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="relative flex w-fit cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[9px] text-[13px] font-medium text-gca-dark hover:bg-gca-page-bg disabled:opacity-60"
+              >
+                <Paperclip className={`size-[13px] ${uploading ? "invisible" : undefined}`} />
+                <span className={uploading ? "invisible" : undefined}>Add attachment</span>
+                {uploading && (
+                  <LoaderCircle
+                    className="absolute left-1/2 top-1/2 size-[14px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                    aria-label="Uploading"
+                  />
+                )}
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

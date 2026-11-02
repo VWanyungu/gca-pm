@@ -5,6 +5,7 @@ import {
   StageActivityAttachments,
   ProjectStages,
   Projects,
+  FileObjects,
   type UpdateStageActivityFields,
 } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
@@ -19,7 +20,7 @@ import {
   type UpdateStageActivityBody,
   type ListStageActivitiesQuery,
 } from '../utils/validation.js';
-import { uploadAttachmentToCloudinary } from '../utils/cloudinary.js';
+import { storeObject, objectUrl, FileValidationError, FileStorageError } from '../utils/objectStorage.js';
 import { sendRouteError } from '../utils/errors.js';
 
 // mergeParams so :projectId from the parent mount reaches authorize + handlers.
@@ -99,6 +100,7 @@ router.post('/', canManage, async (req, res) => {
       activity_id: string;
       file_id: string;
       caption: string | null;
+      access_url: string;
       sort_order: number;
       uploaded_by: string;
     }> = [];
@@ -107,33 +109,39 @@ router.post('/', canManage, async (req, res) => {
       const attObj: CreateStageActivityAttachmentBody =
         typeof item === 'string' ? { file: item } : item;
 
-      let attachmentId = attObj.attachment_id;
+      // AC-STG-09: register a real file_object before linking it to this activity.
+      let fileId: string;
+      let accessUrl: string;
       if (attObj.file) {
-        try {
-          const uploadResult = await uploadAttachmentToCloudinary(attObj.file, {
-            folder: `projects/${projectId}/activities/${activityId}`,
-          });
-          attachmentId = uploadResult.secureUrl;
-        } catch (uploadError) {
-          const message = uploadError instanceof Error ? uploadError.message : 'Upload failed';
-          res.status(502).json({
-            status: 'error',
-            data: null,
-            message: `Failed to upload attachment to Cloudinary: ${message}`,
-          });
+        const { fileObject, url } = await storeObject({
+          file: attObj.file,
+          purpose: 'activity_attachment',
+          projectId,
+          uploadedBy: req.user!.userId,
+          originalFilename: attObj.caption || 'attachment',
+        });
+        fileId = fileObject.file_id;
+        accessUrl = url;
+      } else if (attObj.file_id) {
+        // AC-GEN-10: the referenced file must belong to this same project.
+        const fileObject = await FileObjects.getById(attObj.file_id);
+        if (!fileObject || fileObject.project_id !== projectId) {
+          res.status(404).json({ status: 'error', data: null, message: 'File not found' });
           return;
         }
-      }
-
-      if (!attachmentId) {
-        attachmentId = randomUUID();
+        fileId = fileObject.file_id;
+        accessUrl = objectUrl(fileObject);
+      } else {
+        res.status(400).json({ status: 'error', data: null, message: 'file or file_id is required' });
+        return;
       }
 
       processedAttachments.push({
-        attachment_id: attachmentId,
+        attachment_id: randomUUID(),
         activity_id: activityId,
-        file_id: attObj.file_id ?? randomUUID(),
+        file_id: fileId,
         caption: attObj.caption ?? null,
+        access_url: accessUrl,
         sort_order: attObj.sort_order ?? i,
         uploaded_by: req.user!.userId,
       });
@@ -172,6 +180,14 @@ router.post('/', canManage, async (req, res) => {
       message: 'Stage activity created',
     });
   } catch (err) {
+    if (err instanceof FileValidationError) {
+      res.status(400).json({ status: 'error', data: null, message: err.message });
+      return;
+    }
+    if (err instanceof FileStorageError) {
+      res.status(502).json({ status: 'error', data: null, message: `Could not store the file: ${err.message}` });
+      return;
+    }
     sendRouteError(res, err);
   }
 });
@@ -280,11 +296,30 @@ router.patch('/:activityId', canManage, async (req, res) => {
       }
     }
 
-    const updated = await StageActivities.update(projectId, activityId, updates);
+    // AC-STG-13: an activity flagged requires_attachment can't be marked done with no live attachment
+    if (updates.status === 'done' && existing.requires_attachment) {
+      const attachments = await StageActivityAttachments.list({ activityId });
+      if (attachments.length === 0) {
+        res.status(400).json({
+          status: 'error',
+          data: null,
+          message: 'This activity requires at least one attachment before it can be marked done',
+        });
+        return;
+      }
+    }
+
+    // AC-STG-12: completing the last open activity on a Kickoff/Closure stage auto-completes it
+    const { activity: updated, completedStage } = await StageActivities.updateAndAutoComplete(
+      projectId,
+      activityId,
+      updates,
+      req.user!.userId,
+    );
 
     res.status(200).json({
       status: 'success',
-      data: { stageActivity: updated },
+      data: { stageActivity: updated, ...(completedStage ? { completedStage } : {}) },
       message: 'Stage activity updated',
     });
   } catch (err) {
