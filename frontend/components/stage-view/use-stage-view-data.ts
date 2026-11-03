@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import type {
   StageDetail,
@@ -94,6 +94,21 @@ export function useActivityAttachments(projectId: string, activityId: string) {
         ),
       ).attachments,
     staleTime: 10_000,
+  });
+}
+
+/** Re-copies a Kickoff/Closure stage's activities from the current gate activity templates —
+ *  backfills a project that started with none, and pulls in any renamed title/description. */
+export function useSyncGateActivities(projectId: string, stageNo: number) {
+  const invalidate = useStageViewInvalidate(projectId, stageNo);
+  return useMutation({
+    mutationFn: async () =>
+      unwrap(
+        await api.post<{ created: number; updated: number }>(
+          `/projects/${projectId}/stages/${stageNo}/sync-gate-activities`,
+        ),
+      ),
+    onSuccess: invalidate,
   });
 }
 

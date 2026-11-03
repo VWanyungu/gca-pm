@@ -2483,6 +2483,7 @@ export class Projects {
           activity_id: randomUUID(),
           project_id: projectId,
           stage_no: template.stage_no,
+          template_id: template.template_id,
           title: template.title,
           description: template.description,
           status: 'open',
@@ -2870,6 +2871,7 @@ export interface StageActivityRow {
   activity_id: string;
   project_id: string;
   stage_no: number;
+  template_id: string | null;
   title: string;
   description: string | null;
   status: ActivityStatus;
@@ -2886,6 +2888,7 @@ export interface CreateStageActivityInput {
   activity_id: string;
   project_id: string;
   stage_no: number;
+  template_id?: string | null;
   title: string;
   description?: string | null;
   status?: ActivityStatus;
@@ -2910,6 +2913,7 @@ const STAGE_ACTIVITY_COLS = [
   'activity_id',
   'project_id',
   'stage_no',
+  'template_id',
   'title',
   'description',
   'status',
@@ -2930,6 +2934,71 @@ export class StageActivities {
     const q = trx ? trx('stage_activity') : db('stage_activity');
     const [row] = await q.insert(input).returning(STAGE_ACTIVITY_COLS);
     return row;
+  }
+
+  /** Re-copies a Kickoff/Closure stage's activities from the current gate activity templates —
+   *  fills in any missing ones (e.g. a project created before templates existed) and syncs the
+   *  title/description/requires_attachment of ones already linked to a template, without
+   *  touching their status, owner or due date. */
+  static async syncFromTemplates(
+    projectId: string,
+    stageNo: 0 | 11,
+    actorId: string,
+  ): Promise<{ created: number; updated: number }> {
+    return db.transaction(async (trx) => {
+      const project = await trx('projects').where({ project_id: projectId }).first();
+      const templates = await trx('pdm_gate_activity_template')
+        .where({ stage_no: stageNo, is_active: true })
+        .orderBy('sort_order', 'asc');
+
+      const existing: StageActivityRow[] = await trx('stage_activity')
+        .where({ project_id: projectId, stage_no: stageNo })
+        .whereNotNull('template_id');
+      const existingByTemplate = new Map(existing.map((a) => [a.template_id, a]));
+
+      let created = 0;
+      let updated = 0;
+
+      for (const template of templates) {
+        const match = existingByTemplate.get(template.template_id);
+        if (!match) {
+          const dueDate =
+            project?.expected_start_date && template.due_offset_days != null
+              ? new Date(
+                  new Date(project.expected_start_date).getTime() +
+                    template.due_offset_days * 24 * 60 * 60 * 1000,
+                )
+              : null;
+
+          await trx('stage_activity').insert({
+            activity_id: randomUUID(),
+            project_id: projectId,
+            stage_no: stageNo,
+            template_id: template.template_id,
+            title: template.title,
+            description: template.description,
+            status: 'open',
+            due_date: dueDate,
+            requires_attachment: template.requires_attachment,
+            created_by: actorId,
+          });
+          created++;
+        } else if (
+          match.title !== template.title ||
+          match.description !== template.description ||
+          match.requires_attachment !== template.requires_attachment
+        ) {
+          await trx('stage_activity').where({ activity_id: match.activity_id }).update({
+            title: template.title,
+            description: template.description,
+            requires_attachment: template.requires_attachment,
+          });
+          updated++;
+        }
+      }
+
+      return { created, updated };
+    });
   }
 
   static async list({

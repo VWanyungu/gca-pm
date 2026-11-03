@@ -9,7 +9,12 @@ import {
   useProjectTeam,
   useStageActivities,
 } from "@/components/project-overview/use-project-data";
-import { useProjectStage, useStageChecklist, useStageViewInvalidate } from "./use-stage-view-data";
+import {
+  useProjectStage,
+  useStageChecklist,
+  useStageViewInvalidate,
+  useSyncGateActivities,
+} from "./use-stage-view-data";
 import { StageHeader } from "./stage-header";
 import { ActivitiesTable } from "./activities-table";
 import { AddActivityForm } from "./add-activity-form";
@@ -32,6 +37,7 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
   const { data: allActivities = [] } = useStageActivities(projectId);
   const { data: checklistItems = [] } = useStageChecklist(projectId, stageNo);
   const invalidate = useStageViewInvalidate(projectId, stageNo);
+  const syncGateActivities = useSyncGateActivities(projectId, stageNo);
   const [subView, setSubView] = useState<SubView>({ mode: "list" });
   const [checklistRevealed, setChecklistRevealed] = useState(false);
   const [togglingComplete, setTogglingComplete] = useState(false);
@@ -89,6 +95,8 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
         onAddChecklist={() => setChecklistRevealed(true)}
         onToggleComplete={toggleComplete}
         togglingComplete={togglingComplete}
+        onSync={() => syncGateActivities.mutate()}
+        syncing={syncGateActivities.isPending}
       />
 
       {(subView.mode === "list" || subView.mode === "detail") && (
