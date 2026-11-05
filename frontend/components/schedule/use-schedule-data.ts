@@ -67,6 +67,35 @@ export function useScheduleInvalidate(projectId: string) {
   return () => queryClient.invalidateQueries({ queryKey: ["project", projectId, "schedule"] });
 }
 
+export interface EditScheduleTaskInput {
+  start?: string;
+  plannedEndDate?: string;
+  plannedFinishDate?: string;
+  pctWorkComplete?: number;
+}
+
+/** PATCHes a task's own start/planned-end/planned-finish/actual-complete; the backend
+ *  recomputes project metrics as part of the same transaction, so a success here means
+ *  both are current. */
+export function useEditScheduleTask(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ taskId, input }: { taskId: string; input: EditScheduleTaskInput }) =>
+      unwrap(
+        await api.patch<{ revision_id: string }>(`/projects/${projectId}/schedule/tasks/${taskId}`, {
+          start: input.start,
+          planned_end_date: input.plannedEndDate,
+          planned_finish_date: input.plannedFinishDate,
+          pct_work_complete: input.pctWorkComplete,
+        }),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project", projectId, "schedule"] });
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+    },
+  });
+}
+
 /** The .mpp goes up as base64 in the JSON body, which is how this API takes files. */
 function toBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {

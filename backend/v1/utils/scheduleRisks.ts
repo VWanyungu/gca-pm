@@ -132,7 +132,7 @@ export async function refreshProjectMetrics(
 ): Promise<MetricsSnapshot | null> {
   const { rows } = await trx.raw(
     `
-    WITH qualifying AS (
+    WITH leaf AS (
       SELECT r.duration_minutes::numeric            AS weight,
              r.pct_work_complete                    AS actual_i,
              ${PLANNED_I_EXPR}                      AS planned_i,
@@ -146,6 +146,25 @@ export async function refreshProjectMetrics(
         AND t.removed_in_version_id IS NULL
         AND r.is_summary = false
         AND r.is_active = true
+    ),
+    -- A schedule uploaded with no child tasks has only its editable summary row; fall back to
+    -- that row alone so editing it still drives the project's own metrics and dates.
+    qualifying AS (
+      SELECT * FROM leaf
+      UNION ALL
+      SELECT 1::numeric                              AS weight,
+             r.pct_work_complete                      AS actual_i,
+             ${PLANNED_I_EXPR}                        AS planned_i,
+             r.baseline_start,
+             r.baseline_finish,
+             r.start,
+             r.expected_finish
+      FROM schedule_task t
+      JOIN schedule_task_revision r ON r.task_id = t.task_id AND r.valid_to IS NULL
+      WHERE t.project_id = :projectId
+        AND t.removed_in_version_id IS NULL
+        AND r.is_active = true
+        AND NOT EXISTS (SELECT 1 FROM leaf)
     )
     SELECT (now() AT TIME ZONE :tz)::date                            AS as_of_date,
            COALESCE(SUM(weight), 0)                                  AS weight_total,

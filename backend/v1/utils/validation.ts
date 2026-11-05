@@ -1278,6 +1278,26 @@ export const acknowledgeReconciliationFlagsSchema = Joi.object<{
   flag_ids: Joi.array().items(Joi.string().uuid()).min(1).required(),
 });
 
+export const scheduleTaskParamsSchema = Joi.object({
+  projectId: Joi.string().uuid().required(),
+  taskId: Joi.string().uuid().required(),
+});
+
+export interface EditScheduleTaskBody {
+  start?: string;
+  planned_end_date?: string;
+  planned_finish_date?: string;
+  pct_work_complete?: number;
+}
+
+/** At least one field required; a PATCH with none of them has nothing to do. */
+export const editScheduleTaskSchema = Joi.object<EditScheduleTaskBody>({
+  start: Joi.string().isoDate(),
+  planned_end_date: Joi.string().isoDate(),
+  planned_finish_date: Joi.string().isoDate(),
+  pct_work_complete: Joi.number().min(0).max(100),
+}).or("start", "planned_end_date", "planned_finish_date", "pct_work_complete");
+
 const DPR_STATUSES: DprStatus[] = ["draft", "submitted"];
 const DPR_EFFECTS_SEVERITIES: DprEffectsSeverity[] = [
   "none",

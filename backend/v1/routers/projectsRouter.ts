@@ -8,6 +8,7 @@ import {
 } from '../database/utils/database.js';
 import authorize, { authorizeAnyRole } from '../middlewares/authorize.js';
 import { sendRouteError } from '../utils/errors.js';
+import { seedInitialScheduleSummary } from '../utils/scheduleProcessor.js';
 import {
   createProjectSchema,
   updateProjectSchema,
@@ -103,6 +104,12 @@ router.post('/', canCreate, async (req, res) => {
       ...input,
       created_by: req.user!.userId,
     });
+
+    // Best-effort: a project with no mock schedule is still a created project, so this
+    // never fails the request — it just leaves the Schedule tab empty until a real upload.
+    await seedInitialScheduleSummary(result.project, req.user!.userId).catch((err) =>
+      console.error('Failed to seed initial schedule for', result.project.project_id, err),
+    );
 
     res.status(201).json({
       status: 'success',

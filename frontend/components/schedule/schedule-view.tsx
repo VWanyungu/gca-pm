@@ -4,7 +4,12 @@ import { useMemo, useRef, useState } from "react";
 import { Download, LoaderCircle, Search, Upload } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import useOutsideClick from "@/hooks/use-outside-click";
-import { canAccess, CAN_MANAGE_PROJECT, CAN_UPLOAD_SCHEDULE } from "@/lib/access-control";
+import {
+  canAccess,
+  CAN_EDIT_SCHEDULE_TASK,
+  CAN_MANAGE_PROJECT,
+  CAN_UPLOAD_SCHEDULE,
+} from "@/lib/access-control";
 import { useProjectDetail, useProjectTeam } from "@/components/project-overview/use-project-data";
 import Dropdown from "@/components/Dropdown";
 import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
@@ -169,6 +174,7 @@ export function ScheduleView({ projectId }: { projectId: string }) {
 
   const canManage = canAccess(user?.role, CAN_MANAGE_PROJECT, { projectId });
   const canUpload = canAccess(user?.role, CAN_UPLOAD_SCHEDULE, { projectId });
+  const canEditTasks = canAccess(user?.role, CAN_EDIT_SCHEDULE_TASK, { projectId });
   const currentVersion = versions[0];
 
   const filteredTasks = useMemo(() => {
@@ -376,8 +382,8 @@ export function ScheduleView({ projectId }: { projectId: string }) {
         />
       )}
 
-      <div className="flex w-full flex-col items-stretch gap-[12px] border-b border-gca-border md:flex-row md:items-center md:justify-between">
-        <div className="no-scrollbar flex min-w-0 items-center gap-[4px] overflow-x-auto">
+      <div className="flex w-full flex-col items-stretch gap-[12px] md:flex-row md:items-center md:justify-between">
+        <div className="no-scrollbar flex min-w-0 items-center gap-[4px] overflow-x-auto h-full">
           {(
             [
               { id: "table", label: "Table" },
@@ -393,13 +399,13 @@ export function ScheduleView({ projectId }: { projectId: string }) {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`cursor-pointer flex items-center gap-[6px] border-b-2 px-[4px] pb-[10px] text-[14px] ${
+              className={`cursor-pointer flex items-start gap-[6px] border-b-2 px-[4px] pb-[10px] text-[14px] h-full ${
                 tab === t.id
                   ? "border-gca-green font-semibold text-gca-dark"
                   : "border-transparent font-medium text-gca-show"
               }`}
             >
-              {t.label}
+              <span>{t.label}</span>
               {"count" in t && t.count > 0 && (
                 <span className={tab === t.id ? "text-gca-dark" : "text-error-text"}>
                   {t.count}
@@ -410,7 +416,7 @@ export function ScheduleView({ projectId }: { projectId: string }) {
         </div>
 
         {(tab === "gantt" || tab === "table") && (
-          <div className="pb-[10px]">
+          <div>
             <MobileFilterToggle>
               <div className="flex items-center gap-[12px]">
                 <Dropdown
@@ -467,6 +473,8 @@ export function ScheduleView({ projectId }: { projectId: string }) {
           key={`${range}:${search}`}
           tasks={filteredTasks}
           window={range === "lookahead" ? lookaheadWindow : undefined}
+          canEdit={canEditTasks}
+          projectId={projectId}
         />
       )}
       {tab === "overdue" && (

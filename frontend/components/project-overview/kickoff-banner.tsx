@@ -20,20 +20,18 @@ export function KickoffBanner() {
   if (kickoffActivities.length === 0) return null;
 
   return (
-    <div className="flex w-full items-center justify-between gap-[12px] bg-gca-warning-bg px-[20px] py-[10px] md:px-[40px]">
+    <div className="mx-auto w-full max-w-[1200px] px-[20px] md:px-[40px] pt-[5px] md:pt-[15px]">
+      <div className="rounded-lg mx-auto flex w-full items-center justify-between gap-[12px] bg-gca-warning-bg px-[20px] py-[10px] md:px-[20px]">
       <p className="text-[13px] text-gca-warning">
-        {remaining} required kickoff {remaining === 1 ? "activity" : "activities"} left.
         DPR, weekly reports, risks, change requests, milestones and schedule upload stay
-        locked until Kickoff is complete.
+        locked until <Link
+          href={`/projects/${projectId}/stages/0`}
+          className="underline font-semibold"
+        >
+          project kickoff
+        </Link> is complete.
       </p>
       <div className="flex shrink-0 items-center gap-[16px]">
-        <Link
-          href={`/projects/${projectId}/stages/0`}
-          className="flex items-center gap-[6px] text-[13px] font-semibold text-gca-warning hover:underline"
-        >
-          Jump to Kickoff
-          <ArrowRight className="size-[13px]" />
-        </Link>
         <button
           type="button"
           onClick={() => setDismissed(true)}
@@ -42,6 +40,7 @@ export function KickoffBanner() {
         >
           <X className="size-[16px]" />
         </button>
+      </div>
       </div>
     </div>
   );

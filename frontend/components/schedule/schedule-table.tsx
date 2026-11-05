@@ -1,13 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import {
+  canEditScheduleTask,
   formatShortDate,
   groupPlannedProgress,
   groupProgress,
@@ -20,11 +16,50 @@ import {
   type DateWindow,
   type ScheduleTask,
 } from "./types";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { useEditScheduleTask } from "./use-schedule-data";
+import { Check, ChevronDown, ChevronRight, LoaderCircle, Pencil, X } from "lucide-react";
 
 const INITIAL_ROWS = 24;
 const LOAD_MORE_ROWS = 24;
 const INDENT_PER_LEVEL = 16;
+
+/** `start`/`expected_finish` are full timestamps; a date input only wants the calendar date. */
+function toDateInputValue(iso: string): string {
+  return iso.slice(0, 10);
+}
+
+interface EditDraft {
+  taskId: string;
+  start: string;
+  plannedEndDate: string;
+  plannedFinishDate: string;
+  pctWorkComplete: string;
+  error: string | null;
+}
+
+interface EditingSnapshot {
+  draft: EditDraft | null;
+  isSaving: boolean;
+}
+
+interface EditingState {
+  /** A ref, not plain state: cell render functions read `.current` fresh on every render, so
+   *  `columns` below never has to depend on the draft and get rebuilt on each keystroke — that
+   *  rebuild previously made react-table treat the row as new, remounting the Start input and
+   *  stealing focus back to it (its `autoFocus`) after every character typed elsewhere. */
+  snapshot: { current: EditingSnapshot };
+  onStartEdit: (task: ScheduleTask) => void;
+  onChange: (
+    patch: Partial<
+      Pick<EditDraft, "start" | "plannedEndDate" | "plannedFinishDate" | "pctWorkComplete">
+    >,
+  ) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}
+
+const inlineInputClassName =
+  "h-[32px] w-full min-w-0 rounded-[6px] border border-gca-green px-[8px] text-[13px] outline-none";
 
 function buildColumns(
   tasks: ScheduleTask[],
@@ -32,6 +67,8 @@ function buildColumns(
   baseLevel: number,
   collapsed: Set<string>,
   toggleGroup: (groupId: string) => void,
+  canEdit: boolean,
+  editing: EditingState,
 ): ColumnDef<ScheduleTask>[] {
   return [
     {
@@ -93,6 +130,19 @@ function buildColumns(
       cell: ({ row }) => {
         const t = row.original;
         const isGroup = t.is_summary;
+        const draft = editing.snapshot.current.draft;
+        if (draft?.taskId === t.task_id) {
+          return (
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={draft.pctWorkComplete}
+              onChange={(e) => editing.onChange({ pctWorkComplete: e.target.value })}
+              className={inlineInputClassName}
+            />
+          );
+        }
         const progress = isGroup ? groupProgress(t, tasks) : Number(t.pct_work_complete);
         return (
           <p className={`text-[13px] ${isGroup ? "font-medium" : ""} text-gca-dark`}>
@@ -125,32 +175,77 @@ function buildColumns(
       header: "Work days",
       meta: { className: "w-[9%]" },
       cell: ({ row }) => (
-        <p className="font-mono text-[13px] text-gca-dark">{workDays(row.original.duration_minutes)}</p>
+        <p className="font-mono text-[13px] text-gca-dark">
+          {workDays(row.original.duration_minutes)}
+        </p>
       ),
     },
     {
       id: "start",
       header: "Start",
       meta: { className: "w-[10%]" },
-      cell: ({ row }) => (
-        <p className="font-mono text-[13px] text-gca-dark">{formatShortDate(row.original.start)}</p>
-      ),
+      cell: ({ row }) => {
+        const t = row.original;
+        const draft = editing.snapshot.current.draft;
+        if (draft?.taskId === t.task_id) {
+          return (
+            <input
+              type="date"
+              autoFocus
+              value={draft.start}
+              onChange={(e) => editing.onChange({ start: e.target.value })}
+              className={inlineInputClassName}
+            />
+          );
+        }
+        return <p className="font-mono text-[13px] text-gca-dark">{formatShortDate(t.start)}</p>;
+      },
     },
     {
       id: "plannedFinish",
       header: "Planned finish",
       meta: { className: "w-[11%]" },
-      cell: ({ row }) => (
-        <p className="font-mono text-[13px] text-gca-dark">{formatShortDate(plannedFinish(row.original))}</p>
-      ),
+      cell: ({ row }) => {
+        const t = row.original;
+        const draft = editing.snapshot.current.draft;
+        if (draft?.taskId === t.task_id) {
+          return (
+            <input
+              type="date"
+              value={draft.plannedFinishDate}
+              onChange={(e) => editing.onChange({ plannedFinishDate: e.target.value })}
+              className={inlineInputClassName}
+            />
+          );
+        }
+        return (
+          <p className="font-mono text-[13px] text-gca-dark">{formatShortDate(plannedFinish(t))}</p>
+        );
+      },
     },
     {
       id: "forecast",
       header: "Forecast",
       meta: { className: "w-[11%]" },
-      cell: ({ row }) => (
-        <p className="font-mono text-[13px] text-gca-show">{formatShortDate(row.original.expected_finish)}</p>
-      ),
+      cell: ({ row }) => {
+        const t = row.original;
+        const draft = editing.snapshot.current.draft;
+        if (draft?.taskId === t.task_id) {
+          return (
+            <input
+              type="date"
+              value={draft.plannedEndDate}
+              onChange={(e) => editing.onChange({ plannedEndDate: e.target.value })}
+              className={inlineInputClassName}
+            />
+          );
+        }
+        return (
+          <p className="font-mono text-[13px] text-gca-show">
+            {formatShortDate(t.expected_finish)}
+          </p>
+        );
+      },
     },
     {
       id: "status",
@@ -169,6 +264,54 @@ function buildColumns(
         );
       },
     },
+    {
+      id: "edit",
+      header: "",
+      meta: { className: "w-[6%]" },
+      cell: ({ row }) => {
+        const t = row.original;
+        const { draft, isSaving } = editing.snapshot.current;
+        if (draft?.taskId === t.task_id) {
+          return (
+            <div className="flex items-center gap-[10px]">
+              <button
+                type="button"
+                onClick={editing.onSave}
+                disabled={isSaving}
+                aria-label="Save"
+                className="cursor-pointer text-gca-green disabled:opacity-50"
+              >
+                {isSaving ? (
+                  <LoaderCircle size={18} className="animate-spin" aria-label="Saving" />
+                ) : (
+                  <Check size={18} />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={editing.onCancel}
+                disabled={isSaving}
+                aria-label="Cancel"
+                className="cursor-pointer text-gca-muted hover:text-error-text disabled:opacity-50"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          );
+        }
+        if (!canEdit || !canEditScheduleTask(t, tasks)) return null;
+        return (
+          <button
+            type="button"
+            onClick={() => editing.onStartEdit(t)}
+            aria-label={`Edit ${t.task_name}`}
+            className="cursor-pointer text-gca-muted hover:text-gca-green"
+          >
+            <Pencil size={14} />
+          </button>
+        );
+      },
+    },
   ];
 }
 
@@ -176,6 +319,10 @@ interface ScheduleTableProps {
   tasks: ScheduleTask[];
   /** Restrict the displayed rows (used by the "Next 2 weeks" lookahead). Phase % stays cumulative. */
   window?: DateWindow;
+  /** Whether the current user may edit tasks at all; per-row eligibility is still checked via
+   *  canEditScheduleTask (a leaf task, or the sole summary row when there are no tasks). */
+  canEdit?: boolean;
+  projectId: string;
 }
 
 /**
@@ -185,9 +332,13 @@ interface ScheduleTableProps {
  * rendered from one depth-first list rather than as groups-with-children. Incremental loading
  * slices that same list, so each newly shown batch stays in the schedule's original order.
  */
-export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
+export function ScheduleTable({ tasks, window, canEdit = false, projectId }: ScheduleTableProps) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_ROWS);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
+  const editTask = useEditScheduleTask(projectId);
+  const editingSnapshot = useRef<EditingSnapshot>({ draft: null, isSaving: false });
+  editingSnapshot.current = { draft: editDraft, isSaving: editTask.isPending };
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -205,9 +356,25 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
   );
 
   const total = rows.length;
-  const visibleRows = rows.slice(0, visibleCount);
+  const visibleRows = useMemo(() => rows.slice(0, visibleCount), [rows, visibleCount]);
 
-  const columns = buildColumns(tasks, level, baseLevel, collapsed, toggleGroup);
+  // @tanstack/react-table expects stable `columns`/`data` references; recreating them on every
+  // render (as this did before) makes it recompute its row model every render, which for a
+  // few-hundred-row schedule compounds into a render loop that pegs the main thread — and, for
+  // the row under edit, remounts its inputs (stealing focus back to the autoFocus'd Start field
+  // on every keystroke). `editingSnapshot` is a ref for exactly this reason: cells read it fresh
+  // each render without `columns` needing to depend on — and get rebuilt for — the draft.
+  const columns = useMemo(
+    () =>
+      buildColumns(tasks, level, baseLevel, collapsed, toggleGroup, canEdit, {
+        snapshot: editingSnapshot,
+        onStartEdit: startEdit,
+        onChange: (patch) => setEditDraft((d) => (d ? { ...d, ...patch, error: null } : d)),
+        onSave: saveEdit,
+        onCancel: () => setEditDraft(null),
+      }),
+    [tasks, level, baseLevel, collapsed, canEdit],
+  );
   const table = useReactTable({ data: visibleRows, columns, getCoreRowModel: getCoreRowModel() });
 
   useEffect(() => {
@@ -238,6 +405,49 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
     });
   }
 
+  function startEdit(task: ScheduleTask) {
+    setEditDraft({
+      taskId: task.task_id,
+      start: toDateInputValue(task.start),
+      plannedEndDate: toDateInputValue(task.expected_finish),
+      plannedFinishDate: toDateInputValue(plannedFinish(task)),
+      pctWorkComplete: String(Math.round(Number(task.pct_work_complete))),
+      error: null,
+    });
+  }
+
+  async function saveEdit() {
+    const draft = editingSnapshot.current.draft;
+    if (!draft) return;
+    const pct = Number(draft.pctWorkComplete);
+    if (draft.pctWorkComplete.trim() === "" || Number.isNaN(pct) || pct < 0 || pct > 100) {
+      setEditDraft({ ...draft, error: "Actual complete must be a number between 0 and 100" });
+      return;
+    }
+    if (new Date(draft.plannedEndDate) < new Date(draft.start)) {
+      setEditDraft({ ...draft, error: "Planned end date cannot be before the start date" });
+      return;
+    }
+    if (new Date(draft.plannedFinishDate) < new Date(draft.start)) {
+      setEditDraft({ ...draft, error: "Planned finish date cannot be before the start date" });
+      return;
+    }
+    try {
+      await editTask.mutateAsync({
+        taskId: draft.taskId,
+        input: {
+          start: draft.start,
+          plannedEndDate: draft.plannedEndDate,
+          plannedFinishDate: draft.plannedFinishDate,
+          pctWorkComplete: pct,
+        },
+      });
+      setEditDraft(null);
+    } catch {
+      // Already shown as a toast by the api client; keep the row open to retry.
+    }
+  }
+
   if (tasks.length === 0) {
     return (
       <p className="py-[56px] text-center text-[13px] text-gca-show">No schedule tasks to show.</p>
@@ -259,7 +469,9 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
             {table.getFlatHeaders().map((header) => (
               <p
                 key={header.id}
-                className={(header.column.columnDef.meta as { className?: string } | undefined)?.className}
+                className={
+                  (header.column.columnDef.meta as { className?: string } | undefined)?.className
+                }
               >
                 {flexRender(header.column.columnDef.header, header.getContext())}
               </p>
@@ -269,21 +481,35 @@ export function ScheduleTable({ tasks, window }: ScheduleTableProps) {
           <div ref={scrollContainerRef} className="max-h-[520px] overflow-y-auto">
             {table.getRowModel().rows.map((row, i) => {
               const isPhase = row.original.outline_level === level;
-              return (
+              const isEditing = editDraft?.taskId === row.original.task_id;
+              const rowContent = (
                 <div
-                  key={row.id}
                   className={`flex w-full items-center gap-[10px] px-[16px] ${
                     isPhase ? "bg-gca-badge-bg py-[10px]" : "py-[12px]"
-                  } ${i > 0 ? "border-t border-gca-border" : ""}`}
+                  } ${!isEditing && i > 0 ? "border-t border-gca-border" : "rounded-[8px]"}`}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <span
                       key={cell.id}
-                      className={(cell.column.columnDef.meta as { className?: string } | undefined)?.className}
+                      className={
+                        (cell.column.columnDef.meta as { className?: string } | undefined)
+                          ?.className
+                      }
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </span>
                   ))}
+                </div>
+              );
+              if (!isEditing) return <Fragment key={row.id}>{rowContent}</Fragment>;
+              return (
+                <div key={row.id} className="rounded-[8px] border-2 border-gca-green">
+                  {rowContent}
+                  {editDraft.error && (
+                    <p className="px-[16px] pb-[10px] text-[12px] text-error-text">
+                      {editDraft.error}
+                    </p>
+                  )}
                 </div>
               );
             })}

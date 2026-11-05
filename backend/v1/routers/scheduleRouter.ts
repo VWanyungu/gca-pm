@@ -13,10 +13,13 @@ import requireKickoffComplete from '../middlewares/requireKickoffComplete.js';
 import {
   scheduleProjectParamsSchema,
   scheduleVersionParamsSchema,
+  scheduleTaskParamsSchema,
   listReconciliationFlagsQuerySchema,
   acknowledgeReconciliationFlagsSchema,
   uploadScheduleSchema,
+  editScheduleTaskSchema,
   type UploadScheduleBody,
+  type EditScheduleTaskBody,
 } from '../utils/validation.js';
 import {
   storeObject,
@@ -28,6 +31,12 @@ import {
 import { processScheduleVersion } from '../utils/scheduleProcessor.js';
 import { buildScheduleExport, MppParserUnavailableError, type ParsedTask } from '../utils/mppParser.js';
 import { sendRouteError } from '../utils/errors.js';
+import {
+  editScheduleTask,
+  ScheduleTaskNotEditableError,
+  ScheduleTaskNotFoundError,
+} from '../utils/scheduleEdit.js';
+import db from '../database/dbSetup.js';
 
 // mergeParams so :projectId reaches authorize and handlers
 const router = express.Router({ mergeParams: true });
@@ -264,6 +273,59 @@ router.get('/tasks', canView, async (req, res) => {
     const tasks = await ScheduleTasks.listCurrent(projectId);
     res.status(200).json({ status: 'success', data: { tasks }, message: 'Schedule tasks retrieved' });
   } catch (err) {
+    sendRouteError(res, err);
+  }
+});
+
+// PATCH /projects/:projectId/schedule/tasks/:taskId
+// Edits a task's own start/planned-end/actual-complete without a re-upload. A leaf task is
+// always editable; the project's single top-level row only while it has no child tasks.
+router.patch('/tasks/:taskId', requireKickoffComplete(), canManage, async (req, res) => {
+  const params = scheduleTaskParamsSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const body = editScheduleTaskSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
+  if (body.error) {
+    res.status(400).json({ status: 'error', data: null, message: body.error.message });
+    return;
+  }
+  const { projectId, taskId } = params.value as { projectId: string; taskId: string };
+  const input = body.value as EditScheduleTaskBody;
+
+  try {
+    const project = await Projects.getById(projectId);
+    if (!project) {
+      res.status(404).json({ status: 'error', data: null, message: 'Project not found' });
+      return;
+    }
+
+    const result = await db.transaction((trx) =>
+      editScheduleTask(trx, {
+        projectId,
+        taskId,
+        editedBy: req.user!.userId,
+        timezone: project.timezone ?? 'Africa/Nairobi',
+        fields: {
+          start: input.start ? new Date(input.start) : undefined,
+          expected_finish: input.planned_end_date ? new Date(input.planned_end_date) : undefined,
+          baseline_finish: input.planned_finish_date ? new Date(input.planned_finish_date) : undefined,
+          pct_work_complete: input.pct_work_complete,
+        },
+      }),
+    );
+
+    res.status(200).json({ status: 'success', data: result, message: 'Schedule task updated' });
+  } catch (err) {
+    if (err instanceof ScheduleTaskNotFoundError) {
+      res.status(404).json({ status: 'error', data: null, message: err.message });
+      return;
+    }
+    if (err instanceof ScheduleTaskNotEditableError) {
+      res.status(409).json({ status: 'error', data: null, message: err.message });
+      return;
+    }
     sendRouteError(res, err);
   }
 });

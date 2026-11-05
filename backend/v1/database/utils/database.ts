@@ -3076,8 +3076,9 @@ export class StageActivities {
   }
 
   /**
-   * AC-STG-12: updates the activity, and if that completes every activity on a Kickoff/Closure
-   * stage, auto-transitions the stage to complete in the same transaction (no manual button).
+   * AC-STG-12: updates the activity, then keeps a Kickoff/Closure stage's completion in sync in the
+   * same transaction (no manual button): it auto-completes once every activity is done, and reopens
+   * it back to active if an activity is reopened after the stage had completed.
    */
   static async updateAndAutoComplete(
     projectId: string,
@@ -3090,11 +3091,11 @@ export class StageActivities {
       if (!activity) return { activity: null, completedStage: null };
 
       let completedStage: ProjectStageWithDetailsRow | null = null;
-      if (patch.status === 'done') {
+      if (patch.status !== undefined) {
         const stage = await ProjectStages.get(projectId, activity.stage_no, trx);
-        if (stage && stage.kind !== 'pdm' && stage.state !== 'complete') {
+        if (stage && stage.kind !== 'pdm') {
           const fullyDone = await StageActivities.isStageFullyDone(projectId, activity.stage_no, trx);
-          if (fullyDone) {
+          if (fullyDone && stage.state !== 'complete') {
             const result = await ProjectStages.transition(
               {
                 projectId,
@@ -3106,6 +3107,17 @@ export class StageActivities {
               trx,
             );
             completedStage = result.stage;
+          } else if (!fullyDone && stage.state === 'complete') {
+            await ProjectStages.transition(
+              {
+                projectId,
+                stageNo: activity.stage_no,
+                toState: 'active',
+                actorId,
+                reason: 'auto: activity reopened',
+              },
+              trx,
+            );
           }
         }
       }

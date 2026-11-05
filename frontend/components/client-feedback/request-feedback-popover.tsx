@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Check, Copy, Mail, Plus } from "lucide-react";
+import { Check, Copy, LoaderCircle, Mail, Plus } from "lucide-react";
 import useOutsideClick from "@/hooks/use-outside-click";
 import Dropdown from "@/components/Dropdown";
 import { buildMailto } from "@/components/weekly-submission/mailto";
@@ -90,17 +90,21 @@ export function RequestFeedbackPopover({
     >
       {step.mode === "choose" && (
         <div className="flex flex-col gap-[14px]">
-          <div>
+          {/* <div>
             <p className="text-[15px] font-semibold text-gca-dark">Request feedback</p>
-            <p className="mt-[2px] text-[12px] text-gca-show">Each contact gets their own private link.</p>
-          </div>
+            <p className="mt-[2px] text-[12px] text-gca-show">
+              Each contact gets their own private link.
+            </p>
+          </div> */}
 
           <div className="flex flex-col gap-[4px]">
             <label className="text-[13px] font-medium text-gca-dark">
-              Send to<span className="text-error-text">*</span>
+              Send to<span className="text-error-text ml-1">*</span>
             </label>
             {contacts.length === 0 ? (
-              <p className="text-[12px] text-gca-muted">No client contacts added for this project yet.</p>
+              <p className="text-[12px] text-gca-muted">
+                No client contacts added for this project yet.
+              </p>
             ) : (
               <div className="flex max-h-[220px] flex-col gap-[2px] overflow-y-auto">
                 {contacts.map((c) => (
@@ -112,8 +116,20 @@ export function RequestFeedbackPopover({
                       type="checkbox"
                       checked={selectedIds.has(c.contact_id)}
                       onChange={() => toggle(c.contact_id)}
-                      className="mt-[2px] size-[16px] accent-gca-green"
+                      className="peer sr-only"
                     />
+                    <span
+                      aria-hidden="true"
+                      className={`mt-[2px] flex size-[16px] shrink-0 items-center justify-center rounded-[4px] border-2 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-gca-green ${
+                        selectedIds.has(c.contact_id)
+                          ? "border-gca-green bg-gca-green"
+                          : "border-gca-border"
+                      }`}
+                    >
+                      {selectedIds.has(c.contact_id) && (
+                        <Check className="size-[11px] text-gca-on-accent" />
+                      )}
+                    </span>
                     <span>
                       <span className="block text-[13px] font-medium text-gca-dark">
                         {c.name}
@@ -129,7 +145,7 @@ export function RequestFeedbackPopover({
 
           <div className="flex flex-col gap-[4px]">
             <label className="text-[13px] font-medium text-gca-dark">
-              Link expires<span className="text-error-text">*</span>
+              Link expires<span className="text-error-text ml-1">*</span>
             </label>
             <Dropdown
               id="feedback-expiry"
@@ -140,20 +156,22 @@ export function RequestFeedbackPopover({
             />
           </div>
 
-          <div className="flex items-center justify-between gap-[12px] border-t border-gca-border pt-[12px]">
-            <span className="text-[12px] text-gca-muted">
+          <div className="flex items-center justify-end gap-[12px] border-t border-gca-border pt-[12px]">
+            {/* <span className="text-[12px] text-gca-muted">
               {selectedIds.size} contact{selectedIds.size === 1 ? "" : "s"} selected
-            </span>
+            </span> */}
             <button
               onClick={generate}
               disabled={selectedIds.size === 0 || sending}
-              className="cursor-pointer rounded-[8px] bg-gca-green px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
+              className="flex w-[170px] items-center justify-center rounded-[8px] bg-gca-green px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50 sm:w-[190px]"
             >
-              {sending
-                ? "Generating…"
-                : selectedIds.size > 1
-                  ? `Generate ${selectedIds.size} links`
-                  : "Generate link"}
+              {sending ? (
+                <LoaderCircle className="size-[16px] animate-spin" aria-hidden="true" />
+              ) : selectedIds.size > 1 ? (
+                `Generate ${selectedIds.size} links`
+              ) : (
+                "Generate link"
+              )}
             </button>
           </div>
         </div>
@@ -161,17 +179,19 @@ export function RequestFeedbackPopover({
 
       {step.mode === "ready" && (
         <div className="flex flex-col gap-[12px]">
-          <div className="flex items-center gap-[8px]">
+          {/* <div className="flex items-center gap-[8px]">
             <Check className="size-[16px] text-gca-green" />
             <p className="text-[15px] font-semibold text-gca-dark">
               {step.requests.length > 1 ? `${step.requests.length} links ready` : "Link ready"}
             </p>
-          </div>
+          </div> */}
 
           <div className="flex flex-col gap-[10px]">
             {step.requests.map((request) => (
               <div key={request.request_id} className="flex flex-col gap-[4px]">
-                <span className="text-[12px] font-medium text-gca-dark">{request.contact_name}</span>
+                <span className="text-[12px] font-medium text-gca-dark">
+                  {request.contact_name}
+                </span>
                 <div className="flex items-center gap-[6px]">
                   <span className="flex-1 truncate rounded-[8px] border border-gca-border px-[10px] py-[7px] text-[12px] text-gca-show">
                     {feedbackLink(request.token)}
@@ -197,7 +217,9 @@ export function RequestFeedbackPopover({
               <>
                 <button
                   onClick={() =>
-                    navigator.clipboard.writeText(step.requests.map((r) => feedbackLink(r.token)).join("\n"))
+                    navigator.clipboard.writeText(
+                      step.requests.map((r) => feedbackLink(r.token)).join("\n"),
+                    )
                   }
                   className="flex cursor-pointer items-center gap-[8px] rounded-[8px] px-[6px] py-[8px] text-[13px] text-gca-dark hover:bg-gca-page-bg"
                 >

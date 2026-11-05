@@ -210,29 +210,70 @@ export function StagePipeline({
                 ? (percentByStage[s.stage_no] ?? 0)
                 : 0;
 
-          const gateColor =
-            s.kind === "kickoff" ? "blue" : s.kind === "closure" ? "orange" : null;
+          const isGate = s.kind === "kickoff" || s.kind === "closure";
+          const gateMargin = s.kind === "kickoff" ? "mr-[16px]" : s.kind === "closure" ? "ml-[16px]" : "";
+          const gateStatusLabel = !checked
+            ? "Out of scope"
+            : s.state === "complete"
+              ? "Done"
+              : s.state === "active"
+                ? `${pct}%`
+                : STATE_LABEL[s.state];
 
-          const columnClassName = "flex w-[98px] shrink-0 flex-col gap-[6px]";
-          const columnContent = (
+          const gateFilled = checked && (s.state === "active" || s.state === "complete");
+          const columnClassName = isGate
+            ? `relative flex w-[108px] shrink-0 flex-col justify-center gap-[2px] overflow-hidden rounded-[10px] px-[14px] py-[10px] ${gateMargin} ${
+                gateFilled ? "bg-gca-page-bg" : "border border-gca-border bg-gca-surface"
+              }`
+            : "flex w-[98px] shrink-0 flex-col gap-[6px]";
+          const columnContent = isGate ? (
+            <>
+              {gateFilled && (
+                <div
+                  className={`pointer-events-none absolute inset-y-0 left-0 bg-gca-badge-bg ${
+                    pct > 0 && pct < 100 ? "border-r-2 border-gca-green" : ""
+                  }`}
+                  style={{ width: `${pct}%` }}
+                />
+              )}
+              <div className="relative flex items-center gap-[6px]">
+                {editMode && !locked && (
+                  <button
+                    onClick={() => toggleScope(s.stage_no, locked)}
+                    className="flex size-[18px] shrink-0 items-center justify-center border-2 border-gca-border rounded-[4px]"
+                  >
+                    {checked && <Check className="size-[12px] text-gca-green" />}
+                  </button>
+                )}
+                <p
+                  className={`truncate text-[13px] font-semibold ${
+                    gateFilled ? "text-gca-badge-text" : "text-gca-dark"
+                  }`}
+                >
+                  {STAGE_SHORT_NAME[s.stage_no]}
+                </p>
+              </div>
+              <p
+                className={`relative text-[12px] ${
+                  gateFilled ? "text-gca-green" : "text-gca-muted"
+                }`}
+              >
+                {gateStatusLabel}
+              </p>
+            </>
+          ) : (
             <>
               {s.in_scope ? (
                 <div className="h-[6px] w-[98px] overflow-hidden rounded-[3px] bg-gca-border">
                   <div
                     className={`h-[6px] rounded-[3px] ${
-                      gateColor === "blue"
-                        ? "bg-blue-500/35"
-                        : gateColor === "orange"
-                          ? "bg-orange-500/35"
-                          : s.state === "complete"
-                            ? "bg-gca-green/55"
-                            : "bg-gca-green"
+                      s.state === "complete" ? "bg-gca-green/55" : "bg-gca-green"
                     }`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
               ) : (
-                <div className="h-[6px] w-[98px] rounded-[3px] border border-dashed border-gca-border" />
+                <div className="h-[6px] w-[98px] rounded-[3px] border border-dashed border-gca-muted" />
               )}
               <div className="flex gap-[6px] items-center">
                 {editMode && (
@@ -253,13 +294,7 @@ export function StagePipeline({
 
                 <p
                   className={`text-[12px] w-[98px] truncate font-medium ${
-                    gateColor === "blue"
-                      ? "text-blue-600/45"
-                      : gateColor === "orange"
-                        ? "text-orange-600/45"
-                        : s.state === "active"
-                          ? "font-semibold text-gca-dark"
-                          : "text-gca-muted"
+                    s.state === "active" ? "font-semibold text-gca-dark" : "text-gca-muted"
                   }`}
                 >
                   {STAGE_SHORT_NAME[s.stage_no]}
@@ -268,20 +303,10 @@ export function StagePipeline({
 
               <p
                 className={`text-[12px] w-[98px] ${
-                  gateColor === "blue"
-                    ? "text-blue-600/45"
-                    : gateColor === "orange"
-                      ? "text-orange-600/45"
-                      : s.state === "active"
-                        ? "text-gca-green"
-                        : "text-gca-muted"
+                  s.state === "active" ? "text-gca-green" : "text-gca-muted"
                 }`}
               >
-                {!checked
-                  ? "Out of scope"
-                  : s.state === "active"
-                    ? `${pct}%`
-                    : STATE_LABEL[s.state]}
+                {gateStatusLabel}
               </p>
             </>
           );

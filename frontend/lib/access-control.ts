@@ -88,6 +88,16 @@ export const CAN_MANAGE_PROJECT: Permission[] = [
  */
 export const CAN_UPLOAD_SCHEDULE: Permission[] = [{ role: "Planner", scopeType: "project" }];
 
+/** Mirrors the backend's schedule-router canManage exactly (also used for reconciliation-flag
+ *  acknowledge) — Planner is included here, unlike CAN_MANAGE_PROJECT, since Planner owns the
+ *  schedule day to day. */
+export const CAN_EDIT_SCHEDULE_TASK: Permission[] = [
+  { role: "Admin", scopeType: "global" },
+  { role: "ExCo", scopeType: "global" },
+  { role: "PM", scopeType: "project" },
+  { role: "Planner", scopeType: "project" },
+];
+
 /** Mirrors the backend's canDeleteProject (projectsRouter.ts) exactly. */
 export const CAN_DELETE_PROJECT: Permission[] = [{ role: "Admin", scopeType: "global" }];
 

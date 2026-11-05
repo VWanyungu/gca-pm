@@ -1,5 +1,5 @@
 import type { Knex } from 'knex';
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash } from 'crypto';
 import db from '../database/dbSetup.js';
 import {
   MppParseError,
@@ -10,7 +10,7 @@ import {
   type ParseDiagnostic,
 } from './mppParser.js';
 import { fetchObjectBytes } from './objectStorage.js';
-import { FileObjects } from '../database/utils/database.js';
+import { FileObjects, ScheduleVersions } from '../database/utils/database.js';
 import {
   autoResolveOverdueRisks,
   countOverdueTasks,
@@ -331,6 +331,97 @@ export async function applyParsedSchedule(
 
     return summary;
   });
+}
+
+/**
+ * Gives a brand-new project an initial schedule with nothing in it but a project-summary
+ * row, named after the project, so the Schedule tab is never empty and the PM can start
+ * recording actual progress, start and end dates immediately instead of waiting on a
+ * Planner's first real upload.
+ *
+ * No file was ever uploaded, so there is nothing for storeObject to sniff an OLE2 signature
+ * out of — the file_object row is written directly, with a storage_key that names what it
+ * is rather than a real Cloudinary object. Downloading this placeholder from Schedule
+ * History will fail; the main Schedule screen's own Export button is unaffected, since it
+ * rebuilds the file from current task data rather than reading this one back.
+ */
+export async function seedInitialScheduleSummary(
+  project: { project_id: string; name: string; expected_start_date: string | null; expected_end_date: string | null },
+  createdBy: string,
+): Promise<void> {
+  const startDate = project.expected_start_date ?? todayUtcDate();
+  const finishDate = project.expected_end_date ?? addDays(startDate, 90);
+  const start = `${startDate}T08:00:00`;
+  const finish = `${finishDate}T17:00:00`;
+
+  const placeholder = Buffer.from(
+    `Mock initial schedule for ${project.name} — no file was uploaded.`,
+    'utf8',
+  );
+  const fileObject = await FileObjects.create({
+    project_id: project.project_id,
+    purpose: 'schedule_mpp',
+    storage_key: `system:initial-schedule:${project.project_id}`,
+    original_filename: `${project.name}-initial.mpp`,
+    mime_type: 'application/vnd.ms-project',
+    size_bytes: placeholder.length,
+    sha256: createHash('sha256').update(placeholder).digest('hex'),
+    status: 'available',
+    uploaded_by: createdBy,
+  });
+
+  const version = await ScheduleVersions.createQueued({
+    project_id: project.project_id,
+    upload_kind: 'initial_baseline',
+    scope_mode: 'every_task',
+    source_file_id: fileObject.file_id,
+    file_sha256: fileObject.sha256,
+    uploaded_by: createdBy,
+    notes: 'Auto-generated on project creation: one project-summary row, nothing else.',
+  });
+
+  await applyParsedSchedule(version.schedule_version_id, project.project_id, {
+    status_date: null,
+    project_name: project.name,
+    task_count: 1,
+    tasks: [
+      {
+        mpp_unique_id: 1,
+        parent_mpp_unique_id: null,
+        outline_level: 1,
+        wbs: '1',
+        task_name: project.name,
+        duration_minutes: Math.round((Date.parse(finish) - Date.parse(start)) / 60_000),
+        baseline_start: null,
+        baseline_finish: null,
+        start,
+        expected_finish: finish,
+        actual_start: null,
+        actual_finish: null,
+        pct_work_complete: 0,
+        planned_pct_complete: 0,
+        is_milestone: false,
+        is_summary: false,
+        is_critical: false,
+        is_active: true,
+        task_type: 'fixed_units',
+        predecessors: [],
+        resource_names: [],
+      },
+    ],
+  });
+}
+
+function todayUtcDate(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** Calendar addition on the date part alone — done in UTC so no server-local offset can
+ *  shift the result onto a different calendar day. */
+function addDays(isoDate: string, days: number): string {
+  const d = new Date(`${isoDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
 }
 
 /**

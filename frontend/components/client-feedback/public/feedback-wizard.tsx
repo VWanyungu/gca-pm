@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
 import { Check, Lock, Moon, Star, Sun } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useTheme } from "@/components/theme-provider";
@@ -35,7 +36,7 @@ interface Submitted {
   rating_schedule: number;
 }
 
-type Step = "welcome" | 1 | 2 | 3 | 4 | 5 | "done";
+type Step = "welcome" | 1 | 2 | 3 | 4 | "comment" | "done";
 
 type ScaleField = "overall" | "quality" | "updates" | "schedule";
 
@@ -81,6 +82,13 @@ const SCALE_QUESTIONS: {
   },
 ];
 
+const NEXT_STEP: Record<1 | 2 | 3 | 4, Step> = {
+  1: 2,
+  2: 3,
+  3: 4,
+  4: "comment",
+};
+
 function ThemeToggle() {
   const { toggle } = useTheme();
   return (
@@ -99,17 +107,14 @@ function ThemeToggle() {
   );
 }
 
-function TopBar({ projectName, right }: { projectName: string; right: string }) {
+function TopBar({ right }: { right: string }) {
   return (
     <div className="flex items-center justify-between gap-[12px]">
-      <span className="flex items-center gap-[8px] rounded-full border border-gca-border bg-gca-surface px-[14px] py-[8px] text-[13px] font-medium text-gca-dark">
-        <span className="size-[6px] rounded-full bg-gca-green" />
-        {projectName}
-      </span>
+      <Image src="/GCA Logo.svg" alt="Gas Connect Africa" width={120} height={43} priority />
       <span className="flex items-center gap-[10px]">
-        <span className="rounded-full border border-gca-border bg-gca-surface px-[14px] py-[8px] text-[13px] font-medium text-gca-show">
+        {/* <span className="rounded-full border border-gca-border bg-gca-surface px-[14px] py-[8px] text-[13px] font-medium text-gca-show">
           {right}
-        </span>
+        </span> */}
         <ThemeToggle />
       </span>
     </div>
@@ -118,8 +123,8 @@ function TopBar({ projectName, right }: { projectName: string; right: string }) 
 
 function ProgressBar({ answered }: { answered: number }) {
   return (
-    <div className="flex gap-[6px]">
-      {[0, 1, 2, 3, 4].map((i) => (
+    <div className="flex gap-[6px] pb-[48px]">
+      {[0, 1, 2, 3].map((i) => (
         <span
           key={i}
           className={`h-[3px] flex-1 rounded-full ${i < answered ? "bg-gca-green" : "bg-gca-border"}`}
@@ -131,7 +136,7 @@ function ProgressBar({ answered }: { answered: number }) {
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative z-10 flex w-full max-w-[358px] flex-col gap-[20px] rounded-[16px] border border-gca-border bg-gca-surface p-[24px] shadow-[0px_20px_60px_0px_rgba(0,0,0,0.25)]">
+    <div className="feedback-wizard-card relative z-10 flex w-full max-w-[358px] flex-col gap-[20px] rounded-[16px] border border-gca-border bg-gca-surface p-[24px] pb-[48px] text-center">
       {children}
     </div>
   );
@@ -147,11 +152,16 @@ function Glow() {
 }
 
 export function FeedbackWizard({ token }: { token: string }) {
-  const { data, isLoading, error: fetchError } = useQuery({
+  const {
+    data,
+    isLoading,
+    error: fetchError,
+  } = useQuery({
     queryKey: ["feedback-link", token],
     queryFn: async () => {
       const res = await api.get<FeedbackLinkData>(`/feedback/${token}`, { silent: true });
-      if (res.status !== "success" || !res.data) throw new Error(res.message || "Feedback link not found");
+      if (res.status !== "success" || !res.data)
+        throw new Error(res.message || "Feedback link not found");
       return res.data;
     },
     retry: false,
@@ -195,7 +205,7 @@ export function FeedbackWizard({ token }: { token: string }) {
   const shell = (children: React.ReactNode, right: string) => (
     <div className="relative flex min-h-screen w-full flex-col overflow-hidden bg-[var(--background)] px-[20px] py-[24px]">
       <div className="relative z-10 mx-auto flex w-full max-w-[600px] flex-1 flex-col gap-[40px]">
-        <TopBar projectName={data?.project_name ?? "Gas Connect Africa"} right={right} />
+        <TopBar right={right} />
         <div className="flex flex-1 items-center justify-center">{children}</div>
       </div>
       <Glow />
@@ -264,21 +274,23 @@ export function FeedbackWizard({ token }: { token: string }) {
     };
     return shell(
       <Card>
-        <ProgressBar answered={5} />
-        <div className="flex size-[48px] items-center justify-center rounded-full bg-gca-badge-bg">
-          <Check className="size-[22px] text-gca-green" />
+        {/* <ProgressBar answered={4} /> */}
+        <div className="flex w-full items-center justify-center">
+          <div className="flex size-[48px] items-center justify-center rounded-full bg-gca-badge-bg">
+            <Check className="size-[22px] text-gca-green" />
+          </div>
         </div>
         <div>
-          <h1 className="text-[22px] font-semibold text-gca-dark">Thanks, {data.contact_name.split(" ")[0]}</h1>
-          <p className="mt-[8px] text-[13px] text-gca-show">
-            Your feedback has gone to the {data.project_name} team. You can close this page.
-          </p>
+          <h1 className="text-[22px] font-semibold text-gca-dark">
+            Thanks {data.contact_name.split(" ")[0]}
+          </h1>
+          <p className="mt-[8px] text-[13px] text-gca-show">Your feedback has been recorded</p>
         </div>
-        <div className="flex flex-col gap-[10px] border-t border-gca-border pt-[14px]">
+        <div className="flex flex-col gap-[10px] py-[14px]">
           <SummaryRow label="Overall" value={result.rating_overall} />
           <SummaryRow label="Quality of work" value={result.rating_quality} />
           <SummaryRow label="Updates" value={result.rating_updates} />
-          <SummaryRow label="Schedule" value={result.rating_schedule} />
+          <SummaryRow className="border-none" label="Schedule" value={result.rating_schedule} />
         </div>
       </Card>,
       "Done",
@@ -290,12 +302,9 @@ export function FeedbackWizard({ token }: { token: string }) {
       <Card>
         <ProgressBar answered={0} />
         <div>
-          <h1 className="text-[22px] font-semibold text-gca-dark">
-            How are we doing on the {data.about.toLowerCase()}?
-          </h1>
+          <h1 className="text-[22px] text-gca-dark">How are we doing on {data.project_name}?</h1>
           <p className="mt-[10px] text-[13px] text-gca-show">
-            Five quick questions about the work so far. It takes about 2 minutes and no login is
-            needed.
+            Four quick questions about the work so far
           </p>
         </div>
         <button
@@ -304,11 +313,8 @@ export function FeedbackWizard({ token }: { token: string }) {
         >
           Start
         </button>
-        <p className="text-center text-[12px] text-gca-muted">
-          Your answers go to the GCA project team. This link works once.
-        </p>
       </Card>,
-      "5 questions",
+      "4 questions",
     );
   }
 
@@ -318,14 +324,14 @@ export function FeedbackWizard({ token }: { token: string }) {
     return shell(
       <Card>
         <ProgressBar answered={question.step} />
-        <h2 className="text-[19px] font-semibold text-gca-dark">{question.text}</h2>
+        <h2 className="text-[19px] text-gca-dark">{question.text}</h2>
         {question.kind === "stars" ? (
           <div className="flex flex-col gap-[8px]">
-            <div className="flex gap-[10px]">
+            <div className="flex gap-[10px] justify-between">
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
                   key={n}
-                  onClick={() => answerAndAdvance(question.field, n, (question.step + 1) as Step)}
+                  onClick={() => answerAndAdvance(question.field, n, NEXT_STEP[question.step])}
                   aria-label={`${n} star${n === 1 ? "" : "s"}`}
                   className="cursor-pointer"
                 >
@@ -339,11 +345,13 @@ export function FeedbackWizard({ token }: { token: string }) {
                 </button>
               ))}
             </div>
-            <div className="flex justify-between text-[12px] text-gca-muted">
+            {/* <div className="flex justify-between text-[12px] text-gca-muted">
               <span>{question.low}</span>
               <span>{question.high}</span>
-            </div>
-            <p className="pt-[8px] text-center text-[13px] text-gca-muted">Tap a number to continue</p>
+            </div> */}
+            {/* <p className="pt-[8px] text-center text-[13px] text-gca-muted">
+              Give a rating to continue
+            </p> */}
           </div>
         ) : (
           <div className="flex flex-col gap-[8px]">
@@ -351,19 +359,19 @@ export function FeedbackWizard({ token }: { token: string }) {
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
                   key={n}
-                  onClick={() => answerAndAdvance(question.field, n, (question.step + 1) as Step)}
-                  className={`flex-1 cursor-pointer rounded-[10px] border py-[14px] text-[15px] font-semibold ${
+                  onClick={() => answerAndAdvance(question.field, n, NEXT_STEP[question.step])}
+                  className={`flex-1 cursor-pointer rounded-full border p-[14px] text-[15px] ${
                     value === n
                       ? "border-gca-green bg-gca-green text-gca-on-accent"
-                      : "border-gca-border text-gca-dark hover:bg-gca-page-bg"
+                      : "border-gca-border text-gca-dark hover:border-gca-green"
                   }`}
                 >
                   {n}
                 </button>
               ))}
             </div>
-            <div className="flex justify-between text-[12px] text-gca-muted">
-              <span>{question.low}</span>
+            <div className="flex justify-between text-[12px] text-gca-muted mt-2 font-extralight">
+              <span className="px-[14px] text-center">{question.low}</span>
               <span>{question.high}</span>
             </div>
           </div>
@@ -377,46 +385,61 @@ export function FeedbackWizard({ token }: { token: string }) {
           </button>
         )}
       </Card>,
-      `Question ${question.step} / 5`,
+      `Question ${question.step} / 4`,
     );
   }
 
-  // step === 5: the optional comment, then send.
-  return shell(
-    <Card>
-      <ProgressBar answered={5} />
-      <h2 className="text-[19px] font-semibold text-gca-dark">Anything you&apos;d like to tell the team?</h2>
-      <textarea
-        value={answers.comment ?? ""}
-        onChange={(e) => setAnswers((prev) => ({ ...prev, comment: e.target.value }))}
-        rows={4}
-        placeholder="Optional"
-        className="rounded-[10px] border border-gca-border bg-[var(--background)] p-[14px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
-      />
-      {submitError && <p className="text-[12px] text-error-text">{submitError}</p>}
-      <button
-        onClick={submit}
-        disabled={submitting}
-        className="cursor-pointer rounded-[10px] bg-gca-green py-[13px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
-      >
-        {submitting ? "Sending…" : "Send feedback"}
-      </button>
-      <button
-        onClick={() => setStep(4)}
-        className="cursor-pointer self-center text-[13px] font-medium text-gca-green"
-      >
-        Back
-      </button>
-    </Card>,
-    "Question 5 / 5",
-  );
+  if (step === "comment") {
+    return shell(
+      <Card>
+        <ProgressBar answered={4} />
+        <h2 className="text-[19px] text-gca-dark">Anything you&apos;d like to tell the team?</h2>
+        <textarea
+          value={answers.comment ?? ""}
+          onChange={(e) => setAnswers((prev) => ({ ...prev, comment: e.target.value }))}
+          rows={4}
+          placeholder="Optional"
+          className="rounded-[10px] border border-gca-border bg-[var(--background)] p-[14px] text-[14px] text-gca-dark outline-none focus:border-gca-green"
+        />
+        {submitError && <p className="text-[12px] text-error-text">{submitError}</p>}
+        <button
+          onClick={submit}
+          disabled={submitting}
+          className="cursor-pointer rounded-[10px] bg-gca-green py-[13px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+        >
+          {submitting ? "Sending…" : "Send feedback"}
+        </button>
+        <button
+          onClick={() => setStep(4)}
+          className="cursor-pointer self-center text-[13px] font-medium text-gca-green"
+        >
+          Back
+        </button>
+      </Card>,
+      "Optional",
+    );
+  }
+
+  return null;
 }
 
-function SummaryRow({ label, value }: { label: string; value: number }) {
+function SummaryRow({
+  label,
+  value,
+  className,
+}: {
+  label: string;
+  value: number;
+  className?: string;
+}) {
   return (
-    <div className="flex items-center justify-between text-[13px]">
+    <div
+      className={`flex items-center justify-between text-[13px] py-[6px] border-b border-gca-border ${className ?? ""}`}
+    >
       <span className="text-gca-show">{label}</span>
-      <span className="font-semibold text-gca-dark">{value} / 5</span>
+      <span className="text-gca-muted">
+        <span className="text-gca-dark text-2xl font-light">{value}</span> / 5
+      </span>
     </div>
   );
 }

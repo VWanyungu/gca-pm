@@ -334,6 +334,14 @@ export function clampToWindow(start: Date, end: Date, window: DateWindow): { sta
   return { start: clampedStart, end: clampedEnd < clampedStart ? clampedStart : clampedEnd };
 }
 
+/** A leaf task is always editable. The project's single top-level row is editable only while
+ *  it has no child tasks at all — once leaf tasks exist it is computed from them instead
+ *  (mirrors the backend's editScheduleTask rule). */
+export function canEditScheduleTask(task: ScheduleTask, allTasks: ScheduleTask[]): boolean {
+  if (!task.is_summary) return true;
+  return !allTasks.some((t) => !t.is_summary);
+}
+
 export function taskStatusLabel(t: ScheduleTask): { label: string; className: string } {
   if (Number(t.pct_work_complete) >= 100) return { label: "Done", className: "text-gca-green" };
   if (t.is_overdue) return { label: "Overdue", className: "text-error-text" };
