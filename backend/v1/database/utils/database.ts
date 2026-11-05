@@ -2940,6 +2940,9 @@ export class StageActivities {
    *  fills in any missing ones (e.g. a project created before templates existed) and syncs the
    *  title/description/requires_attachment of ones already linked to a template, without
    *  touching their status, owner or due date. */
+  /** Re-copies templates onto the stage's activities; if that adds a new open activity to an
+   *  already-complete gate, reopens it to active (AC-STG-12 in reverse) so the Kickoff banner
+   *  and lock reappear. */
   static async syncFromTemplates(
     projectId: string,
     stageNo: 0 | 11,
@@ -2994,6 +2997,22 @@ export class StageActivities {
             requires_attachment: template.requires_attachment,
           });
           updated++;
+        }
+      }
+
+      if (created > 0) {
+        const stage = await ProjectStages.get(projectId, stageNo, trx);
+        if (stage && stage.state === 'complete') {
+          await ProjectStages.transition(
+            {
+              projectId,
+              stageNo,
+              toState: 'active',
+              actorId,
+              reason: 'auto: new activity added by sync',
+            },
+            trx,
+          );
         }
       }
 

@@ -74,7 +74,7 @@ function buildColumns(
     {
       id: "task",
       header: "Task",
-      meta: { className: "w-[24%]" },
+      meta: { className: "min-w-0 flex-1" },
       cell: ({ row }) => {
         const t = row.original;
         const isPhase = t.outline_level === level;
@@ -126,7 +126,7 @@ function buildColumns(
     {
       id: "progress",
       header: "Progress",
-      meta: { className: "w-[9%]" },
+      meta: { className: "w-[64px] shrink-0" },
       cell: ({ row }) => {
         const t = row.original;
         const isGroup = t.is_summary;
@@ -154,7 +154,7 @@ function buildColumns(
     {
       id: "planned",
       header: "Planned",
-      meta: { className: "w-[9%]" },
+      meta: { className: "w-[60px] shrink-0" },
       cell: ({ row }) => {
         const t = row.original;
         const isGroup = t.is_summary;
@@ -173,7 +173,7 @@ function buildColumns(
     {
       id: "workDays",
       header: "Work days",
-      meta: { className: "w-[9%]" },
+      meta: { className: "w-[80px] shrink-0" },
       cell: ({ row }) => (
         <p className="font-mono text-[13px] text-gca-dark">
           {workDays(row.original.duration_minutes)}
@@ -183,7 +183,7 @@ function buildColumns(
     {
       id: "start",
       header: "Start",
-      meta: { className: "w-[10%]" },
+      meta: { className: "w-[64px] shrink-0" },
       cell: ({ row }) => {
         const t = row.original;
         const draft = editing.snapshot.current.draft;
@@ -204,7 +204,7 @@ function buildColumns(
     {
       id: "plannedFinish",
       header: "Planned finish",
-      meta: { className: "w-[11%]" },
+      meta: { className: "w-[104px] shrink-0" },
       cell: ({ row }) => {
         const t = row.original;
         const draft = editing.snapshot.current.draft;
@@ -226,7 +226,7 @@ function buildColumns(
     {
       id: "forecast",
       header: "Forecast",
-      meta: { className: "w-[11%]" },
+      meta: { className: "w-[76px] shrink-0" },
       cell: ({ row }) => {
         const t = row.original;
         const draft = editing.snapshot.current.draft;
@@ -250,7 +250,7 @@ function buildColumns(
     {
       id: "status",
       header: "Status",
-      meta: { className: "w-[15%]" },
+      meta: { className: "w-[92px] shrink-0" },
       cell: ({ row }) => {
         const t = row.original;
         const isGroup = t.is_summary;
@@ -267,7 +267,7 @@ function buildColumns(
     {
       id: "edit",
       header: "",
-      meta: { className: "w-[6%]" },
+      meta: { className: "w-[32px] shrink-0" },
       cell: ({ row }) => {
         const t = row.original;
         const { draft, isSaving } = editing.snapshot.current;
@@ -478,7 +478,7 @@ export function ScheduleTable({ tasks, window, canEdit = false, projectId }: Sch
             ))}
           </div>
 
-          <div ref={scrollContainerRef} className="max-h-[520px] overflow-y-auto">
+          <div ref={scrollContainerRef} className="max-h-[520px] overflow-y-auto overflow-x-hidden">
             {table.getRowModel().rows.map((row, i) => {
               const isPhase = row.original.outline_level === level;
               const isEditing = editDraft?.taskId === row.original.task_id;
@@ -486,7 +486,7 @@ export function ScheduleTable({ tasks, window, canEdit = false, projectId }: Sch
                 <div
                   className={`flex w-full items-center gap-[10px] px-[16px] ${
                     isPhase ? "bg-gca-badge-bg py-[10px]" : "py-[12px]"
-                  } ${!isEditing && i > 0 ? "border-t border-gca-border" : "rounded-[8px]"}`}
+                  } ${!isEditing && i > 0 ? "border-t border-gca-border" : ""}`}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <span
@@ -503,7 +503,7 @@ export function ScheduleTable({ tasks, window, canEdit = false, projectId }: Sch
               );
               if (!isEditing) return <Fragment key={row.id}>{rowContent}</Fragment>;
               return (
-                <div key={row.id} className="rounded-[8px] border-2 border-gca-green">
+                <div key={row.id} className="border border-gca-green">
                   {rowContent}
                   {editDraft.error && (
                     <p className="px-[16px] pb-[10px] text-[12px] text-error-text">

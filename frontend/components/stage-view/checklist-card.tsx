@@ -74,9 +74,9 @@ export function ChecklistCard({
     <div className="flex w-full flex-col gap-[12px]">
       <div className="flex flex-col gap-[2px]">
         <p className="text-[16px] font-semibold text-gca-dark">Checklist</p>
-        <p className="text-[13px] text-gca-show">
+        {/* <p className="text-[13px] text-gca-show">
           {doneCount} of {items.length} done · saved to this project
-        </p>
+        </p> */}
       </div>
 
       <div className="flex flex-col">

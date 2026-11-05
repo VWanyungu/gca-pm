@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { Download, LoaderCircle, Search, Upload } from "lucide-react";
+import { Download, LoaderCircle, Search, Upload, Dot } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import useOutsideClick from "@/hooks/use-outside-click";
 import {
@@ -454,11 +454,13 @@ export function ScheduleView({ projectId }: { projectId: string }) {
             {formatShortDate(lookaheadWindow.end.toISOString())}
           </span>
 
-          <span>
-            {lookaheadSummary.tasks} tasks · {lookaheadSummary.milestones} milestone
-            {lookaheadSummary.milestones === 1 ? "" : "s"} · {lookaheadSummary.overdueCarried}{" "}
-            overdue carried over
-          </span>
+          <div className="flex items-center gap-[6px]">
+            <span>{lookaheadSummary.tasks} tasks</span>
+            <Dot size={18} />
+            <span> {lookaheadSummary.milestones} milestone{lookaheadSummary.milestones === 1 ? "" : "s"}</span>
+            <Dot size={18} />
+            <span>{lookaheadSummary.overdueCarried}{" "}overdue carried over</span>
+          </div>
         </div>
       )}
 

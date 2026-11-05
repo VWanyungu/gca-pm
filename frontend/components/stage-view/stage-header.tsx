@@ -34,8 +34,8 @@ interface StageHeaderProps {
 }
 
 const GATE_LABEL: Record<string, string> = {
-  kickoff: "Kickoff",
-  closure: "Closure",
+  kickoff: "Project kickoff",
+  closure: "Project closure",
 };
 
 const GATE_TEXT_CLASS: Record<string, string> = {
@@ -73,13 +73,15 @@ export function StageHeader({
             isGateStage ? GATE_TEXT_CLASS[stage.kind] : "text-gca-muted"
           }`}
         >
-          {isGateStage ? GATE_LABEL[stage.kind] : `Stage ${stageNo}`}
+          {/* {isGateStage ? GATE_LABEL[stage.kind] : `Stage ${stageNo}`} */}
+          {isGateStage ? "" : `Stage ${stageNo}`}
         </p>
         <h1 className="text-[22px] font-semibold tracking-[-0.33px] text-gca-dark text-balance">
-          {stage.stage_name}
+          {isGateStage ? GATE_LABEL[stage.kind] : stage.stage_name}
         </h1>
         <p className="text-[13px] text-gca-show">
-          {isGateStage ? `${doneCount} of ${totalCount} activities done` : subtitle}
+          {/* isGateStage ? `${doneCount} of ${totalCount} activities done` : subtitle */}
+          {isGateStage ? `` : subtitle}
         </p>
       </div>
       {canManage && (
