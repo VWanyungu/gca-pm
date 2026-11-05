@@ -183,7 +183,7 @@ function buildColumns(
     {
       id: "start",
       header: "Start",
-      meta: { className: "w-[64px] shrink-0" },
+      meta: { className: "w-[140px] shrink-0" },
       cell: ({ row }) => {
         const t = row.original;
         const draft = editing.snapshot.current.draft;
@@ -204,7 +204,7 @@ function buildColumns(
     {
       id: "plannedFinish",
       header: "Planned finish",
-      meta: { className: "w-[104px] shrink-0" },
+      meta: { className: "w-[140px] shrink-0" },
       cell: ({ row }) => {
         const t = row.original;
         const draft = editing.snapshot.current.draft;
@@ -226,7 +226,7 @@ function buildColumns(
     {
       id: "forecast",
       header: "Forecast",
-      meta: { className: "w-[76px] shrink-0" },
+      meta: { className: "w-[140px] shrink-0" },
       cell: ({ row }) => {
         const t = row.original;
         const draft = editing.snapshot.current.draft;
@@ -267,7 +267,7 @@ function buildColumns(
     {
       id: "edit",
       header: "",
-      meta: { className: "w-[32px] shrink-0" },
+      meta: { className: "w-[56px] shrink-0" },
       cell: ({ row }) => {
         const t = row.original;
         const { draft, isSaving } = editing.snapshot.current;

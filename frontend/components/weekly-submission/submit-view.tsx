@@ -100,7 +100,7 @@ export function SubmitView({
 
           {!weekSubmission?.draft && !weekSubmission?.approved && (
             <>
-              <div className="flex items-start justify-between">
+              {/* <div className="flex items-start justify-between">
                 <div>
                   <h1 className="text-[20px] font-semibold tracking-[-0.3px] text-gca-dark">
                     Week {weekNumber(weekStart)} submission
@@ -109,7 +109,7 @@ export function SubmitView({
                     {formatWeekPeriod(weekStart)}
                   </p>
                 </div>
-              </div>
+              </div> */}
 
               <div className="flex w-fit gap-[2px] rounded-[8px] bg-gca-page-bg p-[3px]">
                 <button

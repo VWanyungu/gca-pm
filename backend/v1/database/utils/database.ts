@@ -2674,10 +2674,13 @@ export class Projects {
     const map = new Map<string, { stage_no: number; stage_name: string }>();
     if (projectIds.length === 0) return map;
 
+    // Kickoff/Closure are gates, not real PDM stages — a project is never "shown" as being
+    // in one of them, so both queries below exclude kind='kickoff'/'closure'.
     const rows = await db('project_stage')
       .join('pdm_stage', 'project_stage.stage_no', 'pdm_stage.stage_no')
       .whereIn('project_stage.project_id', projectIds)
       .where('project_stage.state', 'active')
+      .where('pdm_stage.kind', 'pdm')
       .select('project_stage.project_id', 'project_stage.stage_no', 'pdm_stage.name as stage_name')
       .orderBy('project_stage.stage_no', 'asc');
 
@@ -2691,6 +2694,7 @@ export class Projects {
         .join('pdm_stage', 'project_stage.stage_no', 'pdm_stage.stage_no')
         .whereIn('project_stage.project_id', withoutCurrent)
         .where('project_stage.state', 'complete')
+        .where('pdm_stage.kind', 'pdm')
         .select('project_stage.project_id', 'project_stage.stage_no', 'pdm_stage.name as stage_name')
         .orderBy('project_stage.stage_no', 'asc');
       for (const row of completedRows) map.set(row.project_id, row);
@@ -6658,6 +6662,17 @@ export class WeeklySubmissions {
       await t('submission_addressed_risk')
         .where({ submission_id: submissionId, risk_id: riskId })
         .del();
+
+      // Removing the risk currently marked as the top risk must clear that designation too,
+      // otherwise top_risk_id dangles: it points at a risk no longer in addressed_risks, the
+      // UI shows "No top risks yet" while the ready-to-submit check still reads the stale text.
+      if (submission.top_risk_id === riskId) {
+        await t('weekly_submission').where({ submission_id: submissionId }).update({
+          top_risk_id: null,
+          top_risk_text: null,
+          top_action: null,
+        });
+      }
 
       return { success: true };
     };

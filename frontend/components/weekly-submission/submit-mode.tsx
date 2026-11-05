@@ -71,6 +71,8 @@ export function SubmitMode({
   const [commentary, setCommentary] = useState(submission.pm_commentary ?? "");
   const [addingRisk, setAddingRisk] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // "no-risks" | "clear" | a risk_id being marked/unmarked as the top risk | null
+  const [pendingRiskAction, setPendingRiskAction] = useState<string | null>(null);
 
   async function saveCommentary() {
     if (commentary === (submission.pm_commentary ?? "")) return;
@@ -84,30 +86,62 @@ export function SubmitMode({
   // own title/mitigation — no free-text entry. Marking again clears it.
   async function setTopRisk(risk: { risk_id: string; title: string; mitigation: string | null }) {
     const isCurrent = submission.top_risk_id === risk.risk_id;
-    await updateWeeklySubmission(projectId, submission.submission_id, {
-      top_risk_id: isCurrent ? null : risk.risk_id,
-      top_risk_text: isCurrent ? null : risk.title,
-      top_action: isCurrent ? null : (risk.mitigation ?? ""),
-    });
-    invalidate();
+    setPendingRiskAction(risk.risk_id);
+    try {
+      await updateWeeklySubmission(projectId, submission.submission_id, {
+        top_risk_id: isCurrent ? null : risk.risk_id,
+        top_risk_text: isCurrent ? null : risk.title,
+        top_action: isCurrent ? null : (risk.mitigation ?? ""),
+      });
+      invalidate();
+      if (!isCurrent && !risk.mitigation?.trim()) {
+        reportError(
+          `"${risk.title}" has no mitigation yet, so it can't satisfy the top risk requirement — add one on the risk before submitting.`,
+          {
+            actionLabel: "Go to Risks",
+            onAction: () => {
+              window.location.href = `/projects/${projectId}/risks`;
+            },
+          },
+        );
+      }
+    } catch (err) {
+      reportError(err instanceof Error ? err.message : "Couldn't update the top risk");
+    } finally {
+      setPendingRiskAction(null);
+    }
   }
 
   async function markNoRisksThisWeek() {
-    await updateWeeklySubmission(projectId, submission.submission_id, {
-      top_risk_id: null,
-      top_risk_text: "No significant risks this week.",
-      top_action: "No action needed.",
-    });
-    invalidate();
+    setPendingRiskAction("no-risks");
+    try {
+      await updateWeeklySubmission(projectId, submission.submission_id, {
+        top_risk_id: null,
+        top_risk_text: "No significant risks this week.",
+        top_action: "No action needed.",
+      });
+      invalidate();
+    } catch (err) {
+      reportError(err instanceof Error ? err.message : "Couldn't update");
+    } finally {
+      setPendingRiskAction(null);
+    }
   }
 
   async function clearTopRisk() {
-    await updateWeeklySubmission(projectId, submission.submission_id, {
-      top_risk_id: null,
-      top_risk_text: null,
-      top_action: null,
-    });
-    invalidate();
+    setPendingRiskAction("clear");
+    try {
+      await updateWeeklySubmission(projectId, submission.submission_id, {
+        top_risk_id: null,
+        top_risk_text: null,
+        top_action: null,
+      });
+      invalidate();
+    } catch (err) {
+      reportError(err instanceof Error ? err.message : "Couldn't clear the top risk");
+    } finally {
+      setPendingRiskAction(null);
+    }
   }
 
   const addressedRisks = submission.addressed_risks ?? [];
@@ -290,6 +324,7 @@ export function SubmitMode({
                     projectId={projectId}
                     submissionId={submission.submission_id}
                     alreadyAddressed={addressedRisks}
+                    currentTopRiskId={submission.top_risk_id}
                     team={team}
                     onDone={() => setAddingRisk(false)}
                     onCancel={() => setAddingRisk(false)}
@@ -299,7 +334,7 @@ export function SubmitMode({
 
               {addressedRisks.length === 0
                 ? !addingRisk &&
-                  (!submission.top_risk_id && submission.top_risk_text ? (
+                  (submission.top_risk_text ? (
                     <div className="flex items-center justify-between rounded-[8px] bg-gca-badge-bg px-[14px] py-[10px] text-[13px]">
                       <span className="font-medium text-gca-green">{submission.top_risk_text}</span>
                       <button onClick={clearTopRisk} className="cursor-pointer text-gca-muted">
@@ -327,9 +362,18 @@ export function SubmitMode({
                         {!submission.top_risk_text && (
                           <button
                             onClick={markNoRisksThisWeek}
-                            className="cursor-pointer text-[13px] font-medium text-gca-green"
+                            disabled={pendingRiskAction === "no-risks"}
+                            className="relative cursor-pointer text-[13px] font-medium text-gca-green disabled:opacity-50"
                           >
-                            No risks this week
+                            <span className={pendingRiskAction === "no-risks" ? "invisible" : undefined}>
+                              No risks this week
+                            </span>
+                            {pendingRiskAction === "no-risks" && (
+                              <LoaderCircle
+                                className="absolute left-1/2 top-1/2 size-[14px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                                aria-label="Loading"
+                              />
+                            )}
                           </button>
                         )}
                       </div>
@@ -342,6 +386,7 @@ export function SubmitMode({
                       projectId={projectId}
                       addressedRisk={risk}
                       isMainTopRisk={risk.risk_id === submission.top_risk_id}
+                      pending={pendingRiskAction === risk.risk_id}
                       team={team}
                       onMarkAsTopRisk={(title, mitigation) =>
                         setTopRisk({ risk_id: risk.risk_id, title, mitigation })

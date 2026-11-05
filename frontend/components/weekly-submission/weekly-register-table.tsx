@@ -157,16 +157,16 @@ export function WeeklyRegisterTable({
         </button>
       </div>
 
-      <div className="flex items-start justify-between">
+      {/* <div className="flex items-start justify-between">
         <div>
           <h1 className="text-[20px] font-semibold tracking-[-0.3px] text-gca-dark">
             Weekly register
           </h1>
           <p className="mt-[2px] text-[13px] text-gca-show">Submitted weeks for this project</p>
         </div>
-      </div>
+      </div> */}
 
-      <div className="flex flex-col gap-[12px] sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="flex flex-col gap-[12px] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <label className="flex h-[40px] w-full items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] sm:w-[260px]">
           <Search className="size-[14px] shrink-0 text-gca-muted" />
           <input
@@ -234,7 +234,7 @@ export function WeeklyRegisterTable({
           ))}
         </div>
         {submissions.length === 0 ? (
-          <p className="py-[24px] text-[13px] text-gca-muted">
+          <p className="py-[48px] text-[13px] text-gca-muted text-center">
             {hasActiveFilters ? "No weeks match these filters." : "No weeks submitted yet."}
           </p>
         ) : (

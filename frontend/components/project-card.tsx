@@ -42,7 +42,7 @@ export function ProjectCard({ project, canEdit }: { project: Project; canEdit: b
       <p className="text-[13px] text-gca-show">{project.client}</p>
 
       {/* Stage pill + SPI */}
-      <div className="flex min-w-0 items-center gap-[12px]">
+      <div className="flex min-w-0 items-center justify-between gap-[12px]">
         <span className="truncate whitespace-nowrap rounded-[6px] bg-gca-badge-bg px-[8px] py-[3px] text-[12px] font-medium text-gca-badge-text">
           {project.stage}
         </span>

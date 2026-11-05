@@ -225,97 +225,96 @@ export default function Home() {
           )}
         </div>
 
-        {/* Loading state */}
-        {loading && <LoadingSkeleton />}
+        {/* Toolbar — stays mounted across filter changes so the dropdowns never flash/rebuild;
+            only the results below swap to a skeleton while a new filter combination loads. */}
+        <div className="flex flex-col gap-[12px] lg:flex-row lg:items-center lg:justify-between">
+          {/* Search */}
+          <div className="flex w-full items-center gap-[10px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[11px] lg:w-[360px]">
+            <Search className="size-[14px] text-gca-muted" />
+            <input
+              type="text"
+              placeholder="Search projects"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="flex-1 bg-transparent text-[14px] text-gca-dark placeholder:text-gca-muted outline-none"
+            />
+          </div>
 
-        {/* Content */}
-        {!loading && !error && (
-          <>
-            {/* Toolbar */}
-            <div className="flex flex-col gap-[12px] lg:flex-row lg:items-center lg:justify-between">
-              {/* Search */}
-              <div className="flex w-full items-center gap-[10px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[11px] lg:w-[360px]">
-                <Search className="size-[14px] text-gca-muted" />
-                <input
-                  type="text"
-                  placeholder="Search projects"
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    setPage(1);
-                  }}
-                  className="flex-1 bg-transparent text-[14px] text-gca-dark placeholder:text-gca-muted outline-none"
-                />
-              </div>
-
-              <div className="flex flex-wrap items-center gap-[8px]">
-                {/* View switch */}
-                <div className="flex w-fit cursor-pointer gap-[4px] rounded-[10px] bg-gca-page-bg p-[4px]">
-                  <button
-                    onClick={() => changeView("card")}
-                    className={`flex h-[32px] w-[36px] items-center justify-center rounded-[6px] cursor-pointer ${
-                      view === "card" ? "bg-gca-surface shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]" : ""
-                    }`}
-                  >
-                    <LayoutGrid className="size-[16px] text-gca-dark" />
-                  </button>
-                  <button
-                    onClick={() => changeView("table")}
-                    className={`flex h-[32px] w-[36px] items-center justify-center rounded-[6px] cursor-pointer ${
-                      view === "table"
-                        ? "bg-gca-surface shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]"
-                        : ""
-                    }`}
-                  >
-                    <List className="size-[16px] text-gca-dark" />
-                  </button>
-                </div>
-
-                {canListAll && (
-                  <MobileFilterToggle>
-                    <div className="relative min-w-0">
-                      <Dropdown
-                        id="status-filter"
-                        title="Status"
-                        data={projectStatusOptions.map((status) => ({
-                          id: status.id,
-                          name: status.name,
-                          value: status.value,
-                        }))}
-                        style="h-[44px] w-full appearance-none rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[14px] text-gca-dark outline-none sm:w-[170px]"
-                        selectedId={
-                          projectStatusOptions.find((s) => s.value === statusFilter)?.id ?? "all"
-                        }
-                        onSelect={(id, name, value) => {
-                          setStatusFilter(value);
-                          setPage(1);
-                        }}
-                      />
-                    </div>
-                    <div className="relative min-w-0">
-                      <Dropdown
-                        id="program-filter"
-                        title="Program"
-                        data={projectProgramOptions.map((program) => ({
-                          id: program.id.toString(),
-                          name: program.name,
-                        }))}
-                        style="h-[44px] w-full appearance-none rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[14px] text-gca-dark outline-none sm:w-[170px]"
-                        selectedId={
-                          projectProgramOptions.find((p) => p.id.toString() === programFilter)?.id ??
-                          "all"
-                        }
-                        onSelect={(id) => {
-                          setProgramFilter(id);
-                          setPage(1);
-                        }}
-                      />
-                    </div>
-                  </MobileFilterToggle>
-                )}
-              </div>
+          <div className="flex flex-wrap items-center gap-[8px]">
+            {/* View switch */}
+            <div className="flex w-fit cursor-pointer gap-[4px] rounded-[10px] bg-gca-page-bg p-[4px]">
+              <button
+                onClick={() => changeView("card")}
+                className={`flex h-[32px] w-[36px] items-center justify-center rounded-[6px] cursor-pointer ${
+                  view === "card" ? "bg-gca-surface shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]" : ""
+                }`}
+              >
+                <LayoutGrid className="size-[16px] text-gca-dark" />
+              </button>
+              <button
+                onClick={() => changeView("table")}
+                className={`flex h-[32px] w-[36px] items-center justify-center rounded-[6px] cursor-pointer ${
+                  view === "table"
+                    ? "bg-gca-surface shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]"
+                    : ""
+                }`}
+              >
+                <List className="size-[16px] text-gca-dark" />
+              </button>
             </div>
 
+            {canListAll && (
+              <MobileFilterToggle>
+                <div className="relative min-w-0">
+                  <Dropdown
+                    id="status-filter"
+                    title="Status"
+                    data={projectStatusOptions.map((status) => ({
+                      id: status.id,
+                      name: status.name,
+                      value: status.value,
+                    }))}
+                    style="h-[44px] w-full appearance-none rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[14px] text-gca-dark outline-none sm:w-[170px]"
+                    selectedId={
+                      projectStatusOptions.find((s) => s.value === statusFilter)?.id ?? "all"
+                    }
+                    onSelect={(id, name, value) => {
+                      setStatusFilter(value);
+                      setPage(1);
+                    }}
+                  />
+                </div>
+                <div className="relative min-w-0">
+                  <Dropdown
+                    id="program-filter"
+                    title="Program"
+                    data={projectProgramOptions.map((program) => ({
+                      id: program.id.toString(),
+                      name: program.name,
+                    }))}
+                    style="h-[44px] w-full appearance-none rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[14px] text-gca-dark outline-none sm:w-[170px]"
+                    selectedId={
+                      projectProgramOptions.find((p) => p.id.toString() === programFilter)?.id ??
+                      "all"
+                    }
+                    onSelect={(id) => {
+                      setProgramFilter(id);
+                      setPage(1);
+                    }}
+                  />
+                </div>
+              </MobileFilterToggle>
+            )}
+          </div>
+        </div>
+
+        {/* Results */}
+        {loading && <ResultsSkeleton />}
+        {!loading && !error && (
+          <>
             {/* Card or table view */}
             {view === "card" ? (
               <div className="grid grid-cols-1 md:grid-cols-4 gap-[20px]">
@@ -399,18 +398,9 @@ function EmptyState({ showCreate }: { showCreate: boolean }) {
   );
 }
 
-function LoadingSkeleton() {
+function ResultsSkeleton() {
   return (
     <>
-      {/* Toolbar skeleton */}
-      <div className="flex flex-col gap-[12px] lg:flex-row lg:items-center lg:justify-between">
-        <div className="h-[44px] w-full animate-pulse rounded-[8px] bg-gca-page-bg lg:w-[360px]" />
-        <div className="grid grid-cols-2 gap-[8px] sm:flex sm:items-center">
-          <div className="col-span-2 h-[40px] w-[80px] animate-pulse rounded-[10px] bg-gca-page-bg sm:col-span-auto" />
-          <div className="h-[44px] w-full animate-pulse rounded-[8px] bg-gca-page-bg sm:w-[170px]" />
-          <div className="h-[44px] w-full animate-pulse rounded-[8px] bg-gca-page-bg sm:w-[170px]" />
-        </div>
-      </div>
       {/* Card skeletons */}
       <div className="grid grid-cols-1 gap-[20px] md:grid-cols-4">
         {Array.from({ length: 6 }).map((_, i) => (

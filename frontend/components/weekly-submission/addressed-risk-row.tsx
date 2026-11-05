@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { LoaderCircle, X } from "lucide-react";
 import { useRisk } from "@/components/risks/use-risks-data";
 import { ratingFromScore } from "@/components/risks/types";
 import type { TeamMember } from "@/components/project-overview/types";
@@ -16,6 +16,7 @@ export function AddressedRiskRow({
   projectId,
   addressedRisk,
   isMainTopRisk,
+  pending = false,
   team,
   onMarkAsTopRisk,
   onRemove,
@@ -24,6 +25,7 @@ export function AddressedRiskRow({
   projectId: string;
   addressedRisk: SubmissionAddressedRisk;
   isMainTopRisk: boolean;
+  pending?: boolean;
   team: TeamMember[];
   onMarkAsTopRisk?: (title: string, mitigation: string | null) => void;
   onRemove?: () => void;
@@ -59,9 +61,18 @@ export function AddressedRiskRow({
           {onMarkAsTopRisk && risk && (
             <button
               onClick={() => onMarkAsTopRisk(risk.title, risk.mitigation ?? null)}
-              className="w-fit cursor-pointer text-[12px] font-medium text-gca-green"
+              disabled={pending}
+              className="relative w-fit cursor-pointer text-[12px] font-medium text-gca-green disabled:opacity-50"
             >
-              {isMainTopRisk ? "Unmark as top risk" : "Mark as top risk"}
+              <span className={pending ? "invisible" : undefined}>
+                {isMainTopRisk ? "Unmark as top risk" : "Mark as top risk"}
+              </span>
+              {pending && (
+                <LoaderCircle
+                  className="absolute left-1/2 top-1/2 size-[12px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                  aria-label="Updating"
+                />
+              )}
             </button>
           )}
         </div>
