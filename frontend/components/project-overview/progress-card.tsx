@@ -160,7 +160,8 @@ export function ProgressCard({ metrics }: { metrics: MetricRow[] }) {
           label="SPI"
           value={latest.spi?.toFixed(2) ?? "—"}
           note={spiOk ? "On track" : "Behind"}
-          noteColor={spiOk ? "text-gca-green" : "text-gca-warning"}
+          noteColor={spiOk ? "text-gca-green font-medium" : "text-gca-warning font-medium"}
+          valueClassName="font-mono text-gca-dark"
         />
         <Divider />
         <Tile
@@ -174,7 +175,7 @@ export function ProgressCard({ metrics }: { metrics: MetricRow[] }) {
           label="Actual"
           value={`${Math.round(latest.actual_pct)}%`}
           note={delta >= 0 ? `${delta} pts ahead` : `${Math.abs(delta)} pts behind`}
-          noteColor={delta >= 0 ? "text-gca-green" : "text-gca-warning"}
+          noteColor={delta >= 0 ? "text-gca-green font-medium" : "text-gca-warning font-medium"}
         />
         <Divider />
         <Tile
@@ -210,18 +211,19 @@ export function ProgressCard({ metrics }: { metrics: MetricRow[] }) {
           <path d={actualPath} fill="none" stroke="#2e7d45" strokeWidth={2} />
           {lastFilled && (
             <g
-              transform={`translate(${Math.max(lastActualX - 15, 0)}, ${Math.max(lastActualY - 24, 0)})`}
+              transform={`translate(${Math.max(Math.min(lastActualX - 47, CHART_W - 98), 0)}, ${Math.max(lastActualY - 28, 4)})`}
             >
-              {/* <rect width={40} height={22} rx={6} fill="#2e7d45" /> */}
+              <rect width={94} height={24} rx={6} fill="#2e7d45" />
               <text
-                x={8}
-                y={15}
-                fontSize={13}
-                // fontFamily="monospace"
-                fill="#2e7d45"
-                fontWeight={800}
+                x={47}
+                y={16}
+                textAnchor="middle"
+                fontSize={11.5}
+                fontFamily="monospace"
+                fill="#ffffff"
+                fontWeight={600}
               >
-                {` ${Math.round(lastFilled.actual_pct)}`}
+                {`Actual ${lastFilled.actual_pct.toFixed(1)}%`}
               </text>
             </g>
           )}
@@ -241,16 +243,18 @@ function Tile({
   value,
   note,
   noteColor,
+  valueClassName = "",
 }: {
   label: string;
   value: string;
   note: string;
   noteColor: string;
+  valueClassName?: string;
 }) {
   return (
     <div className="flex flex-col gap-[2px]">
       <p className="text-[12px] font-medium text-gca-muted">{label}</p>
-      <p className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">{value}</p>
+      <p className={`text-[24px] font-semibold tracking-[-0.36px] text-gca-dark ${valueClassName}`}>{value}</p>
       <p className={`text-[12px] ${noteColor}`}>{note}</p>
     </div>
   );

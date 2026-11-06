@@ -1,6 +1,7 @@
 import express from 'express';
 import { PdmStages } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 const router = express.Router();
 const canView = authorize([
     { role: 'Admin', scopeType: 'global' },
@@ -17,8 +18,7 @@ router.get('/', canView, async (_req, res) => {
         res.status(200).json({ status: 'success', data: { stages }, message: 'PDM stages retrieved' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 export default router;

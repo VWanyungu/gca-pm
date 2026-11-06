@@ -1,5 +1,6 @@
 import express from 'express';
 import { Notifications, NotificationPreferences } from '../database/utils/database.js';
+import { sendRouteError } from '../utils/errors.js';
 const router = express.Router();
 router.get('/', async (req, res) => {
     const userId = req.user.userId;
@@ -14,8 +15,7 @@ router.get('/', async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 router.patch('/:notificationId/read', async (req, res) => {
@@ -30,8 +30,7 @@ router.patch('/:notificationId/read', async (req, res) => {
         res.status(200).json({ status: 'success', data: null, message: 'Notification marked as read' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 router.post('/read-all', async (req, res) => {
@@ -41,8 +40,7 @@ router.post('/read-all', async (req, res) => {
         res.status(200).json({ status: 'success', data: null, message: 'All notifications marked as read' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 router.get('/preferences', async (req, res) => {
@@ -60,8 +58,7 @@ router.get('/preferences', async (req, res) => {
         res.status(200).json({ status: 'success', data: { preferences: result }, message: 'Preferences retrieved successfully' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 router.patch('/preferences', async (req, res) => {
@@ -76,8 +73,7 @@ router.patch('/preferences', async (req, res) => {
         res.status(200).json({ status: 'success', data: null, message: 'Preference updated' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 export default router;

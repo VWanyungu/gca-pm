@@ -1,10 +1,14 @@
 import express from 'express';
 import { Projects, ScheduleVersions, ScheduleTasks, ScheduleReconciliationFlags, ScheduleUploadInFlightError, ChangeRequests, FileObjects, } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
-import { scheduleProjectParamsSchema, scheduleVersionParamsSchema, listReconciliationFlagsQuerySchema, acknowledgeReconciliationFlagsSchema, uploadScheduleSchema, } from '../utils/validation.js';
+import requireKickoffComplete from '../middlewares/requireKickoffComplete.js';
+import { scheduleProjectParamsSchema, scheduleVersionParamsSchema, scheduleTaskParamsSchema, listReconciliationFlagsQuerySchema, acknowledgeReconciliationFlagsSchema, uploadScheduleSchema, editScheduleTaskSchema, } from '../utils/validation.js';
 import { storeObject, discardObject, fetchObjectBytes, FileValidationError, FileStorageError, } from '../utils/objectStorage.js';
 import { processScheduleVersion } from '../utils/scheduleProcessor.js';
 import { buildScheduleExport, MppParserUnavailableError } from '../utils/mppParser.js';
+import { sendRouteError } from '../utils/errors.js';
+import { editScheduleTask, ScheduleTaskNotEditableError, ScheduleTaskNotFoundError, } from '../utils/scheduleEdit.js';
+import db from '../database/dbSetup.js';
 // mergeParams so :projectId reaches authorize and handlers
 const router = express.Router({ mergeParams: true });
 const canView = authorize([
@@ -46,8 +50,7 @@ router.get('/versions', canView, async (req, res) => {
         res.status(200).json({ status: 'success', data: { versions }, message: 'Schedule versions retrieved' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /projects/:projectId/schedule/versions/:versionId
@@ -69,8 +72,7 @@ router.get('/versions/:versionId', canView, async (req, res) => {
         res.status(200).json({ status: 'success', data: { version }, message: 'Schedule version retrieved' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /projects/:projectId/schedule/versions/:versionId/changes
@@ -91,8 +93,7 @@ router.get('/versions/:versionId/changes', canView, async (req, res) => {
         res.status(200).json({ status: 'success', data: { changes }, message: 'Version changes retrieved' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /projects/:projectId/schedule/versions/:versionId/download
@@ -134,8 +135,7 @@ router.get('/versions/:versionId/download', canView, async (req, res) => {
             res.status(502).json({ status: 'error', data: null, message: err.message });
             return;
         }
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /projects/:projectId/schedule/export
@@ -197,8 +197,7 @@ router.get('/export', canView, async (req, res) => {
             res.status(502).json({ status: 'error', data: null, message: err.message });
             return;
         }
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /projects/:projectId/schedule/tasks
@@ -219,8 +218,55 @@ router.get('/tasks', canView, async (req, res) => {
         res.status(200).json({ status: 'success', data: { tasks }, message: 'Schedule tasks retrieved' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
+    }
+});
+// PATCH /projects/:projectId/schedule/tasks/:taskId
+// Edits a task's own start/planned-end/actual-complete without a re-upload. A leaf task is
+// always editable; the project's single top-level row only while it has no child tasks.
+router.patch('/tasks/:taskId', requireKickoffComplete(), canManage, async (req, res) => {
+    const params = scheduleTaskParamsSchema.validate(req.params);
+    if (params.error) {
+        res.status(400).json({ status: 'error', data: null, message: params.error.message });
+        return;
+    }
+    const body = editScheduleTaskSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
+    if (body.error) {
+        res.status(400).json({ status: 'error', data: null, message: body.error.message });
+        return;
+    }
+    const { projectId, taskId } = params.value;
+    const input = body.value;
+    try {
+        const project = await Projects.getById(projectId);
+        if (!project) {
+            res.status(404).json({ status: 'error', data: null, message: 'Project not found' });
+            return;
+        }
+        const result = await db.transaction((trx) => editScheduleTask(trx, {
+            projectId,
+            taskId,
+            editedBy: req.user.userId,
+            timezone: project.timezone ?? 'Africa/Nairobi',
+            fields: {
+                start: input.start ? new Date(input.start) : undefined,
+                expected_finish: input.planned_end_date ? new Date(input.planned_end_date) : undefined,
+                baseline_finish: input.planned_finish_date ? new Date(input.planned_finish_date) : undefined,
+                pct_work_complete: input.pct_work_complete,
+            },
+        }));
+        res.status(200).json({ status: 'success', data: result, message: 'Schedule task updated' });
+    }
+    catch (err) {
+        if (err instanceof ScheduleTaskNotFoundError) {
+            res.status(404).json({ status: 'error', data: null, message: err.message });
+            return;
+        }
+        if (err instanceof ScheduleTaskNotEditableError) {
+            res.status(409).json({ status: 'error', data: null, message: err.message });
+            return;
+        }
+        sendRouteError(res, err);
     }
 });
 // GET /projects/:projectId/schedule/overdue
@@ -241,8 +287,7 @@ router.get('/overdue', canView, async (req, res) => {
         res.status(200).json({ status: 'success', data: { tasks }, message: 'Overdue tasks retrieved' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /projects/:projectId/schedule/reconciliation-flags
@@ -274,12 +319,11 @@ router.get('/reconciliation-flags', canView, async (req, res) => {
         res.status(200).json({ status: 'success', data: result, message: 'Reconciliation flags retrieved' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // POST /projects/:projectId/schedule/reconciliation-flags/acknowledge
-router.post('/reconciliation-flags/acknowledge', canManage, async (req, res) => {
+router.post('/reconciliation-flags/acknowledge', requireKickoffComplete(), canManage, async (req, res) => {
     const params = scheduleProjectParamsSchema.validate(req.params);
     if (params.error) {
         res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -302,14 +346,13 @@ router.post('/reconciliation-flags/acknowledge', canManage, async (req, res) => 
         res.status(200).json({ status: 'success', data: { acknowledged }, message: 'Flags acknowledged' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // POST /projects/:projectId/schedule/upload
 // AC-SCH-01: store the file, queue a version, and answer. The parse and the apply
 // transaction happen after this request; the client polls the version for the outcome.
-router.post('/upload', canUpload, async (req, res) => {
+router.post('/upload', requireKickoffComplete(), canUpload, async (req, res) => {
     const params = scheduleProjectParamsSchema.validate(req.params);
     if (params.error) {
         res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -419,8 +462,7 @@ router.post('/upload', canUpload, async (req, res) => {
             });
             return;
         }
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 export default router;

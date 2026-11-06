@@ -5,11 +5,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_MANAGE_PROJECT } from "@/lib/access-control";
 import { SystemStateScreen } from "@/components/system-state/system-state-screen";
 import { useProjectSidebarData } from "@/components/project-overview/project-sidebar-context";
-import { StatusControl } from "@/components/project-overview/status-control";
+import { ProjectHero } from "@/components/project-overview/project-hero";
 import { StagePipeline } from "@/components/project-overview/stage-pipeline";
 import { ProgressCard } from "@/components/project-overview/progress-card";
 import { NeedsAttentionCard } from "@/components/project-overview/needs-attention-card";
 import { NextMilestonesRow } from "@/components/project-overview/next-milestones-row";
+import { ProgressPhotosSection } from "@/components/project-overview/progress-photos-section";
 import { TeamSection } from "@/components/project-overview/team-section";
 import {
   useProjectDetail,
@@ -18,16 +19,11 @@ import {
   useClientContacts,
   useStageActivities,
   useMilestones,
+  useProjectDprPhotos,
   // useOpenEscalations, // paused: no escalations module yet
   useDraftSubmission,
   ApiError,
 } from "@/components/project-overview/use-project-data";
-import {
-  mondayOf,
-  addDays,
-  formatWeekPeriod,
-  weekNumber,
-} from "../../../../components/weekly-submission/types";
 
 export default function ProjectOverview({ projectId }: { projectId: string }) {
   const { user } = useAuth();
@@ -55,6 +51,21 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
     );
   }, [data?.stages]);
 
+  // DPR progress photos are only fetched and displayed if the current stage
+  // is construction, commissioning, or decommissioning
+  const isPhotoEligibleStage = useMemo(() => {
+    if (!currentStage) return false;
+    const name = currentStage.stage_name.toLowerCase();
+    return (
+      name.includes("construction") ||
+      name.includes("commissioning") ||
+      name.includes("decommissioning") ||
+      [7, 8, 10].includes(currentStage.stage_no)
+    );
+  }, [currentStage]);
+
+  const { data: dprPhotosData } = useProjectDprPhotos(projectId, isPhotoEligibleStage);
+
   const overdueActivities = useMemo(() => {
     const today = new Date();
     return activities.filter(
@@ -77,31 +88,15 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
 
   const canManage = canAccess(user?.role, CAN_MANAGE_PROJECT, { projectId });
 
-  const today = new Date();
-
-  // const weekNumber = Math.ceil(
-  //   (today.getTime() - new Date(data.project.created_at).getTime()) / (7 * 24 * 60 * 60 * 1000),
-  // );
-  const weekStart = addDays(mondayOf(new Date()), 0 * 7);
-
   return (
     <main className="flex w-full max-w-[1200px] flex-col gap-[28px] p-[20px] md:p-[40px]">
-      <header className="flex w-full flex-col gap-[16px] md:flex-row md:items-center md:justify-between">
-        <div className="flex min-w-0 flex-col gap-[8px]">
-          <h1 className="text-[24px] font-semibold tracking-[-0.75px] text-gca-dark sm:text-[30px]">
-            {data.project.name}
-          </h1>
-          <p className="text-[14px] text-gca-show">
-            {data.project.client_name ?? "—"} · Week {weekNumber(weekStart)}
-          </p>
-        </div>
-        <StatusControl
-          projectId={projectId}
-          status={data.project.status}
-          canManage={canManage}
-          onChanged={invalidate}
-        />
-      </header>
+      <ProjectHero
+        project={data.project}
+        stages={data.stages}
+        milestones={milestones}
+        canManage={canManage}
+        onStatusChanged={invalidate}
+      />
 
       <StagePipeline
         projectId={projectId}
@@ -125,6 +120,14 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
       </div>
 
       <NextMilestonesRow projectId={projectId} milestones={milestones} />
+
+      {isPhotoEligibleStage && (
+        <ProgressPhotosSection
+          projectId={projectId}
+          photos={dprPhotosData?.photos ?? []}
+          totalCount={dprPhotosData?.total ?? 0}
+        />
+      )}
 
       <TeamSection projectId={projectId} team={team} clientContacts={clientContacts} />
     </main>

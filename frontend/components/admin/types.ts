@@ -66,6 +66,8 @@ export interface AdminProjectDetail {
   client_name: string | null;
   program_id: number;
   site_location: string | null;
+  site_lat: number | null;
+  site_lng: number | null;
   expected_start_date: string | null;
   expected_end_date: string | null;
   status: ProjectStatus;

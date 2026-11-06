@@ -1,6 +1,7 @@
 import express from 'express';
 import { Contractors } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import { createContractorSchema, updateContractorSchema, mergeContractorSchema, listContractorsQuerySchema, contractorIdParamSchema, } from '../utils/validation.js';
 const router = express.Router();
 const canCreate = authorize([
@@ -56,8 +57,7 @@ router.post('/', canCreate, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /contractors
@@ -83,8 +83,7 @@ router.get('/', canList, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /contractors/:contractorId
@@ -112,8 +111,7 @@ router.get('/:contractorId', canList, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // PATCH /contractors/:contractorId
@@ -155,8 +153,7 @@ router.patch('/:contractorId', canManage, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // POST /contractors/:contractorId/merge (AC-IAM-08: Admin only)
@@ -182,14 +179,15 @@ router.post('/:contractorId/merge', canMerge, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        if (message.includes('not found') ||
-            message.includes('Cannot merge') ||
-            message.includes('Merge chains are not allowed')) {
-            res.status(400).json({ status: 'error', data: null, message });
+        if (err instanceof Error &&
+            err.constructor === Error &&
+            (err.message.includes('not found') ||
+                err.message.includes('Cannot merge') ||
+                err.message.includes('Merge chains are not allowed'))) {
+            res.status(400).json({ status: 'error', data: null, message: err.message });
             return;
         }
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // DELETE /contractors/:contractorId (Soft deactivate or delete)
@@ -215,8 +213,7 @@ router.delete('/:contractorId', canManage, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 export default router;

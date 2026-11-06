@@ -17,6 +17,18 @@ export interface ProjectDetail {
   is_mechanical: boolean | null;
   is_civil: boolean | null;
   is_electrical: boolean | null;
+  banner_photos?: string[] | null;
+}
+
+export interface DprPhoto {
+  photo_id: string;
+  dpr_id: string;
+  caption: string | null;
+  taken_at: string | null;
+  report_date: string;
+  stage_no: number;
+  uploader_name: string | null;
+  url: string;
 }
 
 export type PdmStageKind = "kickoff" | "pdm" | "closure";

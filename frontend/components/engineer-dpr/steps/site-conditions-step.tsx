@@ -15,10 +15,11 @@ interface StepProps {
 export function SiteConditionsStep({
   draft,
   update,
+  projectId,
   siteLocationError = false,
 }: StepProps) {
   const { data: weatherCategories = [] } = useWeatherCategories();
-  const { fill: fillWeather, loading: weatherLoading } = useAutoWeatherFill(update);
+  const { fill: fillWeather, loading: weatherLoading } = useAutoWeatherFill(update, projectId);
 
   return (
     <div className="flex flex-col gap-[16px]">

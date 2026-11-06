@@ -913,6 +913,7 @@ export interface CreateProjectBody {
   scope_stages?: number[];
   initial_active_stages?: number[];
   site_engineer_user_ids?: string[];
+  banner_photos?: string[];
 }
 
 export interface UpdateProjectBody {
@@ -936,6 +937,7 @@ export interface UpdateProjectBody {
   dpr_expected_weekdays?: number[];
   status?: ProjectStatus;
   status_reason?: string | null;
+  banner_photos?: string[];
 }
 
 export interface ListProjectsQuery {
@@ -998,6 +1000,7 @@ export const createProjectSchema = Joi.object<CreateProjectBody>({
     .min(1)
     .optional(),
   site_engineer_user_ids: Joi.array().items(Joi.string().uuid()).optional(),
+  banner_photos: Joi.array().items(Joi.string()).default([]).optional(),
 });
 
 export const updateProjectSchema = Joi.object<UpdateProjectBody>({
@@ -1025,6 +1028,7 @@ export const updateProjectSchema = Joi.object<UpdateProjectBody>({
     .valid(...PROJECT_STATUSES)
     .optional(),
   status_reason: Joi.string().trim().max(10000).allow(null, "").optional(),
+  banner_photos: Joi.array().items(Joi.string()).optional(),
 }).min(1);
 
 export const listProjectsQuerySchema = Joi.object<ListProjectsQuery>({

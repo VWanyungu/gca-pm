@@ -1,0 +1,41 @@
+{
+  "status": 200,
+  "headers": {
+    "link": "</_next/static/media/07a39a8a4660cc7c-s.p.0r6juujl39pe6.woff2>; rel=preload; as=\"font\"; crossorigin=\"\"; type=\"font/woff2\", </_next/static/media/605ce01b664af129-s.p.0wgildi0cnwt9.woff2>; rel=preload; as=\"font\"; crossorigin=\"\"; type=\"font/woff2\"",
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/engineer/layout,_N_T_/engineer/(tabs)/layout,_N_T_/engineer/(tabs)/page,_N_T_/engineer"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/engineer/!KHRhYnMp/__PAGE__"
+  ],
+  "prefetchHints": {
+    "hints": 49216,
+    "slots": {
+      "children": {
+        "hints": 49248,
+        "slots": {
+          "children": {
+            "hints": 49248,
+            "slots": {
+              "children": {
+                "hints": 49312,
+                "slots": null
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "routeCache": {
+    "key": "/route-cache/APP_PAGE/b7175d5a1cc5d67ef92f98d92e6c8de07ac16915c7d12f102770410758e0ca56/$/engineer",
+    "owner": {
+      "kind": "APP_PAGE",
+      "sourceRoute": "/engineer/(tabs)/page"
+    },
+    "isFallback": false
+  }
+}

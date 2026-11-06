@@ -1,6 +1,8 @@
 import express from 'express';
 import { Projects, Programs, ProjectStages, ProjectStatusHistory, ProjectMetrics, } from '../database/utils/database.js';
 import authorize, { authorizeAnyRole } from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
+import { seedInitialScheduleSummary } from '../utils/scheduleProcessor.js';
 import { createProjectSchema, updateProjectSchema, projectIdParamSchema, listProjectsQuerySchema, suggestProjectCodeQuerySchema, } from '../utils/validation.js';
 const router = express.Router();
 const canCreate = authorize([
@@ -46,8 +48,7 @@ router.get('/suggest-code', canCreate, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // POST /projects
@@ -77,6 +78,9 @@ router.post('/', canCreate, async (req, res) => {
             ...input,
             created_by: req.user.userId,
         });
+        // Best-effort: a project with no mock schedule is still a created project, so this
+        // never fails the request — it just leaves the Schedule tab empty until a real upload.
+        await seedInitialScheduleSummary(result.project, req.user.userId).catch((err) => console.error('Failed to seed initial schedule for', result.project.project_id, err));
         res.status(201).json({
             status: 'success',
             data: result,
@@ -92,8 +96,7 @@ router.post('/', canCreate, async (req, res) => {
             });
             return;
         }
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /projects
@@ -120,8 +123,7 @@ router.get('/', canListProjects, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /projects/:projectId
@@ -157,8 +159,7 @@ router.get('/:projectId', canViewProject, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // PATCH /projects/:projectId
@@ -205,13 +206,16 @@ router.patch('/:projectId', canManageProject, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
         // Validation or transition errors return 400
-        if (message.includes('Invalid project status transition') || message.includes('Reason is required')) {
-            res.status(400).json({ status: 'error', data: null, message });
+        if (err instanceof Error &&
+            err.constructor === Error &&
+            (err.message.includes('Invalid project status transition') ||
+                err.message.includes('Reason is required') ||
+                err.message.includes('Closure stage must be complete'))) {
+            res.status(400).json({ status: 'error', data: null, message: err.message });
             return;
         }
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // DELETE /projects/:projectId
@@ -238,8 +242,7 @@ router.delete('/:projectId', canDeleteProject, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 export default router;

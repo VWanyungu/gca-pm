@@ -36,6 +36,7 @@ export interface Project {
   completed: number;
   planned: number;
   nextMilestone: string | null;
+  bannerPhotos?: string[];
 }
 
 interface ProjectsResponse {
@@ -50,6 +51,7 @@ interface ProjectsResponse {
     completed_pct: number | null;
     planned_pct: number | null;
     next_milestone: string | null;
+    banner_photos?: string[] | null;
   }>;
   total: number;
   page: number;
@@ -79,6 +81,7 @@ function mapProject(row: ProjectsResponse["projects"][number]): Project {
     completed: row.completed_pct ?? 0,
     planned: row.planned_pct ?? 0,
     nextMilestone: row.next_milestone,
+    bannerPhotos: Array.isArray(row.banner_photos) ? row.banner_photos : [],
   };
 }
 
@@ -98,7 +101,7 @@ function mapEngineerProject(row: EngineerProjectSummary): Project {
 
 /** The card grid runs four across, the table is a list — so each view gets the page size that
  *  fills it. Switching view resets the size, which the Pagination control can still override. */
-const CARD_PAGE_SIZE = 8;
+const CARD_PAGE_SIZE = 6;
 const TABLE_PAGE_SIZE = 20;
 
 export default function Home() {
@@ -317,9 +320,9 @@ export default function Home() {
           <>
             {/* Card or table view */}
             {view === "card" ? (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-[20px]">
-                {projects.map((p) => (
-                  <ProjectCard key={p.id} project={p} canEdit={canEdit} />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-[24px]">
+                {projects.map((p, idx) => (
+                  <ProjectCard key={p.id} project={p} canEdit={canEdit} index={idx} />
                 ))}
               </div>
             ) : (

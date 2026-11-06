@@ -9,6 +9,7 @@ import type {
   StageActivity,
   Milestone,
   EscalationRow,
+  DprPhoto,
 } from "./types";
 
 export class ApiError extends Error {
@@ -138,6 +139,20 @@ export function useSidebarCounts(projectId: string) {
         changeRequests: unwrap(changeRequests).pagination.total,
       };
     },
+    staleTime: 30_000,
+  });
+}
+
+export function useProjectDprPhotos(projectId: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: ["project", projectId, "dpr-photos"],
+    queryFn: async () => {
+      const res = await api.get<{ photos: DprPhoto[]; total: number }>(
+        `/projects/${projectId}/dpr/photos?limit=5`,
+      );
+      return unwrap(res);
+    },
+    enabled: Boolean(projectId) && enabled,
     staleTime: 30_000,
   });
 }

@@ -1,0 +1,3 @@
+module.exports=[[72034,a=>{var b=a.i(7997),c=a.i(99261);a.s(["default",0,function({children:a}){return(0,b.jsxs)("div",{className:"flex min-h-screen flex-1 flex-col",children:[(0,b.jsx)("div",{className:"flex flex-1 flex-col",children:a}),(0,b.jsx)(c.TabBar,{})]})}])},80874,a=>{let b=(0,a.i(11857).registerClientReference)(function(){throw Error("Attempted to call TabBar() from the server but TabBar is on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component.")},"[project]/components/engineer-dpr/tab-bar.tsx","TabBar");a.s(["TabBar",0,b])},99261,a=>{var b=a.i(80874);a.n(b)}],21522,function(a){a.n(a.i(72034))}];
+
+//# sourceMappingURL=_0r495vg7s7ezs._.js.map

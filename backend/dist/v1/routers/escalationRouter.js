@@ -1,6 +1,7 @@
 import express from 'express';
 import { Escalations, WeeklySubmissions, Projects, } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import { escalationProjectParamsSchema, escalationParamsSchema, createEscalationSchema, updateEscalationSchema, acknowledgeEscalationSchema, resolveEscalationSchema, createEscalationResponseSchema, listEscalationsQuerySchema, } from '../utils/validation.js';
 // mergeParams so :projectId from the parent mount reaches authorize + handlers.
 const router = express.Router({ mergeParams: true });
@@ -94,8 +95,7 @@ router.post('/', canManage, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET / (list escalations)
@@ -133,8 +133,7 @@ router.get('/', canView, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /:escalationId (get escalation by ID)
@@ -166,8 +165,7 @@ router.get('/:escalationId', canView, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // POST /:escalationId/acknowledge (AC-ESC-02: ExCo only)
@@ -218,8 +216,7 @@ router.post('/:escalationId/acknowledge', canExCo, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // POST /:escalationId/resolve (AC-ESC-03: ExCo only)
@@ -271,8 +268,7 @@ router.post('/:escalationId/resolve', canExCo, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // POST /:escalationId/responses (AC-ESC-04: ExCo or PM comment)
@@ -315,8 +311,7 @@ router.post('/:escalationId/responses', canRespond, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /:escalationId/responses (list thread responses)
@@ -348,8 +343,7 @@ router.get('/:escalationId/responses', canView, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // PATCH /:escalationId (update status / fields)
@@ -429,8 +423,7 @@ router.patch('/:escalationId', canManage, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // DELETE /:escalationId (delete escalation and responses)
@@ -462,8 +455,7 @@ router.delete('/:escalationId', canManage, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 export default router;

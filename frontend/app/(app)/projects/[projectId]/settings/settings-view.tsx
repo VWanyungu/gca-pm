@@ -22,6 +22,7 @@ import {
 import { useUpdateProject } from "@/components/admin/use-admin-projects-data";
 import { DeleteProjectModal } from "@/components/admin/delete-project-modal";
 import { ReassignMainRoleModal } from "@/components/admin/reassign-main-role-modal";
+import { BannerPhotosUpload } from "@/components/banner-photos-upload";
 
 const settingsFormSchema = z.object({
   name: z.string().trim().min(1, "Project name is required").max(500),
@@ -30,9 +31,12 @@ const settingsFormSchema = z.object({
   expected_start_date: z.string().optional(),
   expected_end_date: z.string().optional(),
   site_location: z.string().trim().max(500).optional(),
+  site_lat: z.number().min(-90).max(90).nullable().optional(),
+  site_lng: z.number().min(-180).max(180).nullable().optional(),
   is_mechanical: z.boolean(),
   is_civil: z.boolean(),
   is_electrical: z.boolean(),
+  banner_photos: z.array(z.string()).optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsFormSchema>;
@@ -70,6 +74,8 @@ export default function SettingsView({ projectId }: { projectId: string }) {
     register,
     handleSubmit,
     control,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsFormSchema),
@@ -81,9 +87,12 @@ export default function SettingsView({ projectId }: { projectId: string }) {
           expected_start_date: project.expected_start_date?.slice(0, 10) ?? "",
           expected_end_date: project.expected_end_date?.slice(0, 10) ?? "",
           site_location: project.site_location ?? "",
+          site_lat: project.site_lat ?? null,
+          site_lng: project.site_lng ?? null,
           is_mechanical: project.is_mechanical ?? true,
           is_civil: project.is_civil ?? false,
           is_electrical: project.is_electrical ?? false,
+          banner_photos: Array.isArray(project.banner_photos) ? project.banner_photos : [],
         }
       : undefined,
   });
@@ -100,9 +109,14 @@ export default function SettingsView({ projectId }: { projectId: string }) {
       expected_start_date: values.expected_start_date || null,
       expected_end_date: values.expected_end_date || null,
       site_location: values.site_location || null,
+      site_lat:
+        typeof values.site_lat === "number" && !isNaN(values.site_lat) ? values.site_lat : null,
+      site_lng:
+        typeof values.site_lng === "number" && !isNaN(values.site_lng) ? values.site_lng : null,
       is_mechanical: values.is_mechanical,
       is_civil: values.is_civil,
       is_electrical: values.is_electrical,
+      banner_photos: values.banner_photos,
     });
     invalidate();
   }
@@ -217,6 +231,39 @@ export default function SettingsView({ projectId }: { projectId: string }) {
               />
             </Field>
 
+            <div className="flex flex-col gap-[16px] md:flex-row">
+              <div className="flex-1">
+                <Field label="Latitude (optional)" error={errors.site_lat?.message}>
+                  <input
+                    type="number"
+                    step="any"
+                    {...register("site_lat", {
+                      setValueAs: (v) =>
+                        v === "" || v === null || v === undefined || isNaN(Number(v)) ? null : Number(v),
+                    })}
+                    disabled={!canManage}
+                    placeholder="e.g. -1.2921"
+                    className="h-[42px] w-full rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green disabled:bg-gca-page-bg disabled:text-gca-muted"
+                  />
+                </Field>
+              </div>
+              <div className="flex-1">
+                <Field label="Longitude (optional)" error={errors.site_lng?.message}>
+                  <input
+                    type="number"
+                    step="any"
+                    {...register("site_lng", {
+                      setValueAs: (v) =>
+                        v === "" || v === null || v === undefined || isNaN(Number(v)) ? null : Number(v),
+                    })}
+                    disabled={!canManage}
+                    placeholder="e.g. 36.8219"
+                    className="h-[42px] w-full rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green disabled:bg-gca-page-bg disabled:text-gca-muted"
+                  />
+                </Field>
+              </div>
+            </div>
+
             <fieldset className="flex flex-col gap-[10px]">
               <legend className="pb-[6px] text-[13px] font-medium text-gca-dark">Works</legend>
               <div className="flex flex-wrap items-center gap-[12px]">
@@ -277,6 +324,13 @@ export default function SettingsView({ projectId }: { projectId: string }) {
                 name={mainPlanner?.name ?? "—"}
                 canManage={canManage}
                 onReassign={() => setReassigning("Planner")}
+              />
+            </div>
+
+            <div className="w-full pt-[8px]">
+              <BannerPhotosUpload
+                value={watch("banner_photos") ?? []}
+                onChange={(photos) => setValue("banner_photos", photos, { shouldDirty: true })}
               />
             </div>
 

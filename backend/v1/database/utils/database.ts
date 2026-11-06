@@ -1844,6 +1844,7 @@ export interface ProjectRow {
   created_by: string;
   created_at: Date;
   updated_at: Date;
+  banner_photos?: string[];
 }
 
 export interface ProjectListRow extends ProjectRow {
@@ -1885,6 +1886,7 @@ export interface CreateProjectInput {
   scope_stages?: number[];
   initial_active_stages?: number[];
   site_engineer_user_ids?: string[];
+  banner_photos?: string[];
 }
 
 export interface UpdateProjectFields {
@@ -1907,6 +1909,7 @@ export interface UpdateProjectFields {
   holiday_calendar_id?: number | null;
   dpr_expected_weekdays?: number[];
   status?: ProjectStatus;
+  banner_photos?: string[];
 }
 
 export const PROJECT_COLS = [
@@ -1934,6 +1937,7 @@ export const PROJECT_COLS = [
   'created_by',
   'created_at',
   'updated_at',
+  'banner_photos',
 ];
 
 export interface ProjectStatusHistoryRow {
@@ -2349,6 +2353,7 @@ export class Projects {
           legacy_source_ref: input.legacy_source_ref ?? null,
           holiday_calendar_id: input.holiday_calendar_id ?? null,
           dpr_expected_weekdays: input.dpr_expected_weekdays ?? [1, 2, 3, 4, 5, 6],
+          banner_photos: JSON.stringify(input.banner_photos ?? []),
           created_by: input.created_by,
         })
         .returning(PROJECT_COLS);
@@ -2832,6 +2837,9 @@ export class Projects {
         ...patch,
         updated_at: t.fn.now(),
       };
+      if (patch.banner_photos !== undefined) {
+        updateData.banner_photos = JSON.stringify(patch.banner_photos);
+      }
 
       const [updated] = await t('projects')
         .where({ project_id: projectId })
@@ -2886,6 +2894,7 @@ export interface StageActivityRow {
   created_by: string;
   created_at: Date;
   updated_at: Date;
+  banner_photos?: string[];
 }
 
 export interface CreateStageActivityInput {
@@ -4833,6 +4842,69 @@ export class Dprs {
     const q = trx ? trx('dpr') : db('dpr');
     const row = await q.where({ project_id: projectId, report_date: reportDate }).first();
     return row ?? null;
+  }
+
+  static async listPhotos({
+    projectId,
+    limit = 10,
+  }: {
+    projectId: string;
+    limit?: number;
+  }): Promise<{
+    photos: Array<{
+      photo_id: string;
+      dpr_id: string;
+      caption: string | null;
+      taken_at: string | null;
+      report_date: string;
+      stage_no: number;
+      uploader_name: string | null;
+      url: string;
+    }>;
+    total: number;
+  }> {
+    const baseQuery = db('dpr_photo as dp')
+      .join('dpr as d', 'd.dpr_id', 'dp.dpr_id')
+      .where('d.project_id', projectId);
+
+    const countRow = await baseQuery
+      .clone()
+      .count<{ count: string | number }>('dp.photo_id as count')
+      .first();
+    const total = Number(countRow?.count ?? 0);
+
+    const rows = await baseQuery
+      .clone()
+      .join('file_object as fo', 'fo.file_id', 'dp.file_id')
+      .leftJoin('users as u', 'u.id', 'dp.uploaded_by')
+      .select(
+        'dp.photo_id',
+        'dp.dpr_id',
+        'dp.caption',
+        'dp.taken_at',
+        'dp.sort_order',
+        'd.report_date',
+        'd.stage_no',
+        'fo.storage_key',
+        'fo.mime_type',
+        db.raw("NULLIF(CONCAT(u.first_name, ' ', u.last_name), ' ') as uploader_name"),
+      )
+      .orderBy('d.report_date', 'desc')
+      .orderBy('dp.sort_order', 'asc')
+      .limit(limit);
+
+    const photos = rows.map((r: any) => ({
+      photo_id: r.photo_id,
+      dpr_id: r.dpr_id,
+      caption: r.caption,
+      taken_at: r.taken_at ? (r.taken_at instanceof Date ? r.taken_at.toISOString() : String(r.taken_at)) : null,
+      report_date: r.report_date instanceof Date ? r.report_date.toISOString().slice(0, 10) : String(r.report_date),
+      stage_no: r.stage_no,
+      uploader_name: r.uploader_name ?? null,
+      url: objectUrl({ storage_key: r.storage_key, mime_type: r.mime_type } as FileObjectRow),
+    }));
+
+    return { photos, total };
   }
 
   static async list({

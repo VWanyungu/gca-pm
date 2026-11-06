@@ -357,6 +357,34 @@ router.post('/amendments/:amendmentId/decide', requireKickoffComplete(), canDeci
   }
 });
 
+// GET /projects/:projectId/dpr/photos - DPR progress photos
+router.get('/photos', canView, async (req, res) => {
+  const params = projectIdParamSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const { projectId } = params.value as { projectId: string };
+  const limit = req.query.limit ? Math.min(Math.max(Number(req.query.limit), 1), 100) : 10;
+
+  try {
+    const project = await Projects.getById(projectId);
+    if (!project) {
+      res.status(404).json({ status: 'error', data: null, message: 'Project not found' });
+      return;
+    }
+
+    const result = await Dprs.listPhotos({ projectId, limit });
+    res.status(200).json({
+      status: 'success',
+      data: result,
+      message: 'DPR photos retrieved',
+    });
+  } catch (err) {
+    sendRouteError(res, err);
+  }
+});
+
 // POST /projects/:projectId/dpr/photos/upload - AC-DPR-09
 // Registered before /:dprId routes so "photos" isn't captured as a dprId param.
 router.post('/photos/upload', requireKickoffComplete(), canCreateOrEdit, async (req, res) => {
