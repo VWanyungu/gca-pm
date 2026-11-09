@@ -138,6 +138,8 @@ router.get('/', canListProjects, async (req, res) => {
     return;
   }
   const filter = query.value as ListProjectsQuery;
+  const orderBy = filter.order_by || filter.sort_by || 'created_at';
+  const orderDir = (filter.order_dir || filter.sort_dir || 'desc').toLowerCase() as 'asc' | 'desc';
 
   try {
     const result = await Projects.list({
@@ -147,6 +149,8 @@ router.get('/', canListProjects, async (req, res) => {
       search: filter.search,
       page: filter.page,
       limit: filter.limit,
+      orderBy,
+      orderDir,
     });
 
     res.status(200).json({

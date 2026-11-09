@@ -1912,6 +1912,15 @@ export interface UpdateProjectFields {
   banner_photos?: string[];
 }
 
+export type ProjectOrderField =
+  | 'name'
+  | 'created_at'
+  | 'updated_at'
+  | 'spi'
+  | 'progress'
+  | 'completed_pct';
+export type OrderDirection = 'asc' | 'desc';
+
 export const PROJECT_COLS = [
   'project_id',
   'project_code',
@@ -2580,6 +2589,8 @@ export class Projects {
     search,
     page = 1,
     limit = 25,
+    orderBy = 'created_at',
+    orderDir = 'desc',
   }: {
     programId?: number;
     status?: ProjectStatus;
@@ -2587,6 +2598,8 @@ export class Projects {
     search?: string;
     page?: number;
     limit?: number;
+    orderBy?: ProjectOrderField;
+    orderDir?: OrderDirection;
   }): Promise<{
     projects: ProjectListRow[];
     pagination: { page: number; limit: number; total: number; totalPages: number };
@@ -2607,7 +2620,7 @@ export class Projects {
     }
     if (search) {
       query.where((qb) => {
-        qb.whereILike('name', `%${search}%`).orWhereILike('project_code', `%${search}%`);
+        qb.whereILike('projects.name', `%${search}%`).orWhereILike('projects.project_code', `%${search}%`);
       });
     }
 
@@ -2615,9 +2628,42 @@ export class Projects {
     const total = Number(countResult[0]?.count ?? 0);
     const totalPages = Math.ceil(total / limit) || 1;
 
+    const dir = orderDir === 'asc' ? 'asc' : 'desc';
+
+    if (orderBy === 'name') {
+      query.orderByRaw(`LOWER(projects.name) ${dir.toUpperCase()}`);
+    } else if (orderBy === 'updated_at') {
+      query.orderBy('projects.updated_at', dir);
+    } else if (orderBy === 'created_at') {
+      query.orderBy('projects.created_at', dir);
+    } else if (orderBy === 'spi') {
+      const latestMetrics = db('project_metrics_snapshot')
+        .distinctOn('project_id')
+        .select('project_id', 'spi')
+        .orderBy('project_id', 'asc')
+        .orderBy('as_of_date', 'desc')
+        .as('sort_metrics');
+
+      query.leftJoin(latestMetrics, 'sort_metrics.project_id', 'projects.project_id');
+      query.orderByRaw(`sort_metrics.spi ${dir.toUpperCase()} NULLS LAST`);
+      query.orderBy('projects.created_at', 'desc');
+    } else if (orderBy === 'progress' || orderBy === 'completed_pct') {
+      const latestMetrics = db('project_metrics_snapshot')
+        .distinctOn('project_id')
+        .select('project_id', 'actual_pct')
+        .orderBy('project_id', 'asc')
+        .orderBy('as_of_date', 'desc')
+        .as('sort_metrics');
+
+      query.leftJoin(latestMetrics, 'sort_metrics.project_id', 'projects.project_id');
+      query.orderByRaw(`sort_metrics.actual_pct ${dir.toUpperCase()} NULLS LAST`);
+      query.orderBy('projects.created_at', 'desc');
+    } else {
+      query.orderBy('projects.created_at', 'desc');
+    }
+
     const projects = await query
-      .select(PROJECT_COLS)
-      .orderBy('created_at', 'desc')
+      .select(PROJECT_COLS.map((col) => `projects.${col} as ${col}`))
       .offset((page - 1) * limit)
       .limit(limit);
 

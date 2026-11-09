@@ -36,6 +36,7 @@ import scheduleRouter from './routers/scheduleRouter.js';
 import notificationsRouter from './routers/notificationsRouter.js';
 import feedbackRequestRouter from './routers/feedbackRequestRouter.js';
 import publicFeedbackRouter from './routers/publicFeedbackRouter.js';
+import qstashRouter from './qstash/router.js';
 
 const router = express.Router();
 
@@ -46,6 +47,9 @@ router.use('/reset-password', resetUserPasswordRouter);
 
 // Unauthenticated: reached straight from the link a client is sent, no login involved.
 router.use('/feedback', publicFeedbackRouter);
+
+// Unauthenticated: QStash webhooks (authenticated via Upstash cryptographic signature)
+router.use('/qstash', qstashRouter);
 
 // Ahead of the global guard: a refresh carries an access token that has, by definition,
 // already expired, so it needs the lenient check rather than the strict one.

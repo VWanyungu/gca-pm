@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import 'dotenv/config';
 import './types.js';
 import checkVersion from './middlewares/version.js';
+import qstashRouter from './v1/qstash/router.js';
 import {
   recoverScheduleVersions,
   refreshAllProjectMetrics,
@@ -27,12 +28,21 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 // which is ~68 MB encoded. Only this route gets the larger ceiling; everything else keeps
 // the 100 kb default.
 app.use('/projects/:projectId/schedule/upload', express.json({ limit: '70mb' }));
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf.toString();
+    },
+  }),
+);
 
 app.get('/health', async (_req, res) => {
   const mppParserReachable = await parserIsReachable();
   res.status(200).json({ status: 'success', data: { mppParserReachable }, message: 'ok' });
 });
+
+// QStash and sister system webhooks (unauthenticated by api-v header or JWT; uses Upstash signature)
+app.use('/qstash', qstashRouter);
 
 app.use(checkVersion());
 

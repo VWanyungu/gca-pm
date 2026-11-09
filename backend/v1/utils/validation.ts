@@ -940,6 +940,19 @@ export interface UpdateProjectBody {
   banner_photos?: string[];
 }
 
+export const PROJECT_ORDER_FIELDS = [
+  'name',
+  'created_at',
+  'updated_at',
+  'spi',
+  'progress',
+  'completed_pct',
+] as const;
+export type ProjectOrderField = (typeof PROJECT_ORDER_FIELDS)[number];
+
+export const ORDER_DIRECTIONS = ['asc', 'desc'] as const;
+export type OrderDirection = (typeof ORDER_DIRECTIONS)[number];
+
 export interface ListProjectsQuery {
   program_id?: number;
   status?: ProjectStatus;
@@ -947,6 +960,10 @@ export interface ListProjectsQuery {
   search?: string;
   page?: number;
   limit?: number;
+  order_by?: ProjectOrderField;
+  order_dir?: OrderDirection;
+  sort_by?: ProjectOrderField;
+  sort_dir?: OrderDirection;
 }
 
 export const projectIdParamSchema = Joi.object({
@@ -1040,6 +1057,10 @@ export const listProjectsQuerySchema = Joi.object<ListProjectsQuery>({
   search: Joi.string().trim().max(100).optional(),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(25),
+  order_by: Joi.string().valid(...PROJECT_ORDER_FIELDS).optional(),
+  order_dir: Joi.string().valid(...ORDER_DIRECTIONS).optional(),
+  sort_by: Joi.string().valid(...PROJECT_ORDER_FIELDS).optional(),
+  sort_dir: Joi.string().valid(...ORDER_DIRECTIONS).optional(),
 });
 
 const PARTY_TYPES: PartyType[] = ["contractor", "subcontractor"];

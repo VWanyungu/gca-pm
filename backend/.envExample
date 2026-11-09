@@ -22,6 +22,16 @@ PROD_DB_NAME=
 UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
 
+# QStash (Serverless message queue & webhook orchestrator)
+QSTASH_TOKEN=
+QSTASH_CURRENT_SIGNING_KEY=
+QSTASH_NEXT_SIGNING_KEY=
+QSTASH_WEBHOOK_URL=http://localhost:3000/qstahs/handler
+
+# Shared secret the sister project sends as the x-webhook-secret header on
+# POST /qstash/webhook (it cannot sign requests like QStash itself does).
+SISTER_WEBHOOK_SECRET=
+
 ACCESS_TOKEN_SECRET=
 REFRESH_TOKEN_SECRET=
 FORGOT_PASSWORD_TOKEN_SECRET=
