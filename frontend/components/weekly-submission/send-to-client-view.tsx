@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Users } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { useAuth } from "@/hooks/use-auth";
 import { useClientContacts } from "@/components/project-overview/use-project-data";
 import { buildMailto, buildSubmissionReportText } from "./mailto";
@@ -113,9 +115,12 @@ export function SendToClientView({
           <div className="flex flex-col gap-[8px]">
             <p className="text-[14px] font-semibold text-gca-dark">Client team</p>
             {contacts.length === 0 ? (
-              <p className="text-[13px] text-gca-muted">
-                No client contacts added for this project yet.
-              </p>
+              <EmptyState
+                icon={Users}
+                title="No client contacts yet"
+                description="Add a client contact in project settings to send this to them."
+                className="py-[24px]"
+              />
             ) : (
               contacts.map((c) => (
                 <label

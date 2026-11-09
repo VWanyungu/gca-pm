@@ -49,6 +49,7 @@ function deriveActive(
 
 interface ProjectSidebarData {
   projectId: string;
+  projectName: string;
   stages: StageRow[];
   counts?: { submit: number; risks: number; changeRequests: number };
   percentByStage: Record<number, number>;
@@ -97,6 +98,7 @@ export function ProjectSidebarProvider({
   const value = useMemo<ProjectSidebarData>(
     () => ({
       projectId,
+      projectName: data?.project.name ?? "",
       stages: data?.stages ?? [],
       counts,
       percentByStage,
@@ -104,7 +106,16 @@ export function ProjectSidebarProvider({
       activeStageNo,
       kickoffComplete,
     }),
-    [projectId, data?.stages, counts, percentByStage, active, activeStageNo, kickoffComplete],
+    [
+      projectId,
+      data?.project.name,
+      data?.stages,
+      counts,
+      percentByStage,
+      active,
+      activeStageNo,
+      kickoffComplete,
+    ],
   );
 
   return <ProjectSidebarContext.Provider value={value}>{children}</ProjectSidebarContext.Provider>;

@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_CREATE_DPR } from "@/lib/access-control";
 import { reportError } from "@/lib/toast";
 import Dropdown from "@/components/Dropdown";
+import { EmptyState } from "@/components/empty-state";
 import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import { Pagination } from "@/components/pagination";
 import { useProjectDetail } from "@/components/project-overview/use-project-data";
@@ -261,15 +262,16 @@ export function DprListView({ projectId }: { projectId: string }) {
           {/* A native date input needs ~180px with its label, so the three filters get
                   their own row each on a phone rather than sharing one and clipping. */}
           <MobileFilterToggle>
-            <div className="flex flex-col items-stretch gap-[12px] sm:flex-row sm:flex-wrap sm:items-center">
+            <div className="flex flex-col items-stretch gap-[12px] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <Dropdown
                 id="dpr-filter-status"
+                label="Status:"
                 data={STATUS_OPTIONS}
                 selectedId={statusFilter}
-                style="h-[40px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
+                style="rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[6px] text-[13px] text-gca-dark"
                 onSelect={(id) => changeFilter(setStatusFilter, id)}
               />
-              <label className="flex h-[40px] min-w-0 items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px]">
+              <label className="flex min-w-0 items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[6px]">
                 <span className="text-[13px] text-gca-muted">From</span>
                 <input
                   type="date"
@@ -279,16 +281,16 @@ export function DprListView({ projectId }: { projectId: string }) {
                     setToDate(event.target.value);
                     setPage(1);
                   }}
-                  className="min-w-0 flex-1 bg-transparent text-[14px] text-gca-dark outline-none sm:flex-none"
+                  className="min-w-0 flex-1 bg-transparent text-[13px] text-gca-dark outline-none sm:flex-none"
                 />
               </label>
-              <label className="flex h-[40px] min-w-0 items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px]">
+              <label className="flex min-w-0 items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[6px]">
                 <span className="text-[13px] text-gca-muted">To</span>
                 <input
                   type="date"
                   value={toDate}
                   onChange={(event) => changeFilter(setToDate, event.target.value)}
-                  className="min-w-0 flex-1 bg-transparent text-[14px] text-gca-dark outline-none sm:flex-none"
+                  className="min-w-0 flex-1 bg-transparent text-[13px] text-gca-dark outline-none sm:flex-none"
                 />
               </label>
               {hasActiveFilters && (
@@ -419,21 +421,15 @@ export function DprListView({ projectId }: { projectId: string }) {
           )}
 
           {rows.length === 0 ? (
-            <div className="flex flex-col items-center gap-[16px] py-[56px]">
-              <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-gca-page-bg">
-                <ClipboardList className="size-[18px] text-gca-green" />
-              </span>
-              <div className="flex flex-col items-center gap-[4px] text-center">
-                <p className="text-[14px] font-semibold text-gca-dark">
-                  {hasActiveFilters ? "No DPRs match these filters" : "No DPRs yet"}
-                </p>
-                <p className="max-w-[420px] text-[13px] text-gca-show">
-                  {hasActiveFilters
-                    ? "Try a different status or date range."
-                    : "Daily progress reports submitted for this project will show up here."}
-                </p>
-              </div>
-            </div>
+            <EmptyState
+              icon={ClipboardList}
+              title={hasActiveFilters ? "No DPRs match these filters" : "No DPRs yet"}
+              description={
+                hasActiveFilters
+                  ? "Try a different status or date range."
+                  : "Daily progress reports submitted for this project will show up here."
+              }
+            />
           ) : (
             <div className="flex w-full flex-col">
               {/* No column headings on a phone — each row carries its own labels there. */}

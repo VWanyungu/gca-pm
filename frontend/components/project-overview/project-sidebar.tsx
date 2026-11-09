@@ -22,21 +22,21 @@ import { useAuth } from "@/hooks/use-auth";
 import { useMobileNavigation } from "@/components/mobile-navigation-context";
 import { STAGE_SHORT_NAME } from "./types";
 import { useProjectSidebarData } from "./project-sidebar-context";
-
-const ROLE_BLURB: Record<string, string> = {
-  PM: "Full access to this project",
-  Planner: "Can edit schedule and submissions",
-  SiteEngineer: "Can submit daily progress reports",
-  ExCo: "Executive visibility across projects",
-  Admin: "Full platform access",
-  ProjectCreator: "Can create and configure projects",
-};
+import { ProjectSwitcher } from "./project-switcher";
 
 /** Reads its data from ProjectSidebarProvider (set up once in the `[projectId]` layout) instead
  *  of props, so it renders once per project and survives navigation between its sub-pages. */
 export function ProjectSidebar() {
-  const { projectId, stages, counts, percentByStage, active, activeStageNo, kickoffComplete } =
-    useProjectSidebarData();
+  const {
+    projectId,
+    projectName,
+    stages,
+    counts,
+    percentByStage,
+    active,
+    activeStageNo,
+    kickoffComplete,
+  } = useProjectSidebarData();
   const { user } = useAuth();
   const { isOpen, setIsOpen } = useMobileNavigation();
   const [stagesOpen, setStagesOpen] = useState(false);
@@ -114,14 +114,9 @@ export function ProjectSidebar() {
   const sidebarContent = (
     <>
       <div className="flex flex-col gap-[2px] px-[12px] pt-[12px]">
-        {myRole && (
-          <div className="mb-[0px] flex flex-col gap-[2px] rounded-[10px] px-[12px] pb-[8px] text-gca-show">
-            <p className="text-[14px] font-semibold text-gca-dark">
-              {myRole === "PM" ? "Main PM" : myRole === "Planner" ? "Main Planner" : myRole}
-            </p>
-            <p className="text-[12px] text-gca-show">{ROLE_BLURB[myRole] ?? "Project access"}</p>
-          </div>
-        )}
+        <div className="mb-[4px]">
+          <ProjectSwitcher projectId={projectId} projectName={projectName} />
+        </div>
 
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -146,7 +141,7 @@ export function ProjectSidebar() {
               href={item.href}
               onClick={() => setIsOpen(false)}
               className={`flex items-center justify-between rounded-[8px] px-[12px] py-[8px] ${
-                isActive ? "bg-gca-badge-bg" : "hover:bg-gca-surface"
+                isActive ? "bg-gca-badge-bg" : "hover:bg-gca-page-bg"
               }`}
             >
               <span className="flex items-center gap-[10px]">
@@ -169,7 +164,7 @@ export function ProjectSidebar() {
           <>
             <button
               onClick={() => setStagesOpen((o) => !o)}
-              className="flex items-center justify-between rounded-[8px] px-[12px] py-[8px] hover:bg-gca-surface"
+              className="flex items-center justify-between rounded-[8px] px-[12px] py-[8px] hover:bg-gca-page-bg"
             >
               <span className="flex items-center gap-[10px]">
                 <ListTree className="size-[16px] text-gca-show" />
@@ -223,7 +218,7 @@ export function ProjectSidebar() {
                       href={`${base}/stages/${s.stage_no}`}
                       onClick={() => setIsOpen(false)}
                       className={`flex h-[32px] items-center justify-between rounded-[6px] pl-[26px] pr-[12px] text-[13px] ${
-                        viewing ? "bg-gca-badge-bg" : "hover:bg-gca-surface"
+                        viewing ? "bg-gca-badge-bg" : "hover:bg-gca-page-bg"
                       }`}
                     >
                       <span
@@ -269,7 +264,7 @@ export function ProjectSidebar() {
           href={`${base}/settings`}
           onClick={() => setIsOpen(false)}
           className={`flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] ${
-            active === "settings" ? "bg-gca-badge-bg" : "hover:bg-gca-surface"
+            active === "settings" ? "bg-gca-badge-bg" : "hover:bg-gca-page-bg"
           }`}
         >
           <Settings
@@ -287,13 +282,13 @@ export function ProjectSidebar() {
 
   return (
     <>
-      <aside className="sticky top-[64px] hidden h-[calc(100vh-64px)] w-[240px] shrink-0 flex-col justify-between overflow-y-auto border-r border-gca-border bg-gca-page-bg md:flex">
+      <aside className="sticky top-[64px] hidden h-[calc(100vh-64px)] w-[240px] shrink-0 flex-col justify-between overflow-y-auto border-r border-gca-border bg-gca-surface md:flex">
         {sidebarContent}
       </aside>
       {isOpen &&
         mobileSidebarTarget &&
         createPortal(
-          <aside className="flex flex-col justify-between border-t border-gca-border bg-gca-page-bg py-[8px]">
+          <aside className="flex flex-col justify-between border-t border-gca-border bg-gca-surface py-[8px]">
             {sidebarContent}
           </aside>,
           mobileSidebarTarget,

@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { LoaderCircle } from "lucide-react";
+import { Bell, CheckCircle2, LoaderCircle } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import {
   useNotifications,
   useMarkNotificationRead,
@@ -69,11 +70,17 @@ export function NotificationsView() {
           {tab === "preferences" ? (
             <PreferencesPanel />
           ) : isLoading ? (
-            <p className="text-[14px] text-gca-show">Loading notifications…</p>
+            <NotificationsSkeleton />
           ) : groups.length === 0 ? (
-            <p className="text-[14px] text-gca-show">
-              {tab === "unread" ? "You're all caught up." : "No notifications yet."}
-            </p>
+            <EmptyState
+              icon={tab === "unread" ? CheckCircle2 : Bell}
+              title={tab === "unread" ? "You're all caught up" : "No notifications yet"}
+              description={
+                tab === "unread"
+                  ? "There's nothing unread right now."
+                  : "Updates on your projects will show up here."
+              }
+            />
           ) : (
             groups.map((group) => (
               <div key={group.label} className="flex flex-col gap-[18px]">
@@ -94,6 +101,25 @@ export function NotificationsView() {
           )}
         </div>
       </main>
+    </div>
+  );
+}
+
+function NotificationsSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading notifications" className="flex flex-col gap-[12px]">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div
+          key={i}
+          className="flex animate-pulse items-start gap-[12px] rounded-[12px] border border-gca-border p-[16px]"
+        >
+          <div className="size-[36px] shrink-0 rounded-[8px] bg-gca-page-bg" />
+          <div className="flex flex-1 flex-col gap-[10px]">
+            <div className="h-[15px] w-2/3 rounded-[4px] bg-gca-page-bg" />
+            <div className="h-[14px] w-full rounded-[4px] bg-gca-page-bg" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -186,7 +212,7 @@ function PreferencesPanel() {
   const enabledFor = (typeCode: string) =>
     preferences.find((p) => p.type_code === typeCode)?.enabled ?? true;
 
-  if (isLoading) return <p className="text-[14px] text-gca-show">Loading preferences…</p>;
+  if (isLoading) return <PreferencesSkeleton />;
 
   return (
     <div className="flex flex-col gap-[20px]">
@@ -208,6 +234,30 @@ function PreferencesPanel() {
                   updatePreference.mutate({ type_code: item.type_code, enabled })
                 }
               />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PreferencesSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading preferences" className="flex flex-col gap-[20px]">
+      {[0, 1].map((group) => (
+        <div
+          key={group}
+          className="animate-pulse rounded-[12px] border border-gca-border px-[20px] pb-[8px] pt-[16px]"
+        >
+          <div className="h-[15px] w-[140px] rounded-[4px] bg-gca-page-bg" />
+          {[0, 1, 2].map((row) => (
+            <div
+              key={row}
+              className={`flex items-center justify-between gap-[12px] py-[12px] ${row > 0 ? "border-t border-gca-border" : ""}`}
+            >
+              <div className="h-[14px] w-1/2 rounded-[4px] bg-gca-page-bg" />
+              <div className="h-[20px] w-[36px] shrink-0 rounded-full bg-gca-page-bg" />
             </div>
           ))}
         </div>

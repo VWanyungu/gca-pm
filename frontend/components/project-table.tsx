@@ -67,7 +67,7 @@ function buildColumns(canEdit: boolean): ColumnDef<Project>[] {
         const p = row.original;
         const spiColor = p.spi !== null && p.spi < 0.95 ? "text-gca-warning" : "text-gca-dark";
         return (
-          <span className={`font-mono text-[13px] font-medium ${spiColor}`}>
+          <span className={`text-[13px] font-medium ${spiColor}`}>
             {p.spi !== null ? (p.completed / p.planned).toFixed(2) : "—"}
           </span>
         );

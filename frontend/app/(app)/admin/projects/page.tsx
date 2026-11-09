@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, FolderOpen } from "lucide-react";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { EmptyState } from "@/components/empty-state";
 import Dropdown from "@/components/Dropdown";
 import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import { Pagination } from "@/components/pagination";
@@ -80,15 +81,16 @@ export default function AdminProjectsPage() {
             setPage(1);
           }}
           placeholder="Search projects"
-          className="h-[40px] w-full rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none placeholder:text-gca-muted md:w-[320px]"
+          className="w-full rounded-[8px] border border-gca-border px-[12px] py-[6px] text-[13px] text-gca-dark outline-none placeholder:text-gca-muted md:w-[320px]"
         />
         <MobileFilterToggle>
           <Dropdown
             id="status-filter"
             title="All statuses"
+            label="Status:"
             data={STATUS_OPTIONS}
             selectedId={statusFilter ?? "all"}
-            style="h-[40px] w-full sm:w-[170px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
+            style="w-full sm:w-[170px] rounded-[8px] border border-gca-border px-[12px] py-[6px] text-[13px] text-gca-dark"
             onSelect={(id) => {
               setStatusFilter(id === "all" ? undefined : (id as ProjectStatus));
               setPage(1);
@@ -97,9 +99,10 @@ export default function AdminProjectsPage() {
           <Dropdown
             id="program-filter"
             title="All programs"
+            label="Program:"
             data={programOptions}
             selectedId={programFilter != null ? String(programFilter) : "all"}
-            style="h-[40px] w-full sm:w-[190px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
+            style="w-full sm:w-[190px] rounded-[8px] border border-gca-border px-[12px] py-[6px] text-[13px] text-gca-dark"
             onSelect={(id) => {
               setProgramFilter(id === "all" ? undefined : Number(id));
               setPage(1);
@@ -180,11 +183,12 @@ export default function AdminProjectsPage() {
             ))}
             {projects.length === 0 && (
               <tr>
-                <td
-                  colSpan={6}
-                  className="px-[16px] py-[24px] text-center text-[13px] text-gca-muted"
-                >
-                  No projects found
+                <td colSpan={6}>
+                  <EmptyState
+                    icon={FolderOpen}
+                    title="No projects found"
+                    description="Try adjusting your search or filters."
+                  />
                 </td>
               </tr>
             )}

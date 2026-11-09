@@ -17,7 +17,8 @@ import {
   type ScheduleTask,
 } from "./types";
 import { useEditScheduleTask } from "./use-schedule-data";
-import { Check, ChevronDown, ChevronRight, LoaderCircle, Pencil, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, LoaderCircle, Pencil, X, CalendarRange } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 
 const INITIAL_ROWS = 24;
 const LOAD_MORE_ROWS = 24;
@@ -450,12 +451,20 @@ export function ScheduleTable({ tasks, window, canEdit = false, projectId }: Sch
 
   if (tasks.length === 0) {
     return (
-      <p className="py-[56px] text-center text-[13px] text-gca-show">No schedule tasks to show.</p>
+      <EmptyState
+        icon={CalendarRange}
+        title="No schedule tasks to show"
+        description="Upload a schedule to see its tasks here."
+      />
     );
   }
   if (rows.length === 0) {
     return (
-      <p className="py-[56px] text-center text-[13px] text-gca-show">No tasks in this window.</p>
+      <EmptyState
+        icon={CalendarRange}
+        title="No tasks in this window"
+        description="Try a different search or switch to the full schedule."
+      />
     );
   }
 

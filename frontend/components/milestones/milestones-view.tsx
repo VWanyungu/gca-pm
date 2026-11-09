@@ -53,7 +53,7 @@ export function MilestonesView({ projectId }: { projectId: string }) {
     <main className="flex w-full max-w-[1200px] flex-col gap-[20px] p-[20px] md:p-[40px]">
       {subView.mode === "list" && (
         <>
-          <div className="flex w-full flex-col gap-[16px] lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex w-full flex-col gap-[12px] sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">
                 Milestones
@@ -62,15 +62,33 @@ export function MilestonesView({ projectId }: { projectId: string }) {
                 {milestones.length} milestones · {customCount} custom
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-[12px] lg:justify-end">
-              <SegmentedControl
-                options={[
-                  { id: "chart", label: "Chart", icon: ChartGantt },
-                  { id: "table", label: "Table", icon: Table },
-                ]}
-                selected={viewMode}
-                onSelect={(id) => setViewMode(id as ViewMode)}
+            {canManage && (
+              <button
+                onClick={() => setSubView({ mode: "add" })}
+                className="flex w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[12px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover sm:w-auto sm:py-[10px]"
+              >
+                <Plus className="size-[14px]" />
+                Add milestone
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-col items-stretch gap-[12px] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <label className="flex w-full items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[6px] sm:w-[240px]">
+              <Search className="size-[14px] shrink-0 text-gca-muted" />
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setTablePage(1);
+                }}
+                placeholder="Search milestones"
+                aria-label="Search milestones"
+                className="min-w-0 w-full bg-transparent text-[13px] text-gca-dark outline-none placeholder:text-gca-muted"
               />
+            </label>
+            <div className="flex flex-wrap items-center gap-[12px]">
               <MobileFilterToggle>
                 <SegmentedControl
                   options={SOURCE_TABS}
@@ -80,30 +98,15 @@ export function MilestonesView({ projectId }: { projectId: string }) {
                     setTablePage(1);
                   }}
                 />
-                <label className="flex h-[40px] w-full items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] sm:w-[240px]">
-                  <Search className="size-[14px] shrink-0 text-gca-muted" />
-                  <input
-                    type="search"
-                    value={search}
-                    onChange={(event) => {
-                      setSearch(event.target.value);
-                      setTablePage(1);
-                    }}
-                    placeholder="Search milestones"
-                    aria-label="Search milestones"
-                    className="min-w-0 w-full bg-transparent text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
-                  />
-                </label>
               </MobileFilterToggle>
-              {canManage && (
-                <button
-                  onClick={() => setSubView({ mode: "add" })}
-                  className="flex w-full cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[12px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover sm:w-auto sm:py-[10px]"
-                >
-                  <Plus className="size-[14px]" />
-                  Add milestone
-                </button>
-              )}
+              <SegmentedControl
+                options={[
+                  { id: "chart", label: "Chart", icon: ChartGantt },
+                  { id: "table", label: "Table", icon: Table },
+                ]}
+                selected={viewMode}
+                onSelect={(id) => setViewMode(id as ViewMode)}
+              />
             </div>
           </div>
 
@@ -232,7 +235,7 @@ function SegmentedControl<T extends string>({
   onSelect: (id: T) => void;
 }) {
   return (
-    <div className="flex gap-[2px] rounded-[8px] bg-gca-page-bg p-[3px]">
+    <div className="flex h-[33.5px] gap-[2px] rounded-[8px] bg-gca-page-bg p-[3px]">
       {options.map((opt) => {
         const Icon = opt.icon;
         return (
@@ -241,13 +244,13 @@ function SegmentedControl<T extends string>({
             onClick={() => onSelect(opt.id)}
             title={opt.label}
             aria-label={opt.label}
-            className={`cursor-pointer rounded-[6px] text-[13px] ${Icon ? "flex size-[34px] items-center justify-center" : "px-[14px] py-[7px]"} ${
+            className={`cursor-pointer rounded-[6px] text-[13px] ${Icon ? "flex h-full w-[30px] items-center justify-center" : "px-[12px] py-[6px]"} ${
               selected === opt.id
                 ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                 : "font-normal text-gca-show"
             }`}
           >
-            {Icon ? <Icon className="size-[16px]" /> : opt.label}
+            {Icon ? <Icon className="size-[14px]" /> : opt.label}
           </button>
         );
       })}

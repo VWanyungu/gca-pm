@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, ClipboardList, Check } from "lucide-react";
+import { Plus, ClipboardList, Check, Search } from "lucide-react";
 import {
   type ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
 import { api } from "@/lib/api-client";
 import { useStageActivitiesPaged, useStageViewInvalidate } from "./use-stage-view-data";
@@ -141,6 +142,7 @@ export function ActivitiesTable({
   allowAdd = true,
 }: ActivitiesTableProps) {
   const [tab, setTab] = useState<"all" | "open" | "done">("all");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(6);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -159,11 +161,18 @@ export function ActivitiesTable({
   const total = data?.pagination.total ?? 0;
   const pages = data?.pagination.pages ?? 1;
   const doneCount = activities.filter((a) => a.status === "done").length;
-  const selectableIds = activities.filter((a) => a.status !== "done").map((a) => a.activity_id);
+  // shortcut: filters only the loaded page (no search param on the activities endpoint yet);
+  // upgrade to a server-side search if activities start outgrowing one page.
+  const filteredActivities = search.trim()
+    ? activities.filter((a) => a.title.toLowerCase().includes(search.trim().toLowerCase()))
+    : activities;
+  const selectableIds = filteredActivities
+    .filter((a) => a.status !== "done")
+    .map((a) => a.activity_id);
   const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
 
   const columns = buildColumns(team, selected, allSelected, selectableIds.length, toggleSelected, toggleSelectAll);
-  const table = useReactTable({ data: activities, columns, getCoreRowModel: getCoreRowModel() });
+  const table = useReactTable({ data: filteredActivities, columns, getCoreRowModel: getCoreRowModel() });
 
   function changeTab(next: "all" | "open" | "done") {
     setTab(next);
@@ -205,68 +214,75 @@ export function ActivitiesTable({
             {total === 0 ? "No activities yet" : `${doneCount} of ${activities.length} done`}
           </p>
         </div>
-        {total > 0 && (
-          <div className="flex flex-wrap items-center gap-[12px]">
-            <div className="flex items-center gap-[2px] rounded-[8px] bg-gca-page-bg p-[3px]">
-              {(["all", "open", "done"] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => changeTab(t)}
-                  className={`cursor-pointer rounded-[6px] px-[10px] py-[5px] text-[13px] ${
-                    tab === t
-                      ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
-                      : "font-normal text-gca-show"
-                  }`}
-                >
-                  {t === "all" ? "All" : t === "open" ? "Open" : "Done"}
-                </button>
-              ))}
-            </div>
-            {allowAdd && (
-              <button
-                onClick={onAddActivity}
-                className="flex cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
-              >
-                <Plus className="size-[10px]" />
-                Add activity
-              </button>
-            )}
-          </div>
+        {allowAdd && (
+          <button
+            onClick={onAddActivity}
+            className="flex shrink-0 cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+          >
+            <Plus className="size-[10px]" />
+            Add activity
+          </button>
         )}
       </div>
 
-      {activities.length === 0 ? (
-        <>
-          <div className="flex flex-col items-center gap-[16px] py-[40px] sm:py-[56px]">
-            <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-gca-page-bg">
-              <ClipboardList className="size-[18px] text-gca-green" />
-            </span>
-            <div className="flex flex-col items-center gap-[4px] text-center">
-              <p className="text-[14px] font-semibold text-gca-dark">
-                {tab === "all"
-                  ? "Plan the work for this stage"
-                  : tab === "open"
-                    ? "No open activities"
-                    : "No completed activities"}
-              </p>
-              <p className="max-w-[420px] text-[13px] text-gca-show">
-                {tab === "all"
-                  ? "Add activities with an owner and due date. They show on the overview when overdue."
-                  : tab === "open"
-                    ? "Open activities will show up here."
-                    : "Completed activities will show up here."}
-              </p>
-            </div>
-            {tab === "all" && allowAdd && (
-              <button
-                onClick={onAddActivity}
-                className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
-              >
-                Add activity
-              </button>
-            )}
-          </div>
-        </>
+      {/* Stays mounted across tab/page changes — react-query keeps the previous page's data
+       *  while a new one loads, so only the table below swaps; the toolbar never flashes. */}
+      <div className="flex flex-col items-stretch gap-[12px] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <label className="flex w-full items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[6px] sm:w-[240px]">
+          <Search className="size-[14px] shrink-0 text-gca-muted" />
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search activities"
+            aria-label="Search activities"
+            className="min-w-0 w-full bg-transparent text-[13px] text-gca-dark outline-none placeholder:text-gca-muted"
+          />
+        </label>
+        <div className="flex items-center gap-[2px] rounded-[8px] bg-gca-page-bg p-[3px]">
+          {(["all", "open", "done"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => changeTab(t)}
+              className={`cursor-pointer rounded-[6px] px-[12px] py-[6px] text-[13px] ${
+                tab === t
+                  ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
+                  : "font-normal text-gca-show"
+              }`}
+            >
+              {t === "all" ? "All" : t === "open" ? "Open" : "Done"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {filteredActivities.length === 0 ? (
+        <EmptyState
+          icon={ClipboardList}
+          title={
+            search.trim()
+              ? `Nothing matches "${search.trim()}"`
+              : tab === "all"
+                ? "Plan the work for this stage"
+                : tab === "open"
+                  ? "No open activities"
+                  : "No completed activities"
+          }
+          description={
+            search.trim()
+              ? "Try a different search term."
+              : tab === "all"
+                ? "Add activities with an owner and due date. They show on the overview when overdue."
+                : tab === "open"
+                  ? "Open activities will show up here."
+                  : "Completed activities will show up here."
+          }
+          action={
+            !search.trim() && tab === "all" && allowAdd
+              ? { label: "Add activity", onClick: onAddActivity }
+              : undefined
+          }
+        />
       ) : (
         <>
           {selected.size > 0 && (

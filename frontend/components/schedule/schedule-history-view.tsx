@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ArrowLeft, Upload } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
 import { downloadScheduleVersionFile, useScheduleVersions } from "./use-schedule-data";
 import { formatLongDateTime, type ScheduleVersion } from "./types";
@@ -70,9 +71,11 @@ export function ScheduleHistoryView({
       </div>
 
       {versions.length === 0 ? (
-        <p className="py-[56px] text-center text-[13px] text-gca-show">
-          No schedule has been uploaded yet.
-        </p>
+        <EmptyState
+          icon={Upload}
+          title="No schedule has been uploaded yet"
+          description="Upload a schedule to start tracking versions here."
+        />
       ) : (
         <div className="flex w-full flex-col gap-[16px]">
           <div className="no-scrollbar w-full overflow-x-auto rounded-[12px] border border-gca-border">

@@ -418,7 +418,16 @@ export function ScheduleView({ projectId }: { projectId: string }) {
         {(tab === "gantt" || tab === "table") && (
           <div>
             <MobileFilterToggle>
-              <div className="flex items-center gap-[12px]">
+              <div className="flex w-full items-center justify-between gap-[12px]">
+                <div className="relative w-full sm:w-[220px]">
+                  <Search className="pointer-events-none absolute left-[12px] top-1/2 size-[14px] -translate-y-1/2 text-gca-muted" />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search tasks"
+                    className="w-full rounded-[8px] border border-gca-border py-[6px] pl-[34px] pr-[13px] text-[13px] outline-none focus:border-gca-green"
+                  />
+                </div>
                 <Dropdown
                   id="schedule-range"
                   data={[
@@ -429,18 +438,9 @@ export function ScheduleView({ projectId }: { projectId: string }) {
                     },
                   ]}
                   selectedId={range}
-                  style="h-[36px] w-full sm:w-[220px] rounded-[8px] border border-gca-border px-[13px] text-[13px]"
+                  style="w-full sm:w-[220px] rounded-[8px] border border-gca-border px-[13px] py-[6px] text-[13px]"
                   onSelect={(id) => setRange(id as "full" | "lookahead")}
                 />
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-[12px] top-1/2 size-[14px] -translate-y-1/2 text-gca-muted" />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search tasks"
-                    className="h-[36px] w-full rounded-[8px] border border-gca-border pl-[34px] pr-[13px] text-[13px] outline-none focus:border-gca-green sm:w-[220px]"
-                  />
-                </div>
               </div>
             </MobileFilterToggle>
           </div>

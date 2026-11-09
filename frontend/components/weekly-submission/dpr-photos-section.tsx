@@ -6,7 +6,8 @@ import {
   setSubmissionPhotos,
   useWeeklySubmissionInvalidate,
 } from "./use-weekly-submission-data";
-import { Camera, Shield } from "lucide-react";
+import { Camera } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
 
 const DEFAULT_PER_PAGE = 6;
@@ -84,16 +85,13 @@ export function DprPhotosSection({
       </div>
 
       {photos.length === 0 ? (
-        <div className="flex flex-col items-center gap-[8px] rounded-[12px] bg-gca-page-bg py-[64px]">
-          <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-gca-surface">
-            <Camera className="size-[18px] text-gca-green" />
-          </span>
-          <div className="flex flex-col items-center gap-[4px] text-center">
-            <p className="text-[15px] font-semibold text-gca-dark">
-              No photos on this week&apos;s DPRs yet.
-            </p>
-            <p className="text-[13px] text-gca-muted">DPR photos will appear here</p>
-          </div>
+        <div className="rounded-[12px] bg-gca-page-bg">
+          <EmptyState
+            icon={Camera}
+            title="No photos yet"
+            description="Photos attached to this week's DPRs will appear here."
+            className="py-[56px]"
+          />
         </div>
       ) : (
         <>

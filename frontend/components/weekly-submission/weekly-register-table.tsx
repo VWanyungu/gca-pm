@@ -2,7 +2,8 @@
 
 import { Fragment, useState } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { CalendarCheck, Search } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import {
   type ColumnDef,
   flexRender,
@@ -167,7 +168,7 @@ export function WeeklyRegisterTable({
       </div> */}
 
       <div className="flex flex-col gap-[12px] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <label className="flex h-[40px] w-full items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] sm:w-[260px]">
+        <label className="flex w-full items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[6px] sm:w-[260px]">
           <Search className="size-[14px] shrink-0 text-gca-muted" />
           <input
             type="search"
@@ -175,18 +176,19 @@ export function WeeklyRegisterTable({
             onChange={(event) => changeFilter(setSearch, event.target.value)}
             placeholder="Search week or submitted by"
             aria-label="Search week or submitted by"
-            className="min-w-0 w-full bg-transparent text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
+            className="min-w-0 w-full bg-transparent text-[13px] text-gca-dark outline-none placeholder:text-gca-muted"
           />
         </label>
         <MobileFilterToggle>
           <Dropdown
             id="register-filter-status"
+            label="Status:"
             data={STATUS_OPTIONS}
             selectedId={statusFilter}
-            style="h-[40px] w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
+            style="w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[6px] text-[13px] text-gca-dark"
             onSelect={(id) => changeFilter(setStatusFilter, id)}
           />
-          <label className="flex h-[40px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px]">
+          <label className="flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[6px]">
             <span className="text-[13px] text-gca-muted">From</span>
             <input
               type="date"
@@ -196,16 +198,16 @@ export function WeeklyRegisterTable({
                 setToDate(event.target.value);
                 setPage(1);
               }}
-              className="bg-transparent text-[14px] text-gca-dark outline-none"
+              className="bg-transparent text-[13px] text-gca-dark outline-none"
             />
           </label>
-          <label className="flex h-[40px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px]">
+          <label className="flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[6px]">
             <span className="text-[13px] text-gca-muted">To</span>
             <input
               type="date"
               value={toDate}
               onChange={(event) => changeFilter(setToDate, event.target.value)}
-              className="bg-transparent text-[14px] text-gca-dark outline-none"
+              className="bg-transparent text-[13px] text-gca-dark outline-none"
             />
           </label>
           {hasActiveFilters && (
@@ -234,9 +236,15 @@ export function WeeklyRegisterTable({
           ))}
         </div>
         {submissions.length === 0 ? (
-          <p className="py-[48px] text-[13px] text-gca-muted text-center">
-            {hasActiveFilters ? "No weeks match these filters." : "No weeks submitted yet."}
-          </p>
+          <EmptyState
+            icon={CalendarCheck}
+            title={hasActiveFilters ? "No weeks match these filters" : "No weeks submitted yet"}
+            description={
+              hasActiveFilters
+                ? "Try a different status or date range."
+                : "Approved weekly submissions will show up here."
+            }
+          />
         ) : (
           table.getRowModel().rows.map((row) => {
             const s = row.original;

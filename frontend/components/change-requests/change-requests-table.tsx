@@ -9,6 +9,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import Dropdown from "@/components/Dropdown";
+import { EmptyState } from "@/components/empty-state";
 import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { Pagination } from "@/components/pagination";
@@ -194,8 +195,8 @@ export function ChangeRequestsTable({
         )}
       </div>
 
-      <div className="flex flex-col items-stretch gap-[12px] sm:flex-row sm:flex-wrap sm:items-center">
-        <label className="flex h-[40px] w-full items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] sm:w-[260px]">
+      <div className="flex flex-col items-stretch gap-[12px] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <label className="flex w-full items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[6px] sm:w-[260px]">
           <Search className="size-[14px] shrink-0 text-gca-muted" />
           <input
             type="search"
@@ -206,46 +207,43 @@ export function ChangeRequestsTable({
             }}
             placeholder="Search change requests"
             aria-label="Search change requests"
-            className="min-w-0 w-full bg-transparent text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
+            className="min-w-0 w-full bg-transparent text-[13px] text-gca-dark outline-none placeholder:text-gca-muted"
           />
         </label>
         <MobileFilterToggle>
           <Dropdown
             id="cr-filter-stage"
+            label="Stage:"
             data={stageOptions}
             selectedId={stageFilter}
-            style="h-[40px] w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
+            style="w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[6px] text-[13px] text-gca-dark"
             onSelect={(id) => changeFilter(setStageFilter, id)}
           />
           <Dropdown
             id="cr-filter-type"
+            label="Type:"
             data={TYPE_OPTIONS}
             selectedId={typeFilter}
-            style="h-[40px] w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
+            style="w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[6px] text-[13px] text-gca-dark"
             onSelect={(id) => changeFilter(setTypeFilter, id)}
           />
           <Dropdown
             id="cr-filter-status"
+            label="Status:"
             data={STATUS_OPTIONS}
             selectedId={statusFilter}
-            style="h-[40px] w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
+            style="w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[6px] text-[13px] text-gca-dark"
             onSelect={(id) => changeFilter(setStatusFilter, id)}
           />
         </MobileFilterToggle>
       </div>
 
       {changeRequests.length === 0 ? (
-        <div className="flex flex-col items-center gap-[16px] py-[56px]">
-          <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-gca-page-bg">
-            <GitPullRequest className="size-[18px] text-gca-green" />
-          </span>
-          <div className="flex flex-col items-center gap-[4px] text-center">
-            <p className="text-[14px] font-semibold text-gca-dark">Nothing here</p>
-            <p className="max-w-[420px] text-[13px] text-gca-show">
-              Change requests matching these filters will show up here.
-            </p>
-          </div>
-        </div>
+        <EmptyState
+          icon={GitPullRequest}
+          title="Nothing here"
+          description="Change requests matching these filters will show up here."
+        />
       ) : (
         <>
           <div className="flex w-full flex-col">

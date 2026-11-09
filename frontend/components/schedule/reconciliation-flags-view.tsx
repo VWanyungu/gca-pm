@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { LoaderCircle } from "lucide-react";
+import { FlagTriangleRight, LoaderCircle } from "lucide-react";
 import { api } from "@/lib/api-client";
+import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
 import { useScheduleInvalidate } from "./use-schedule-data";
 import { formatShortDate, groupByTopic, type ReconciliationFlag, type ScheduleTask } from "./types";
@@ -78,7 +79,11 @@ export function ReconciliationFlagsView({
 
   if (flags.length === 0) {
     return (
-      <p className="py-[56px] text-center text-[13px] text-gca-show">No reconciliation flags.</p>
+      <EmptyState
+        icon={FlagTriangleRight}
+        title="No reconciliation flags"
+        description="DPR progress that disagrees with the schedule will show up here."
+      />
     );
   }
 

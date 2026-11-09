@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronDown, ChevronRight, Copy, Star, Trash2 } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Copy, MessageSquare, Star, Trash2 } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_REQUEST_CLIENT_FEEDBACK } from "@/lib/access-control";
 import { reportError } from "@/lib/toast";
@@ -129,9 +130,12 @@ export function ClientFeedbackView({ projectId }: { projectId: string }) {
           </div>
 
           {requests.length === 0 ? (
-            <p className="px-[20px] py-[32px] text-center text-[13px] text-gca-muted">
-              No feedback requested yet.
-            </p>
+            <EmptyState
+              icon={MessageSquare}
+              title="No feedback requested yet"
+              description="Send a request to a client contact to start collecting feedback."
+              className="py-[32px]"
+            />
           ) : (
             <>
               {/* Desktop table */}

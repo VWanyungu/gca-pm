@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileDiff } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
 import { downloadScheduleVersionFile, useVersionChanges } from "./use-schedule-data";
 import { formatLongDateTime, type ScheduleVersion, type VersionChange } from "./types";
@@ -100,9 +101,7 @@ export function VersionChangesView({ projectId, version, team, onBack }: Version
       </div>
 
       {filtered.length === 0 ? (
-        <p className="py-[56px] text-center text-[13px] text-gca-show">
-          No changes in this category.
-        </p>
+        <EmptyState icon={FileDiff} title="No changes in this category" />
       ) : (
         <div className="flex w-full flex-col gap-[16px]">
           <div className="no-scrollbar w-full overflow-x-auto rounded-[12px] border border-gca-border">

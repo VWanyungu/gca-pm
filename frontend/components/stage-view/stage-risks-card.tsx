@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowRight, ShieldCheck } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { useStageRisks } from "./use-stage-view-data";
 import type { StageRisk } from "@/components/project-overview/types";
 
@@ -32,21 +33,13 @@ export function StageRisksCard({ projectId, stageNo }: { projectId: string; stag
       </div>
 
       {risks.length === 0 ? (
-        <div className="flex flex-col items-center gap-[12px] py-[16px] text-center">
-          <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-gca-surface">
-            <ShieldCheck className="size-[18px] text-gca-green" />
-          </span>
-          <p className="text-[14px] font-semibold text-gca-dark">Nothing raised for this stage</p>
-          <p className="text-[13px] text-gca-show">
-            Risks and issues tagged to this stage show here.
-          </p>
-          <Link
-            href={`/projects/${projectId}/risks`}
-            className="text-[13px] font-medium text-gca-green"
-          >
-            Raise a risk
-          </Link>
-        </div>
+        <EmptyState
+          icon={ShieldCheck}
+          title="Nothing raised for this stage"
+          description="Risks and issues tagged to this stage show here."
+          action={{ label: "Raise a risk", href: `/projects/${projectId}/risks` }}
+          className="py-[16px]"
+        />
       ) : (
         <div className="flex flex-col">
           {risks.map((risk, i) => {

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Pencil, Flag } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import {
   type ColumnDef,
   flexRender,
@@ -153,17 +154,11 @@ export function MilestonesTable({
 
   if (milestones.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-[16px] py-[56px]">
-        <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-gca-page-bg">
-          <Flag className="size-[18px] text-gca-green" />
-        </span>
-        <div className="flex flex-col items-center gap-[4px] text-center">
-          <p className="text-[14px] font-semibold text-gca-dark">Nothing here</p>
-          <p className="max-w-[420px] text-[13px] text-gca-show">
-            No milestones match the current search or source filter.
-          </p>
-        </div>
-      </div>
+      <EmptyState
+        icon={Flag}
+        title="Nothing here"
+        description="No milestones match the current search or source filter."
+      />
     );
   }
 

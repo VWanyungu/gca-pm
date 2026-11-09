@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { LoaderCircle } from "lucide-react";
+import { LoaderCircle, ShieldCheck } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import {
   useAccessRoles,
   useCreateAccessRole,
@@ -73,8 +74,8 @@ export default function AdminRolesPage() {
             ))}
             {roles.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-[16px] py-[24px] text-center text-[13px] text-gca-muted">
-                  No roles found
+                <td colSpan={4}>
+                  <EmptyState icon={ShieldCheck} title="No roles found" />
                 </td>
               </tr>
             )}

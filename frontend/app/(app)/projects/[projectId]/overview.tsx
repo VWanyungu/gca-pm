@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_MANAGE_PROJECT } from "@/lib/access-control";
+import { PageSpinner } from "@/components/page-spinner";
 import { SystemStateScreen } from "@/components/system-state/system-state-screen";
 import { useProjectSidebarData } from "@/components/project-overview/project-sidebar-context";
 import { ProjectHero } from "@/components/project-overview/project-hero";
@@ -74,7 +75,7 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
   }, [activities]);
 
   if (isLoading) {
-    return <p className="p-[40px] text-[14px] text-gca-muted">Loading project…</p>;
+    return <PageSpinner className="min-h-[calc(100vh-64px)]" />;
   }
   if (error || !data) {
     if (error instanceof ApiError && error.httpStatus === 403) {

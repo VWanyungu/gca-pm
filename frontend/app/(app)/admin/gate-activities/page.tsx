@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { LoaderCircle } from "lucide-react";
+import { LoaderCircle, ClipboardList } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import {
   useGateActivityTemplates,
   useCreateGateActivityTemplate,
@@ -145,8 +146,8 @@ function TemplateSection({
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-[16px] py-[24px] text-center text-[13px] text-gca-muted">
-                  No activities yet
+                <td colSpan={6}>
+                  <EmptyState icon={ClipboardList} title="No activities yet" />
                 </td>
               </tr>
             )}

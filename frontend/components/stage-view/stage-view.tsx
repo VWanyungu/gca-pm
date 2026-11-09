@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { PageSpinner } from "@/components/page-spinner";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_MANAGE_PROJECT } from "@/lib/access-control";
 import { api } from "@/lib/api-client";
@@ -66,8 +67,8 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
 
   if (isLoading) {
     return (
-      <main className="flex w-full max-w-[1200px] flex-col gap-[24px] p-[20px] md:p-[40px]">
-        <p className="text-[14px] text-gca-muted">Loading stage…</p>
+      <main className="flex w-full max-w-[1200px] flex-col p-[20px] md:p-[40px]">
+        <PageSpinner className="min-h-[300px]" />
       </main>
     );
   }
@@ -91,7 +92,7 @@ export function StageView({ projectId, stageNo }: { projectId: string; stageNo: 
         doneCount={doneCount}
         totalCount={stageActivities.length}
         canManage={canManage}
-        hasChecklist={isGateStage || checklistItems.length > 0}
+        hasChecklist={isGateStage || checklistRevealed || checklistItems.length > 0}
         onAddChecklist={() => setChecklistRevealed(true)}
         onToggleComplete={toggleComplete}
         togglingComplete={togglingComplete}

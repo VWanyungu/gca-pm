@@ -1,5 +1,6 @@
 import type { Milestone } from "@/components/project-overview/types";
 import { Trophy } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 
 export function NextMilestonesList({ milestones }: { milestones: Milestone[] }) {
   const upcoming = milestones
@@ -19,14 +20,13 @@ export function NextMilestonesList({ milestones }: { milestones: Milestone[] }) 
       </div>
 
       {upcoming.length === 0 ? (
-        <div className="flex flex-col items-center gap-[8px] rounded-[12px] bg-gca-page-bg py-[64px]">
-          <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-gca-surface">
-            <Trophy className="size-[18px] text-gca-green" />
-          </span>
-          <div className="flex flex-col items-center gap-[4px] text-center">
-            <p className="text-[15px] font-semibold text-gca-dark">No upcoming milestones</p>
-            <p className="text-[13px] text-gca-muted">Upcoming milestones will appear here</p>
-          </div>
+        <div className="rounded-[12px] bg-gca-page-bg">
+          <EmptyState
+            icon={Trophy}
+            title="No upcoming milestones"
+            description="Upcoming milestones will appear here."
+            className="py-[56px]"
+          />
         </div>
       ) : (
         <div className="flex w-full flex-col">

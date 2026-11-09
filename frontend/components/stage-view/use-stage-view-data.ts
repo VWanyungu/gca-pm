@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import type {
   StageDetail,
@@ -48,6 +48,9 @@ export function useStageActivitiesPaged({
         ),
       );
     },
+    // Switching the status tab or page is a new query key — keep showing the previous
+    // page's rows instead of flashing to an empty state while the new one loads.
+    placeholderData: keepPreviousData,
     staleTime: 10_000,
   });
 }

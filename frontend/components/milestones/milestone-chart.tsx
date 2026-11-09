@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
+import { Flag } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import type { MilestoneRow, MilestoneSource } from "./types";
 
 const MIN_MONTH_WIDTH = 128;
@@ -71,9 +73,11 @@ export function MilestoneChart({ milestones, sourceFilter, onSelect }: Milestone
 
   if (!chart) {
     return (
-      <p className="py-[56px] text-center text-[13px] text-gca-show">
-        No milestones match the current search or source filter.
-      </p>
+      <EmptyState
+        icon={Flag}
+        title="Nothing here"
+        description="No milestones match the current search or source filter."
+      />
     );
   }
 

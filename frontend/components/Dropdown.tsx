@@ -12,6 +12,7 @@ interface DropdownItem {
 interface DropdownProps {
   id: string;
   title?: string;
+  label?: string;
   data: DropdownItem[];
   position?: "bottom-right" | "bottom-left" | "top-right" | "top-left";
   style?: string;
@@ -24,6 +25,7 @@ interface DropdownProps {
 const Dropdown = ({
   id,
   title = "Select",
+  label,
   data,
   position = "bottom-left",
   style,
@@ -83,7 +85,7 @@ const Dropdown = ({
   });
 
   const dropdownClass = classNames(
-    "dropdown-scrollbar absolute bg-gca-surface  max-w-max max-h-52 overflow-y-auto py-3 rounded-lg shadow-[0px_1px_10px_4px_rgba(23,48,31,0.08)] ring ring-gca-border z-10 text-[14px] text-gca-dark",
+    "dropdown-scrollbar absolute bg-gca-surface min-w-full max-w-max max-h-60 overflow-y-auto py-3 rounded-lg shadow-[0px_1px_10px_4px_rgba(23,48,31,0.08)] ring ring-gca-border z-20 text-[14px] text-gca-dark",
     {
       "top-full right-0 mt-2": position === "bottom-right",
       "top-full left-0 mt-2": position === "bottom-left",
@@ -104,6 +106,7 @@ const Dropdown = ({
         className={classNames("flex items-center justify-between gap-2 cursor-pointer", style)}
       >
         <span className="overflow-hidden whitespace-nowrap flex-1 text-left">
+          {label && <span className="text-gca-muted mr-1.5">{label}</span>}
           {selectedItem?.name || title}
         </span>
         {/* <span className='overflow-hidden whitespace-nowrap flex-1 text-left'>{title}</span> */}
@@ -139,13 +142,13 @@ const Dropdown = ({
                 key={item.id}
                 onClick={() => handleChange(item)}
                 className={classNames(
-                  "flex items-center cursor-pointer hover:bg-gca-badge-bg rounded-lg px-3",
+                  "flex items-center gap-3 cursor-pointer hover:bg-gca-badge-bg rounded-lg px-3",
                   { "bg-gca-badge-bg": selectedItem?.id === item.id },
                 )}
               >
-                <span>{item.name}</span>
+                <span className="whitespace-nowrap">{item.name}</span>
                 {selectedItem?.id === item.id && (
-                  <Check size={16} className="ml-auto text-gca-green" />
+                  <Check size={16} className="ml-auto text-gca-green shrink-0" />
                 )}
               </li>
             ))}

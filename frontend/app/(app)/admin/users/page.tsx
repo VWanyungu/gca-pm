@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Users } from "lucide-react";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { EmptyState } from "@/components/empty-state";
 import Dropdown from "@/components/Dropdown";
 import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import { Pagination } from "@/components/pagination";
@@ -67,15 +69,16 @@ export default function AdminUsersPage() {
             setPage(1);
           }}
           placeholder="Search name or email"
-          className="h-[40px] w-full md:w-[320px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
+          className="w-full md:w-[320px] rounded-[8px] border border-gca-border px-[12px] py-[6px] text-[13px] text-gca-dark outline-none placeholder:text-gca-muted"
         />
         <MobileFilterToggle>
           <Dropdown
             id="role-filter"
             title="All roles"
+            label="Role:"
             data={roleOptions}
             selectedId={roleFilter ?? "all"}
-            style="h-[40px] w-full sm:w-[180px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
+            style="w-full sm:w-[180px] rounded-[8px] border border-gca-border px-[12px] py-[6px] text-[13px] text-gca-dark"
             onSelect={(id) => {
               setRoleFilter(id === "all" ? undefined : (id as RoleName));
               setPage(1);
@@ -84,9 +87,10 @@ export default function AdminUsersPage() {
           <Dropdown
             id="status-filter"
             title="Active"
+            label="Status:"
             data={STATUS_OPTIONS}
             selectedId={statusFilter ?? "all"}
-            style="h-[40px] w-full sm:w-[160px] rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
+            style="w-full sm:w-[160px] rounded-[8px] border border-gca-border px-[12px] py-[6px] text-[13px] text-gca-dark"
             onSelect={(id) => {
               setStatusFilter(id === "all" ? undefined : (id as "active" | "deactivated"));
               setPage(1);
@@ -135,11 +139,12 @@ export default function AdminUsersPage() {
             ))}
             {users.length === 0 && (
               <tr>
-                <td
-                  colSpan={4}
-                  className="px-[16px] py-[24px] text-center text-[13px] text-gca-muted"
-                >
-                  No users found
+                <td colSpan={4}>
+                  <EmptyState
+                    icon={Users}
+                    title="No users found"
+                    description="Try adjusting your search or filters."
+                  />
                 </td>
               </tr>
             )}

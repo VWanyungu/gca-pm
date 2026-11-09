@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, X, ExternalLink } from "lucide-react";
+import { ChevronRight, Images, X, ExternalLink } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import type { DprPhoto } from "./types";
 
 interface ProgressPhotosSectionProps {
@@ -47,16 +48,14 @@ export function ProgressPhotosSection({
             <ChevronRight className="size-[16px]" />
           </Link>
         </div>
-        <div className="flex h-[180px] w-full flex-col items-center justify-center rounded-[12px] border border-dashed border-gca-border bg-gca-surface p-[24px] text-center">
-          <p className="text-[14px] text-gca-muted">
-            No progress photos have been attached to daily reports yet.
-          </p>
-          <Link
-            href={`/projects/${projectId}/dpr`}
-            className="mt-[10px] text-[13px] font-medium text-gca-green hover:underline"
-          >
-            Go to Daily Progress Reports &rarr;
-          </Link>
+        <div className="flex min-h-[200px] w-full items-center justify-center rounded-[12px] border border-dashed border-gca-border bg-gca-surface p-[20px]">
+          <EmptyState
+            icon={Images}
+            title="No progress photos yet"
+            description="Photos attached to daily progress reports will show up here."
+            action={{ label: "Go to Daily Progress Reports", href: `/projects/${projectId}/dpr` }}
+            className="py-0"
+          />
         </div>
       </section>
     );

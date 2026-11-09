@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
-import { Check, Lock, Moon, Star, Sun } from "lucide-react";
+import { Check, Lock, LoaderCircle, Moon, Star, Sun } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useTheme } from "@/components/theme-provider";
 import { buildMailto } from "@/components/weekly-submission/mailto";
@@ -212,7 +212,8 @@ export function FeedbackWizard({ token }: { token: string }) {
     </div>
   );
 
-  if (isLoading) return shell(<p className="text-[13px] text-gca-muted">Loading…</p>, "—");
+  if (isLoading)
+    return shell(<LoaderCircle className="size-[24px] animate-spin text-gca-muted" />, "—");
 
   if (fetchError || !data) {
     return shell(

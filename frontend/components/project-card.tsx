@@ -325,7 +325,7 @@ export function ProjectCard({
               </span>
 
               <span
-                className={`shrink-0 font-mono text-[12px] font-medium tracking-tight ${spiTextColor}`}
+                className={`shrink-0 text-[12px] font-medium tracking-tight ${spiTextColor}`}
               >
                 {spiLabel}
               </span>

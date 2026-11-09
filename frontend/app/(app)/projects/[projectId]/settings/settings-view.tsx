@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowLeft, LoaderCircle } from "lucide-react";
 import Dropdown from "@/components/Dropdown";
+import { PageSpinner } from "@/components/page-spinner";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_MANAGE_PROJECT, CAN_DELETE_PROJECT } from "@/lib/access-control";
 import {
@@ -97,7 +98,7 @@ export default function SettingsView({ projectId }: { projectId: string }) {
       : undefined,
   });
 
-  if (isLoading) return <p className="p-[40px] text-[14px] text-gca-muted">Loading project…</p>;
+  if (isLoading) return <PageSpinner className="min-h-[calc(100vh-64px)]" />;
   if (!data || !project)
     return <p className="p-[40px] text-[14px] text-gca-muted">Project not found</p>;
 

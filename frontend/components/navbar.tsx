@@ -131,12 +131,20 @@ export function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 flex h-[64px] shrink-0 items-center justify-between border-b border-gca-border bg-gca-surface px-[12px] sm:px-[24px]">
-        {/* Left: logo + nav */}
+      <header className="sticky top-0 z-40 flex h-[64px] shrink-0 items-stretch border-b border-gca-border bg-gca-surface">
+        {/* Logo column — reserved at exactly the sidebar's width, so the border below it
+         *  (the project/admin sidebar's own border-r) reads as one continuous line. */}
+        <Link
+          href="/"
+          onClick={() => setMobileMenuOpen(false)}
+          className="hidden h-full w-[240px] shrink-0 items-center border-r border-gca-border/50 px-[24px] md:flex"
+        >
+          <Image src="/GCA Logo.svg" alt="Gas Connect Africa" width={89} height={32} priority />
+        </Link>
+
+        <div className="flex min-w-0 flex-1 items-center justify-between px-[12px] sm:px-[24px]">
+        {/* Left: mobile logo + nav */}
         <div className="flex min-w-0 items-center gap-[20px]">
-          <Link href="/" onClick={() => setMobileMenuOpen(false)} className="hidden md:block">
-            <Image src="/GCA Logo.svg" alt="Gas Connect Africa" width={89} height={32} priority />
-          </Link>
           <div className="md:hidden">
             <div className="flex gap-[12px] items-center justify-start">
               <button
@@ -287,7 +295,6 @@ export function Navbar() {
               </div>
             </div>
           </div>
-          <div className="hidden h-[20px] w-px bg-gca-border md:block" />
           <nav className="hidden items-center gap-[4px] md:flex" ref={dropdownRef}>
             {navItems.map((item) => {
               const active = isActive(item.href);
@@ -466,6 +473,7 @@ export function Navbar() {
               </div>
             )}
           </div>
+        </div>
         </div>
       </header>
     </>

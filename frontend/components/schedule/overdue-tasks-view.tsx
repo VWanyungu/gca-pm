@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import Dropdown from "@/components/Dropdown";
+import { EmptyState } from "@/components/empty-state";
 import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import {
   daysLate,
@@ -85,17 +86,11 @@ export function OverdueTasksView({
 
   if (tasks.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-[16px] py-[56px]">
-        <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-gca-page-bg">
-          <AlertTriangle className="size-[18px] text-gca-green" />
-        </span>
-        <div className="flex flex-col items-center gap-[4px] text-center">
-          <p className="text-[14px] font-semibold text-gca-dark">Nothing overdue</p>
-          <p className="max-w-[420px] text-[13px] text-gca-show">
-            Tasks past their expected finish and not complete will show up here.
-          </p>
-        </div>
-      </div>
+      <EmptyState
+        icon={AlertTriangle}
+        title="Nothing overdue"
+        description="Tasks past their expected finish and not complete will show up here."
+      />
     );
   }
 
@@ -128,7 +123,7 @@ export function OverdueTasksView({
                 setSelectedGroup(id);
                 setVisibleCount(INITIAL_ROWS);
               }}
-              style="h-[36px] w-full sm:w-[200px] rounded-[8px] border border-gca-border bg-gca-surface px-[10px] text-[13px] text-gca-dark"
+              style="w-full sm:w-[200px] rounded-[8px] border border-gca-border bg-gca-surface px-[10px] py-[6px] text-[13px] text-gca-dark"
             />
           </MobileFilterToggle>
         </div>
