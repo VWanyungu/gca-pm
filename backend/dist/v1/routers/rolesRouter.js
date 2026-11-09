@@ -1,7 +1,8 @@
 import express from 'express';
 import { randomUUID } from 'crypto';
-import { Roles } from '../database/utils/database.js';
+import { Roles, AccessRoles } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import { createRoleSchema, revokeRoleParamsSchema, revokeRoleBodySchema, listRolesQuerySchema, reassignMainRoleSchema, } from '../utils/validation.js';
 const router = express.Router();
 const SCOPE_GRANTERS = {
@@ -42,6 +43,11 @@ router.post('/', canCreateOrRevoke, async (req, res) => {
         res.status(403).json({ status: 'error', data: null, message: 'Not authorized to role at this scope' });
         return;
     }
+    const accessRole = await AccessRoles.getByName(role);
+    if (!accessRole || !accessRole.is_active) {
+        res.status(400).json({ status: 'error', data: null, message: 'Unknown or inactive role' });
+        return;
+    }
     try {
         const attributeId = await Roles.grant({
             attribute_id: randomUUID(),
@@ -55,8 +61,7 @@ router.post('/', canCreateOrRevoke, async (req, res) => {
         res.status(201).json({ status: 'success', data: { attributeId }, message: 'Role granted' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 const PROJECT_TEAM_VIEWERS = ['PM', 'Planner', 'SiteEngineer'];
@@ -81,8 +86,7 @@ router.get('/', async (req, res) => {
         res.status(200).json({ status: 'success', data: result, message: 'Roles retrieved' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 router.delete('/:attributeId', canCreateOrRevoke, async (req, res) => {
@@ -112,8 +116,7 @@ router.delete('/:attributeId', canCreateOrRevoke, async (req, res) => {
         res.status(200).json({ status: 'success', data: { revokedRole }, message: 'Role revoked' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // Reassigns a project's main PM/Planner (the earliest-granted active holder of that role on the
@@ -135,8 +138,7 @@ router.post('/reassign-main', canCreateOrRevoke, async (req, res) => {
         res.status(200).json({ status: 'success', data: { attributeId }, message: 'Main role reassigned' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 export default router;

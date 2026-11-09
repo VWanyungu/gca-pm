@@ -2,9 +2,11 @@ import express from 'express';
 import {
   ProjectStages,
   Projects,
+  StageActivities,
   type StageState,
 } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import {
   projectStageProjectParamsSchema,
   projectStageParamsSchema,
@@ -87,8 +89,7 @@ router.post('/', canManage, async (req, res) => {
       message: 'Project stage created',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -119,8 +120,7 @@ router.get('/', canView, async (req, res) => {
       message: 'Project stages retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -145,8 +145,7 @@ router.get('/:stageNo', canView, async (req, res) => {
       message: 'Project stage retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -168,6 +167,16 @@ router.patch('/:stageNo', canManage, async (req, res) => {
     const existing = await ProjectStages.get(projectId, stageNo);
     if (!existing) {
       res.status(404).json({ status: 'error', data: null, message: 'Project stage not found' });
+      return;
+    }
+
+    // AC-STG-12: Kickoff/Closure complete themselves once every activity is done — no manual button
+    if (patch.state === 'complete' && existing.kind !== 'pdm') {
+      res.status(400).json({
+        status: 'error',
+        data: null,
+        message: 'Kickoff/Closure stages complete automatically once every activity is done',
+      });
       return;
     }
 
@@ -225,8 +234,51 @@ router.patch('/:stageNo', canManage, async (req, res) => {
       message: 'Project stage updated',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
+  }
+});
+
+// Re-copies Kickoff/Closure activities from the current gate activity templates — lets a PM
+// backfill a project that started with no activities, or pull in a renamed/re-described template.
+router.post('/:stageNo/sync-gate-activities', canManage, async (req, res) => {
+  const params = projectStageParamsSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const { projectId, stageNo } = params.value as { projectId: string; stageNo: number };
+
+  try {
+    const stage = await ProjectStages.get(projectId, stageNo);
+    if (!stage) {
+      res.status(404).json({ status: 'error', data: null, message: 'Project stage not found' });
+      return;
+    }
+    if (stage.kind === 'pdm') {
+      res.status(400).json({
+        status: 'error',
+        data: null,
+        message: 'Only Kickoff/Closure stages sync activities from templates',
+      });
+      return;
+    }
+
+    const result = await StageActivities.syncFromTemplates(
+      projectId,
+      stageNo as 0 | 11,
+      req.user!.userId,
+    );
+
+    res.status(200).json({
+      status: 'success',
+      data: result,
+      message:
+        result.created === 0 && result.updated === 0
+          ? 'Already up to date with the current templates'
+          : `Synced: ${result.created} added, ${result.updated} updated`,
+    });
+  } catch (err) {
+    sendRouteError(res, err);
   }
 });
 
@@ -252,8 +304,7 @@ router.delete('/:stageNo', canManage, async (req, res) => {
       message: 'Project stage deleted',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 

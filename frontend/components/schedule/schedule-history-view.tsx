@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { ArrowLeft, Upload } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
-import { useScheduleVersions } from "./use-schedule-data";
+import { downloadScheduleVersionFile, useScheduleVersions } from "./use-schedule-data";
 import { formatLongDateTime, type ScheduleVersion } from "./types";
 import type { TeamMember } from "@/components/project-overview/types";
 
@@ -61,7 +62,7 @@ export function ScheduleHistoryView({
         {canManage && (
           <button
             onClick={onUpload}
-            className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
+            className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
           >
             <Upload className="size-[14px]" />
             Upload schedule
@@ -70,9 +71,11 @@ export function ScheduleHistoryView({
       </div>
 
       {versions.length === 0 ? (
-        <p className="py-[56px] text-center text-[13px] text-gca-show">
-          No schedule has been uploaded yet.
-        </p>
+        <EmptyState
+          icon={Upload}
+          title="No schedule has been uploaded yet"
+          description="Upload a schedule to start tracking versions here."
+        />
       ) : (
         <div className="flex w-full flex-col gap-[16px]">
           <div className="no-scrollbar w-full overflow-x-auto rounded-[12px] border border-gca-border">
@@ -125,9 +128,8 @@ export function ScheduleHistoryView({
                         Changes
                       </button>
                       <button
-                        disabled
-                        title="Downloading the original upload needs the schedule file service — coming soon"
-                        className="cursor-not-allowed text-gca-muted"
+                        onClick={() => downloadScheduleVersionFile(projectId, v)}
+                        className="cursor-pointer text-gca-green hover:underline"
                       >
                         Download
                       </button>

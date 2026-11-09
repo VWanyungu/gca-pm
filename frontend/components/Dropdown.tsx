@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import classNames from "classnames";
-import { ChevronDown, Check, Search } from "lucide-react";
+import { ChevronDown, Check, Plus, Search } from "lucide-react";
 import useOutsideClick from "../hooks/use-outside-click";
 
 interface DropdownItem {
@@ -12,21 +12,26 @@ interface DropdownItem {
 interface DropdownProps {
   id: string;
   title?: string;
+  label?: string;
   data: DropdownItem[];
   position?: "bottom-right" | "bottom-left" | "top-right" | "top-left";
   style?: string;
   selectedId?: string;
   onSelect?: (id: string, name: string, value: string) => void;
+  /** When set, typing a name with no match shows a "Create …" row that calls this instead. */
+  onCreate?: (name: string) => void | Promise<void>;
 }
 
 const Dropdown = ({
   id,
   title = "Select",
+  label,
   data,
   position = "bottom-left",
   style,
   selectedId,
   onSelect,
+  onCreate,
 }: DropdownProps) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [query, setQuery] = useState("");
@@ -51,6 +56,19 @@ const Dropdown = ({
     item.name.toLowerCase().includes(query.toLowerCase()),
   );
 
+  const trimmedQuery = query.trim();
+  const canCreate =
+    !!onCreate &&
+    trimmedQuery.length > 0 &&
+    !data?.some((item) => item.name.toLowerCase() === trimmedQuery.toLowerCase());
+
+  const handleCreate = async () => {
+    if (!onCreate || !trimmedQuery) return;
+    setIsOpen(false);
+    await onCreate(trimmedQuery);
+    setQuery("");
+  };
+
   useEffect(() => {
     if (selectedId && data) {
       const newSelectedItem = data.find((item) => item.id === selectedId);
@@ -67,7 +85,7 @@ const Dropdown = ({
   });
 
   const dropdownClass = classNames(
-    "dropdown-scrollbar absolute bg-gca-surface  max-w-max max-h-52 overflow-y-auto py-3 rounded-lg shadow-[0px_1px_10px_4px_rgba(23,48,31,0.08)] ring ring-gca-border z-10 text-[14px] text-gca-dark",
+    "dropdown-scrollbar absolute bg-gca-surface min-w-full max-w-max max-h-60 overflow-y-auto py-3 rounded-lg shadow-[0px_1px_10px_4px_rgba(23,48,31,0.08)] ring ring-gca-border z-20 text-[14px] text-gca-dark",
     {
       "top-full right-0 mt-2": position === "bottom-right",
       "top-full left-0 mt-2": position === "bottom-left",
@@ -88,6 +106,7 @@ const Dropdown = ({
         className={classNames("flex items-center justify-between gap-2 cursor-pointer", style)}
       >
         <span className="overflow-hidden whitespace-nowrap flex-1 text-left">
+          {label && <span className="text-gca-muted mr-1.5">{label}</span>}
           {selectedItem?.name || title}
         </span>
         {/* <span className='overflow-hidden whitespace-nowrap flex-1 text-left'>{title}</span> */}
@@ -123,18 +142,27 @@ const Dropdown = ({
                 key={item.id}
                 onClick={() => handleChange(item)}
                 className={classNames(
-                  "flex items-center cursor-pointer hover:bg-gca-badge-bg rounded-lg px-3",
+                  "flex items-center gap-3 cursor-pointer hover:bg-gca-badge-bg rounded-lg px-3",
                   { "bg-gca-badge-bg": selectedItem?.id === item.id },
                 )}
               >
-                <span>{item.name}</span>
+                <span className="whitespace-nowrap">{item.name}</span>
                 {selectedItem?.id === item.id && (
-                  <Check size={16} className="ml-auto text-gca-green" />
+                  <Check size={16} className="ml-auto text-gca-green shrink-0" />
                 )}
               </li>
             ))}
-            {filteredData?.length === 0 && (
+            {filteredData?.length === 0 && !canCreate && (
               <li className="px-3 text-[13px] leading-8 text-gca-muted">No results</li>
+            )}
+            {canCreate && (
+              <li
+                onClick={handleCreate}
+                className="flex items-center gap-2 cursor-pointer rounded-lg px-3 text-gca-green hover:bg-gca-badge-bg"
+              >
+                <Plus size={14} className="shrink-0" />
+                <span>Create &quot;{trimmedQuery}&quot;</span>
+              </li>
             )}
           </ul>
         </div>

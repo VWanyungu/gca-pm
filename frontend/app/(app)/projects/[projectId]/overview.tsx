@@ -3,13 +3,15 @@
 import { useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { canAccess, CAN_MANAGE_PROJECT } from "@/lib/access-control";
+import { PageSpinner } from "@/components/page-spinner";
 import { SystemStateScreen } from "@/components/system-state/system-state-screen";
-import { ProjectSidebar } from "@/components/project-overview/project-sidebar";
-import { StatusControl } from "@/components/project-overview/status-control";
+import { useProjectSidebarData } from "@/components/project-overview/project-sidebar-context";
+import { ProjectHero } from "@/components/project-overview/project-hero";
 import { StagePipeline } from "@/components/project-overview/stage-pipeline";
 import { ProgressCard } from "@/components/project-overview/progress-card";
 import { NeedsAttentionCard } from "@/components/project-overview/needs-attention-card";
 import { NextMilestonesRow } from "@/components/project-overview/next-milestones-row";
+import { ProgressPhotosSection } from "@/components/project-overview/progress-photos-section";
 import { TeamSection } from "@/components/project-overview/team-section";
 import {
   useProjectDetail,
@@ -18,17 +20,11 @@ import {
   useClientContacts,
   useStageActivities,
   useMilestones,
+  useProjectDprPhotos,
   // useOpenEscalations, // paused: no escalations module yet
   useDraftSubmission,
-  useSidebarCounts,
   ApiError,
 } from "@/components/project-overview/use-project-data";
-import {
-  mondayOf,
-  addDays,
-  formatWeekPeriod,
-  weekNumber,
-} from "../../../../components/weekly-submission/types";
 
 export default function ProjectOverview({ projectId }: { projectId: string }) {
   const { user } = useAuth();
@@ -42,29 +38,34 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
   });
   // const { data: escalations = [] } = useOpenEscalations(projectId);
   const { data: draftSubmission } = useDraftSubmission(projectId);
-  const { data: counts } = useSidebarCounts(projectId);
-
-  const percentByStage = useMemo(() => {
-    const result: Record<number, number> = {};
-    for (const stage of data?.stages ?? []) {
-      const stageActivities = activities.filter((a) => a.stage_no === stage.stage_no);
-      if (stageActivities.length > 0) {
-        const done = stageActivities.filter((a) => a.status === "done").length;
-        result[stage.stage_no] = Math.round((done / stageActivities.length) * 100);
-      }
-    }
-    return result;
-  }, [data?.stages, activities]);
+  const { percentByStage } = useProjectSidebarData();
 
   const currentStage = useMemo(() => {
-    const stages = data?.stages ?? [];
-    // AC-STG-10: the highest-numbered active stage; if every in-scope stage is complete,
-    // fall back to the last one completed rather than showing nothing.
+    // AC-STG-10: the highest-numbered active regular PDM stage (Kickoff/Closure are gate
+    // stages, not part of this progression, and Closure is active for most of the project's
+    // life, so both are excluded here); if every in-scope stage is complete, fall back to the
+    // last one completed rather than showing nothing.
+    const stages = (data?.stages ?? []).filter((s) => s.kind === "pdm");
     return (
       [...stages].reverse().find((s) => s.state === "active") ??
       [...stages].reverse().find((s) => s.state === "complete")
     );
   }, [data?.stages]);
+
+  // DPR progress photos are only fetched and displayed if the current stage
+  // is construction, commissioning, or decommissioning
+  const isPhotoEligibleStage = useMemo(() => {
+    if (!currentStage) return false;
+    const name = currentStage.stage_name.toLowerCase();
+    return (
+      name.includes("construction") ||
+      name.includes("commissioning") ||
+      name.includes("decommissioning") ||
+      [7, 8, 10].includes(currentStage.stage_no)
+    );
+  }, [currentStage]);
+
+  const { data: dprPhotosData } = useProjectDprPhotos(projectId, isPhotoEligibleStage);
 
   const overdueActivities = useMemo(() => {
     const today = new Date();
@@ -74,11 +75,7 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
   }, [activities]);
 
   if (isLoading) {
-    return (
-      <div className="flex h-[calc(100vh-64px)] w-full items-center justify-center text-[14px] text-gca-muted">
-        Loading project…
-      </div>
-    );
+    return <PageSpinner className="min-h-[calc(100vh-64px)]" />;
   }
   if (error || !data) {
     if (error instanceof ApiError && error.httpStatus === 403) {
@@ -92,70 +89,48 @@ export default function ProjectOverview({ projectId }: { projectId: string }) {
 
   const canManage = canAccess(user?.role, CAN_MANAGE_PROJECT, { projectId });
 
-  const today = new Date();
-
-  // const weekNumber = Math.ceil(
-  //   (today.getTime() - new Date(data.project.created_at).getTime()) / (7 * 24 * 60 * 60 * 1000),
-  // );
-  const weekStart = addDays(mondayOf(new Date()), 0 * 7);
-
   return (
-    // The shell owns the viewport height and the content scrolls inside it, so the sidebar
-    // is always exactly one screen tall rather than ending where the content happens to.
-    <div className="flex h-[calc(100vh-64px)] w-full overflow-hidden">
-      <ProjectSidebar
-        projectId={projectId}
+    <main className="flex w-full max-w-[1200px] flex-col gap-[28px] p-[20px] md:p-[40px]">
+      <ProjectHero
+        project={data.project}
         stages={data.stages}
-        counts={counts}
-        percentByStage={percentByStage}
-        active="overview"
+        milestones={milestones}
+        canManage={canManage}
+        onStatusChanged={invalidate}
       />
 
-      <div className="flex w-full min-w-0 justify-center overflow-y-auto">
-        <main className="flex w-full max-w-[1200px] flex-col gap-[28px] p-[20px] md:p-[40px]">
-          <header className="flex w-full flex-col gap-[16px] md:flex-row md:items-center md:justify-between">
-            <div className="flex min-w-0 flex-col gap-[8px]">
-              <h1 className="text-[24px] font-semibold tracking-[-0.75px] text-gca-dark sm:text-[30px]">
-                {data.project.name}
-              </h1>
-              <p className="text-[14px] text-gca-show">
-                {data.project.client_name ?? "—"} · Week {weekNumber(weekStart)}
-              </p>
-            </div>
-            <StatusControl
-              projectId={projectId}
-              status={data.project.status}
-              canManage={canManage}
-              onChanged={invalidate}
-            />
-          </header>
+      <StagePipeline
+        projectId={projectId}
+        stages={data.stages}
+        currentStage={currentStage}
+        percentByStage={percentByStage}
+        canManage={canManage}
+        onChanged={invalidate}
+      />
 
-          <StagePipeline
-            projectId={projectId}
-            stages={data.stages}
-            currentStage={currentStage}
-            percentByStage={percentByStage}
-            canManage={canManage}
-            onChanged={invalidate}
-          />
-
-          {/* The progress chart needs ~700px to read at all, so it sits above the
-              attention list rather than beside it until there is room for both. */}
-          <div className="flex w-full flex-col items-stretch gap-[20px] xl:flex-row xl:items-start">
-            <ProgressCard metrics={data.metrics} />
-            <NeedsAttentionCard
-              projectId={projectId}
-              overdueActivities={overdueActivities}
-              draftWeekStart={draftSubmission?.week_start ?? null}
-              // escalations={escalations}
-            />
-          </div>
-
-          <NextMilestonesRow projectId={projectId} milestones={milestones} />
-
-          <TeamSection projectId={projectId} team={team} clientContacts={clientContacts} />
-        </main>
+      {/* The progress chart needs ~700px to read at all, so it sits above the
+          attention list rather than beside it until there is room for both. */}
+      <div className="flex w-full flex-col items-stretch gap-[20px] xl:flex-row xl:items-start">
+        <ProgressCard metrics={data.metrics} />
+        <NeedsAttentionCard
+          projectId={projectId}
+          overdueActivities={overdueActivities}
+          draftWeekStart={draftSubmission?.week_start ?? null}
+          // escalations={escalations}
+        />
       </div>
-    </div>
+
+      <NextMilestonesRow projectId={projectId} milestones={milestones} />
+
+      {isPhotoEligibleStage && (
+        <ProgressPhotosSection
+          projectId={projectId}
+          photos={dprPhotosData?.photos ?? []}
+          totalCount={dprPhotosData?.total ?? 0}
+        />
+      )}
+
+      <TeamSection projectId={projectId} team={team} clientContacts={clientContacts} />
+    </main>
   );
 }

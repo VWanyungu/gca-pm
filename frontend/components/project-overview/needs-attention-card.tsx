@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, CheckCircle2 } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import type { StageActivity } from "./types";
 // Escalations are paused until the module exists: see the commented block below.
 // import type { EscalationRow } from "./types";
@@ -63,7 +64,12 @@ export function NeedsAttentionCard({
       </div>
 
       {rows.length === 0 ? (
-        <p className="py-[12px] text-[13px] text-gca-muted">Nothing needs attention right now.</p>
+        <EmptyState
+          icon={CheckCircle2}
+          title="Nothing needs attention"
+          description="Overdue tasks and draft submissions will show up here."
+          className="py-[72px]"
+        />
       ) : (
         <div className="flex flex-col">
           {rows.map((row, i) => (

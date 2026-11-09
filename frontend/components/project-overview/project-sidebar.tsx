@@ -16,47 +16,27 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardList,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useMobileNavigation } from "@/components/mobile-navigation-context";
-import { STAGE_SHORT_NAME, type StageRow } from "./types";
+import { STAGE_SHORT_NAME } from "./types";
+import { useProjectSidebarData } from "./project-sidebar-context";
+import { ProjectSwitcher } from "./project-switcher";
 
-const ROLE_BLURB: Record<string, string> = {
-  PM: "Full access to this project",
-  Planner: "Can edit schedule and submissions",
-  SiteEngineer: "Can submit daily progress reports",
-  ExCo: "Executive visibility across projects",
-  Admin: "Full platform access",
-  ProjectCreator: "Can create and configure projects",
-};
-
-interface ProjectSidebarProps {
-  projectId: string;
-  stages: StageRow[];
-  counts?: { submit: number; risks: number; changeRequests: number };
-  percentByStage?: Record<number, number>;
-  active:
-    | "overview"
-    | "team"
-    | "stages"
-    | "risks"
-    | "change-requests"
-    | "milestones"
-    | "schedule"
-    | "submit"
-    | "dpr"
-    | "settings";
-  activeStageNo?: number;
-}
-
-export function ProjectSidebar({
-  projectId,
-  stages,
-  counts,
-  percentByStage,
-  active,
-  activeStageNo,
-}: ProjectSidebarProps) {
+/** Reads its data from ProjectSidebarProvider (set up once in the `[projectId]` layout) instead
+ *  of props, so it renders once per project and survives navigation between its sub-pages. */
+export function ProjectSidebar() {
+  const {
+    projectId,
+    projectName,
+    stages,
+    counts,
+    percentByStage,
+    active,
+    activeStageNo,
+    kickoffComplete,
+  } = useProjectSidebarData();
   const { user } = useAuth();
   const { isOpen, setIsOpen } = useMobileNavigation();
   const [stagesOpen, setStagesOpen] = useState(false);
@@ -73,7 +53,13 @@ export function ProjectSidebar({
     [
       { key: "overview", label: "Overview", icon: LayoutGrid, href: base },
       { key: "schedule", label: "Schedule", icon: CalendarRange, href: `${base}/schedule` },
-      { key: "dpr", label: "Daily Report", icon: ClipboardList, href: `${base}/dpr` },
+      {
+        key: "dpr",
+        label: "Daily Report",
+        icon: ClipboardList,
+        href: `${base}/dpr`,
+        locked: !kickoffComplete,
+      },
       // Weekly submission is the PM's report to ExCo — not an engineer's concern.
       {
         key: "submit",
@@ -82,6 +68,7 @@ export function ProjectSidebar({
         href: `${base}/weekly-submission`,
         count: counts?.submit,
         hidden: isEngineer,
+        locked: !kickoffComplete,
       },
       {
         key: "risks",
@@ -89,6 +76,7 @@ export function ProjectSidebar({
         icon: AlertTriangle,
         href: `${base}/risks`,
         count: counts?.risks,
+        locked: !kickoffComplete,
       },
       {
         key: "change-requests",
@@ -96,9 +84,23 @@ export function ProjectSidebar({
         icon: GitPullRequest,
         href: `${base}/change-requests`,
         count: counts?.changeRequests,
+        locked: !kickoffComplete,
       },
-      { key: "milestones", label: "Milestones", icon: Flag, href: `${base}/milestones` },
+      {
+        key: "milestones",
+        label: "Milestones",
+        icon: Flag,
+        href: `${base}/milestones`,
+        locked: !kickoffComplete,
+      },
       { key: "team", label: "Team", icon: Users, href: `${base}/team` },
+      {
+        key: "feedback",
+        label: "Client feedback",
+        icon: MessageSquare,
+        href: `${base}/feedback`,
+        locked: !kickoffComplete,
+      },
     ] as const
   ).filter((item) => !("hidden" in item && item.hidden));
 
@@ -111,26 +113,35 @@ export function ProjectSidebar({
 
   const sidebarContent = (
     <>
-      <div className="flex flex-col gap-[2px] px-[12px] pt-[0px]">
-        {myRole && (
-          <div className="mb-[0px] flex flex-col gap-[2px] rounded-[10px] px-[12px] pt-[10px] pb-[8px] text-gca-show">
-            <p className="text-[14px] font-semibold text-gca-dark">
-              {myRole === "PM" ? "Main PM" : myRole === "Planner" ? "Main Planner" : myRole}
-            </p>
-            <p className="text-[12px] text-gca-show">{ROLE_BLURB[myRole] ?? "Project access"}</p>
-          </div>
-        )}
+      <div className="flex flex-col gap-[2px] px-[12px] pt-[12px]">
+        <div className="mb-[4px]">
+          <ProjectSwitcher projectId={projectId} projectName={projectName} />
+        </div>
 
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = active === item.key;
+
+          if ("locked" in item && item.locked) {
+            return (
+              <span
+                key={item.key}
+                title="Complete Kickoff first"
+                className="flex cursor-not-allowed items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] opacity-50"
+              >
+                <Icon className="size-[16px] text-gca-show" />
+                <span className="text-[14px] font-medium text-gca-show">{item.label}</span>
+              </span>
+            );
+          }
+
           return (
             <Link
               key={item.key}
               href={item.href}
               onClick={() => setIsOpen(false)}
               className={`flex items-center justify-between rounded-[8px] px-[12px] py-[8px] ${
-                isActive ? "bg-gca-badge-bg" : "hover:bg-gca-surface"
+                isActive ? "bg-gca-badge-bg" : "hover:bg-gca-page-bg"
               }`}
             >
               <span className="flex items-center gap-[10px]">
@@ -153,7 +164,7 @@ export function ProjectSidebar({
           <>
             <button
               onClick={() => setStagesOpen((o) => !o)}
-              className="flex items-center justify-between rounded-[8px] px-[12px] py-[8px] hover:bg-gca-surface"
+              className="flex items-center justify-between rounded-[8px] px-[12px] py-[6px] hover:bg-gca-page-bg"
             >
               <span className="flex items-center gap-[10px]">
                 <ListTree className="size-[16px] text-gca-show" />
@@ -199,21 +210,27 @@ export function ProjectSidebar({
                 )}
                 {visibleStages.map((s) => {
                   const viewing = s.stage_no === activeStageNo;
+                  const gateColor =
+                    s.kind === "kickoff" ? "blue" : s.kind === "closure" ? "orange" : null;
                   return (
                     <Link
                       key={s.stage_no}
                       href={`${base}/stages/${s.stage_no}`}
                       onClick={() => setIsOpen(false)}
                       className={`flex h-[32px] items-center justify-between rounded-[6px] pl-[26px] pr-[12px] text-[13px] ${
-                        viewing ? "bg-gca-badge-bg" : "hover:bg-gca-surface"
+                        viewing ? "bg-gca-badge-bg" : "hover:bg-gca-page-bg"
                       }`}
                     >
                       <span
-                        className={
-                          viewing
-                            ? "font-semibold text-gca-badge-text"
-                            : "font-normal text-gca-show"
-                        }
+                        className={`${viewing ? "font-semibold" : "font-normal"} ${
+                          gateColor === "blue"
+                            ? "text-blue-600/45"
+                            : gateColor === "orange"
+                              ? "text-orange-600/45"
+                              : viewing
+                                ? "text-gca-badge-text"
+                                : "text-gca-show"
+                        }`}
                       >
                         {STAGE_SHORT_NAME[s.stage_no]}
                       </span>
@@ -247,7 +264,7 @@ export function ProjectSidebar({
           href={`${base}/settings`}
           onClick={() => setIsOpen(false)}
           className={`flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] ${
-            active === "settings" ? "bg-gca-badge-bg" : "hover:bg-gca-surface"
+            active === "settings" ? "bg-gca-badge-bg" : "hover:bg-gca-page-bg"
           }`}
         >
           <Settings
@@ -265,13 +282,13 @@ export function ProjectSidebar({
 
   return (
     <>
-      <aside className="sticky top-[64px] hidden h-[calc(100vh-64px)] w-[240px] shrink-0 flex-col justify-between overflow-y-auto border-r border-gca-border bg-gca-page-bg md:flex">
+      <aside className="sticky top-[64px] hidden h-[calc(100vh-64px)] w-[240px] shrink-0 flex-col justify-between overflow-y-auto border-r border-gca-border bg-gca-surface md:flex">
         {sidebarContent}
       </aside>
       {isOpen &&
         mobileSidebarTarget &&
         createPortal(
-          <aside className="flex flex-col justify-between border-t border-gca-border bg-gca-page-bg py-[8px]">
+          <aside className="flex flex-col justify-between border-t border-gca-border bg-gca-surface py-[8px]">
             {sidebarContent}
           </aside>,
           mobileSidebarTarget,

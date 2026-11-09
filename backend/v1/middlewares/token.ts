@@ -2,7 +2,7 @@ import 'dotenv/config';
 import jwt from 'jsonwebtoken';
 import type { RequestHandler } from 'express';
 import type { JwtUserPayload } from '../../types.js';
-import { isTokenBlacklisted } from '../utils/checkCache.js';
+import { isTokenBlacklisted, isSessionInvalidated } from '../utils/checkCache.js';
 
 /**
  * `allowExpired` is for /token only: refreshing happens precisely because the access token
@@ -37,6 +37,12 @@ export default function authenticateToken({ allowExpired = false } = {}): Reques
       const blacklisted = await isTokenBlacklisted(token);
       if (blacklisted) {
         res.status(403).json({ status: 'fail', data: null, message: 'Token is blacklisted' });
+        return;
+      }
+
+      const { iat } = decoded as JwtUserPayload & { iat?: number };
+      if (iat !== undefined && (await isSessionInvalidated(req.user.userId, iat))) {
+        res.status(403).json({ status: 'fail', data: null, message: 'Session invalidated, please log in again' });
         return;
       }
 

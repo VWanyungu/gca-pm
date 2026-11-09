@@ -1,12 +1,14 @@
 import nodemailer from 'nodemailer';
 import 'dotenv/config';
+// shortcut: sending from a personal Gmail account until the company M365 mailbox is wired
+// up via Graph API. Swap this transport (and GMAIL_USER/GMAIL_APP_PASSWORD) out then.
 const transporter = nodemailer.createTransport({
-    host: 'smtp.sendgrid.net',
-    port: 587,
-    secure: false,
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: {
-        user: process.env.SENDGRID_USER,
-        pass: process.env.SENDGRID_PASSWORD,
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
     },
 });
 export const sendPasswordResetMail = async (mail) => {

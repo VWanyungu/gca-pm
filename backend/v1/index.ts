@@ -10,10 +10,12 @@ import refreshTokenRouter from './routers/refreshTokenRouter.js';
 import forgotPasswordRouter from './routers/forgotPasswordRouter.js';
 import resetUserPasswordRouter from './routers/resetUserPasswordRouter.js';
 import rolesRouter from './routers/rolesRouter.js';
+import accessRolesRouter from './routers/accessRolesRouter.js';
 import riskCategoriesRouter from './routers/riskCategoriesRouter.js';
 import riskRouter from './routers/riskRouter.js';
 import programsRouter from './routers/programsRouter.js';
 import pdmStagesRouter from './routers/pdmStagesRouter.js';
+import pdmGateActivityTemplatesRouter from './routers/pdmGateActivityTemplatesRouter.js';
 import weatherCategoriesRouter from './routers/weatherCategoriesRouter.js';
 import personnelRolesRouter from './routers/personnelRolesRouter.js';
 import stageStateHistoryRouter from './routers/stageStateHistoryRouter.js';
@@ -32,6 +34,9 @@ import changeRequestRouter from './routers/changeRequestRouter.js';
 import weeklySubmissionRouter from './routers/weeklySubmissionRouter.js';
 import scheduleRouter from './routers/scheduleRouter.js';
 import notificationsRouter from './routers/notificationsRouter.js';
+import feedbackRequestRouter from './routers/feedbackRequestRouter.js';
+import publicFeedbackRouter from './routers/publicFeedbackRouter.js';
+import qstashRouter from './qstash/router.js';
 
 const router = express.Router();
 
@@ -39,6 +44,12 @@ router.use('/signup', signUpRouter);
 router.use('/login', loginRouter);
 router.use('/forgot-password', forgotPasswordRouter);
 router.use('/reset-password', resetUserPasswordRouter);
+
+// Unauthenticated: reached straight from the link a client is sent, no login involved.
+router.use('/feedback', publicFeedbackRouter);
+
+// Unauthenticated: QStash webhooks (authenticated via Upstash cryptographic signature)
+router.use('/qstash', qstashRouter);
 
 // Ahead of the global guard: a refresh carries an access token that has, by definition,
 // already expired, so it needs the lenient check rather than the strict one.
@@ -49,9 +60,11 @@ router.use(authenticateToken());
 router.use('/search', searchRouter);
 router.use('/users', usersRouter);
 router.use('/roles', rolesRouter);
+router.use('/access-roles', accessRolesRouter);
 
 router.use('/programs', programsRouter);
 router.use('/pdm-stages', pdmStagesRouter);
+router.use('/pdm-gate-activity-templates', pdmGateActivityTemplatesRouter);
 router.use('/risk-categories', riskCategoriesRouter);
 router.use('/weather-categories', weatherCategoriesRouter);
 router.use('/personnel-roles', personnelRolesRouter);
@@ -80,6 +93,7 @@ router.use('/projects/:projectId/escalation', escalationRouter);
 router.use('/projects/:projectId/escalations', escalationRouter);
 router.use('/escalations', escalationRouter);
 router.use('/projects/:projectId/change-requests', changeRequestRouter);
+router.use('/projects/:projectId/feedback-requests', feedbackRequestRouter);
 router.use('/projects/:projectId/schedule', scheduleRouter);
 router.use('/notifications', notificationsRouter);
 

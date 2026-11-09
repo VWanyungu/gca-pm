@@ -59,7 +59,7 @@ export function ScopeStep({ value, onChange, onBack, onNext, singlePage = false 
               key={p.id}
               type="button"
               onClick={() => applyPreset(p.id)}
-              className={`cursor-pointer flex flex-1 md:w-[180px] items-center gap-[12px] rounded-[8px] border px-[14px] py-[12px] ${
+              className={`cursor-pointer flex flex-1 md:w-[180px] items-center gap-[12px] rounded-[8px] border px-[14px] py-[6px] ${
                 preset === p.id ? "border-gca-green bg-gca-badge-bg" : "border-gca-border"
               }`}
             >
@@ -88,7 +88,7 @@ export function ScopeStep({ value, onChange, onBack, onNext, singlePage = false 
                   key={s.stage_no}
                   type="button"
                   onClick={() => toggleStage(s.stage_no)}
-                  className="flex items-center gap-[8px] rounded-[6px] border border-gca-border bg-gca-page-bg px-[10px] py-[7px] text-[13px] font-medium text-gca-dark"
+                  className="flex items-center gap-[8px] rounded-[6px] border border-gca-border bg-gca-page-bg px-[10px] py-[6px] text-[13px] font-medium text-gca-dark"
                 >
                   {s.stage_no} · {s.name.split(" ")[0]}
                   <X className="size-[12] cursor-pointer" />
@@ -108,7 +108,7 @@ export function ScopeStep({ value, onChange, onBack, onNext, singlePage = false 
                   key={s.stage_no}
                   type="button"
                   onClick={() => toggleStage(s.stage_no)}
-                  className="flex items-center gap-[8px] rounded-[6px] border border-gca-border bg-gca-surface px-[10px] py-[7px] text-[13px] font-medium text-gca-dark hover:bg-gca-page-bg"
+                  className="flex items-center gap-[8px] rounded-[6px] border border-gca-border bg-gca-surface px-[10px] py-[6px] text-[13px] font-medium text-gca-dark hover:bg-gca-page-bg"
                 >
                   <Plus className="size-[12] cursor-pointer" />
                   {s.stage_no} · {s.name.split(" ")[0]}
@@ -125,7 +125,7 @@ export function ScopeStep({ value, onChange, onBack, onNext, singlePage = false 
         <button
           type="button"
           onClick={onBack}
-          className="cursor-pointer flex items-center gap-[8px] px-[4px] py-[11px] text-[14px] font-semibold text-gca-dark"
+          className="cursor-pointer flex items-center gap-[8px] px-[4px] py-[6px] text-[14px] font-semibold text-gca-dark"
         >
           {/* <ArrowLeft className="size-[13px]" /> */}
           Back
@@ -134,7 +134,7 @@ export function ScopeStep({ value, onChange, onBack, onNext, singlePage = false 
           type="button"
           disabled={value.length === 0}
           onClick={onNext}
-          className="cursor-pointer flex items-center gap-[10px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+          className="cursor-pointer flex items-center gap-[10px] rounded-[8px] bg-gca-green px-[18px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
         >
           {/* {nextLabel} */}
           Next

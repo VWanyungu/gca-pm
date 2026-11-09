@@ -9,6 +9,7 @@ import {
   groupProgress,
   isHiddenByCollapse,
   phaseLevel,
+  plannedFinish,
   rootGroupName,
   topicOrder,
   visibleScheduleRows,
@@ -36,7 +37,7 @@ function ProgressRing({ pct }: { pct: number }) {
     <span
       className="relative inline-flex size-[14px] shrink-0 items-center justify-center rounded-full"
       style={{
-        background: `conic-gradient(var(--gca-green) ${pct * 3.6}deg, var(--gca-border) 0deg)`,
+        background: `conic-gradient(var(--gca-green) ${Math.round(pct * 3.6)}deg, var(--gca-border) 0deg)`,
       }}
     >
       <span className="absolute inset-[2px] rounded-full bg-gca-surface" />
@@ -72,7 +73,7 @@ export function GanttChart({ tasks, window }: GanttChartProps) {
         const groupName = rootGroupName(t, byId, level);
         const topicIndex = groupName ? topics.indexOf(groupName) : -1;
         const rawStart = new Date(t.start);
-        const rawEnd = t.is_milestone ? rawStart : new Date(t.expected_finish);
+        const rawEnd = t.is_milestone ? rawStart : new Date(plannedFinish(t));
         const { start, end } = window
           ? clampToWindow(rawStart, rawEnd, window)
           : { start: rawStart, end: rawEnd < rawStart ? rawStart : rawEnd };
@@ -302,7 +303,7 @@ export function GanttChart({ tasks, window }: GanttChartProps) {
           <button
             type="button"
             onClick={scrollToToday}
-            className="flex cursor-pointer items-center gap-[6px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[7px] text-[13px] font-medium text-gca-dark hover:bg-gca-page-bg"
+            className="flex cursor-pointer items-center gap-[6px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[6px] text-[13px] font-medium text-gca-dark hover:bg-gca-page-bg"
           >
             <CalendarDays className="size-[14px] text-gca-green" />
             Today

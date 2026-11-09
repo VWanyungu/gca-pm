@@ -1,6 +1,8 @@
 {
+  "/(app)/admin/gate-activities/page": "app/(app)/admin/gate-activities/page.js",
   "/(app)/admin/page": "app/(app)/admin/page.js",
   "/(app)/admin/projects/page": "app/(app)/admin/projects/page.js",
+  "/(app)/admin/roles/page": "app/(app)/admin/roles/page.js",
   "/(app)/admin/users/[id]/edit/page": "app/(app)/admin/users/[id]/edit/page.js",
   "/(app)/admin/users/new/page": "app/(app)/admin/users/new/page.js",
   "/(app)/admin/users/page": "app/(app)/admin/users/page.js",
@@ -10,6 +12,7 @@
   "/(app)/projects/[projectId]/change-requests/page": "app/(app)/projects/[projectId]/change-requests/page.js",
   "/(app)/projects/[projectId]/dpr/[dprId]/page": "app/(app)/projects/[projectId]/dpr/[dprId]/page.js",
   "/(app)/projects/[projectId]/dpr/page": "app/(app)/projects/[projectId]/dpr/page.js",
+  "/(app)/projects/[projectId]/feedback/page": "app/(app)/projects/[projectId]/feedback/page.js",
   "/(app)/projects/[projectId]/milestones/page": "app/(app)/projects/[projectId]/milestones/page.js",
   "/(app)/projects/[projectId]/page": "app/(app)/projects/[projectId]/page.js",
   "/(app)/projects/[projectId]/risks/page": "app/(app)/projects/[projectId]/risks/page.js",
@@ -29,6 +32,7 @@
   "/engineer/dpr/[dprId]/confirmation/page": "app/engineer/dpr/[dprId]/confirmation/page.js",
   "/engineer/dpr/new/page": "app/engineer/dpr/new/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/feedback/[token]/page": "app/feedback/[token]/page.js",
   "/forgot-password/page": "app/forgot-password/page.js",
   "/login/page": "app/login/page.js",
   "/reset-password/[token]/page": "app/reset-password/[token]/page.js"

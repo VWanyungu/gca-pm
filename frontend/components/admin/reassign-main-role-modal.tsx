@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LoaderCircle } from "lucide-react";
 import Dropdown from "@/components/Dropdown";
 import { useAssignableUsers, useProjectRoles, useReassignMainRole } from "./use-admin-users-data";
 
@@ -90,7 +91,7 @@ export function ReassignMainRoleModal({
                     setRole(t.id);
                     setNewUserId("");
                   }}
-                  className={`flex-1 rounded-[6px] py-[8px] text-[13px] font-medium ${
+                  className={`flex-1 rounded-[6px] py-[6px] text-[13px] font-medium ${
                     role === t.id ? "bg-gca-surface text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]" : "text-gca-show"
                   }`}
                 >
@@ -138,7 +139,7 @@ export function ReassignMainRoleModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
+            className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[14px] font-medium text-gca-dark"
           >
             Cancel
           </button>
@@ -146,9 +147,15 @@ export function ReassignMainRoleModal({
             type="button"
             onClick={handleReassign}
             disabled={!newUserId || reassign.isPending}
-            className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40"
+            className="relative flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40"
           >
-            Reassign
+            <span className={reassign.isPending ? "invisible" : undefined}>Reassign</span>
+            {reassign.isPending && (
+              <LoaderCircle
+                className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                aria-label="Reassigning"
+              />
+            )}
           </button>
         </div>
       </div>

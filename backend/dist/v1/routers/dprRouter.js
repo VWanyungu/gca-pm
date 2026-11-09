@@ -1,9 +1,11 @@
 import express from 'express';
 import { DprAmendments, Dprs, Projects, ProjectStages, ProjectContractors, } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import requireKickoffComplete from '../middlewares/requireKickoffComplete.js';
 import { globalAdministrators, notify, projectManagers } from '../utils/notifications.js';
 import { projectIdParamSchema, dprIdParamSchema, dprAmendmentIdParamSchema, createDprSchema, updateDprSchema, listDprsQuerySchema, expectedDprDaysQuerySchema, uploadDprPhotoSchema, createDprAmendmentSchema, decideDprAmendmentSchema, listDprAmendmentsQuerySchema, } from '../utils/validation.js';
 import { storeObject, FileValidationError, FileStorageError } from '../utils/objectStorage.js';
+import { sendRouteError } from '../utils/errors.js';
 // mergeParams so :projectId reaches authorize and handlers
 const router = express.Router({ mergeParams: true });
 // AC-DPR-01: Create/edit/submit requires SiteEngineer@project or Admin@global
@@ -92,8 +94,7 @@ router.get('/prefill', canCreateOrEdit, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 router.get('/missed-dates', canCreateOrEdit, async (req, res) => {
@@ -119,8 +120,7 @@ router.get('/missed-dates', canCreateOrEdit, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // Expected DPR days in a window (§15.4), for the weekly report's compliance and days-worked rows.
@@ -153,8 +153,7 @@ router.get('/expected-days', canView, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 router.get('/amendments', async (req, res) => {
@@ -188,11 +187,10 @@ router.get('/amendments', async (req, res) => {
         res.status(200).json({ status: 'success', data: { amendments }, message: 'DPR amendments retrieved' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
-router.post('/:dprId/amendments', canRequestAmendment, async (req, res) => {
+router.post('/:dprId/amendments', requireKickoffComplete(), canRequestAmendment, async (req, res) => {
     const params = dprIdParamSchema.validate(req.params);
     if (params.error) {
         res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -251,12 +249,14 @@ router.post('/:dprId/amendments', canRequestAmendment, async (req, res) => {
         res.status(201).json({ status: 'success', data: { amendment }, message: 'DPR amendment requested' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        const status = message.includes('pending amendment') ? 409 : 500;
-        res.status(status).json({ status: 'error', data: null, message });
+        if (err instanceof Error && err.constructor === Error && err.message.includes('pending amendment')) {
+            res.status(409).json({ status: 'error', data: null, message: err.message });
+            return;
+        }
+        sendRouteError(res, err);
     }
 });
-router.post('/amendments/:amendmentId/decide', canDecideAmendment, async (req, res) => {
+router.post('/amendments/:amendmentId/decide', requireKickoffComplete(), canDecideAmendment, async (req, res) => {
     const params = dprAmendmentIdParamSchema.validate(req.params);
     if (params.error) {
         res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -301,13 +301,38 @@ router.post('/amendments/:amendmentId/decide', canDecideAmendment, async (req, r
         res.status(200).json({ status: 'success', data: { amendment }, message: 'DPR amendment decided' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
+    }
+});
+// GET /projects/:projectId/dpr/photos - DPR progress photos
+router.get('/photos', canView, async (req, res) => {
+    const params = projectIdParamSchema.validate(req.params);
+    if (params.error) {
+        res.status(400).json({ status: 'error', data: null, message: params.error.message });
+        return;
+    }
+    const { projectId } = params.value;
+    const limit = req.query.limit ? Math.min(Math.max(Number(req.query.limit), 1), 100) : 10;
+    try {
+        const project = await Projects.getById(projectId);
+        if (!project) {
+            res.status(404).json({ status: 'error', data: null, message: 'Project not found' });
+            return;
+        }
+        const result = await Dprs.listPhotos({ projectId, limit });
+        res.status(200).json({
+            status: 'success',
+            data: result,
+            message: 'DPR photos retrieved',
+        });
+    }
+    catch (err) {
+        sendRouteError(res, err);
     }
 });
 // POST /projects/:projectId/dpr/photos/upload - AC-DPR-09
 // Registered before /:dprId routes so "photos" isn't captured as a dprId param.
-router.post('/photos/upload', canCreateOrEdit, async (req, res) => {
+router.post('/photos/upload', requireKickoffComplete(), canCreateOrEdit, async (req, res) => {
     const params = projectIdParamSchema.validate(req.params);
     if (params.error) {
         res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -352,12 +377,11 @@ router.post('/photos/upload', canCreateOrEdit, async (req, res) => {
             });
             return;
         }
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // POST /projects/:projectId/dpr
-router.post('/', canCreateOrEdit, async (req, res) => {
+router.post('/', requireKickoffComplete(), canCreateOrEdit, async (req, res) => {
     const params = projectIdParamSchema.validate(req.params);
     if (params.error) {
         res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -516,8 +540,7 @@ router.post('/', canCreateOrEdit, async (req, res) => {
             });
             return;
         }
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /projects/:projectId/dpr
@@ -560,8 +583,7 @@ router.get('/', canView, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /projects/:projectId/dpr/:dprId
@@ -591,12 +613,11 @@ router.get('/:dprId', canView, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // PATCH /projects/:projectId/dpr/:dprId
-router.patch('/:dprId', canCreateOrEdit, async (req, res) => {
+router.patch('/:dprId', requireKickoffComplete(), canCreateOrEdit, async (req, res) => {
     const params = dprIdParamSchema.validate(req.params);
     if (params.error) {
         res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -755,12 +776,11 @@ router.patch('/:dprId', canCreateOrEdit, async (req, res) => {
             });
             return;
         }
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // POST /projects/:projectId/dpr/:dprId/submit - AC-DPR-05
-router.post('/:dprId/submit', canCreateOrEdit, async (req, res) => {
+router.post('/:dprId/submit', requireKickoffComplete(), canCreateOrEdit, async (req, res) => {
     const params = dprIdParamSchema.validate(req.params);
     if (params.error) {
         res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -799,8 +819,7 @@ router.post('/:dprId/submit', canCreateOrEdit, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // DELETE /projects/:projectId/dpr/:dprId
@@ -847,8 +866,7 @@ router.delete('/:dprId', canCreateOrEdit, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 export default router;

@@ -1,5 +1,6 @@
 import express from 'express';
 import { Notifications, NotificationPreferences } from '../database/utils/database.js';
+import { sendRouteError } from '../utils/errors.js';
 
 const router = express.Router();
 
@@ -16,8 +17,7 @@ router.get('/', async (req, res) => {
       message: 'Notifications retrieved successfully',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -33,8 +33,7 @@ router.patch('/:notificationId/read', async (req, res) => {
     }
     res.status(200).json({ status: 'success', data: null, message: 'Notification marked as read' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -44,8 +43,7 @@ router.post('/read-all', async (req, res) => {
     await Notifications.markAllRead(userId);
     res.status(200).json({ status: 'success', data: null, message: 'All notifications marked as read' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -63,8 +61,7 @@ router.get('/preferences', async (req, res) => {
     }));
     res.status(200).json({ status: 'success', data: { preferences: result }, message: 'Preferences retrieved successfully' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -81,8 +78,7 @@ router.patch('/preferences', async (req, res) => {
     await NotificationPreferences.setForUser(userId, typeCode, 'in_app', enabled);
     res.status(200).json({ status: 'success', data: null, message: 'Preference updated' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 

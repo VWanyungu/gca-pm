@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { LoaderCircle } from "lucide-react";
 import Dropdown from "@/components/Dropdown";
-import { ROLE_NAMES, type AdminUserDetail, type RoleName } from "./types";
+import { type AdminUserDetail, type RoleName } from "./types";
 import { useCreateUser, useUpdateUser } from "./use-admin-users-data";
+import { useAccessRoles } from "./use-access-roles-data";
 import { AccessPanelContent } from "./access-panel";
 
 const baseUserFormSchema = z.object({
@@ -41,11 +43,6 @@ const editUserFormSchema = baseUserFormSchema;
 
 type UserFormValues = z.infer<typeof createUserFormSchema>;
 
-const GLOBAL_ROLE_OPTIONS = [
-  { id: "none", name: "None" },
-  ...ROLE_NAMES.map((r) => ({ id: r, name: r })),
-];
-
 function splitName(fullName: string): { firstName: string; lastName: string } {
   const [firstName, ...rest] = fullName.trim().split(/\s+/);
   return { firstName: firstName ?? "", lastName: rest.join(" ") };
@@ -57,6 +54,11 @@ interface UserFormProps {
 
 export function UserForm({ editing }: UserFormProps) {
   const router = useRouter();
+  const { data: accessRoles = [] } = useAccessRoles();
+  const globalRoleOptions = [
+    { id: "none", name: "None" },
+    ...accessRoles.map((r) => ({ id: r.name, name: r.name })),
+  ];
   const [createdUser, setCreatedUser] = useState<AdminUserDetail>();
   const currentUser = editing ?? createdUser;
   const createUser = useCreateUser();
@@ -185,7 +187,7 @@ export function UserForm({ editing }: UserFormProps) {
                 <Dropdown
                   id="globalRole"
                   title="None"
-                  data={GLOBAL_ROLE_OPTIONS}
+                  data={globalRoleOptions}
                   selectedId={field.value || "none"}
                   style="h-[42px] w-full rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
                   onSelect={(id) => field.onChange(id)}
@@ -201,16 +203,24 @@ export function UserForm({ editing }: UserFormProps) {
                 router.push("/admin/users");
                 setCreatedUser(undefined);
               }}
-              className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
+              className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[14px] font-medium text-gca-dark"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-60"
+              className="relative flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-medium text-gca-on-accent disabled:opacity-60"
             >
-              {currentUser ? "Save" : "Create user"}
+              <span className={saving ? "invisible" : undefined}>
+                {currentUser ? "Save" : "Create user"}
+              </span>
+              {saving && (
+                <LoaderCircle
+                  className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                  aria-label={currentUser ? "Saving" : "Creating user"}
+                />
+              )}
             </button>
           </div>
         </div>
@@ -233,7 +243,7 @@ export function UserForm({ editing }: UserFormProps) {
                 disabled
                 // shortcut: project access can only be granted once the user has an id, so the
                 // affordance stays disabled on the create route per the Figma spec.
-                className="mt-[16px] w-full rounded-[8px] border border-gca-border bg-gca-surface px-[14px] py-[10px] text-[14px] font-medium text-gca-dark disabled:opacity-60"
+                className="mt-[16px] w-full rounded-[8px] border border-gca-border bg-gca-surface px-[14px] py-[6px] text-[14px] font-medium text-gca-dark disabled:opacity-60"
               >
                 Add project access
               </button>

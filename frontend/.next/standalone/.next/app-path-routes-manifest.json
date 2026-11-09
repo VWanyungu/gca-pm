@@ -1,6 +1,8 @@
 {
+  "/(app)/admin/gate-activities/page": "/admin/gate-activities",
   "/(app)/admin/page": "/admin",
   "/(app)/admin/projects/page": "/admin/projects",
+  "/(app)/admin/roles/page": "/admin/roles",
   "/(app)/admin/users/[id]/edit/page": "/admin/users/[id]/edit",
   "/(app)/admin/users/new/page": "/admin/users/new",
   "/(app)/admin/users/page": "/admin/users",
@@ -10,6 +12,7 @@
   "/(app)/projects/[projectId]/change-requests/page": "/projects/[projectId]/change-requests",
   "/(app)/projects/[projectId]/dpr/[dprId]/page": "/projects/[projectId]/dpr/[dprId]",
   "/(app)/projects/[projectId]/dpr/page": "/projects/[projectId]/dpr",
+  "/(app)/projects/[projectId]/feedback/page": "/projects/[projectId]/feedback",
   "/(app)/projects/[projectId]/milestones/page": "/projects/[projectId]/milestones",
   "/(app)/projects/[projectId]/page": "/projects/[projectId]",
   "/(app)/projects/[projectId]/risks/page": "/projects/[projectId]/risks",
@@ -29,6 +32,7 @@
   "/engineer/dpr/[dprId]/confirmation/page": "/engineer/dpr/[dprId]/confirmation",
   "/engineer/dpr/new/page": "/engineer/dpr/new",
   "/favicon.ico/route": "/favicon.ico",
+  "/feedback/[token]/page": "/feedback/[token]",
   "/forgot-password/page": "/forgot-password",
   "/login/page": "/login",
   "/reset-password/[token]/page": "/reset-password/[token]"

@@ -1,0 +1,3 @@
+{
+  "/feedback/[token]/page": "app/feedback/[token]/page.js"
+}

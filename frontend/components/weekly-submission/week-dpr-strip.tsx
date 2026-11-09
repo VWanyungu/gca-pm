@@ -80,7 +80,7 @@ export function WeekDprStrip({
         <button
           onClick={onPrevWeek}
           aria-label="Previous week"
-          className="shrink-0 p-[8px] rounded-lg border border-gca-border cursor-pointer text-gca-muted hover:text-gca-dark disabled:cursor-not-allowed disabled:opacity-40"
+          className="shrink-0 px-[8px] py-[6px] rounded-lg border border-gca-border cursor-pointer text-gca-muted hover:text-gca-dark disabled:cursor-not-allowed disabled:opacity-40"
           disabled={!onPrevWeek}
         >
           <ChevronLeft className="size-[16px]" />
@@ -98,7 +98,7 @@ export function WeekDprStrip({
                 onClick={() => !isFuture && toggleDay(date)}
                 disabled={isFuture}
                 aria-expanded={isFuture ? undefined : isOpen}
-                className={`py-[8px] px-[8px] sm:px-[12px] flex shrink-0 cursor-pointer items-center gap-[4px] text-[14px] sm:text-[15px] font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gca-green disabled:cursor-not-allowed disabled:text-gca-muted ${isOpen && "bg-gca-badge-bg rounded-lg"} ${!isMissing || isOpen ? "" : "text-error-text"}`}
+                className={`py-[6px] px-[8px] sm:px-[12px] flex shrink-0 cursor-pointer items-center gap-[4px] text-[14px] sm:text-[15px] font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gca-green disabled:cursor-not-allowed disabled:text-gca-muted ${isOpen && "bg-gca-badge-bg rounded-lg"} ${!isMissing || isOpen ? "" : "text-error-text"}`}
               >
                 {DAY_LABELS[i]} {new Date(`${date}T00:00:00Z`).getUTCDate()}
                 {!isFuture &&
@@ -115,7 +115,7 @@ export function WeekDprStrip({
         <button
           onClick={onNextWeek}
           aria-label="Next week"
-          className="shrink-0 p-[8px] rounded-lg border border-gca-border cursor-pointer text-gca-muted hover:text-gca-dark disabled:cursor-not-allowed disabled:opacity-40"
+          className="shrink-0 px-[8px] py-[6px] rounded-lg border border-gca-border cursor-pointer text-gca-muted hover:text-gca-dark disabled:cursor-not-allowed disabled:opacity-40"
           disabled={!onNextWeek}
         >
           <ChevronRight className="size-[16px]" />

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Flag } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import type { Milestone } from "./types";
 
 export function NextMilestonesRow({
@@ -32,7 +33,7 @@ export function NextMilestonesRow({
       </div>
 
       {upcoming.length === 0 ? (
-        <p className="text-[13px] text-gca-muted">No upcoming milestones.</p>
+        <EmptyState icon={Flag} title="No upcoming milestones" className="py-[24px]" />
       ) : (
         <div
           className={`no-scrollbar -mx-[20px] flex w-[calc(100%+40px)] items-start overflow-x-auto px-[20px] md:mx-0 md:w-full md:overflow-visible md:px-0 ${upcoming.length > 3 ? "md:justify-between" : "justify-start"}`}

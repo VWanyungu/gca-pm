@@ -16,6 +16,7 @@
     "test": "NODE_ENV=development bun test"
   },
   "dependencies": {
+    "@upstash/qstash": "^2.12.1",
     "@upstash/redis": "^1.40.0",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.5.1",

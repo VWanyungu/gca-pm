@@ -147,6 +147,20 @@ export class Users {
             return null;
         return Users.getUserById(id);
     }
+    /** Marks every access token issued before now as invalid (checked against the token's
+     *  `iat` in authenticateToken). Returns the cutoff so the caller can seed the cache
+     *  immediately, or null if the user doesn't exist. */
+    static async invalidateSessions(id) {
+        const [row] = await db('users')
+            .where({ id })
+            .update({ tokens_invalidated_at: db.fn.now(), updated_at: db.fn.now() })
+            .returning('tokens_invalidated_at');
+        return row ? row.tokens_invalidated_at : null;
+    }
+    static async getTokensInvalidatedAt(id) {
+        const row = await db('users').select('tokens_invalidated_at').where({ id }).first();
+        return row?.tokens_invalidated_at ?? null;
+    }
     static async createUserAdmin(input, passwordHash, actorId) {
         const id = randomUUID();
         await db('users').insert({
@@ -217,6 +231,9 @@ export class Tokens {
             .del()
             .returning('refresh_token');
         return { deletedToken: deleted ? deleted.refresh_token : null };
+    }
+    static async deleteAllRefreshTokensForUser(userId) {
+        await db('refreshTokens').where({ user_id: userId }).del();
     }
     static async blacklistToken(token) {
         await db('tokens').insert({ token }).onConflict('token').ignore();
@@ -374,12 +391,108 @@ export class RiskCategories {
         return row ?? null;
     }
 }
+/** Catalog of grantable role names (PM, Planner, ...) backing the `roles` grant table's FK. */
+export class AccessRoles {
+    static async list({ includeInactive = false } = {}) {
+        const base = db('access_role');
+        if (!includeInactive)
+            base.where({ is_active: true });
+        return base.select('access_role_id', 'name', 'is_system', 'sort_order', 'is_active').orderBy('sort_order', 'asc');
+    }
+    static async getById(id) {
+        const row = await db('access_role').where({ access_role_id: id }).first();
+        return row ?? null;
+    }
+    static async getByName(name) {
+        const row = await db('access_role').where({ name }).first();
+        return row ?? null;
+    }
+    static async create(input) {
+        const [row] = await db('access_role')
+            .insert({ ...input, is_active: input.is_active ?? true })
+            .returning(['access_role_id', 'name', 'is_system', 'sort_order', 'is_active']);
+        return row;
+    }
+    static async update(id, input) {
+        const [row] = await db('access_role')
+            .where({ access_role_id: id })
+            .update(input)
+            .returning(['access_role_id', 'name', 'is_system', 'sort_order', 'is_active']);
+        return row ?? null;
+    }
+    static async deactivate(id) {
+        const [row] = await db('access_role')
+            .where({ access_role_id: id })
+            .update({ is_active: false })
+            .returning(['access_role_id', 'name', 'is_system', 'sort_order', 'is_active']);
+        return row ?? null;
+    }
+}
 export class PdmStages {
     static async list() {
         return db('pdm_stage')
             .join('pdm_phase', 'pdm_stage.phase_id', 'pdm_phase.phase_id')
-            .select('pdm_stage.stage_no', 'pdm_stage.name', 'pdm_stage.phase_id', 'pdm_phase.code as phase_code', 'pdm_phase.name as phase_name')
+            .select('pdm_stage.stage_no', 'pdm_stage.name', 'pdm_stage.phase_id', 'pdm_phase.code as phase_code', 'pdm_phase.name as phase_name', 'pdm_stage.kind')
             .orderBy('pdm_stage.stage_no', 'asc');
+    }
+}
+const GATE_ACTIVITY_TEMPLATE_COLS = [
+    'template_id',
+    'stage_no',
+    'title',
+    'description',
+    'requires_attachment',
+    'due_offset_days',
+    'sort_order',
+    'is_active',
+    'created_by',
+    'created_at',
+    'updated_by',
+    'updated_at',
+];
+/** Admin-managed predefined activities instantiated onto a project's Kickoff/Closure gate stages at creation. */
+export class PdmGateActivityTemplates {
+    static async list({ stageNo, includeInactive = false, } = {}) {
+        const query = db('pdm_gate_activity_template').select(GATE_ACTIVITY_TEMPLATE_COLS);
+        if (stageNo !== undefined)
+            query.andWhere('stage_no', stageNo);
+        if (!includeInactive)
+            query.andWhere('is_active', true);
+        return query.orderBy(['stage_no', 'sort_order']);
+    }
+    static async getById(templateId) {
+        const row = await db('pdm_gate_activity_template').where({ template_id: templateId }).first();
+        return row ?? null;
+    }
+    static async create(input, actorId) {
+        const [row] = await db('pdm_gate_activity_template')
+            .insert({
+            template_id: randomUUID(),
+            stage_no: input.stage_no,
+            title: input.title,
+            description: input.description ?? null,
+            requires_attachment: input.requires_attachment ?? false,
+            due_offset_days: input.due_offset_days ?? null,
+            sort_order: input.sort_order ?? 0,
+            is_active: input.is_active ?? true,
+            created_by: actorId,
+        })
+            .returning(GATE_ACTIVITY_TEMPLATE_COLS);
+        return row;
+    }
+    static async update(templateId, patch, actorId) {
+        const [row] = await db('pdm_gate_activity_template')
+            .where({ template_id: templateId })
+            .update({ ...patch, updated_by: actorId, updated_at: db.fn.now() })
+            .returning(GATE_ACTIVITY_TEMPLATE_COLS);
+        return row ?? null;
+    }
+    static async deactivate(templateId, actorId) {
+        const [row] = await db('pdm_gate_activity_template')
+            .where({ template_id: templateId })
+            .update({ is_active: false, updated_by: actorId, updated_at: db.fn.now() })
+            .returning(GATE_ACTIVITY_TEMPLATE_COLS);
+        return row ?? null;
     }
 }
 export class Programs {
@@ -696,7 +809,7 @@ export class ProjectStages {
         const row = await q
             .join('pdm_stage', 'project_stage.stage_no', 'pdm_stage.stage_no')
             .where({ 'project_stage.project_id': projectId, 'project_stage.stage_no': stageNo })
-            .select('project_stage.project_id', 'project_stage.stage_no', 'pdm_stage.name as stage_name', 'pdm_stage.phase_id', 'project_stage.in_scope', 'project_stage.state', 'project_stage.added_to_scope_by', 'project_stage.added_to_scope_at', 'project_stage.last_changed_by', 'project_stage.last_changed_at')
+            .select('project_stage.project_id', 'project_stage.stage_no', 'pdm_stage.name as stage_name', 'pdm_stage.phase_id', 'pdm_stage.kind', 'project_stage.in_scope', 'project_stage.state', 'project_stage.added_to_scope_by', 'project_stage.added_to_scope_at', 'project_stage.last_changed_by', 'project_stage.last_changed_at')
             .first();
         return row ?? null;
     }
@@ -704,7 +817,7 @@ export class ProjectStages {
         const query = db('project_stage')
             .join('pdm_stage', 'project_stage.stage_no', 'pdm_stage.stage_no')
             .where('project_stage.project_id', projectId)
-            .select('project_stage.project_id', 'project_stage.stage_no', 'pdm_stage.name as stage_name', 'pdm_stage.phase_id', 'project_stage.in_scope', 'project_stage.state', 'project_stage.added_to_scope_by', 'project_stage.added_to_scope_at', 'project_stage.last_changed_by', 'project_stage.last_changed_at')
+            .select('project_stage.project_id', 'project_stage.stage_no', 'pdm_stage.name as stage_name', 'pdm_stage.phase_id', 'pdm_stage.kind', 'project_stage.in_scope', 'project_stage.state', 'project_stage.added_to_scope_by', 'project_stage.added_to_scope_at', 'project_stage.last_changed_by', 'project_stage.last_changed_at')
             .orderBy('project_stage.stage_no', 'asc');
         if (inScope !== undefined) {
             query.andWhere('project_stage.in_scope', inScope);
@@ -746,6 +859,7 @@ export class ProjectStages {
                 ...stageRow,
                 stage_name: pdmStage?.name ?? '',
                 phase_id: pdmStage?.phase_id ?? 1,
+                kind: pdmStage?.kind ?? 'pdm',
             };
         });
     }
@@ -760,8 +874,8 @@ export class ProjectStages {
             .returning(PROJECT_STAGE_COLS);
         return row ?? null;
     }
-    static async transition({ projectId, stageNo, toState, inScope, actorId, reason, checklistSnapshot, closureNotes, }) {
-        return await db.transaction(async (trx) => {
+    static async transition({ projectId, stageNo, toState, inScope, actorId, reason, checklistSnapshot, closureNotes, }, trx) {
+        const exec = async (trx) => {
             const existing = await trx('project_stage')
                 .where({ project_id: projectId, stage_no: stageNo })
                 .first();
@@ -826,7 +940,9 @@ export class ProjectStages {
             }
             // Completing a stage hands the project on to whatever's next in scope, so "current
             // stage" never goes blank mid-project (only once every in-scope stage is done).
-            if (historyEvent === 'completed') {
+            // Kickoff (stage 0) is excluded: the regular PDM stages are activated by the PM by
+            // hand once kickoff completes, never automatically.
+            if (historyEvent === 'completed' && stageNo !== 0) {
                 const nextStage = await trx('project_stage')
                     .where({ project_id: projectId, in_scope: true, state: 'not_started' })
                     .andWhere('stage_no', '>', stageNo)
@@ -857,10 +973,12 @@ export class ProjectStages {
                     ...updatedStage,
                     stage_name: pdmStage?.name ?? '',
                     phase_id: pdmStage?.phase_id ?? 1,
+                    kind: pdmStage?.kind ?? 'pdm',
                 },
                 event: createdEvent,
             };
-        });
+        };
+        return trx ? await exec(trx) : await db.transaction(exec);
     }
     static async delete(projectId, stageNo, trx) {
         const q = trx ? trx('project_stage') : db('project_stage');
@@ -957,6 +1075,7 @@ export const PROJECT_COLS = [
     'created_by',
     'created_at',
     'updated_at',
+    'banner_photos',
 ];
 export class ProjectStatusHistory {
     static async create(input, trx) {
@@ -1080,6 +1199,107 @@ export class ClientContacts {
         await db('client_contacts').where({ contact_id: contactId }).del();
     }
 }
+export function feedbackRequestStatus(row) {
+    if (row.responded_at)
+        return 'responded';
+    if (new Date(row.expires_at) < new Date())
+        return 'expired';
+    if (row.opened_at)
+        return 'opened';
+    return 'sent';
+}
+const FEEDBACK_REQUEST_COLS = [
+    'request_id', 'project_id', 'contact_id', 'requested_by', 'about', 'token',
+    'expires_at', 'opened_at', 'responded_at',
+    'rating_overall', 'rating_quality', 'rating_updates', 'rating_schedule', 'comment', 'created_at',
+];
+export class ClientFeedbackRequests {
+    static async create(input) {
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + input.expires_in_days);
+        const inserted = await db('client_feedback_request')
+            .insert(input.contact_ids.map((contactId) => ({
+            request_id: randomUUID(),
+            project_id: input.project_id,
+            contact_id: contactId,
+            requested_by: input.requested_by,
+            about: input.about,
+            token: randomUUID(),
+            expires_at: expiresAt,
+        })))
+            .returning('request_id');
+        return db('client_feedback_request as r')
+            .join('client_contacts as c', 'c.contact_id', 'r.contact_id')
+            .whereIn('r.request_id', inserted.map((row) => row.request_id))
+            .select(...FEEDBACK_REQUEST_COLS.map((col) => `r.${col}`), 'c.name as contact_name', 'c.title as contact_title', 'c.email as contact_email');
+    }
+    static async listByProjectId(projectId) {
+        return db('client_feedback_request as r')
+            .join('client_contacts as c', 'c.contact_id', 'r.contact_id')
+            .where({ 'r.project_id': projectId })
+            .select(...FEEDBACK_REQUEST_COLS.map((col) => `r.${col}`), 'c.name as contact_name', 'c.title as contact_title', 'c.email as contact_email')
+            .orderBy('r.created_at', 'desc');
+    }
+    static async getById(projectId, requestId) {
+        const row = await db('client_feedback_request')
+            .where({ project_id: projectId, request_id: requestId })
+            .first(FEEDBACK_REQUEST_COLS);
+        return row ?? null;
+    }
+    static async getByToken(token) {
+        const row = await db('client_feedback_request as r')
+            .join('client_contacts as c', 'c.contact_id', 'r.contact_id')
+            .join('projects as p', 'p.project_id', 'r.project_id')
+            .join('users as u', 'u.id', 'r.requested_by')
+            .where({ 'r.token': token })
+            .select(...FEEDBACK_REQUEST_COLS.map((col) => `r.${col}`), 'p.name as project_name', 'c.name as contact_name', 'u.first_name as pm_first_name', 'u.last_name as pm_last_name', 'u.email as pm_email')
+            .first();
+        if (!row)
+            return null;
+        const { pm_first_name, pm_last_name, ...rest } = row;
+        return { ...rest, pm_name: pm_first_name ? `${pm_first_name} ${pm_last_name}` : null };
+    }
+    static async markOpened(requestId) {
+        await db('client_feedback_request')
+            .where({ request_id: requestId })
+            .whereNull('opened_at')
+            .update({ opened_at: new Date() });
+    }
+    static async submitResponse(requestId, input) {
+        const [row] = await db('client_feedback_request')
+            .where({ request_id: requestId })
+            .update({
+            rating_overall: input.rating_overall,
+            rating_quality: input.rating_quality,
+            rating_updates: input.rating_updates,
+            rating_schedule: input.rating_schedule,
+            comment: input.comment ?? null,
+            responded_at: new Date(),
+        })
+            .returning(FEEDBACK_REQUEST_COLS);
+        return row;
+    }
+    /** Averages are over answered requests only, rounded to one decimal. */
+    static ratingSummary(rows) {
+        const answered = rows.filter((r) => r.responded_at);
+        const avg = (key) => {
+            const values = answered.map((r) => r[key]).filter((v) => v != null);
+            if (values.length === 0)
+                return null;
+            return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
+        };
+        return {
+            count: answered.length,
+            overall: avg('rating_overall'),
+            quality: avg('rating_quality'),
+            updates: avg('rating_updates'),
+            schedule: avg('rating_schedule'),
+        };
+    }
+    static async delete(requestId) {
+        await db('client_feedback_request').where({ request_id: requestId }).del();
+    }
+}
 export class Projects {
     static async create(input, trx) {
         const execute = async (t) => {
@@ -1107,6 +1327,7 @@ export class Projects {
                 legacy_source_ref: input.legacy_source_ref ?? null,
                 holiday_calendar_id: input.holiday_calendar_id ?? null,
                 dpr_expected_weekdays: input.dpr_expected_weekdays ?? [1, 2, 3, 4, 5, 6],
+                banner_photos: JSON.stringify(input.banner_photos ?? []),
                 created_by: input.created_by,
             })
                 .returning(PROJECT_COLS);
@@ -1171,6 +1392,68 @@ export class Projects {
                     last_changed_at: t.fn.now(),
                 });
             }
+            // Kickoff (0) and Closure (11) are always in scope and active from day one —
+            // Kickoff gates every other project feature, Closure can be worked at any time.
+            await t('project_stage').insert([
+                {
+                    project_id: projectId,
+                    stage_no: 0,
+                    in_scope: true,
+                    state: 'active',
+                    added_to_scope_by: input.created_by,
+                    added_to_scope_at: t.fn.now(),
+                    last_changed_by: input.created_by,
+                    last_changed_at: t.fn.now(),
+                },
+                {
+                    project_id: projectId,
+                    stage_no: 11,
+                    in_scope: true,
+                    state: 'active',
+                    added_to_scope_by: input.created_by,
+                    added_to_scope_at: t.fn.now(),
+                    last_changed_by: input.created_by,
+                    last_changed_at: t.fn.now(),
+                },
+            ]);
+            for (const s of [0, 11]) {
+                await t('stage_state_history').insert({
+                    event_id: randomUUID(),
+                    project_id: projectId,
+                    stage_no: s,
+                    event: 'activated',
+                    from_state: null,
+                    to_state: 'active',
+                    reason: s === 0 ? 'Kickoff active on project setup' : 'Closure active on project setup',
+                    checklist_snapshot: null,
+                    closure_notes: null,
+                    actor_id: input.created_by,
+                    occurred_at: new Date(),
+                });
+            }
+            const gateTemplates = await t('pdm_gate_activity_template')
+                .whereIn('stage_no', [0, 11])
+                .andWhere('is_active', true)
+                .orderBy('sort_order', 'asc');
+            for (const template of gateTemplates) {
+                const dueDate = input.expected_start_date && template.due_offset_days != null
+                    ? new Date(new Date(input.expected_start_date).getTime() +
+                        template.due_offset_days * 24 * 60 * 60 * 1000)
+                    : null;
+                await t('stage_activity').insert({
+                    activity_id: randomUUID(),
+                    project_id: projectId,
+                    stage_no: template.stage_no,
+                    template_id: template.template_id,
+                    title: template.title,
+                    description: template.description,
+                    status: 'open',
+                    due_date: dueDate,
+                    owner_id: pmUserId,
+                    requires_attachment: template.requires_attachment,
+                    created_by: input.created_by,
+                });
+            }
             await t('project_stage').insert(stageRows);
             // Log stage state history for in_scope stages
             for (let s = 1; s <= 10; s++) {
@@ -1209,7 +1492,7 @@ export class Projects {
             const stages = await t('project_stage')
                 .join('pdm_stage', 'project_stage.stage_no', 'pdm_stage.stage_no')
                 .where('project_stage.project_id', projectId)
-                .select('project_stage.project_id', 'project_stage.stage_no', 'pdm_stage.name as stage_name', 'pdm_stage.phase_id', 'project_stage.in_scope', 'project_stage.state', 'project_stage.added_to_scope_by', 'project_stage.added_to_scope_at', 'project_stage.last_changed_by', 'project_stage.last_changed_at')
+                .select('project_stage.project_id', 'project_stage.stage_no', 'pdm_stage.name as stage_name', 'pdm_stage.phase_id', 'pdm_stage.kind', 'project_stage.in_scope', 'project_stage.state', 'project_stage.added_to_scope_by', 'project_stage.added_to_scope_at', 'project_stage.last_changed_by', 'project_stage.last_changed_at')
                 .orderBy('project_stage.stage_no', 'asc');
             return { project, stages };
         };
@@ -1232,6 +1515,10 @@ export class Projects {
         }
         if (status !== undefined) {
             query.where('status', status);
+        }
+        else {
+            // AC-PRJ-11: deleted projects are hidden unless explicitly asked for.
+            query.whereNot('status', 'deleted');
         }
         if (country) {
             query.whereILike('country', `%${country}%`);
@@ -1303,10 +1590,13 @@ export class Projects {
         const map = new Map();
         if (projectIds.length === 0)
             return map;
+        // Kickoff/Closure are gates, not real PDM stages — a project is never "shown" as being
+        // in one of them, so both queries below exclude kind='kickoff'/'closure'.
         const rows = await db('project_stage')
             .join('pdm_stage', 'project_stage.stage_no', 'pdm_stage.stage_no')
             .whereIn('project_stage.project_id', projectIds)
             .where('project_stage.state', 'active')
+            .where('pdm_stage.kind', 'pdm')
             .select('project_stage.project_id', 'project_stage.stage_no', 'pdm_stage.name as stage_name')
             .orderBy('project_stage.stage_no', 'asc');
         for (const row of rows)
@@ -1319,6 +1609,7 @@ export class Projects {
                 .join('pdm_stage', 'project_stage.stage_no', 'pdm_stage.stage_no')
                 .whereIn('project_stage.project_id', withoutCurrent)
                 .where('project_stage.state', 'complete')
+                .where('pdm_stage.kind', 'pdm')
                 .select('project_stage.project_id', 'project_stage.stage_no', 'pdm_stage.name as stage_name')
                 .orderBy('project_stage.stage_no', 'asc');
             for (const row of completedRows)
@@ -1376,14 +1667,25 @@ export class Projects {
                 // active -> complete
                 // active or on_hold -> cancelled (reason required)
                 // cancelled -> active (reason required)
+                // any non-deleted status -> deleted (AC-PRJ-11, Admin-only — enforced by the caller)
                 const allowedTransitions = {
-                    active: ['on_hold', 'complete', 'cancelled'],
-                    on_hold: ['active', 'cancelled'],
-                    complete: [],
-                    cancelled: ['active'],
+                    active: ['on_hold', 'complete', 'cancelled', 'deleted'],
+                    on_hold: ['active', 'cancelled', 'deleted'],
+                    complete: ['deleted'],
+                    cancelled: ['active', 'deleted'],
+                    deleted: [],
                 };
                 if (!allowedTransitions[fromStatus].includes(toStatus)) {
                     throw new Error(`Invalid project status transition from '${fromStatus}' to '${toStatus}'`);
+                }
+                // AC-PRJ-12: the project cannot be marked complete until the Closure gate stage is.
+                if (toStatus === 'complete') {
+                    const closureStage = await t('project_stage')
+                        .where({ project_id: projectId, stage_no: 11 })
+                        .first();
+                    if (closureStage && closureStage.state !== 'complete') {
+                        throw new Error('Closure stage must be complete before the project can be marked complete');
+                    }
                 }
                 if (['on_hold', 'cancelled'].includes(toStatus) && !reason) {
                     throw new Error(`Reason is required when transitioning to '${toStatus}'`);
@@ -1418,6 +1720,9 @@ export class Projects {
                 ...patch,
                 updated_at: t.fn.now(),
             };
+            if (patch.banner_photos !== undefined) {
+                updateData.banner_photos = JSON.stringify(patch.banner_photos);
+            }
             const [updated] = await t('projects')
                 .where({ project_id: projectId })
                 .update(updateData)
@@ -1425,11 +1730,6 @@ export class Projects {
             return updated ?? null;
         };
         return trx ? await execute(trx) : await db.transaction(execute);
-    }
-    static async delete(projectId, trx) {
-        const q = trx ? trx('projects') : db('projects');
-        const count = await q.where({ project_id: projectId }).del();
-        return count > 0;
     }
     static async suggestNextCode(programId, year) {
         const currentYear = year ?? new Date().getFullYear();
@@ -1457,12 +1757,14 @@ const STAGE_ACTIVITY_COLS = [
     'activity_id',
     'project_id',
     'stage_no',
+    'template_id',
     'title',
     'description',
     'status',
     'due_date',
     'owner_id',
     'completed_at',
+    'requires_attachment',
     'created_by',
     'created_at',
     'updated_at',
@@ -1472,6 +1774,72 @@ export class StageActivities {
         const q = trx ? trx('stage_activity') : db('stage_activity');
         const [row] = await q.insert(input).returning(STAGE_ACTIVITY_COLS);
         return row;
+    }
+    /** Re-copies a Kickoff/Closure stage's activities from the current gate activity templates —
+     *  fills in any missing ones (e.g. a project created before templates existed) and syncs the
+     *  title/description/requires_attachment of ones already linked to a template, without
+     *  touching their status, owner or due date. */
+    /** Re-copies templates onto the stage's activities; if that adds a new open activity to an
+     *  already-complete gate, reopens it to active (AC-STG-12 in reverse) so the Kickoff banner
+     *  and lock reappear. */
+    static async syncFromTemplates(projectId, stageNo, actorId) {
+        return db.transaction(async (trx) => {
+            const project = await trx('projects').where({ project_id: projectId }).first();
+            const templates = await trx('pdm_gate_activity_template')
+                .where({ stage_no: stageNo, is_active: true })
+                .orderBy('sort_order', 'asc');
+            const existing = await trx('stage_activity')
+                .where({ project_id: projectId, stage_no: stageNo })
+                .whereNotNull('template_id');
+            const existingByTemplate = new Map(existing.map((a) => [a.template_id, a]));
+            let created = 0;
+            let updated = 0;
+            for (const template of templates) {
+                const match = existingByTemplate.get(template.template_id);
+                if (!match) {
+                    const dueDate = project?.expected_start_date && template.due_offset_days != null
+                        ? new Date(new Date(project.expected_start_date).getTime() +
+                            template.due_offset_days * 24 * 60 * 60 * 1000)
+                        : null;
+                    await trx('stage_activity').insert({
+                        activity_id: randomUUID(),
+                        project_id: projectId,
+                        stage_no: stageNo,
+                        template_id: template.template_id,
+                        title: template.title,
+                        description: template.description,
+                        status: 'open',
+                        due_date: dueDate,
+                        requires_attachment: template.requires_attachment,
+                        created_by: actorId,
+                    });
+                    created++;
+                }
+                else if (match.title !== template.title ||
+                    match.description !== template.description ||
+                    match.requires_attachment !== template.requires_attachment) {
+                    await trx('stage_activity').where({ activity_id: match.activity_id }).update({
+                        title: template.title,
+                        description: template.description,
+                        requires_attachment: template.requires_attachment,
+                    });
+                    updated++;
+                }
+            }
+            if (created > 0) {
+                const stage = await ProjectStages.get(projectId, stageNo, trx);
+                if (stage && stage.state === 'complete') {
+                    await ProjectStages.transition({
+                        projectId,
+                        stageNo,
+                        toState: 'active',
+                        actorId,
+                        reason: 'auto: new activity added by sync',
+                    }, trx);
+                }
+            }
+            return { created, updated };
+        });
     }
     static async list({ projectId, stageNo, status, ownerId, page = 1, limit = 25, }) {
         const base = db('stage_activity').where({ project_id: projectId });
@@ -1500,6 +1868,12 @@ export class StageActivities {
             .first();
         return row ?? null;
     }
+    /** True once every activity on the stage is done/cancelled and at least one exists — used to auto-complete Kickoff/Closure. */
+    static async isStageFullyDone(projectId, stageNo, trx) {
+        const q = trx ? trx('stage_activity') : db('stage_activity');
+        const rows = await q.where({ project_id: projectId, stage_no: stageNo }).select('status');
+        return rows.length > 0 && rows.every((r) => r.status === 'done' || r.status === 'cancelled');
+    }
     static async update(projectId, activityId, patch, trx) {
         const q = trx ? trx('stage_activity') : db('stage_activity');
         const [row] = await q
@@ -1507,6 +1881,45 @@ export class StageActivities {
             .update(patch)
             .returning(STAGE_ACTIVITY_COLS);
         return row ?? null;
+    }
+    /**
+     * AC-STG-12: updates the activity, then keeps a Kickoff/Closure stage's completion in sync in the
+     * same transaction (no manual button): it auto-completes once every activity is done, and reopens
+     * it back to active if an activity is reopened after the stage had completed.
+     */
+    static async updateAndAutoComplete(projectId, activityId, patch, actorId) {
+        return db.transaction(async (trx) => {
+            const activity = await StageActivities.update(projectId, activityId, patch, trx);
+            if (!activity)
+                return { activity: null, completedStage: null };
+            let completedStage = null;
+            if (patch.status !== undefined) {
+                const stage = await ProjectStages.get(projectId, activity.stage_no, trx);
+                if (stage && stage.kind !== 'pdm') {
+                    const fullyDone = await StageActivities.isStageFullyDone(projectId, activity.stage_no, trx);
+                    if (fullyDone && stage.state !== 'complete') {
+                        const result = await ProjectStages.transition({
+                            projectId,
+                            stageNo: activity.stage_no,
+                            toState: 'complete',
+                            actorId,
+                            reason: 'auto: all activities done',
+                        }, trx);
+                        completedStage = result.stage;
+                    }
+                    else if (!fullyDone && stage.state === 'complete') {
+                        await ProjectStages.transition({
+                            projectId,
+                            stageNo: activity.stage_no,
+                            toState: 'active',
+                            actorId,
+                            reason: 'auto: activity reopened',
+                        }, trx);
+                    }
+                }
+            }
+            return { activity, completedStage };
+        });
     }
     static async delete(projectId, activityId, trx) {
         const q = trx ? trx('stage_activity') : db('stage_activity');
@@ -1522,6 +1935,7 @@ const STAGE_ACTIVITY_ATTACHMENT_COLS = [
     'activity_id',
     'file_id',
     'caption',
+    'access_url',
     'sort_order',
     'uploaded_by',
     'uploaded_at',
@@ -2045,7 +2459,7 @@ export class ScheduleUploadInFlightError extends Error {
 const SCHEDULE_TASK_COLS = [
     't.task_id', 't.mpp_unique_id',
     'r.parent_task_id', 'r.outline_level', 'r.wbs', 'r.task_name', 'r.duration_minutes',
-    'r.start', 'r.expected_finish', 'r.actual_start', 'r.actual_finish',
+    'r.start', 'r.expected_finish', 'r.baseline_finish', 'r.actual_start', 'r.actual_finish',
     'r.pct_work_complete', 'r.planned_pct_complete',
     'r.is_milestone', 'r.is_summary', 'r.is_critical',
     'r.predecessors', 'r.resource_names', 'r.responsible_user_id',
@@ -2090,19 +2504,35 @@ export class ScheduleTasks {
             .select(...SCHEDULE_TASK_COLS, db.raw("(r.is_summary = false AND r.pct_work_complete < 100 AND r.expected_finish < now()) as is_overdue"), db.raw(PLANNED_PCT_SQL))
             .orderBy('t.mpp_unique_id', 'asc');
     }
-    /** Overdue tasks (AC-SCH-20), each left-joined to its auto-raised risk (if any) so the
-     *  Overdue tab can show "Add as risk" vs. "Risk raised · View". */
+    /** Current revision of every live task, for building a fresh MS Project export (ScheduleBuilder)
+     *  that reflects today's DB state — including write-backs a re-upload wouldn't know about.
+     *  Dates come back as the project-local wall-clock strings MS Project originally wrote,
+     *  reversing the `AT TIME ZONE` conversion scheduleProcessor applied on upload (see
+     *  resolveLocalTimestamps), since that is the format the exporter's writer expects. */
+    static async listCurrentForExport(projectId) {
+        const local = (col, alias) => db.raw(`to_char(${col} AT TIME ZONE p.timezone, 'YYYY-MM-DD"T"HH24:MI:SS') as ${alias}`);
+        return db('schedule_task_revision as r')
+            .join('schedule_task as t', 't.task_id', 'r.task_id')
+            .join('projects as p', 'p.project_id', 't.project_id')
+            .leftJoin('schedule_task as parent', 'parent.task_id', 'r.parent_task_id')
+            .where('t.project_id', projectId)
+            .whereNull('r.valid_to')
+            .whereNull('t.removed_in_version_id')
+            .select('t.mpp_unique_id', 'parent.mpp_unique_id as parent_mpp_unique_id', 'r.outline_level', 'r.wbs', 'r.task_name', 'r.duration_minutes', local('r.start', 'start'), local('r.expected_finish', 'expected_finish'), 
+        // to_char of a NULL timestamp is NULL, so these fall through correctly unbaselined/not-yet-actual.
+        local('r.baseline_start', 'baseline_start'), local('r.baseline_finish', 'baseline_finish'), local('r.actual_start', 'actual_start'), local('r.actual_finish', 'actual_finish'), 'r.pct_work_complete', 'r.planned_pct_complete', 'r.is_milestone', 'r.is_summary', 'r.is_critical', 'r.is_active', 'r.task_type', 'r.predecessors', 'r.resource_names')
+            .orderBy('t.mpp_unique_id', 'asc');
+    }
     /**
      * AC-SCH-20, and the list the PM works from: tasks past their expected finish and not
      * finished. "Past" is a project-local calendar question — a task due today is not overdue
      * at 09:00 just because the server is in UTC — so the comparison runs in the project's zone.
      *
-     * Each task appears once. A task can carry several risks over time (one dismissed, another
-     * raised after the planner moved it), so the most relevant one is picked: a risk that still
-     * covers the task first, then the most recently raised. Dismissed and auto-resolved risks
-     * do not cover anything — the PM threw one out, the other closed itself when the task
-     * stopped being overdue — so a task holding only those reads as uncovered and can be
-     * raised again.
+     * Each task appears once. A task can carry several risks over time (one closed, another
+     * raised after the planner moved it), so the one that still covers it is picked first — an
+     * open risk if there is one, else the most recently raised — and the Overdue tab reads
+     * "covered" straight off that status (AC-SCH-23 closes a risk once its task catches up; the
+     * PM can raise a fresh one if the same task falls overdue again).
      */
     static async listOverdue(projectId) {
         const { rows } = await db.raw(`
@@ -2117,7 +2547,7 @@ export class ScheduleTasks {
         SELECT risk_id, status
         FROM risk
         WHERE source_task_id = t.task_id AND source = 'overdue_task'
-        ORDER BY (status IN ('open', 'mitigated', 'closed')) DESC, opened_at DESC
+        ORDER BY (status = 'open') DESC, opened_at DESC
         LIMIT 1
       ) k ON true
       WHERE t.project_id = :projectId
@@ -2410,6 +2840,35 @@ export class Dprs {
         const q = trx ? trx('dpr') : db('dpr');
         const row = await q.where({ project_id: projectId, report_date: reportDate }).first();
         return row ?? null;
+    }
+    static async listPhotos({ projectId, limit = 10, }) {
+        const baseQuery = db('dpr_photo as dp')
+            .join('dpr as d', 'd.dpr_id', 'dp.dpr_id')
+            .where('d.project_id', projectId);
+        const countRow = await baseQuery
+            .clone()
+            .count('dp.photo_id as count')
+            .first();
+        const total = Number(countRow?.count ?? 0);
+        const rows = await baseQuery
+            .clone()
+            .join('file_object as fo', 'fo.file_id', 'dp.file_id')
+            .leftJoin('users as u', 'u.id', 'dp.uploaded_by')
+            .select('dp.photo_id', 'dp.dpr_id', 'dp.caption', 'dp.taken_at', 'dp.sort_order', 'd.report_date', 'd.stage_no', 'fo.storage_key', 'fo.mime_type', db.raw("NULLIF(CONCAT(u.first_name, ' ', u.last_name), ' ') as uploader_name"))
+            .orderBy('d.report_date', 'desc')
+            .orderBy('dp.sort_order', 'asc')
+            .limit(limit);
+        const photos = rows.map((r) => ({
+            photo_id: r.photo_id,
+            dpr_id: r.dpr_id,
+            caption: r.caption,
+            taken_at: r.taken_at ? (r.taken_at instanceof Date ? r.taken_at.toISOString() : String(r.taken_at)) : null,
+            report_date: r.report_date instanceof Date ? r.report_date.toISOString().slice(0, 10) : String(r.report_date),
+            stage_no: r.stage_no,
+            uploader_name: r.uploader_name ?? null,
+            url: objectUrl({ storage_key: r.storage_key, mime_type: r.mime_type }),
+        }));
+        return { photos, total };
     }
     static async list({ projectId, stageNo, status, fromDate, toDate, authorId, page = 1, limit = 25, visibleToUserId, isAdmin = false, }) {
         const query = db('dpr').where({ project_id: projectId });
@@ -3490,7 +3949,7 @@ export class WeeklySubmissions {
             for (const sar of addressed) {
                 if (sar.method === 'dismissed') {
                     await t('risk').where('risk_id', sar.risk_id).update({
-                        status: 'dismissed',
+                        status: 'closed',
                         closed_at: approvedAt,
                     });
                 }
@@ -3645,6 +4104,16 @@ export class WeeklySubmissions {
             await t('submission_addressed_risk')
                 .where({ submission_id: submissionId, risk_id: riskId })
                 .del();
+            // Removing the risk currently marked as the top risk must clear that designation too,
+            // otherwise top_risk_id dangles: it points at a risk no longer in addressed_risks, the
+            // UI shows "No top risks yet" while the ready-to-submit check still reads the stale text.
+            if (submission.top_risk_id === riskId) {
+                await t('weekly_submission').where({ submission_id: submissionId }).update({
+                    top_risk_id: null,
+                    top_risk_text: null,
+                    top_action: null,
+                });
+            }
             return { success: true };
         };
         return trx ? execute(trx) : db.transaction(execute);
@@ -4021,7 +4490,7 @@ export class Search {
             scope(db('risk as r'), 'r.project_id')
                 .join('projects as p', 'p.project_id', 'r.project_id')
                 .whereILike('r.title', pattern)
-                .whereNotIn('r.status', ['closed', 'dismissed', 'auto_resolved'])
+                .where('r.status', 'open')
                 .orderBy('r.score', 'desc')
                 .limit(limit)
                 .select('r.risk_id as id', 'r.project_id', 'p.name as project_name', 'r.title', 'r.kind as subtitle'),

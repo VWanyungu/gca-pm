@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { __testing } from '../utils/scheduleProcessor.js';
+import { __testing, nextThreeAm } from '../utils/scheduleProcessor.js';
 const { revisionDiffers, toRevisionFields } = __testing;
 const START = new Date('2026-08-24T05:00:00.000Z');
 const FINISH = new Date('2026-09-09T14:00:00.000Z');
@@ -117,5 +117,14 @@ describe('toRevisionFields', () => {
     it('uses the resolved instants, never the raw local strings', () => {
         expect(fieldsFor().start).toEqual(START);
         expect(fieldsFor().baseline_start).toBeNull();
+    });
+});
+describe('nextThreeAm', () => {
+    it('rolls to the same day when 3am has not happened yet', () => {
+        expect(nextThreeAm(new Date('2026-08-24T01:00:00'))).toEqual(new Date('2026-08-24T03:00:00'));
+    });
+    it('rolls to the next day once 3am has already passed, including exactly at 3am', () => {
+        expect(nextThreeAm(new Date('2026-08-24T03:00:00'))).toEqual(new Date('2026-08-25T03:00:00'));
+        expect(nextThreeAm(new Date('2026-08-24T18:00:00'))).toEqual(new Date('2026-08-25T03:00:00'));
     });
 });

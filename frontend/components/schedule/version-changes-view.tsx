@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileDiff } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
-import { useVersionChanges } from "./use-schedule-data";
+import { downloadScheduleVersionFile, useVersionChanges } from "./use-schedule-data";
 import { formatLongDateTime, type ScheduleVersion, type VersionChange } from "./types";
 import type { TeamMember } from "@/components/project-overview/types";
 
@@ -68,9 +69,8 @@ export function VersionChangesView({ projectId, version, team, onBack }: Version
           </p>
         </div>
         <button
-          disabled
-          title="Downloading the original upload needs the schedule file service — coming soon"
-          className="cursor-not-allowed rounded-[8px] border border-gca-border px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark opacity-50"
+          onClick={() => downloadScheduleVersionFile(projectId, version)}
+          className="cursor-pointer rounded-[8px] border border-gca-border px-[16px] py-[6px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
         >
           Download v{version.version_no} .mpp
         </button>
@@ -89,7 +89,7 @@ export function VersionChangesView({ projectId, version, team, onBack }: Version
               setFilter(opt.id);
               setPage(1);
             }}
-            className={`cursor-pointer rounded-[6px] px-[14px] py-[7px] text-[13px] ${
+            className={`cursor-pointer rounded-[6px] px-[14px] py-[6px] text-[13px] ${
               filter === opt.id
                 ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                 : "font-normal text-gca-show"
@@ -101,9 +101,7 @@ export function VersionChangesView({ projectId, version, team, onBack }: Version
       </div>
 
       {filtered.length === 0 ? (
-        <p className="py-[56px] text-center text-[13px] text-gca-show">
-          No changes in this category.
-        </p>
+        <EmptyState icon={FileDiff} title="No changes in this category" />
       ) : (
         <div className="flex w-full flex-col gap-[16px]">
           <div className="no-scrollbar w-full overflow-x-auto rounded-[12px] border border-gca-border">

@@ -7,6 +7,7 @@ import {
   type StageState,
 } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import {
   stageStateHistoryProjectParamsSchema,
   stageStateHistoryEventParamsSchema,
@@ -164,8 +165,7 @@ router.post('/', canManage, async (req, res) => {
       message: 'Stage state history record created',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -197,8 +197,7 @@ router.get('/', canView, async (req, res) => {
       message: 'Stage state history retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -222,8 +221,7 @@ router.get('/:eventId', canView, async (req, res) => {
       message: 'Stage state history record retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -284,8 +282,7 @@ router.patch('/:eventId', canManage, async (req, res) => {
       message: 'Stage state history record updated',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -311,8 +308,7 @@ router.delete('/:eventId', canManage, async (req, res) => {
       message: 'Stage state history record deleted',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 

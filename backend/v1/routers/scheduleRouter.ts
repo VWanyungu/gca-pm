@@ -6,23 +6,37 @@ import {
   ScheduleReconciliationFlags,
   ScheduleUploadInFlightError,
   ChangeRequests,
+  FileObjects,
 } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import requireKickoffComplete from '../middlewares/requireKickoffComplete.js';
 import {
   scheduleProjectParamsSchema,
   scheduleVersionParamsSchema,
+  scheduleTaskParamsSchema,
   listReconciliationFlagsQuerySchema,
   acknowledgeReconciliationFlagsSchema,
   uploadScheduleSchema,
+  editScheduleTaskSchema,
   type UploadScheduleBody,
+  type EditScheduleTaskBody,
 } from '../utils/validation.js';
 import {
   storeObject,
   discardObject,
+  fetchObjectBytes,
   FileValidationError,
   FileStorageError,
 } from '../utils/objectStorage.js';
 import { processScheduleVersion } from '../utils/scheduleProcessor.js';
+import { buildScheduleExport, MppParserUnavailableError, type ParsedTask } from '../utils/mppParser.js';
+import { sendRouteError } from '../utils/errors.js';
+import {
+  editScheduleTask,
+  ScheduleTaskNotEditableError,
+  ScheduleTaskNotFoundError,
+} from '../utils/scheduleEdit.js';
+import db from '../database/dbSetup.js';
 
 // mergeParams so :projectId reaches authorize and handlers
 const router = express.Router({ mergeParams: true });
@@ -46,6 +60,12 @@ const canManage = authorize([
 // AC-SCH-01 narrows uploading to the project's Planner; authorize() always lets Admin@global through.
 const canUpload = authorize([{ role: 'Planner', scopeType: 'project' }]);
 
+/** RFC 6266 quoted-string: escape backslashes/quotes and strip control characters so a
+ *  user-supplied filename can't break out of the Content-Disposition header value. */
+function contentDispositionFilename(name: string): string {
+  return name.replace(/[\x00-\x1f\x7f]/g, '').replace(/(["\\])/g, '\\$1');
+}
+
 // GET /projects/:projectId/schedule/versions
 router.get('/versions', canView, async (req, res) => {
   const params = scheduleProjectParamsSchema.validate(req.params);
@@ -65,8 +85,7 @@ router.get('/versions', canView, async (req, res) => {
     const versions = await ScheduleVersions.listApplied(projectId);
     res.status(200).json({ status: 'success', data: { versions }, message: 'Schedule versions retrieved' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -89,8 +108,7 @@ router.get('/versions/:versionId', canView, async (req, res) => {
     }
     res.status(200).json({ status: 'success', data: { version }, message: 'Schedule version retrieved' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -113,8 +131,126 @@ router.get('/versions/:versionId/changes', canView, async (req, res) => {
     const changes = await ScheduleVersions.getChanges(projectId, versionId);
     res.status(200).json({ status: 'success', data: { changes }, message: 'Version changes retrieved' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
+  }
+});
+
+// GET /projects/:projectId/schedule/versions/:versionId/download
+// AC-SCH-42 / AC-FIL-04: the exact bytes this version was uploaded from. Streamed through this
+// authorized route rather than handing back the storage provider's own URL, since that URL is
+// unsigned and never expires.
+router.get('/versions/:versionId/download', canView, async (req, res) => {
+  const params = scheduleVersionParamsSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const { projectId, versionId } = params.value as { projectId: string; versionId: string };
+
+  try {
+    const project = await Projects.getById(projectId);
+    if (!project) {
+      res.status(404).json({ status: 'error', data: null, message: 'Project not found' });
+      return;
+    }
+
+    const version = await ScheduleVersions.getById(projectId, versionId);
+    if (!version || version.status !== 'applied') {
+      res.status(404).json({ status: 'error', data: null, message: 'No file available for this version' });
+      return;
+    }
+
+    const fileObject = await FileObjects.getById(version.source_file_id);
+    if (!fileObject) {
+      res
+        .status(404)
+        .json({ status: 'error', data: null, message: 'The uploaded file is no longer available' });
+      return;
+    }
+
+    const bytes = await fetchObjectBytes(fileObject);
+    res.setHeader('Content-Type', fileObject.mime_type || 'application/vnd.ms-project');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${contentDispositionFilename(fileObject.original_filename)}"`,
+    );
+    res.send(bytes);
+  } catch (err) {
+    if (err instanceof FileStorageError) {
+      res.status(502).json({ status: 'error', data: null, message: err.message });
+      return;
+    }
+    sendRouteError(res, err);
+  }
+});
+
+// GET /projects/:projectId/schedule/export
+// The main schedule screen's export: current task state, including write-backs no uploaded
+// file knows about, built into MSPDI XML (MPXJ has no binary .mpp writer — see ScheduleBuilder).
+router.get('/export', canView, async (req, res) => {
+  const params = scheduleProjectParamsSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const { projectId } = params.value as { projectId: string };
+
+  try {
+    const project = await Projects.getById(projectId);
+    if (!project) {
+      res.status(404).json({ status: 'error', data: null, message: 'Project not found' });
+      return;
+    }
+
+    const rows = await ScheduleTasks.listCurrentForExport(projectId);
+    if (rows.length === 0) {
+      res.status(404).json({ status: 'error', data: null, message: 'No schedule uploaded for this project' });
+      return;
+    }
+
+    const latestApplied = await ScheduleVersions.latestApplied(projectId);
+    const tasks: ParsedTask[] = rows.map((row) => ({
+      mpp_unique_id: row.mpp_unique_id,
+      parent_mpp_unique_id: row.parent_mpp_unique_id,
+      outline_level: row.outline_level,
+      wbs: row.wbs,
+      task_name: row.task_name,
+      duration_minutes: row.duration_minutes,
+      baseline_start: row.baseline_start,
+      baseline_finish: row.baseline_finish,
+      start: row.start,
+      expected_finish: row.expected_finish,
+      actual_start: row.actual_start,
+      actual_finish: row.actual_finish,
+      pct_work_complete: Number(row.pct_work_complete),
+      planned_pct_complete: Number(row.planned_pct_complete),
+      is_milestone: row.is_milestone,
+      is_summary: row.is_summary,
+      is_critical: row.is_critical,
+      is_active: row.is_active,
+      task_type: row.task_type,
+      predecessors: row.predecessors,
+      resource_names: row.resource_names,
+    }));
+
+    const xml = await buildScheduleExport({
+      project_name: project.name,
+      status_date: latestApplied?.status_date ?? null,
+      tasks,
+    });
+
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${contentDispositionFilename(`${project.name}-schedule.xml`)}"`,
+    );
+    res.send(xml);
+  } catch (err) {
+    if (err instanceof MppParserUnavailableError) {
+      res.status(502).json({ status: 'error', data: null, message: err.message });
+      return;
+    }
+    sendRouteError(res, err);
   }
 });
 
@@ -137,8 +273,60 @@ router.get('/tasks', canView, async (req, res) => {
     const tasks = await ScheduleTasks.listCurrent(projectId);
     res.status(200).json({ status: 'success', data: { tasks }, message: 'Schedule tasks retrieved' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
+  }
+});
+
+// PATCH /projects/:projectId/schedule/tasks/:taskId
+// Edits a task's own start/planned-end/actual-complete without a re-upload. A leaf task is
+// always editable; the project's single top-level row only while it has no child tasks.
+router.patch('/tasks/:taskId', requireKickoffComplete(), canManage, async (req, res) => {
+  const params = scheduleTaskParamsSchema.validate(req.params);
+  if (params.error) {
+    res.status(400).json({ status: 'error', data: null, message: params.error.message });
+    return;
+  }
+  const body = editScheduleTaskSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
+  if (body.error) {
+    res.status(400).json({ status: 'error', data: null, message: body.error.message });
+    return;
+  }
+  const { projectId, taskId } = params.value as { projectId: string; taskId: string };
+  const input = body.value as EditScheduleTaskBody;
+
+  try {
+    const project = await Projects.getById(projectId);
+    if (!project) {
+      res.status(404).json({ status: 'error', data: null, message: 'Project not found' });
+      return;
+    }
+
+    const result = await db.transaction((trx) =>
+      editScheduleTask(trx, {
+        projectId,
+        taskId,
+        editedBy: req.user!.userId,
+        timezone: project.timezone ?? 'Africa/Nairobi',
+        fields: {
+          start: input.start ? new Date(input.start) : undefined,
+          expected_finish: input.planned_end_date ? new Date(input.planned_end_date) : undefined,
+          baseline_finish: input.planned_finish_date ? new Date(input.planned_finish_date) : undefined,
+          pct_work_complete: input.pct_work_complete,
+        },
+      }),
+    );
+
+    res.status(200).json({ status: 'success', data: result, message: 'Schedule task updated' });
+  } catch (err) {
+    if (err instanceof ScheduleTaskNotFoundError) {
+      res.status(404).json({ status: 'error', data: null, message: err.message });
+      return;
+    }
+    if (err instanceof ScheduleTaskNotEditableError) {
+      res.status(409).json({ status: 'error', data: null, message: err.message });
+      return;
+    }
+    sendRouteError(res, err);
   }
 });
 
@@ -161,8 +349,7 @@ router.get('/overdue', canView, async (req, res) => {
     const tasks = await ScheduleTasks.listOverdue(projectId);
     res.status(200).json({ status: 'success', data: { tasks }, message: 'Overdue tasks retrieved' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -197,13 +384,12 @@ router.get('/reconciliation-flags', canView, async (req, res) => {
 
     res.status(200).json({ status: 'success', data: result, message: 'Reconciliation flags retrieved' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
 // POST /projects/:projectId/schedule/reconciliation-flags/acknowledge
-router.post('/reconciliation-flags/acknowledge', canManage, async (req, res) => {
+router.post('/reconciliation-flags/acknowledge', requireKickoffComplete(), canManage, async (req, res) => {
   const params = scheduleProjectParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -227,15 +413,14 @@ router.post('/reconciliation-flags/acknowledge', canManage, async (req, res) => 
     const acknowledged = await ScheduleReconciliationFlags.acknowledge(projectId, flag_ids, req.user!.userId);
     res.status(200).json({ status: 'success', data: { acknowledged }, message: 'Flags acknowledged' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
 // POST /projects/:projectId/schedule/upload
 // AC-SCH-01: store the file, queue a version, and answer. The parse and the apply
 // transaction happen after this request; the client polls the version for the outcome.
-router.post('/upload', canUpload, async (req, res) => {
+router.post('/upload', requireKickoffComplete(), canUpload, async (req, res) => {
   const params = scheduleProjectParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -355,8 +540,7 @@ router.post('/upload', canUpload, async (req, res) => {
       });
       return;
     }
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 

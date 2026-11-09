@@ -1,6 +1,8 @@
 import express from 'express';
 import { WeeklySubmissions, SubmissionClientPhotos, Projects, } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import requireKickoffComplete from '../middlewares/requireKickoffComplete.js';
+import { sendRouteError } from '../utils/errors.js';
 import { weeklySubmissionProjectParamsSchema, weeklySubmissionParamsSchema, weeklySubmissionAddressedRiskParamsSchema, createWeeklySubmissionSchema, updateWeeklySubmissionSchema, approveWeeklySubmissionSchema, supersedeWeeklySubmissionSchema, addSubmissionAddressedRiskSchema, listWeeklySubmissionsQuerySchema, setSubmissionClientPhotosSchema, } from '../utils/validation.js';
 // mergeParams so :projectId from the parent mount reaches authorize + handlers.
 const router = express.Router({ mergeParams: true });
@@ -20,7 +22,7 @@ const canSupersede = authorize([
     { role: 'Admin', scopeType: 'global' },
 ]);
 // POST / (create weekly submission draft)
-router.post('/', canManage, async (req, res) => {
+router.post('/', requireKickoffComplete(), canManage, async (req, res) => {
     const params = weeklySubmissionProjectParamsSchema.validate(req.params);
     if (params.error) {
         res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -66,8 +68,7 @@ router.post('/', canManage, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET / (list weekly submissions)
@@ -106,8 +107,7 @@ router.get('/', canView, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /:submissionId (get weekly submission by ID)
@@ -138,12 +138,11 @@ router.get('/:submissionId', canView, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // PATCH /:submissionId (update weekly submission draft)
-router.patch('/:submissionId', canManage, async (req, res) => {
+router.patch('/:submissionId', requireKickoffComplete(), canManage, async (req, res) => {
     const params = weeklySubmissionParamsSchema.validate(req.params);
     if (params.error) {
         res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -192,8 +191,7 @@ router.patch('/:submissionId', canManage, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // DELETE /:submissionId (delete weekly submission draft)
@@ -232,12 +230,11 @@ router.delete('/:submissionId', canManage, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // POST /:submissionId/approve (AC-WKS-04 & AC-WKS-05: approve submission)
-router.post('/:submissionId/approve', canManage, async (req, res) => {
+router.post('/:submissionId/approve', requireKickoffComplete(), canManage, async (req, res) => {
     const params = weeklySubmissionParamsSchema.validate(req.params);
     if (params.error) {
         res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -294,12 +291,11 @@ router.post('/:submissionId/approve', canManage, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // POST /:submissionId/supersede (AC-WKS-07: Admin authorises supersede)
-router.post('/:submissionId/supersede', canSupersede, async (req, res) => {
+router.post('/:submissionId/supersede', requireKickoffComplete(), canSupersede, async (req, res) => {
     const params = weeklySubmissionParamsSchema.validate(req.params);
     if (params.error) {
         res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -351,12 +347,11 @@ router.post('/:submissionId/supersede', canSupersede, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // POST /:submissionId/addressed-risks (AC-WKS-03: Add addressed risk while drafting)
-router.post('/:submissionId/addressed-risks', canManage, async (req, res) => {
+router.post('/:submissionId/addressed-risks', requireKickoffComplete(), canManage, async (req, res) => {
     const params = weeklySubmissionParamsSchema.validate(req.params);
     if (params.error) {
         res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -404,8 +399,7 @@ router.post('/:submissionId/addressed-risks', canManage, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // DELETE /:submissionId/addressed-risks/:riskId (Remove addressed risk while drafting)
@@ -437,8 +431,7 @@ router.delete('/:submissionId/addressed-risks/:riskId', canManage, async (req, r
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /:submissionId/photos — candidate DPR photos for the submission's week, with selection state
@@ -458,12 +451,11 @@ router.get('/:submissionId/photos', canView, async (req, res) => {
         res.status(200).json({ status: 'success', data: { photos }, message: 'Submission photos retrieved' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // PUT /:submissionId/photos — replace the selected DPR photos for this submission's client report
-router.put('/:submissionId/photos', canManage, async (req, res) => {
+router.put('/:submissionId/photos', requireKickoffComplete(), canManage, async (req, res) => {
     const params = weeklySubmissionParamsSchema.validate(req.params);
     if (params.error) {
         res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -494,8 +486,7 @@ router.put('/:submissionId/photos', canManage, async (req, res) => {
         res.status(200).json({ status: 'success', data: { photos }, message: 'Submission photos updated' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 export default router;

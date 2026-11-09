@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { LoaderCircle } from "lucide-react";
 import Dropdown from "@/components/Dropdown";
 import {
-  ROLE_NAMES,
   type AdminUserDetail,
   type RoleGrantDetail,
   type RoleName,
@@ -15,6 +15,7 @@ import {
   useProgramsList,
   useProjectsList,
 } from "./use-admin-users-data";
+import { useAccessRoles } from "./use-access-roles-data";
 import { ReassignMainRoleModal } from "./reassign-main-role-modal";
 
 const LEVELS: { id: ScopeType; label: string }[] = [
@@ -29,7 +30,8 @@ const LEVELS: { id: ScopeType; label: string }[] = [
  * standalone wrapper to keep alive).
  */
 export function AccessPanelContent({ user }: { user: AdminUserDetail }) {
-  const [role, setRole] = useState<RoleName>("PM");
+  const { data: accessRoles = [] } = useAccessRoles();
+  const [role, setRole] = useState<RoleName>("");
   const [level, setLevel] = useState<ScopeType>("global");
   const [scopeId, setScopeId] = useState<string>("");
   const [reassigning, setReassigning] = useState<RoleGrantDetail | null>(null);
@@ -38,6 +40,7 @@ export function AccessPanelContent({ user }: { user: AdminUserDetail }) {
   const revokeRole = useRevokeRole(user.id);
   const { data: programs = [] } = useProgramsList();
   const { data: projects = [] } = useProjectsList();
+  const selectedRole = role || accessRoles[0]?.name || "";
 
   const scopeOptions =
     level === "program"
@@ -49,7 +52,7 @@ export function AccessPanelContent({ user }: { user: AdminUserDetail }) {
   async function handleAdd() {
     if (level !== "global" && !scopeId) return;
     await grantRole.mutateAsync({
-      role,
+      role: selectedRole,
       scopeType: level,
       programId: level === "program" ? Number(scopeId) : null,
       projectId: level === "project" ? scopeId : null,
@@ -98,9 +101,14 @@ export function AccessPanelContent({ user }: { user: AdminUserDetail }) {
               <button
                 type="button"
                 onClick={() => revokeRole.mutate(grant.attribute_id)}
-                disabled={revokeRole.isPending}
-                className="text-[13px] font-medium text-error-text disabled:opacity-60"
+                disabled={revokeRole.isPending && revokeRole.variables === grant.attribute_id}
+                className="flex items-center gap-[6px] text-[13px] font-medium text-error-text disabled:opacity-60"
               >
+                <span className="flex size-[13px] shrink-0 items-center justify-center">
+                  {revokeRole.isPending && revokeRole.variables === grant.attribute_id && (
+                    <LoaderCircle className="size-[13px] animate-spin" />
+                  )}
+                </span>
                 Remove
               </button>
             )}
@@ -115,8 +123,8 @@ export function AccessPanelContent({ user }: { user: AdminUserDetail }) {
         <Dropdown
           id="add-access-role"
           title="Role"
-          data={ROLE_NAMES.map((r) => ({ id: r, name: r }))}
-          selectedId={role}
+          data={accessRoles.map((r) => ({ id: r.name, name: r.name }))}
+          selectedId={selectedRole}
           style="h-[42px] w-full rounded-[8px] border border-gca-border px-[12px] text-[14px] text-gca-dark"
           onSelect={(id) => setRole(id as RoleName)}
         />
@@ -130,7 +138,7 @@ export function AccessPanelContent({ user }: { user: AdminUserDetail }) {
                 setLevel(l.id);
                 setScopeId("");
               }}
-              className={`flex-1 rounded-[6px] py-[8px] text-[13px] font-medium ${
+              className={`flex-1 rounded-[6px] py-[6px] text-[13px] font-medium ${
                 level === l.id
                   ? "bg-gca-surface text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                   : "text-gca-show"
@@ -156,9 +164,15 @@ export function AccessPanelContent({ user }: { user: AdminUserDetail }) {
           type="button"
           onClick={handleAdd}
           disabled={grantRole.isPending || (level !== "global" && !scopeId)}
-          className="w-full rounded-[8px] bg-gca-green px-[14px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-60"
+          className="relative flex w-full items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[14px] py-[6px] text-[14px] font-medium text-gca-on-accent disabled:opacity-60"
         >
-          Add access
+          <span className={grantRole.isPending ? "invisible" : undefined}>Add access</span>
+          {grantRole.isPending && (
+            <LoaderCircle
+              className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+              aria-label="Adding access"
+            />
+          )}
         </button>
       </div>
 

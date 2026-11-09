@@ -1,6 +1,7 @@
 import express from 'express';
 import { ChangeRequests } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import requireKickoffComplete from '../middlewares/requireKickoffComplete.js';
 import {
   createChangeRequestSchema,
   updateChangeRequestSchema,
@@ -16,6 +17,7 @@ import {
   type UploadChangeRequestAttachmentBody,
 } from '../utils/validation.js';
 import { storeObject, FileValidationError, FileStorageError } from '../utils/objectStorage.js';
+import { sendRouteError } from '../utils/errors.js';
 
 // mergeParams so :projectId from the parent mount reaches authorize + handlers.
 const router = express.Router({ mergeParams: true });
@@ -46,7 +48,7 @@ const canDecide = authorize([
 // Registered before /:changeId routes so "attachments" isn't captured as a changeId param.
 // Mirrors dprRouter.ts's /photos/upload: the change request may not exist yet (raised in the
 // same form submission), so this just stores the object and hands back a file_id to attach.
-router.post('/attachments/upload', canRaise, async (req, res) => {
+router.post('/attachments/upload', requireKickoffComplete(), canRaise, async (req, res) => {
   const params = changeRequestProjectParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -83,12 +85,11 @@ router.post('/attachments/upload', canRaise, async (req, res) => {
       res.status(502).json({ status: 'error', data: null, message: `Could not store the file: ${err.message}` });
       return;
     }
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
-router.post('/', canRaise, async (req, res) => {
+router.post('/', requireKickoffComplete(), canRaise, async (req, res) => {
   const params = changeRequestProjectParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -120,8 +121,7 @@ router.post('/', canRaise, async (req, res) => {
 
     res.status(201).json({ status: 'success', data: { changeRequest: created }, message: 'Change request raised' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -143,8 +143,7 @@ router.get('/', canView, async (req, res) => {
     const result = await ChangeRequests.list({ projectId, stageNo: stage_no, type, status, search, page, limit });
     res.status(200).json({ status: 'success', data: result, message: 'Change requests retrieved' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -164,12 +163,11 @@ router.get('/:changeId', canView, async (req, res) => {
     }
     res.status(200).json({ status: 'success', data: { changeRequest }, message: 'Change request retrieved' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
-router.patch('/:changeId', canRaise, async (req, res) => {
+router.patch('/:changeId', requireKickoffComplete(), canRaise, async (req, res) => {
   const params = changeRequestParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -209,13 +207,12 @@ router.patch('/:changeId', canRaise, async (req, res) => {
     const updated = await ChangeRequests.update(projectId, changeId, patch, attachmentFileIds, req.user!.userId);
     res.status(200).json({ status: 'success', data: { changeRequest: updated }, message: 'Change request updated' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
 // POST /:changeId/decide (AC-CHG-02 & AC-CHG-03: ExCo only)
-router.post('/:changeId/decide', canDecide, async (req, res) => {
+router.post('/:changeId/decide', requireKickoffComplete(), canDecide, async (req, res) => {
   const params = changeRequestParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -253,13 +250,12 @@ router.post('/:changeId/decide', canDecide, async (req, res) => {
 
     res.status(200).json({ status: 'success', data: { changeRequest: result.changeRequest }, message: 'Change request decided' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
 // POST /:changeId/withdraw (AC-CHG-04: only the raiser, only while pending)
-router.post('/:changeId/withdraw', canRaise, async (req, res) => {
+router.post('/:changeId/withdraw', requireKickoffComplete(), canRaise, async (req, res) => {
   const params = changeRequestParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -286,8 +282,7 @@ router.post('/:changeId/withdraw', canRaise, async (req, res) => {
     }
     res.status(200).json({ status: 'success', data: { changeRequest: withdrawn }, message: 'Change request withdrawn' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 

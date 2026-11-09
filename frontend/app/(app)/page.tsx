@@ -5,7 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Search, LayoutGrid, List, Plus, FolderOpen, ChevronDown } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
 import {
@@ -35,6 +37,7 @@ export interface Project {
   completed: number;
   planned: number;
   nextMilestone: string | null;
+  bannerPhotos?: string[];
 }
 
 interface ProjectsResponse {
@@ -49,6 +52,7 @@ interface ProjectsResponse {
     completed_pct: number | null;
     planned_pct: number | null;
     next_milestone: string | null;
+    banner_photos?: string[] | null;
   }>;
   total: number;
   page: number;
@@ -78,6 +82,7 @@ function mapProject(row: ProjectsResponse["projects"][number]): Project {
     completed: row.completed_pct ?? 0,
     planned: row.planned_pct ?? 0,
     nextMilestone: row.next_milestone,
+    bannerPhotos: Array.isArray(row.banner_photos) ? row.banner_photos : [],
   };
 }
 
@@ -95,10 +100,26 @@ function mapEngineerProject(row: EngineerProjectSummary): Project {
   };
 }
 
-/** The card grid runs four across, the table is a list — so each view gets the page size that
- *  fills it. Switching view resets the size, which the Pagination control can still override. */
-const CARD_PAGE_SIZE = 8;
-const TABLE_PAGE_SIZE = 20;
+const CARD_PAGE_SIZE = 6;
+
+export interface ProjectSortOption {
+  id: string;
+  name: string;
+  orderBy: "created_at" | "updated_at" | "name" | "spi" | "progress";
+  orderDir: "asc" | "desc";
+}
+
+const projectSortOptions: ProjectSortOption[] = [
+  { id: "latest", name: "Latest", orderBy: "created_at", orderDir: "desc" },
+  { id: "oldest", name: "Oldest", orderBy: "created_at", orderDir: "asc" },
+  { id: "updated", name: "Last updated", orderBy: "updated_at", orderDir: "desc" },
+  { id: "alpha_asc", name: "Alphabetical (A–Z)", orderBy: "name", orderDir: "asc" },
+  { id: "alpha_desc", name: "Alphabetical (Z–A)", orderBy: "name", orderDir: "desc" },
+  { id: "spi_desc", name: "SPI (High to Low)", orderBy: "spi", orderDir: "desc" },
+  { id: "spi_asc", name: "SPI (Low to High)", orderBy: "spi", orderDir: "asc" },
+  { id: "progress_desc", name: "Progress (High to Low)", orderBy: "progress", orderDir: "desc" },
+  { id: "progress_asc", name: "Progress (Low to High)", orderBy: "progress", orderDir: "asc" },
+];
 
 export default function Home() {
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
@@ -108,8 +129,13 @@ export default function Home() {
   const [perPage, setPerPage] = useState(CARD_PAGE_SIZE);
   const [view, setView] = useState<"card" | "table">("card");
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
+  const [statusFilter, setStatusFilter] = useState("active");
   const [programFilter, setProgramFilter] = useState("");
+  const [sortFilter, setSortFilter] = useState("latest");
+
+  const selectedSort =
+    projectSortOptions.find((opt) => opt.id === sortFilter) ?? projectSortOptions[0];
 
   const showCreate = canAccess(user?.role, CAN_CREATE_PROJECT);
   // shortcut: edit check is global-only for now, upgrade to per-project when project-scoped roles are loaded
@@ -156,14 +182,21 @@ export default function Home() {
       {
         page,
         limit: perPage,
-        search,
+        search: debouncedSearch,
         status: statusFilter,
         programId: programFilter !== "all" ? programFilter : "",
+        orderBy: selectedSort.orderBy,
+        orderDir: selectedSort.orderDir,
       },
     ],
     queryFn: async () => {
-      const params = new URLSearchParams({ page: String(page), limit: String(perPage) });
-      if (search) params.set("search", search);
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(perPage),
+        order_by: selectedSort.orderBy,
+        order_dir: selectedSort.orderDir,
+      });
+      if (debouncedSearch) params.set("search", debouncedSearch);
       if (statusFilter) params.set("status", statusFilter);
       if (programFilter && programFilter !== "all") params.set("program_id", programFilter);
 
@@ -179,7 +212,27 @@ export default function Home() {
 
   const engineerProjectList = engineerProjects.data
     .map(mapEngineerProject)
-    .filter((p) => !search || p.name.toLowerCase().includes(search.toLowerCase()));
+    .filter((p) => !debouncedSearch || p.name.toLowerCase().includes(debouncedSearch.toLowerCase()))
+    .sort((a, b) => {
+      switch (selectedSort.orderBy) {
+        case "name":
+          return selectedSort.orderDir === "desc"
+            ? b.name.localeCompare(a.name)
+            : a.name.localeCompare(b.name);
+        case "spi": {
+          const aVal = a.spi ?? (selectedSort.orderDir === "desc" ? -Infinity : Infinity);
+          const bVal = b.spi ?? (selectedSort.orderDir === "desc" ? -Infinity : Infinity);
+          return selectedSort.orderDir === "desc" ? bVal - aVal : aVal - bVal;
+        }
+        case "progress": {
+          const aVal = a.completed ?? (selectedSort.orderDir === "desc" ? -Infinity : Infinity);
+          const bVal = b.completed ?? (selectedSort.orderDir === "desc" ? -Infinity : Infinity);
+          return selectedSort.orderDir === "desc" ? bVal - aVal : aVal - bVal;
+        }
+        default:
+          return 0;
+      }
+    });
 
   const projects = canListAll ? (projectsQuery.data?.projects ?? []) : engineerProjectList;
   const total = canListAll ? (projectsQuery.data?.total ?? 0) : engineerProjectList.length;
@@ -197,8 +250,6 @@ export default function Home() {
 
   function changeView(next: "card" | "table") {
     setView(next);
-    setPerPage(next === "table" ? TABLE_PAGE_SIZE : CARD_PAGE_SIZE);
-    setPage(1);
   }
 
   const greeting = getGreeting(user?.email, user?.firstName);
@@ -223,102 +274,123 @@ export default function Home() {
           )}
         </div>
 
-        {/* Loading state */}
-        {loading && <LoadingSkeleton />}
+        {/* Toolbar — stays mounted across filter changes so the dropdowns never flash/rebuild;
+            only the results below swap to a skeleton while a new filter combination loads. */}
+        <div className="flex flex-col gap-[12px] lg:flex-row lg:items-center lg:justify-between">
+          {/* Search */}
+          <div className="flex w-full items-center gap-[10px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[6px] lg:w-[360px]">
+            <Search className="size-[14px] text-gca-muted" />
+            <input
+              type="text"
+              placeholder="Search projects"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="flex-1 bg-transparent text-[13px] text-gca-dark placeholder:text-gca-muted outline-none"
+            />
+          </div>
 
-        {/* Content */}
-        {!loading && !error && (
-          <>
-            {/* Toolbar */}
-            <div className="flex flex-col gap-[12px] lg:flex-row lg:items-center lg:justify-between">
-              {/* Search */}
-              <div className="flex w-full items-center gap-[10px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[11px] lg:w-[360px]">
-                <Search className="size-[14px] text-gca-muted" />
-                <input
-                  type="text"
-                  placeholder="Search projects"
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    setPage(1);
-                  }}
-                  className="flex-1 bg-transparent text-[14px] text-gca-dark placeholder:text-gca-muted outline-none"
-                />
-              </div>
-
-              <div className="flex flex-wrap items-center gap-[8px]">
-                {/* View switch */}
-                <div className="flex w-fit cursor-pointer gap-[4px] rounded-[10px] bg-gca-page-bg p-[4px]">
-                  <button
-                    onClick={() => changeView("card")}
-                    className={`flex h-[32px] w-[36px] items-center justify-center rounded-[6px] cursor-pointer ${
-                      view === "card" ? "bg-gca-surface shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]" : ""
-                    }`}
-                  >
-                    <LayoutGrid className="size-[16px] text-gca-dark" />
-                  </button>
-                  <button
-                    onClick={() => changeView("table")}
-                    className={`flex h-[32px] w-[36px] items-center justify-center rounded-[6px] cursor-pointer ${
-                      view === "table"
-                        ? "bg-gca-surface shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]"
-                        : ""
-                    }`}
-                  >
-                    <List className="size-[16px] text-gca-dark" />
-                  </button>
-                </div>
-
-                {canListAll && (
-                  <MobileFilterToggle>
-                    <div className="relative min-w-0">
-                      <Dropdown
-                        id="status-filter"
-                        title="Status"
-                        data={projectStatusOptions.map((status) => ({
-                          id: status.id,
-                          name: status.name,
-                          value: status.value,
-                        }))}
-                        style="h-[44px] w-full appearance-none rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[14px] text-gca-dark outline-none sm:w-[170px]"
-                        selectedId={
-                          projectStatusOptions.find((s) => s.value === statusFilter)?.id ?? "all"
-                        }
-                        onSelect={(id, name, value) => {
-                          setStatusFilter(value);
-                          setPage(1);
-                        }}
-                      />
-                    </div>
-                    <div className="relative min-w-0">
-                      <Dropdown
-                        id="program-filter"
-                        title="Program"
-                        data={projectProgramOptions.map((program) => ({
-                          id: program.id.toString(),
-                          name: program.name,
-                        }))}
-                        style="h-[44px] w-full appearance-none rounded-[8px] border border-gca-border bg-gca-surface px-[12px] text-[14px] text-gca-dark outline-none sm:w-[170px]"
-                        selectedId={
-                          projectProgramOptions.find((p) => p.id.toString() === programFilter)?.id ??
-                          "all"
-                        }
-                        onSelect={(id) => {
-                          setProgramFilter(id);
-                          setPage(1);
-                        }}
-                      />
-                    </div>
-                  </MobileFilterToggle>
-                )}
-              </div>
+          <div className="flex flex-wrap items-center gap-[8px]">
+            {/* View switch */}
+            <div className="flex h-[33.5px] w-fit cursor-pointer items-center gap-[4px] rounded-[10px] bg-gca-page-bg p-[3px]">
+              <button
+                onClick={() => changeView("card")}
+                className={`flex h-full w-[30px] items-center justify-center rounded-[6px] cursor-pointer ${
+                  view === "card" ? "bg-gca-surface shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]" : ""
+                }`}
+              >
+                <LayoutGrid className="size-[14px] text-gca-dark" />
+              </button>
+              <button
+                onClick={() => changeView("table")}
+                className={`flex h-full w-[30px] items-center justify-center rounded-[6px] cursor-pointer ${
+                  view === "table"
+                    ? "bg-gca-surface shadow-[0px_1px_2px_0px_rgba(23,48,31,0.08)]"
+                    : ""
+                }`}
+              >
+                <List className="size-[14px] text-gca-dark" />
+              </button>
             </div>
 
+            <MobileFilterToggle>
+              {canListAll && (
+                <>
+                  <div className="relative min-w-0">
+                    <Dropdown
+                      id="status-filter"
+                      title="Status"
+                      label="Status:"
+                      data={projectStatusOptions.map((status) => ({
+                        id: status.id,
+                        name: status.name,
+                        value: status.value,
+                      }))}
+                      style="w-full appearance-none rounded-[8px] border border-gca-border bg-gca-surface py-[6px] px-[12px] text-[13px] text-gca-dark outline-none sm:w-[160px]"
+                      selectedId={
+                        projectStatusOptions.find((s) => s.value === statusFilter)?.id ?? "all"
+                      }
+                      onSelect={(id, name, value) => {
+                        setStatusFilter(value);
+                        setPage(1);
+                      }}
+                    />
+                  </div>
+                  <div className="relative min-w-0">
+                    <Dropdown
+                      id="program-filter"
+                      title="Program"
+                      label="Program:"
+                      data={projectProgramOptions.map((program) => ({
+                        id: program.id.toString(),
+                        name: program.name,
+                      }))}
+                      style="w-full appearance-none rounded-[8px] border border-gca-border bg-gca-surface py-[6px] px-[12px] text-[13px] text-gca-dark outline-none sm:w-[190px]"
+                      selectedId={
+                        projectProgramOptions.find((p) => p.id.toString() === programFilter)?.id ??
+                        "all"
+                      }
+                      onSelect={(id) => {
+                        setProgramFilter(id);
+                        setPage(1);
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+              <div className="relative min-w-0">
+                <Dropdown
+                  id="order-by-filter"
+                  title="Order by"
+                  label="Order:"
+                  position="bottom-right"
+                  data={projectSortOptions.map((opt) => ({
+                    id: opt.id,
+                    name: opt.name,
+                  }))}
+                  style="w-full appearance-none rounded-[8px] border border-gca-border bg-gca-surface py-[6px] px-[12px] text-[13px] text-gca-dark outline-none sm:w-[200px]"
+                  selectedId={sortFilter}
+                  onSelect={(id) => {
+                    setSortFilter(id);
+                    setPage(1);
+                  }}
+                />
+              </div>
+            </MobileFilterToggle>
+          </div>
+        </div>
+
+        {/* Results */}
+        {loading && <ResultsSkeleton />}
+        {!loading && !error && (
+          <>
             {/* Card or table view */}
             {view === "card" ? (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-[20px]">
-                {projects.map((p) => (
-                  <ProjectCard key={p.id} project={p} canEdit={canEdit} />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-[24px]">
+                {projects.map((p, idx) => (
+                  <ProjectCard key={p.id} project={p} canEdit={canEdit} index={idx} />
                 ))}
               </div>
             ) : (
@@ -330,20 +402,23 @@ export default function Home() {
               !error &&
               projects.length === 0 &&
               (search || statusFilter || programFilter) && (
-                <div className="flex flex-col items-center gap-[12px] py-[64px]">
-                  <Search className="size-[40px] text-gca-muted" />
-                  <p className="text-[18px] font-semibold tracking-[-0.27px] text-gca-dark">
-                    No projects found
-                  </p>
-                  <p className="text-center text-[14px] text-gca-show">
-                    Try adjusting your search or filters.
-                  </p>
-                </div>
+                <EmptyState
+                  icon={Search}
+                  title="No projects found"
+                  description="Try adjusting your search or filters."
+                />
               )}
 
             {/* Empty state */}
             {!loading && !error && projects.length === 0 && search != "" && statusFilter != "" && (
-              <EmptyState showCreate={showCreate} />
+              <EmptyState
+                icon={FolderOpen}
+                title="No projects yet"
+                description="Create a project to start tracking its stages, DPRs and weekly submissions."
+                action={
+                  showCreate ? { label: "New project", icon: Plus, href: "/projects/new" } : undefined
+                }
+              />
             )}
 
             {/* Pagination */}
@@ -374,41 +449,9 @@ function getGreeting(email: string | undefined, name: string | undefined | null)
   return `Good ${timeOfDay}, ${name ? name : ""}`;
 }
 
-function EmptyState({ showCreate }: { showCreate: boolean }) {
-  return (
-    <div className="flex flex-col items-center gap-[12px] py-[64px]">
-      <div className="flex size-[56px] items-center justify-center rounded-full bg-gca-badge-bg">
-        <FolderOpen className="size-[24px] text-gca-green" />
-      </div>
-      <p className="text-[18px] font-semibold tracking-[-0.27px] text-gca-dark">No projects yet</p>
-      <p className="w-[400px] text-center text-[14px] text-gca-show">
-        Create a project to start tracking its stages, DPRs and weekly submissions.
-      </p>
-      {showCreate && (
-        <Link
-          href="/projects/new"
-          className="flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
-        >
-          <Plus className="size-[10px]" />
-          New project
-        </Link>
-      )}
-    </div>
-  );
-}
-
-function LoadingSkeleton() {
+function ResultsSkeleton() {
   return (
     <>
-      {/* Toolbar skeleton */}
-      <div className="flex flex-col gap-[12px] lg:flex-row lg:items-center lg:justify-between">
-        <div className="h-[44px] w-full animate-pulse rounded-[8px] bg-gca-page-bg lg:w-[360px]" />
-        <div className="grid grid-cols-2 gap-[8px] sm:flex sm:items-center">
-          <div className="col-span-2 h-[40px] w-[80px] animate-pulse rounded-[10px] bg-gca-page-bg sm:col-span-auto" />
-          <div className="h-[44px] w-full animate-pulse rounded-[8px] bg-gca-page-bg sm:w-[170px]" />
-          <div className="h-[44px] w-full animate-pulse rounded-[8px] bg-gca-page-bg sm:w-[170px]" />
-        </div>
-      </div>
       {/* Card skeletons */}
       <div className="grid grid-cols-1 gap-[20px] md:grid-cols-4">
         {Array.from({ length: 6 }).map((_, i) => (

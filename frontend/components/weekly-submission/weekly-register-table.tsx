@@ -1,13 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { CalendarCheck, Search } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
 import Dropdown from "@/components/Dropdown";
 import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import { Pagination } from "@/components/pagination";
 import { useWeeklySubmissions } from "./use-weekly-submission-data";
-import { formatWeekPeriod, weekNumber, type WeeklySubmissionStatus } from "./types";
+import {
+  formatWeekPeriod,
+  weekNumber,
+  type WeeklySubmission,
+  type WeeklySubmissionStatus,
+} from "./types";
 
 const STATUS_FILTER_ALL = "all";
 const STATUS_OPTIONS = [
@@ -22,6 +34,45 @@ const STATUS_OPTIONS = [
  *  shortcut: a project with more than 100 weeks shows only its most recent 100, upgrade to a
  *  server-side week_start range filter when any project nears two years of submissions. */
 const ALL_SUBMISSIONS_LIMIT = 100;
+
+function buildColumns(projectId: string): ColumnDef<WeeklySubmission>[] {
+  return [
+    {
+      id: "week",
+      header: () => <span>Week</span>,
+      cell: ({ row }) => (
+        <span className="font-mono font-medium">{weekNumber(row.original.week_start)}</span>
+      ),
+    },
+    {
+      id: "period",
+      header: () => <span>Period</span>,
+      cell: ({ row }) => <span>{formatWeekPeriod(row.original.week_start)}</span>,
+    },
+    {
+      id: "submittedBy",
+      header: () => <span>Submitted by</span>,
+      cell: ({ row }) => <span>{row.original.creator_name ?? "—"}</span>,
+    },
+    {
+      id: "status",
+      header: () => <span>Status</span>,
+      cell: ({ row }) => <span className="capitalize">{row.original.status}</span>,
+    },
+    {
+      id: "view",
+      header: () => <span />,
+      cell: ({ row }) => (
+        <Link
+          href={`/projects/${projectId}/weekly-submission/${row.original.submission_id}`}
+          className="justify-self-end text-[13px] font-medium text-gca-green"
+        >
+          View
+        </Link>
+      ),
+    },
+  ];
+}
 
 export function WeeklyRegisterTable({
   projectId,
@@ -69,6 +120,9 @@ export function WeeklyRegisterTable({
   const submissions = matching.slice((currentPage - 1) * perPage, currentPage * perPage);
   const hasActiveFilters = statusFilter !== STATUS_FILTER_ALL || !!fromDate || !!toDate || !!query;
 
+  const columns = buildColumns(projectId);
+  const table = useReactTable({ data: submissions, columns, getCoreRowModel: getCoreRowModel() });
+
   function changeFilter<T>(set: (value: T) => void, value: T) {
     set(value);
     setPage(1);
@@ -104,17 +158,17 @@ export function WeeklyRegisterTable({
         </button>
       </div>
 
-      <div className="flex items-start justify-between">
+      {/* <div className="flex items-start justify-between">
         <div>
           <h1 className="text-[20px] font-semibold tracking-[-0.3px] text-gca-dark">
             Weekly register
           </h1>
           <p className="mt-[2px] text-[13px] text-gca-show">Submitted weeks for this project</p>
         </div>
-      </div>
+      </div> */}
 
-      <div className="flex flex-col gap-[12px] sm:flex-row sm:flex-wrap sm:items-center">
-        <label className="flex h-[40px] w-full items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] sm:w-[260px]">
+      <div className="flex flex-col gap-[12px] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <label className="flex w-full items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[6px] sm:w-[260px]">
           <Search className="size-[14px] shrink-0 text-gca-muted" />
           <input
             type="search"
@@ -122,18 +176,19 @@ export function WeeklyRegisterTable({
             onChange={(event) => changeFilter(setSearch, event.target.value)}
             placeholder="Search week or submitted by"
             aria-label="Search week or submitted by"
-            className="min-w-0 w-full bg-transparent text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
+            className="min-w-0 w-full bg-transparent text-[13px] text-gca-dark outline-none placeholder:text-gca-muted"
           />
         </label>
         <MobileFilterToggle>
           <Dropdown
             id="register-filter-status"
+            label="Status:"
             data={STATUS_OPTIONS}
             selectedId={statusFilter}
-            style="h-[40px] w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
+            style="w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[6px] text-[13px] text-gca-dark"
             onSelect={(id) => changeFilter(setStatusFilter, id)}
           />
-          <label className="flex h-[40px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px]">
+          <label className="flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[6px]">
             <span className="text-[13px] text-gca-muted">From</span>
             <input
               type="date"
@@ -143,16 +198,16 @@ export function WeeklyRegisterTable({
                 setToDate(event.target.value);
                 setPage(1);
               }}
-              className="bg-transparent text-[14px] text-gca-dark outline-none"
+              className="bg-transparent text-[13px] text-gca-dark outline-none"
             />
           </label>
-          <label className="flex h-[40px] items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px]">
+          <label className="flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[6px]">
             <span className="text-[13px] text-gca-muted">To</span>
             <input
               type="date"
               value={toDate}
               onChange={(event) => changeFilter(setToDate, event.target.value)}
-              className="bg-transparent text-[14px] text-gca-dark outline-none"
+              className="bg-transparent text-[13px] text-gca-dark outline-none"
             />
           </label>
           {hasActiveFilters && (
@@ -174,54 +229,58 @@ export function WeeklyRegisterTable({
 
       <div className="w-full">
         <div className="hidden grid-cols-5 gap-[16px] py-[8px] text-[12px] font-medium text-gca-muted md:grid">
-          <span>Week</span>
-          <span>Period</span>
-          <span>Submitted by</span>
-          <span>Status</span>
-          <span />
+          {table.getFlatHeaders().map((header) => (
+            <Fragment key={header.id}>
+              {flexRender(header.column.columnDef.header, header.getContext())}
+            </Fragment>
+          ))}
         </div>
         {submissions.length === 0 ? (
-          <p className="py-[24px] text-[13px] text-gca-muted">
-            {hasActiveFilters ? "No weeks match these filters." : "No weeks submitted yet."}
-          </p>
+          <EmptyState
+            icon={CalendarCheck}
+            title={hasActiveFilters ? "No weeks match these filters" : "No weeks submitted yet"}
+            description={
+              hasActiveFilters
+                ? "Try a different status or date range."
+                : "Approved weekly submissions will show up here."
+            }
+          />
         ) : (
-          submissions.map((s) => (
-            <div
-              key={s.submission_id}
-              className="border-t border-gca-border text-[13px] text-gca-dark"
-            >
-              {/* Phone: the week leads, the three attributes fold into one meta line. */}
-              <Link
-                href={`/projects/${projectId}/weekly-submission/${s.submission_id}`}
-                className="flex items-center justify-between gap-[12px] py-[14px] md:hidden"
+          table.getRowModel().rows.map((row) => {
+            const s = row.original;
+            return (
+              <div
+                key={row.id}
+                className="border-t border-gca-border text-[13px] text-gca-dark"
               >
-                <span className="flex min-w-0 flex-col gap-[2px]">
-                  <span className="text-[15px] font-semibold text-gca-dark">
-                    Week {weekNumber(s.week_start)}
-                  </span>
-                  <span className="truncate text-[12px] text-gca-muted">
-                    {formatWeekPeriod(s.week_start)} · {s.creator_name ?? "—"}
-                  </span>
-                </span>
-                <span className="shrink-0 text-[12px] font-medium capitalize text-gca-green">
-                  {s.status}
-                </span>
-              </Link>
-
-              <div className="hidden grid-cols-5 items-center gap-[16px] py-[12px] md:grid">
-                <span className="font-mono font-medium">{weekNumber(s.week_start)}</span>
-                <span>{formatWeekPeriod(s.week_start)}</span>
-                <span>{s.creator_name ?? "—"}</span>
-                <span className="capitalize">{s.status}</span>
+                {/* Phone: the week leads, the three attributes fold into one meta line. */}
                 <Link
                   href={`/projects/${projectId}/weekly-submission/${s.submission_id}`}
-                  className="justify-self-end text-[13px] font-medium text-gca-green"
+                  className="flex items-center justify-between gap-[12px] py-[14px] md:hidden"
                 >
-                  View
+                  <span className="flex min-w-0 flex-col gap-[2px]">
+                    <span className="text-[15px] font-semibold text-gca-dark">
+                      Week {weekNumber(s.week_start)}
+                    </span>
+                    <span className="truncate text-[12px] text-gca-muted">
+                      {formatWeekPeriod(s.week_start)} · {s.creator_name ?? "—"}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-[12px] font-medium capitalize text-gca-green">
+                    {s.status}
+                  </span>
                 </Link>
+
+                <div className="hidden grid-cols-5 items-center gap-[16px] py-[12px] md:grid">
+                  {row.getVisibleCells().map((cell) => (
+                    <Fragment key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </Fragment>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 

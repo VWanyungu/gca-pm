@@ -57,6 +57,23 @@
       ]
     },
     {
+      "page": "/feedback/[token]",
+      "regex": "^/feedback/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPtoken": "nxtPtoken"
+      },
+      "namedRegex": "^/feedback/(?<nxtPtoken>[^/]+?)(?:/)?$",
+      "prefetchSegmentDataRoutes": [
+        {
+          "destination": "/feedback/[token].segments/feedback/$d$token$segment",
+          "source": "^/feedback/(?<nxtPtoken>[^/]+?)\\.segments/feedback/\\$d\\$token(?<segment>/__PAGE__\\.segment\\.rsc|\\.segment\\.rsc)(?:/)?$",
+          "routeKeys": {
+            "nxtPtoken": "nxtPtoken"
+          }
+        }
+      ]
+    },
+    {
       "page": "/projects/[projectId]",
       "regex": "^/projects/([^/]+?)(?:/)?$",
       "routeKeys": {
@@ -122,6 +139,23 @@
           "routeKeys": {
             "nxtPprojectId": "nxtPprojectId",
             "nxtPdprId": "nxtPdprId"
+          }
+        }
+      ]
+    },
+    {
+      "page": "/projects/[projectId]/feedback",
+      "regex": "^/projects/([^/]+?)/feedback(?:/)?$",
+      "routeKeys": {
+        "nxtPprojectId": "nxtPprojectId"
+      },
+      "namedRegex": "^/projects/(?<nxtPprojectId>[^/]+?)/feedback(?:/)?$",
+      "prefetchSegmentDataRoutes": [
+        {
+          "destination": "/projects/[projectId]/feedback.segments/!KGFwcCk/projects/$d$projectId/feedback$segment",
+          "source": "^/projects/(?<nxtPprojectId>[^/]+?)/feedback\\.segments/!KGFwcCk/projects/\\$d\\$projectId/feedback(?<segment>/__PAGE__\\.segment\\.rsc|\\.segment\\.rsc)(?:/)?$",
+          "routeKeys": {
+            "nxtPprojectId": "nxtPprojectId"
           }
         }
       ]
@@ -327,10 +361,22 @@
       "namedRegex": "^/admin(?:/)?$"
     },
     {
+      "page": "/admin/gate-activities",
+      "regex": "^/admin/gate\\-activities(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/gate\\-activities(?:/)?$"
+    },
+    {
       "page": "/admin/projects",
       "regex": "^/admin/projects(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/admin/projects(?:/)?$"
+    },
+    {
+      "page": "/admin/roles",
+      "regex": "^/admin/roles(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/roles(?:/)?$"
     },
     {
       "page": "/admin/users",

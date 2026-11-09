@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import { Users, Tokens, Roles } from '../database/utils/database.js';
 import generateJwtToken from '../utils/generateJwtToken.js';
+import { sendRouteError } from '../utils/errors.js';
 const router = express.Router();
 router.post('/', async (req, res) => {
     const { email, password } = req.body;
@@ -37,8 +38,7 @@ router.post('/', async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 export default router;

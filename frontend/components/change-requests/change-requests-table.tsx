@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { Plus, GitPullRequest, Search } from "lucide-react";
+import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import Dropdown from "@/components/Dropdown";
+import { EmptyState } from "@/components/empty-state";
 import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { Pagination } from "@/components/pagination";
@@ -13,6 +15,7 @@ import {
   formatScheduleImpact,
   formatShortDate,
   statusInfo,
+  type ChangeRequest,
   type ChangeRequestStatus,
   type ChangeRequestType,
 } from "./types";
@@ -36,6 +39,86 @@ const STATUS_OPTIONS = [
   { id: "rejected", name: "Rejected" },
   { id: "withdrawn", name: "Withdrawn" },
 ];
+
+function buildColumns(): ColumnDef<ChangeRequest>[] {
+  return [
+    {
+      accessorKey: "title",
+      header: "Change request",
+      meta: { className: "w-full min-w-0 md:w-[28%]" },
+      cell: ({ row }) => {
+        const cr = row.original;
+        const status = statusInfo(cr.status);
+        return (
+          <div className="flex w-full flex-col gap-[4px]">
+            <div>
+              <p className="text-[15px] font-medium text-gca-dark md:truncate md:text-[13px]">
+                {cr.title}
+              </p>
+              <p className="truncate text-[12px] text-gca-muted">
+                {cr.stage_no ? (STAGE_SHORT_NAME[cr.stage_no] ?? cr.stage_no) : "—"}
+              </p>
+            </div>
+            {/* Phone: type, impacts and status fold into one line under the title. */}
+            <p className="flex flex-wrap items-center gap-x-[8px] text-[12px] md:hidden">
+              <span className={`font-semibold ${status.className}`}>{status.label}</span>
+              <span className="text-gca-muted">
+                {TYPE_LABEL[cr.type]} · {formatScheduleImpact(cr.schedule_impact_days)} ·{" "}
+                {formatCostImpact(cr.cost_impact, cr.cost_currency)} ·{" "}
+                {formatShortDate(cr.raised_at)}
+              </span>
+            </p>
+          </div>
+        );
+      },
+    },
+    {
+      id: "type",
+      header: "Type",
+      meta: { className: "hidden md:block md:w-[12%]" },
+      cell: ({ row }) => (
+        <p className="text-[13px] text-gca-dark">{TYPE_LABEL[row.original.type]}</p>
+      ),
+    },
+    {
+      id: "schedule",
+      header: "Schedule",
+      meta: { className: "hidden md:block md:w-[14%]" },
+      cell: ({ row }) => (
+        <p className="font-mono text-[13px] text-gca-dark">
+          {formatScheduleImpact(row.original.schedule_impact_days)}
+        </p>
+      ),
+    },
+    {
+      id: "cost",
+      header: "Cost",
+      meta: { className: "hidden md:block md:w-[14%]" },
+      cell: ({ row }) => (
+        <p className="font-mono text-[13px] text-gca-dark">
+          {formatCostImpact(row.original.cost_impact, row.original.cost_currency)}
+        </p>
+      ),
+    },
+    {
+      id: "raised",
+      header: "Raised",
+      meta: { className: "hidden md:block md:w-[14%]" },
+      cell: ({ row }) => (
+        <p className="text-[13px] text-gca-dark">{formatShortDate(row.original.raised_at)}</p>
+      ),
+    },
+    {
+      id: "status",
+      header: "Status",
+      meta: { className: "hidden md:block md:w-[18%]" },
+      cell: ({ row }) => {
+        const status = statusInfo(row.original.status);
+        return <p className={`text-[13px] font-semibold ${status.className}`}>{status.label}</p>;
+      },
+    },
+  ];
+}
 
 interface ChangeRequestsTableProps {
   projectId: string;
@@ -74,6 +157,13 @@ export function ChangeRequestsTable({
   const total = data?.pagination.total ?? 0;
   const pages = data?.pagination.pages ?? 1;
 
+  const columns = buildColumns();
+  const table = useReactTable({
+    data: changeRequests,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
   const stageOptions = [
     { id: STAGE_FILTER_ALL, name: "All stages" },
     ...stages
@@ -93,14 +183,14 @@ export function ChangeRequestsTable({
           <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">
             Change requests
           </h1>
-          <p className="mt-[4px] text-[14px] text-gca-show">
+          {/* <p className="mt-[4px] text-[14px] text-gca-show">
             Raise, review and track scope, schedule and cost changes.
-          </p>
+          </p> */}
         </div>
         {canRaise && (
           <button
             onClick={onRaise}
-            className="flex w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[12px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover sm:w-auto sm:py-[10px]"
+            className="flex w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover sm:w-auto sm:py-[6px]"
           >
             <Plus className="size-[14px]" />
             Raise change request
@@ -108,8 +198,8 @@ export function ChangeRequestsTable({
         )}
       </div>
 
-      <div className="flex flex-col items-stretch gap-[12px] sm:flex-row sm:flex-wrap sm:items-center">
-        <label className="flex h-[40px] w-full items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] sm:w-[260px]">
+      <div className="flex flex-col items-stretch gap-[12px] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <label className="flex w-full items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[6px] sm:w-[260px]">
           <Search className="size-[14px] shrink-0 text-gca-muted" />
           <input
             type="search"
@@ -120,102 +210,78 @@ export function ChangeRequestsTable({
             }}
             placeholder="Search change requests"
             aria-label="Search change requests"
-            className="min-w-0 w-full bg-transparent text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
+            className="min-w-0 w-full bg-transparent text-[13px] text-gca-dark outline-none placeholder:text-gca-muted"
           />
         </label>
         <MobileFilterToggle>
           <Dropdown
             id="cr-filter-stage"
+            label="Stage:"
             data={stageOptions}
             selectedId={stageFilter}
-            style="h-[40px] w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
+            style="w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[6px] text-[13px] text-gca-dark"
             onSelect={(id) => changeFilter(setStageFilter, id)}
           />
           <Dropdown
             id="cr-filter-type"
+            label="Type:"
             data={TYPE_OPTIONS}
             selectedId={typeFilter}
-            style="h-[40px] w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
+            style="w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[6px] text-[13px] text-gca-dark"
             onSelect={(id) => changeFilter(setTypeFilter, id)}
           />
           <Dropdown
             id="cr-filter-status"
+            label="Status:"
             data={STATUS_OPTIONS}
             selectedId={statusFilter}
-            style="h-[40px] w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] text-[14px] text-gca-dark"
+            style="w-full sm:w-auto rounded-[8px] border border-gca-border bg-gca-surface px-[13px] py-[6px] text-[13px] text-gca-dark"
             onSelect={(id) => changeFilter(setStatusFilter, id)}
           />
         </MobileFilterToggle>
       </div>
 
       {changeRequests.length === 0 ? (
-        <div className="flex flex-col items-center gap-[16px] py-[56px]">
-          <span className="flex size-[40px] items-center justify-center rounded-[10px] bg-gca-page-bg">
-            <GitPullRequest className="size-[18px] text-gca-green" />
-          </span>
-          <div className="flex flex-col items-center gap-[4px] text-center">
-            <p className="text-[14px] font-semibold text-gca-dark">Nothing here</p>
-            <p className="max-w-[420px] text-[13px] text-gca-show">
-              Change requests matching these filters will show up here.
-            </p>
-          </div>
-        </div>
+        <EmptyState
+          icon={GitPullRequest}
+          title="Nothing here"
+          description="Change requests matching these filters will show up here."
+        />
       ) : (
         <>
           <div className="flex w-full flex-col">
             <div className="hidden w-full items-center gap-[10px] border-b border-gca-border py-[8px] text-[12px] font-medium text-gca-muted md:flex">
-              <p className="w-[28%]">Change request</p>
-              <p className="w-[12%]">Type</p>
-              <p className="w-[14%]">Schedule</p>
-              <p className="w-[14%]">Cost</p>
-              <p className="w-[14%]">Raised</p>
-              <p className="w-[18%]">Status</p>
-            </div>
-            {changeRequests.map((cr, i) => {
-              const status = statusInfo(cr.status);
-              return (
-                <button
-                  key={cr.change_id}
-                  onClick={() => onOpen(cr.change_id)}
-                  className={`flex w-full cursor-pointer flex-col items-start gap-[4px] py-[14px] text-left md:flex-row md:items-center md:gap-[10px] md:py-[12px] ${
-                    i > 0 ? "border-t border-gca-border" : ""
-                  }`}
+              {table.getFlatHeaders().map((header) => (
+                <p
+                  key={header.id}
+                  className={
+                    (header.column.columnDef.meta as { className?: string } | undefined)?.className
+                  }
                 >
-                  <div className="w-full min-w-0 md:w-[28%]">
-                    <p className="text-[15px] font-medium text-gca-dark md:truncate md:text-[13px]">
-                      {cr.title}
-                    </p>
-                    <p className="truncate text-[12px] text-gca-muted">
-                      {cr.stage_no ? (STAGE_SHORT_NAME[cr.stage_no] ?? cr.stage_no) : "—"}
-                    </p>
-                  </div>
-                  {/* Phone: type, impacts and status fold into one line under the title. */}
-                  <p className="flex flex-wrap items-center gap-x-[8px] text-[12px] md:hidden">
-                    <span className={`font-semibold ${status.className}`}>{status.label}</span>
-                    <span className="text-gca-muted">
-                      {TYPE_LABEL[cr.type]} · {formatScheduleImpact(cr.schedule_impact_days)} ·{" "}
-                      {formatCostImpact(cr.cost_impact, cr.cost_currency)} ·{" "}
-                      {formatShortDate(cr.raised_at)}
-                    </span>
-                  </p>
-                  <span className="hidden md:contents">
-                    <p className="w-[12%] text-[13px] text-gca-dark">{TYPE_LABEL[cr.type]}</p>
-                    <p className="w-[14%] font-mono text-[13px] text-gca-dark">
-                      {formatScheduleImpact(cr.schedule_impact_days)}
-                    </p>
-                    <p className="w-[14%] font-mono text-[13px] text-gca-dark">
-                      {formatCostImpact(cr.cost_impact, cr.cost_currency)}
-                    </p>
-                    <p className="w-[14%] text-[13px] text-gca-dark">
-                      {formatShortDate(cr.raised_at)}
-                    </p>
-                    <p className={`w-[18%] text-[13px] font-semibold ${status.className}`}>
-                      {status.label}
-                    </p>
+                  {flexRender(header.column.columnDef.header, header.getContext())}
+                </p>
+              ))}
+            </div>
+            {table.getRowModel().rows.map((row, i) => (
+              <button
+                key={row.id}
+                onClick={() => onOpen(row.original.change_id)}
+                className={`flex w-full cursor-pointer flex-col items-start gap-[4px] py-[6px] text-left md:flex-row md:items-center md:gap-[10px] md:py-[6px] ${
+                  i > 0 ? "border-t border-gca-border" : ""
+                }`}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <span
+                    key={cell.id}
+                    className={
+                      (cell.column.columnDef.meta as { className?: string } | undefined)?.className
+                    }
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </span>
-                </button>
-              );
-            })}
+                ))}
+              </button>
+            ))}
           </div>
 
           {pages > 1 && (

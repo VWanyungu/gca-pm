@@ -28,9 +28,12 @@ const EMPTY_DETAILS: DetailsFormValues = {
   expected_start_date: "",
   expected_end_date: "",
   site_location: "",
+  site_lat: undefined,
+  site_lng: undefined,
   is_mechanical: true,
   is_civil: false,
   is_electrical: false,
+  banner_photos: [],
 };
 
 const EMPTY_PEOPLE: PeopleValues = {
@@ -82,9 +85,18 @@ export default function NewProjectPage() {
       expected_start_date: projectDetails.expected_start_date,
       expected_end_date: projectDetails.expected_end_date || null,
       site_location: projectDetails.site_location || null,
+      site_lat:
+        typeof projectDetails.site_lat === "number" && !isNaN(projectDetails.site_lat)
+          ? projectDetails.site_lat
+          : null,
+      site_lng:
+        typeof projectDetails.site_lng === "number" && !isNaN(projectDetails.site_lng)
+          ? projectDetails.site_lng
+          : null,
       is_mechanical: projectDetails.is_mechanical,
       is_civil: projectDetails.is_civil,
       is_electrical: projectDetails.is_electrical,
+      banner_photos: projectDetails.banner_photos ?? [],
       pm_user_id: people.pmUserId,
       planner_user_id: people.plannerUserId,
       scope_stages: scopeStages,

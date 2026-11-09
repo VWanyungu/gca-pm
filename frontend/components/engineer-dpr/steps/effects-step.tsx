@@ -33,7 +33,7 @@ export function EffectsStep({ draft, update }: StepProps) {
                     : { effects_severity: option },
                 )
               }
-              className={`flex-1 cursor-pointer rounded-[6px] px-[14px] py-[7px] text-[14px] whitespace-nowrap ${
+              className={`flex-1 cursor-pointer rounded-[6px] px-[14px] py-[6px] text-[14px] whitespace-nowrap ${
                 draft.effects_severity === option
                   ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                   : "font-normal text-gca-show"

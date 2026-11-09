@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { api, downloadFile } from "@/lib/api-client";
 import type { OverdueTask, ReconciliationFlag, ScheduleTask, ScheduleVersion, ScopeMode, VersionChange } from "./types";
 
 function unwrap<T>(res: { status: string; data: T | null; message: string }): T {
@@ -67,6 +67,35 @@ export function useScheduleInvalidate(projectId: string) {
   return () => queryClient.invalidateQueries({ queryKey: ["project", projectId, "schedule"] });
 }
 
+export interface EditScheduleTaskInput {
+  start?: string;
+  plannedEndDate?: string;
+  plannedFinishDate?: string;
+  pctWorkComplete?: number;
+}
+
+/** PATCHes a task's own start/planned-end/planned-finish/actual-complete; the backend
+ *  recomputes project metrics as part of the same transaction, so a success here means
+ *  both are current. */
+export function useEditScheduleTask(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ taskId, input }: { taskId: string; input: EditScheduleTaskInput }) =>
+      unwrap(
+        await api.patch<{ revision_id: string }>(`/projects/${projectId}/schedule/tasks/${taskId}`, {
+          start: input.start,
+          planned_end_date: input.plannedEndDate,
+          planned_finish_date: input.plannedFinishDate,
+          pct_work_complete: input.pctWorkComplete,
+        }),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project", projectId, "schedule"] });
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+    },
+  });
+}
+
 /** The .mpp goes up as base64 in the JSON body, which is how this API takes files. */
 function toBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -105,6 +134,20 @@ export function useUploadSchedule(projectId: string) {
         ),
       ),
   });
+}
+
+/** The exact bytes a version was uploaded from (AC-SCH-42) — history's byte-for-byte download. */
+export function downloadScheduleVersionFile(projectId: string, version: ScheduleVersion) {
+  return downloadFile(
+    `/projects/${projectId}/schedule/versions/${version.schedule_version_id}/download`,
+    `schedule-v${version.version_no}.mpp`,
+  );
+}
+
+/** Current task data, including write-backs no uploaded file knows about, as MSPDI XML — the
+ *  main schedule screen's "Export" action. Not a .mpp: MPXJ has no binary .mpp writer. */
+export function exportScheduleFile(projectId: string, projectName: string) {
+  return downloadFile(`/projects/${projectId}/schedule/export`, `${projectName}-schedule.xml`);
 }
 
 /** Polls one version while it is queued or parsing, then stops. */

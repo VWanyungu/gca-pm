@@ -2,6 +2,8 @@ import express from 'express';
 import { randomUUID } from 'crypto';
 import { RiskIssues, RiskCategories, ScheduleTasks, ScheduleVersions } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import requireKickoffComplete from '../middlewares/requireKickoffComplete.js';
+import { sendRouteError } from '../utils/errors.js';
 import { createRiskIssueSchema, updateRiskIssueSchema, listRiskIssuesQuerySchema, riskIssueProjectParamsSchema, riskIssueParamsSchema, } from '../utils/validation.js';
 // mergeParams so :projectId from the parent mount reaches authorize + handlers.
 const router = express.Router({ mergeParams: true });
@@ -19,13 +21,10 @@ const canManage = authorize([
     { role: 'Admin', scopeType: 'global' },
 ]);
 const STATUS_TRANSITIONS = {
-    open: ['mitigated', 'closed', 'dismissed'],
-    mitigated: ['open', 'closed'],
+    open: ['closed'],
     closed: ['open'],
-    dismissed: ['open'],
-    auto_resolved: [],
 };
-router.post('/', canManage, async (req, res) => {
+router.post('/', requireKickoffComplete(), canManage, async (req, res) => {
     const params = riskIssueProjectParamsSchema.validate(req.params);
     if (params.error) {
         res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -90,8 +89,7 @@ router.post('/', canManage, async (req, res) => {
         res.status(201).json({ status: 'success', data: { riskIssue: created }, message: 'Risk/issue created' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 router.get('/', canView, async (req, res) => {
@@ -112,8 +110,7 @@ router.get('/', canView, async (req, res) => {
         res.status(200).json({ status: 'success', data: result, message: 'Risk/issues retrieved' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // Mounted here (rather than the global risk-categories router) so project-scoped
@@ -130,8 +127,7 @@ router.get('/categories', canView, async (req, res) => {
         res.status(200).json({ status: 'success', data: result, message: 'Risk categories retrieved' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 router.get('/:riskId', canView, async (req, res) => {
@@ -150,11 +146,10 @@ router.get('/:riskId', canView, async (req, res) => {
         res.status(200).json({ status: 'success', data: { riskIssue }, message: 'Risk/issue retrieved' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
-router.patch('/:riskId', canManage, async (req, res) => {
+router.patch('/:riskId', requireKickoffComplete(), canManage, async (req, res) => {
     const params = riskIssueParamsSchema.validate(req.params);
     if (params.error) {
         res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -202,8 +197,7 @@ router.patch('/:riskId', canManage, async (req, res) => {
         res.status(200).json({ status: 'success', data: { riskIssue: updated }, message: 'Risk/issue updated' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 router.delete('/:riskId', canManage, async (req, res) => {
@@ -224,20 +218,19 @@ router.delete('/:riskId', canManage, async (req, res) => {
             res.status(404).json({ status: 'error', data: null, message: 'Risk/issue not found' });
             return;
         }
-        if (!STATUS_TRANSITIONS[existing.status].includes('dismissed')) {
+        if (!STATUS_TRANSITIONS[existing.status].includes('closed')) {
             res.status(400).json({ status: 'error', data: null, message: `Cannot dismiss from status ${existing.status}` });
             return;
         }
         const dismissed = await RiskIssues.update(projectId, riskId, {
-            status: 'dismissed',
+            status: 'closed',
             dismissal_reason: reason,
             closed_at: new Date(),
         });
         res.status(200).json({ status: 'success', data: { riskIssue: dismissed }, message: 'Risk/issue dismissed' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 export default router;

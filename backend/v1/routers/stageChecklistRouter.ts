@@ -1,6 +1,7 @@
 import express from 'express';
 import { ProjectStages, ProjectStageChecklistItems } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import {
   stageChecklistProjectParamsSchema,
   stageChecklistItemParamsSchema,
@@ -51,8 +52,7 @@ router.get('/', canView, async (req, res) => {
     const items = await ProjectStageChecklistItems.list(projectId, stageNo);
     res.status(200).json({ status: 'success', data: { items }, message: 'Stage checklist retrieved' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -80,8 +80,7 @@ router.post('/', canManage, async (req, res) => {
     const item = await ProjectStageChecklistItems.create({ projectId, stageNo, text, actorId: req.user!.userId });
     res.status(201).json({ status: 'success', data: { item }, message: 'Checklist item added' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -114,8 +113,7 @@ router.patch('/:itemId', canManage, async (req, res) => {
 
     res.status(200).json({ status: 'success', data: { item }, message: 'Checklist item updated' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -142,8 +140,7 @@ router.delete('/:itemId', canManage, async (req, res) => {
 
     res.status(200).json({ status: 'success', data: { item }, message: 'Checklist item removed' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -165,8 +162,7 @@ router.delete('/', canManage, async (req, res) => {
     await ProjectStageChecklistItems.deleteAll(projectId, stageNo);
     res.status(200).json({ status: 'success', data: null, message: 'Checklist removed' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 

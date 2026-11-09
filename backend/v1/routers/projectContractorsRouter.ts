@@ -5,6 +5,7 @@ import {
   ProjectContractors,
 } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import {
   projectIdParamSchema,
   projectContractorParamsSchema,
@@ -116,8 +117,7 @@ router.post('/', canManage, async (req, res) => {
       message: 'Contractor linked to project successfully',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -151,8 +151,7 @@ router.get('/', canView, async (req, res) => {
       message: 'Project contractors retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -178,8 +177,7 @@ router.get('/:contractorId', canView, async (req, res) => {
       message: 'Project contractor retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -213,8 +211,7 @@ router.patch('/:contractorId', canManage, async (req, res) => {
       message: 'Project contractor updated',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -243,8 +240,7 @@ router.delete('/:contractorId', canManage, async (req, res) => {
       message: 'Contractor removed from project',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 

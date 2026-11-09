@@ -121,7 +121,7 @@ export default function LoginPage() {
             type="submit"
             disabled={submitting}
             onClick={handleSubmit}
-            className="cursor-pointer flex w-full items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[14px] text-[15px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-60"
+            className="cursor-pointer flex w-full items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[15px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-60"
           >
             {submitting ? (
               <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />
@@ -138,7 +138,7 @@ export default function LoginPage() {
 
           <button
             type="button"
-            className="cursor-pointer flex w-full items-center justify-center gap-[10px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[14px] text-[15px] font-semibold text-gca-dark hover:bg-gray-50"
+            className="cursor-pointer flex w-full items-center justify-center gap-[10px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[15px] font-semibold text-gca-dark hover:bg-gray-50"
           >
             <MicrosoftIcon />
             Sign in with Microsoft

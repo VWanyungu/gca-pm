@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Check, Lock, ChevronsUpDown } from "lucide-react";
+import { ChevronDown, Check, LoaderCircle, Lock, ChevronsUpDown } from "lucide-react";
 import { api } from "@/lib/api-client";
 import useOutsideClick from "@/hooks/use-outside-click";
 import { STAGE_SHORT_NAME, type StageRow } from "./types";
@@ -115,14 +115,14 @@ export function StagePipeline({
                     Set current stage
                   </p>
                   {sorted
-                    .filter((s) => s.in_scope)
+                    .filter((s) => s.in_scope && s.kind === "pdm")
                     .map((s) => {
                       const selected = s.stage_no === selectedStageNo;
                       return (
                         <button
                           key={s.stage_no}
                           onClick={() => setCurrentStage(s.stage_no)}
-                          className={`flex w-full items-center justify-between gap-[10px] rounded-[6px] px-[10px] py-[8px] text-left ${
+                          className={`flex w-full items-center justify-between gap-[10px] rounded-[6px] px-[10px] py-[6px] text-left ${
                             selected ? "bg-gca-badge-bg" : "hover:bg-gca-page-bg"
                           }`}
                         >
@@ -177,9 +177,15 @@ export function StagePipeline({
               <button
                 onClick={saveScope}
                 disabled={saving}
-                className="rounded-[8px] bg-gca-green px-[14px] py-[7px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
+                className="relative flex items-center justify-center gap-[6px] rounded-[8px] bg-gca-green px-[14px] py-[6px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
               >
-                Save
+                <span className={saving ? "invisible" : undefined}>Save</span>
+                {saving && (
+                  <LoaderCircle
+                    className="absolute left-1/2 top-1/2 size-[14px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                    aria-label="Saving"
+                  />
+                )}
               </button>
             </div>
           ) : (
@@ -193,7 +199,7 @@ export function StagePipeline({
           ))}
       </div>
 
-      <div className="no-scrollbar -mx-[20px] flex w-[calc(100%+40px)] items-start gap-[12px] overflow-x-auto px-[20px] xl:mx-0 xl:w-full xl:justify-between xl:gap-0 xl:overflow-visible">
+      <div className="no-scrollbar -mx-[20px] flex w-[calc(100%+40px)] items-start gap-[12px] overflow-x-auto px-[20px]">
         {sorted.map((s) => {
           const locked = s.state !== "not_started";
           const checked = editMode ? pendingScope.has(s.stage_no) : s.in_scope;
@@ -204,18 +210,70 @@ export function StagePipeline({
                 ? (percentByStage[s.stage_no] ?? 0)
                 : 0;
 
-          const columnClassName = "flex w-[98px] shrink-0 flex-col gap-[6px]";
-          const columnContent = (
+          const isGate = s.kind === "kickoff" || s.kind === "closure";
+          const gateMargin = s.kind === "kickoff" ? "mr-[16px]" : s.kind === "closure" ? "ml-[16px]" : "";
+          const gateStatusLabel = !checked
+            ? "Out of scope"
+            : s.state === "complete"
+              ? "Done"
+              : s.state === "active"
+                ? `${pct}%`
+                : STATE_LABEL[s.state];
+
+          const gateFilled = checked && (s.state === "active" || s.state === "complete");
+          const columnClassName = isGate
+            ? `relative flex w-[108px] shrink-0 flex-col justify-center gap-[2px] overflow-hidden rounded-[10px] px-[14px] py-[10px] ${gateMargin} ${
+                gateFilled ? "bg-gca-page-bg" : "border border-gca-border bg-gca-surface"
+              }`
+            : "flex w-[98px] shrink-0 flex-col gap-[6px]";
+          const columnContent = isGate ? (
+            <>
+              {gateFilled && (
+                <div
+                  className={`pointer-events-none absolute inset-y-0 left-0 bg-gca-badge-bg ${
+                    pct > 0 && pct < 100 ? "border-r-2 border-gca-green" : ""
+                  }`}
+                  style={{ width: `${pct}%` }}
+                />
+              )}
+              <div className="relative flex items-center gap-[6px]">
+                {editMode && !locked && (
+                  <button
+                    onClick={() => toggleScope(s.stage_no, locked)}
+                    className="flex size-[18px] shrink-0 items-center justify-center border-2 border-gca-border rounded-[4px]"
+                  >
+                    {checked && <Check className="size-[12px] text-gca-green" />}
+                  </button>
+                )}
+                <p
+                  className={`truncate text-[13px] font-semibold ${
+                    gateFilled ? "text-gca-badge-text" : "text-gca-dark"
+                  }`}
+                >
+                  {STAGE_SHORT_NAME[s.stage_no]}
+                </p>
+              </div>
+              <p
+                className={`relative text-[12px] ${
+                  gateFilled ? "text-gca-green" : "text-gca-muted"
+                }`}
+              >
+                {gateStatusLabel}
+              </p>
+            </>
+          ) : (
             <>
               {s.in_scope ? (
                 <div className="h-[6px] w-[98px] overflow-hidden rounded-[3px] bg-gca-border">
                   <div
-                    className={`h-[6px] rounded-[3px] ${s.state === "complete" ? "bg-gca-green/55" : "bg-gca-green"}`}
+                    className={`h-[6px] rounded-[3px] ${
+                      s.state === "complete" ? "bg-gca-green/55" : "bg-gca-green"
+                    }`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
               ) : (
-                <div className="h-[6px] w-[98px] rounded-[3px] border border-dashed border-gca-border" />
+                <div className="h-[6px] w-[98px] rounded-[3px] border border-dashed border-gca-muted" />
               )}
               <div className="flex gap-[6px] items-center">
                 {editMode && (
@@ -235,20 +293,20 @@ export function StagePipeline({
                 )}
 
                 <p
-                  className={`text-[12px] w-[98px] ${s.state === "active" ? "font-semibold text-gca-dark" : "font-medium text-gca-muted"}`}
+                  className={`text-[12px] w-[98px] truncate font-medium ${
+                    s.state === "active" ? "font-semibold text-gca-dark" : "text-gca-muted"
+                  }`}
                 >
                   {STAGE_SHORT_NAME[s.stage_no]}
                 </p>
               </div>
 
               <p
-                className={`text-[12px] w-[98px] ${s.state === "active" ? "text-gca-green" : "text-gca-muted"}`}
+                className={`text-[12px] w-[98px] ${
+                  s.state === "active" ? "text-gca-green" : "text-gca-muted"
+                }`}
               >
-                {!checked
-                  ? "Out of scope"
-                  : s.state === "active"
-                    ? `${pct}%`
-                    : STATE_LABEL[s.state]}
+                {gateStatusLabel}
               </p>
             </>
           );

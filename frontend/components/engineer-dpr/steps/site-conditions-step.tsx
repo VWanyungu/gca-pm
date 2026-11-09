@@ -15,10 +15,11 @@ interface StepProps {
 export function SiteConditionsStep({
   draft,
   update,
+  projectId,
   siteLocationError = false,
 }: StepProps) {
   const { data: weatherCategories = [] } = useWeatherCategories();
-  const { fill: fillWeather, loading: weatherLoading } = useAutoWeatherFill(update);
+  const { fill: fillWeather, loading: weatherLoading } = useAutoWeatherFill(update, projectId);
 
   return (
     <div className="flex flex-col gap-[16px]">
@@ -48,7 +49,7 @@ export function SiteConditionsStep({
             onClick={() => void fillWeather()}
             disabled={weatherLoading}
             title="Fill weather, temperature, humidity and wind from today's forecast"
-            className="flex cursor-pointer items-center gap-[6px] rounded-[999px] border border-dashed border-gca-green px-[14px] py-[8px] text-[14px] font-medium text-gca-green disabled:opacity-60"
+            className="flex cursor-pointer items-center gap-[6px] rounded-[999px] border border-dashed border-gca-green px-[14px] py-[6px] text-[14px] font-medium text-gca-green disabled:opacity-60"
           >
             {weatherLoading ? (
               <LoaderCircle className="size-[14px] animate-spin" />
@@ -65,7 +66,7 @@ export function SiteConditionsStep({
                 key={category.weather_category_id}
                 type="button"
                 onClick={() => update({ weather_category_id: category.weather_category_id })}
-                className={`cursor-pointer rounded-[999px] border px-[14px] py-[8px] text-[14px] ${
+                className={`cursor-pointer rounded-[999px] border px-[14px] py-[6px] text-[14px] ${
                   selected
                     ? "border-gca-green bg-gca-badge-bg font-medium text-gca-badge-text"
                     : "border-gca-border bg-gca-surface text-gca-show"

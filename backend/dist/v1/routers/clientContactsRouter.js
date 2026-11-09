@@ -1,6 +1,7 @@
 import express from 'express';
 import { Projects, ClientContacts } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import { projectIdParamSchema, clientContactParamsSchema, createClientContactSchema, } from '../utils/validation.js';
 // mergeParams so :projectId reaches authorize + handlers.
 const router = express.Router({ mergeParams: true });
@@ -30,8 +31,7 @@ router.get('/', canView, async (req, res) => {
         res.status(200).json({ status: 'success', data: { contacts }, message: 'Client contacts retrieved' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // POST /projects/:projectId/client-contacts
@@ -58,8 +58,7 @@ router.post('/', canManage, async (req, res) => {
         res.status(201).json({ status: 'success', data: { contact }, message: 'Client contact added' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // DELETE /projects/:projectId/client-contacts/:contactId
@@ -80,8 +79,7 @@ router.delete('/:contactId', canManage, async (req, res) => {
         res.status(200).json({ status: 'success', data: null, message: 'Client contact removed' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 export default router;

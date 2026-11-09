@@ -1,4 +1,4 @@
-export type RiskStatus = "open" | "mitigated" | "closed" | "dismissed" | "auto_resolved";
+export type RiskStatus = "open" | "closed";
 export type RiskKind = "risk" | "issue";
 export type RiskSource = "manual" | "overdue_task";
 export type RiskRating = "low" | "medium" | "high";
@@ -43,42 +43,26 @@ export function ratingFromScore(score: number): { label: string; className: stri
   return { label: "Low", className: "text-gca-muted" };
 }
 
-export function statusInfo(risk: Pick<Risk, "status" | "source">): {
+export function statusInfo(risk: Pick<Risk, "status">): {
   label: string;
   className: string;
 } {
-  if (risk.source === "overdue_task") {
-    if (risk.status === "open") return { label: "Unaddressed", className: "text-error-text" };
-    if (risk.status === "mitigated") return { label: "Addressed", className: "text-gca-green" };
-  }
   switch (risk.status) {
     case "open":
       return { label: "Open", className: "text-gca-dark" };
-    case "mitigated":
-      return { label: "Addressed", className: "text-gca-green" };
     case "closed":
       return { label: "Closed", className: "text-gca-muted" };
-    case "dismissed":
-      return { label: "Dismissed", className: "text-gca-muted" };
-    case "auto_resolved":
-      return { label: "Auto-resolved", className: "text-gca-muted" };
   }
 }
 
 export const STATUS_TRANSITIONS: Record<RiskStatus, RiskStatus[]> = {
-  open: ["mitigated", "closed", "dismissed"],
-  mitigated: ["open", "closed"],
+  open: ["closed"],
   closed: ["open"],
-  dismissed: ["open"],
-  auto_resolved: [],
 };
 
 export const STATUS_OPTION_LABEL: Record<RiskStatus, string> = {
   open: "Open",
-  mitigated: "Addressed",
   closed: "Closed",
-  dismissed: "Dismissed",
-  auto_resolved: "Auto-resolved",
 };
 
 export const LIKELIHOOD_IMPACT_LEVELS = [

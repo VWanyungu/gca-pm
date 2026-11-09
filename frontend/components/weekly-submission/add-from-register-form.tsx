@@ -6,7 +6,11 @@ import { reportError } from "@/lib/toast";
 import { useRisks, useRiskCategories } from "@/components/risks/use-risks-data";
 import { ratingFromScore } from "@/components/risks/types";
 import type { TeamMember } from "@/components/project-overview/types";
-import { addAddressedRisk, useWeeklySubmissionInvalidate } from "./use-weekly-submission-data";
+import {
+  addAddressedRisk,
+  updateWeeklySubmission,
+  useWeeklySubmissionInvalidate,
+} from "./use-weekly-submission-data";
 import type { SubmissionAddressedRisk } from "./types";
 
 type SeverityFilter = "all" | "High" | "Medium";
@@ -20,6 +24,7 @@ export function AddFromRegisterForm({
   projectId,
   submissionId,
   alreadyAddressed,
+  currentTopRiskId,
   team,
   onDone,
   onCancel,
@@ -27,6 +32,7 @@ export function AddFromRegisterForm({
   projectId: string;
   submissionId: string;
   alreadyAddressed: SubmissionAddressedRisk[];
+  currentTopRiskId?: string | null;
   team: TeamMember[];
   onDone: () => void;
   onCancel: () => void;
@@ -75,8 +81,32 @@ export function AddFromRegisterForm({
     if (selected.size === 0) return;
     setSaving(true);
     try {
-      for (const riskId of selected) {
+      const riskIds = [...selected];
+      for (const riskId of riskIds) {
         await addAddressedRisk(projectId, submissionId, { risk_id: riskId, method: "commentary" });
+      }
+      // The first risk ever addressed on a submission becomes the top risk automatically,
+      // so a PM doesn't have to add one then separately mark it.
+      if (!currentTopRiskId && alreadyAddressed.length === 0) {
+        const topRisk = withRating.find((r) => r.risk.risk_id === riskIds[0])?.risk;
+        if (topRisk) {
+          await updateWeeklySubmission(projectId, submissionId, {
+            top_risk_id: topRisk.risk_id,
+            top_risk_text: topRisk.title,
+            top_action: topRisk.mitigation ?? "",
+          });
+          if (!topRisk.mitigation?.trim()) {
+            reportError(
+              `"${topRisk.title}" was set as the top risk, but it has no mitigation yet — add one on the risk before submitting.`,
+              {
+                actionLabel: "Go to Risks",
+                onAction: () => {
+                  window.location.href = `/projects/${projectId}/risks`;
+                },
+              },
+            );
+          }
+        }
       }
       invalidate();
       onDone();
@@ -172,7 +202,7 @@ export function AddFromRegisterForm({
           <button
             onClick={submit}
             disabled={saving || selected.size === 0}
-            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent disabled:opacity-50"
+            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent disabled:opacity-50"
           >
             {selected.size === 0
               ? "Add risk"

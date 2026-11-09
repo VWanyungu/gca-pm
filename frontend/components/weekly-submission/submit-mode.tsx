@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, Percent, Shield, X } from "lucide-react";
+import { Check, LoaderCircle, Percent, Shield, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { reportError } from "@/lib/toast";
@@ -71,6 +71,8 @@ export function SubmitMode({
   const [commentary, setCommentary] = useState(submission.pm_commentary ?? "");
   const [addingRisk, setAddingRisk] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // "no-risks" | "clear" | a risk_id being marked/unmarked as the top risk | null
+  const [pendingRiskAction, setPendingRiskAction] = useState<string | null>(null);
 
   async function saveCommentary() {
     if (commentary === (submission.pm_commentary ?? "")) return;
@@ -84,30 +86,62 @@ export function SubmitMode({
   // own title/mitigation — no free-text entry. Marking again clears it.
   async function setTopRisk(risk: { risk_id: string; title: string; mitigation: string | null }) {
     const isCurrent = submission.top_risk_id === risk.risk_id;
-    await updateWeeklySubmission(projectId, submission.submission_id, {
-      top_risk_id: isCurrent ? null : risk.risk_id,
-      top_risk_text: isCurrent ? null : risk.title,
-      top_action: isCurrent ? null : (risk.mitigation ?? ""),
-    });
-    invalidate();
+    setPendingRiskAction(risk.risk_id);
+    try {
+      await updateWeeklySubmission(projectId, submission.submission_id, {
+        top_risk_id: isCurrent ? null : risk.risk_id,
+        top_risk_text: isCurrent ? null : risk.title,
+        top_action: isCurrent ? null : (risk.mitigation ?? ""),
+      });
+      invalidate();
+      if (!isCurrent && !risk.mitigation?.trim()) {
+        reportError(
+          `"${risk.title}" has no mitigation yet, so it can't satisfy the top risk requirement — add one on the risk before submitting.`,
+          {
+            actionLabel: "Go to Risks",
+            onAction: () => {
+              window.location.href = `/projects/${projectId}/risks`;
+            },
+          },
+        );
+      }
+    } catch (err) {
+      reportError(err instanceof Error ? err.message : "Couldn't update the top risk");
+    } finally {
+      setPendingRiskAction(null);
+    }
   }
 
   async function markNoRisksThisWeek() {
-    await updateWeeklySubmission(projectId, submission.submission_id, {
-      top_risk_id: null,
-      top_risk_text: "No significant risks this week.",
-      top_action: "No action needed.",
-    });
-    invalidate();
+    setPendingRiskAction("no-risks");
+    try {
+      await updateWeeklySubmission(projectId, submission.submission_id, {
+        top_risk_id: null,
+        top_risk_text: "No significant risks this week.",
+        top_action: "No action needed.",
+      });
+      invalidate();
+    } catch (err) {
+      reportError(err instanceof Error ? err.message : "Couldn't update");
+    } finally {
+      setPendingRiskAction(null);
+    }
   }
 
   async function clearTopRisk() {
-    await updateWeeklySubmission(projectId, submission.submission_id, {
-      top_risk_id: null,
-      top_risk_text: null,
-      top_action: null,
-    });
-    invalidate();
+    setPendingRiskAction("clear");
+    try {
+      await updateWeeklySubmission(projectId, submission.submission_id, {
+        top_risk_id: null,
+        top_risk_text: null,
+        top_action: null,
+      });
+      invalidate();
+    } catch (err) {
+      reportError(err instanceof Error ? err.message : "Couldn't clear the top risk");
+    } finally {
+      setPendingRiskAction(null);
+    }
   }
 
   const addressedRisks = submission.addressed_risks ?? [];
@@ -183,7 +217,7 @@ export function SubmitMode({
               {formatWeekPeriod(submission.week_start)}
             </p>
           </div>
-          {submission.status === "draft" ? (
+          {/* {submission.status === "draft" ? (
             <span className="rounded-[999px] px-[10px] py-[3px] text-[12px] font-medium text-gca-warning">
               Draft
             </span>
@@ -191,7 +225,7 @@ export function SubmitMode({
             <span className="rounded-[999px] px-[10px] py-[3px] text-[12px] font-medium text-gca-green">
               Submitted
             </span>
-          )}
+          )} */}
         </div>
 
         <WeekDprStrip
@@ -209,7 +243,7 @@ export function SubmitMode({
               <div className="flex w-full flex-col gap-[16px]">
                 <div className="flex flex-col items-start">
                   <h3 className="text-[16px] font-semibold text-gca-dark">Progress</h3>
-                  <p className="text-[13px] text-gca-show">From the schedule</p>
+                  {/* <p className="text-[13px] text-gca-show">From the schedule</p> */}
                 </div>
 
                 {/* Three tiles side by side at 375px would clip the third, so the row wraps
@@ -219,7 +253,7 @@ export function SubmitMode({
                     <p className="text-[12px] font-medium text-gca-muted">Planned</p>
 
                     <p className="font-mono text-[22px] font-semibold tracking-[-0.33px] text-gca-dark flex items-center gap-[4px]">
-                      {Math.trunc(latestMetric.planned_pct)} <Percent className="size-[18px]" />
+                      {Math.round(latestMetric.planned_pct)} <Percent className="size-[18px]" />
                     </p>
                   </div>
 
@@ -227,7 +261,7 @@ export function SubmitMode({
                     <p className="text-[12px] font-medium text-gca-muted">Actual</p>
 
                     <p className="font-mono text-[22px] font-semibold tracking-[-0.33px] text-gca-dark flex items-center gap-[4px]">
-                      {Math.trunc(latestMetric.actual_pct)} <Percent className="size-[18px]" />
+                      {Math.round(latestMetric.actual_pct)} <Percent className="size-[18px]" />
                     </p>
                   </div>
 
@@ -290,6 +324,7 @@ export function SubmitMode({
                     projectId={projectId}
                     submissionId={submission.submission_id}
                     alreadyAddressed={addressedRisks}
+                    currentTopRiskId={submission.top_risk_id}
                     team={team}
                     onDone={() => setAddingRisk(false)}
                     onCancel={() => setAddingRisk(false)}
@@ -299,7 +334,7 @@ export function SubmitMode({
 
               {addressedRisks.length === 0
                 ? !addingRisk &&
-                  (!submission.top_risk_id && submission.top_risk_text ? (
+                  (submission.top_risk_text ? (
                     <div className="flex items-center justify-between rounded-[8px] bg-gca-badge-bg px-[14px] py-[10px] text-[13px]">
                       <span className="font-medium text-gca-green">{submission.top_risk_text}</span>
                       <button onClick={clearTopRisk} className="cursor-pointer text-gca-muted">
@@ -320,16 +355,27 @@ export function SubmitMode({
                       <div className="mt-[8px] flex items-center gap-[12px]">
                         <button
                           onClick={() => setAddingRisk(true)}
-                          className="flex cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface py-[10px] pl-[14px] pr-[16px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+                          className="flex cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface py-[6px] pl-[14px] pr-[16px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
                         >
                           Add from register
                         </button>
                         {!submission.top_risk_text && (
                           <button
                             onClick={markNoRisksThisWeek}
-                            className="cursor-pointer text-[13px] font-medium text-gca-green"
+                            disabled={pendingRiskAction === "no-risks"}
+                            className="relative cursor-pointer text-[13px] font-medium text-gca-green disabled:opacity-50"
                           >
-                            No risks this week
+                            <span
+                              className={pendingRiskAction === "no-risks" ? "invisible" : undefined}
+                            >
+                              No risks this week
+                            </span>
+                            {pendingRiskAction === "no-risks" && (
+                              <LoaderCircle
+                                className="absolute left-1/2 top-1/2 size-[14px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                                aria-label="Loading"
+                              />
+                            )}
                           </button>
                         )}
                       </div>
@@ -342,6 +388,7 @@ export function SubmitMode({
                       projectId={projectId}
                       addressedRisk={risk}
                       isMainTopRisk={risk.risk_id === submission.top_risk_id}
+                      pending={pendingRiskAction === risk.risk_id}
                       team={team}
                       onMarkAsTopRisk={(title, mitigation) =>
                         setTopRisk({ risk_id: risk.risk_id, title, mitigation })
@@ -392,17 +439,23 @@ export function SubmitMode({
                   <button
                     onClick={submit}
                     disabled={!ready || submitting}
-                    className="cursor-pointer rounded-[8px] bg-gca-green py-[10px] text-[14px] font-semibold text-gca-on-accent disabled:opacity-50"
+                    className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green py-[6px] text-[14px] font-semibold text-gca-on-accent disabled:opacity-50"
                   >
-                    Submit
+                    <span className={submitting ? "invisible" : undefined}>Submit</span>
+                    {submitting && (
+                      <LoaderCircle
+                        className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                        aria-label="Submitting"
+                      />
+                    )}
                   </button>
-                  {!ready && (
+                  {/* {!ready && (
                     <p className="text-[12px] text-error-text">
                       {!checks.commentary
                         ? "Write a commentary to submit."
                         : "Mark a top risk, or 'No risks this week', to submit."}
                     </p>
-                  )}
+                  )} */}
                   {!DEPARTMENT_LEAD_EMAIL && (
                     <p className="text-[11px] text-gca-muted">
                       Set NEXT_PUBLIC_DEPARTMENT_LEAD_EMAIL to email the department lead on submit.
@@ -434,9 +487,15 @@ export function SubmitMode({
               <button
                 onClick={submit}
                 disabled={!ready || submitting}
-                className="cursor-pointer rounded-[8px] bg-gca-green py-[12px] text-[15px] font-semibold text-gca-on-accent disabled:opacity-50"
+                className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green py-[6px] text-[15px] font-semibold text-gca-on-accent disabled:opacity-50"
               >
-                Submit
+                <span className={submitting ? "invisible" : undefined}>Submit</span>
+                {submitting && (
+                  <LoaderCircle
+                    className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                    aria-label="Submitting"
+                  />
+                )}
               </button>
               {!ready && (
                 <p className="text-[12px] text-error-text">

@@ -1,6 +1,7 @@
 import express from 'express';
 import { Projects, Contractors, ProjectContractors, } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import { projectIdParamSchema, projectContractorParamsSchema, createProjectContractorSchema, updateProjectContractorSchema, listProjectContractorsQuerySchema, } from '../utils/validation.js';
 // mergeParams so :projectId reaches authorize + handlers.
 const router = express.Router({ mergeParams: true });
@@ -91,8 +92,7 @@ router.post('/', canManage, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /projects/:projectId/contractors
@@ -123,8 +123,7 @@ router.get('/', canView, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /projects/:projectId/contractors/:contractorId
@@ -148,8 +147,7 @@ router.get('/:contractorId', canView, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // PATCH /projects/:projectId/contractors/:contractorId
@@ -180,8 +178,7 @@ router.patch('/:contractorId', canManage, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // DELETE /projects/:projectId/contractors/:contractorId
@@ -207,8 +204,7 @@ router.delete('/:contractorId', canManage, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 export default router;

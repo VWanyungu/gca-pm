@@ -1,6 +1,7 @@
 import express from 'express';
 import { Projects, ClientContacts } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import {
   projectIdParamSchema,
   clientContactParamsSchema,
@@ -39,8 +40,7 @@ router.get('/', canView, async (req, res) => {
     const contacts = await ClientContacts.listByProjectId(projectId);
     res.status(200).json({ status: 'success', data: { contacts }, message: 'Client contacts retrieved' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -69,8 +69,7 @@ router.post('/', canManage, async (req, res) => {
     const contact = await ClientContacts.create({ project_id: projectId, ...input });
     res.status(201).json({ status: 'success', data: { contact }, message: 'Client contact added' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -93,8 +92,7 @@ router.delete('/:contactId', canManage, async (req, res) => {
     await ClientContacts.delete(contactId);
     res.status(200).json({ status: 'success', data: null, message: 'Client contact removed' });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 

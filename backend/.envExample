@@ -22,6 +22,16 @@ PROD_DB_NAME=
 UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
 
+# QStash (Serverless message queue & webhook orchestrator)
+QSTASH_TOKEN=
+QSTASH_CURRENT_SIGNING_KEY=
+QSTASH_NEXT_SIGNING_KEY=
+QSTASH_WEBHOOK_URL=http://localhost:3000/qstahs/handler
+
+# Shared secret the sister project sends as the x-webhook-secret header on
+# POST /qstash/webhook (it cannot sign requests like QStash itself does).
+SISTER_WEBHOOK_SECRET=
+
 ACCESS_TOKEN_SECRET=
 REFRESH_TOKEN_SECRET=
 FORGOT_PASSWORD_TOKEN_SECRET=
@@ -33,8 +43,12 @@ FRONTEND_URL=
 BACKEND_URL=
 CORS_ORIGIN=
 
-SENDGRID_USER=
-SENDGRID_PASSWORD=
+# temporary: sending via a personal Gmail account until the company M365 mailbox is
+# wired up. GMAIL_USER is the full gmail.com address, GMAIL_APP_PASSWORD is a 16-char
+# App Password (Google Account -> Security -> 2-Step Verification -> App passwords),
+# not the account's login password. MAIL_FROM must match GMAIL_USER.
+GMAIL_USER=
+GMAIL_APP_PASSWORD=
 MAIL_FROM=
 
 PORT=
@@ -49,3 +63,7 @@ MPP_PARSER_URL=
 CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
+
+# Push-style heartbeat (e.g. an Uptime Kuma push monitor URL) pinged after the nightly
+# 3am project-metrics refresh. Leave unset to skip pinging.
+CRON_HEARTBEAT_URL=

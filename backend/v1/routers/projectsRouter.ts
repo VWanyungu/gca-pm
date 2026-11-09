@@ -7,6 +7,8 @@ import {
   ProjectMetrics,
 } from '../database/utils/database.js';
 import authorize, { authorizeAnyRole } from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
+import { seedInitialScheduleSummary } from '../utils/scheduleProcessor.js';
 import {
   createProjectSchema,
   updateProjectSchema,
@@ -68,8 +70,7 @@ router.get('/suggest-code', canCreate, async (req, res) => {
       message: 'Suggested project code generated',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -104,6 +105,12 @@ router.post('/', canCreate, async (req, res) => {
       created_by: req.user!.userId,
     });
 
+    // Best-effort: a project with no mock schedule is still a created project, so this
+    // never fails the request — it just leaves the Schedule tab empty until a real upload.
+    await seedInitialScheduleSummary(result.project, req.user!.userId).catch((err) =>
+      console.error('Failed to seed initial schedule for', result.project.project_id, err),
+    );
+
     res.status(201).json({
       status: 'success',
       data: result,
@@ -118,8 +125,7 @@ router.post('/', canCreate, async (req, res) => {
       });
       return;
     }
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -132,6 +138,8 @@ router.get('/', canListProjects, async (req, res) => {
     return;
   }
   const filter = query.value as ListProjectsQuery;
+  const orderBy = filter.order_by || filter.sort_by || 'created_at';
+  const orderDir = (filter.order_dir || filter.sort_dir || 'desc').toLowerCase() as 'asc' | 'desc';
 
   try {
     const result = await Projects.list({
@@ -141,6 +149,8 @@ router.get('/', canListProjects, async (req, res) => {
       search: filter.search,
       page: filter.page,
       limit: filter.limit,
+      orderBy,
+      orderDir,
     });
 
     res.status(200).json({
@@ -149,8 +159,7 @@ router.get('/', canListProjects, async (req, res) => {
       message: 'Projects retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -191,8 +200,7 @@ router.get('/:projectId', canViewProject, async (req, res) => {
       message: 'Project retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -251,13 +259,18 @@ router.patch('/:projectId', canManageProject, async (req, res) => {
       message: 'Project updated',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
     // Validation or transition errors return 400
-    if (message.includes('Invalid project status transition') || message.includes('Reason is required')) {
-      res.status(400).json({ status: 'error', data: null, message });
+    if (
+      err instanceof Error &&
+      err.constructor === Error &&
+      (err.message.includes('Invalid project status transition') ||
+        err.message.includes('Reason is required') ||
+        err.message.includes('Closure stage must be complete'))
+    ) {
+      res.status(400).json({ status: 'error', data: null, message: err.message });
       return;
     }
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -287,8 +300,7 @@ router.delete('/:projectId', canDeleteProject, async (req, res) => {
       message: 'Project deleted',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 

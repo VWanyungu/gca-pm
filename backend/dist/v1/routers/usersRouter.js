@@ -1,7 +1,9 @@
 import express from 'express';
-import { Users } from '../database/utils/database.js';
+import { Users, Tokens, AccessRoles } from '../database/utils/database.js';
+import { Cache } from '../database/utils/cache.js';
 import authorize from '../middlewares/authorize.js';
 import { SEED_PASSWORD_HASH } from '../seeds/01_users.js';
+import { sendRouteError } from '../utils/errors.js';
 import { userIdParamSchema, listUsersQuerySchema, adminCreateUserSchema, updateUserSchema, setUserStatusSchema, } from '../utils/validation.js';
 const router = express.Router();
 const canRead = authorize([
@@ -11,6 +13,13 @@ const canRead = authorize([
     { role: 'PM', scopeType: 'global' },
 ]);
 const canWrite = authorize([{ role: 'Admin', scopeType: 'global' }]);
+/** Global role must be a currently-active entry in the access_role catalog. */
+async function isGrantableRole(role) {
+    if (!role)
+        return true;
+    const accessRole = await AccessRoles.getByName(role);
+    return !!accessRole && accessRole.is_active;
+}
 router.get('/', canRead, async (req, res) => {
     const type = req.query.type ?? req.body?.type;
     const inputEmail = req.query.inputEmail ?? req.body?.inputEmail;
@@ -31,8 +40,7 @@ router.get('/', canRead, async (req, res) => {
                 });
             }
             catch (err) {
-                const message = err instanceof Error ? err.message : 'Unknown error';
-                res.status(500).json({ status: 'error', data: null, message });
+                sendRouteError(res, err);
             }
             return;
         }
@@ -54,8 +62,7 @@ router.get('/', canRead, async (req, res) => {
                 });
             }
             catch (err) {
-                const message = err instanceof Error ? err.message : 'Unknown error';
-                res.status(500).json({ status: 'error', data: null, message });
+                sendRouteError(res, err);
             }
             return;
         }
@@ -82,8 +89,7 @@ router.get('/:id', canRead, async (req, res) => {
         res.status(200).json({ status: 'success', data: { user }, message: 'User retrieved successfully' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // Admin-created user — no password field in the UI, so we set the seed default password.
@@ -94,13 +100,16 @@ router.post('/', canWrite, async (req, res) => {
         res.status(400).json({ status: 'error', data: null, message: error.message });
         return;
     }
+    if (!(await isGrantableRole(value.globalRole))) {
+        res.status(400).json({ status: 'error', data: null, message: 'Unknown or inactive role' });
+        return;
+    }
     try {
         const user = await Users.createUserAdmin(value, SEED_PASSWORD_HASH, req.user.userId);
         res.status(201).json({ status: 'success', data: { user }, message: 'User created' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 router.put('/:id', canWrite, async (req, res) => {
@@ -114,6 +123,10 @@ router.put('/:id', canWrite, async (req, res) => {
         res.status(400).json({ status: 'error', data: null, message: body.error.message });
         return;
     }
+    if (!(await isGrantableRole(body.value.globalRole))) {
+        res.status(400).json({ status: 'error', data: null, message: 'Unknown or inactive role' });
+        return;
+    }
     try {
         const user = await Users.updateUser(params.value.id, body.value, req.user.userId);
         if (!user) {
@@ -123,8 +136,7 @@ router.put('/:id', canWrite, async (req, res) => {
         res.status(200).json({ status: 'success', data: { user }, message: 'User updated' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // Deactivation is a soft status flag, not a delete — records stay, access is revoked.
@@ -148,8 +160,31 @@ router.patch('/:id/status', canWrite, async (req, res) => {
         res.status(200).json({ status: 'success', data: { user }, message: 'User status updated' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
+    }
+});
+// Forces the user to log in again everywhere: their refresh token is revoked outright,
+// and their current access token (wherever it's held) stops being honoured as soon as
+// it's next presented, via tokens_invalidated_at (see isSessionInvalidated).
+router.post('/:id/invalidate-sessions', canWrite, async (req, res) => {
+    const params = userIdParamSchema.validate(req.params);
+    if (params.error) {
+        res.status(400).json({ status: 'error', data: null, message: params.error.message });
+        return;
+    }
+    const { id } = params.value;
+    try {
+        const invalidatedAt = await Users.invalidateSessions(id);
+        if (!invalidatedAt) {
+            res.status(404).json({ status: 'error', data: null, message: 'User not found' });
+            return;
+        }
+        await Tokens.deleteAllRefreshTokensForUser(id);
+        await Cache.set(`session_invalidated_${id}`, invalidatedAt.getTime(), { ex: 900 });
+        res.status(200).json({ status: 'success', data: { invalidatedAt }, message: 'Sessions invalidated' });
+    }
+    catch (err) {
+        sendRouteError(res, err);
     }
 });
 export default router;

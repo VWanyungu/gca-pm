@@ -163,7 +163,7 @@ export default function ResetPasswordPage({ token }: { token: string }) {
           type="submit"
           disabled={submitting}
           onClick={handleSubmit}
-          className="w-full flex items-center justify-center rounded-[8px] bg-gca-green px-[16px] py-[14px] text-[15px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-60"
+          className="w-full flex items-center justify-center rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[15px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-60"
         >
           {submitting ? (
             <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />

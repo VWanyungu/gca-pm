@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { api } from "@/lib/api-client";
 import Dropdown from "@/components/Dropdown";
 import { useRiskCategories, useRisksInvalidate } from "./use-risks-data";
@@ -70,14 +70,12 @@ export function RiskForm({
   const [impact, setImpact] = useState(editing?.impact ?? 3);
   const [mitigation, setMitigation] = useState(editing?.mitigation ?? "");
   const [status, setStatus] = useState<RiskStatus>(editing?.status ?? "open");
-  const [dismissalReason, setDismissalReason] = useState(editing?.dismissal_reason ?? "");
-  const [saving, setSaving] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"save" | "delete" | null>(null);
+  const saving = pendingAction !== null;
   const [fieldErrors, setFieldErrors] = useState<{
     title?: string;
-    stageNo?: string;
     ownerId?: string;
     categoryId?: string;
-    dismissalReason?: string;
   }>({});
   const [deleting, setDeleting] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
@@ -102,63 +100,61 @@ export function RiskForm({
   async function submit() {
     const nextErrors = {
       title: title.trim() ? undefined : "Title is required",
-      stageNo: stageNo ? undefined : "Stage is required",
       ownerId: ownerId ? undefined : "Owner is required",
       categoryId: categoryId ? undefined : "Category is required",
-      dismissalReason:
-        status === "dismissed" && !dismissalReason.trim()
-          ? "A reason is required to dismiss a risk"
-          : undefined,
     };
     setFieldErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) {
       return;
     }
-    setSaving(true);
+    setPendingAction("save");
+    try {
+      const body: Record<string, unknown> = {
+        title: title.trim(),
+        description: description.trim() || null,
+        stage_no: stageNo ? Number(stageNo) : null,
+        owner_id: ownerId,
+        category_id: Number(categoryId),
+        review_by: reviewBy || null,
+        likelihood,
+        impact,
+        mitigation: mitigation.trim() || null,
+      };
 
-    const body: Record<string, unknown> = {
-      title: title.trim(),
-      description: description.trim() || null,
-      stage_no: Number(stageNo),
-      owner_id: ownerId,
-      category_id: Number(categoryId),
-      review_by: reviewBy || null,
-      likelihood,
-      impact,
-      mitigation: mitigation.trim() || null,
-    };
-
-    if (editing) {
-      if (status !== editing.status) {
-        body.status = status;
-        body.dismissal_reason = status === "dismissed" ? dismissalReason.trim() : null;
+      if (editing) {
+        if (status !== editing.status) {
+          body.status = status;
+        }
+        const res = await api.patch(`/projects/${projectId}/risks/${editing.risk_id}`, body);
+        if (res.status !== "success") return;
+      } else {
+        const res = await api.post(`/projects/${projectId}/risks`, {
+          ...body,
+          kind: "risk",
+          source_task_id: initial?.sourceTaskId ?? null,
+        });
+        if (res.status !== "success") return;
       }
-      const res = await api.patch(`/projects/${projectId}/risks/${editing.risk_id}`, body);
-      setSaving(false);
-      if (res.status !== "success") return;
-    } else {
-      const res = await api.post(`/projects/${projectId}/risks`, {
-        ...body,
-        kind: "risk",
-        source_task_id: initial?.sourceTaskId ?? null,
-      });
-      setSaving(false);
-      if (res.status !== "success") return;
+      invalidate();
+      onDone();
+    } finally {
+      setPendingAction(null);
     }
-    invalidate();
-    onDone();
   }
 
   async function deleteRisk() {
     if (!editing || !deleteReason.trim()) return;
-    setSaving(true);
-    const res = await api.delete(`/projects/${projectId}/risks/${editing.risk_id}`, {
-      reason: deleteReason.trim(),
-    });
-    setSaving(false);
-    if (res.status !== "success") return;
-    invalidate();
-    onDone();
+    setPendingAction("delete");
+    try {
+      const res = await api.delete(`/projects/${projectId}/risks/${editing.risk_id}`, {
+        reason: deleteReason.trim(),
+      });
+      if (res.status !== "success") return;
+      invalidate();
+      onDone();
+    } finally {
+      setPendingAction(null);
+    }
   }
 
   return (
@@ -233,25 +229,15 @@ export function RiskForm({
         <div className="flex w-full max-w-[792px] flex-col gap-[16px]">
           <div className="flex flex-col gap-[16px] sm:flex-row">
             <div className="flex w-full flex-col gap-[6px]">
-              <label className="text-[14px] text-gca-dark">
-                Stage<span className="text-error-text">*</span>
-              </label>
+              <label className="text-[14px] text-gca-dark">Stage</label>
               <Dropdown
                 id="risk-stage"
                 title="Choose stage"
                 data={stageOptions}
                 selectedId={stageNo}
-                style={`h-[40px] w-full rounded-[8px] border px-[13px] text-[14px] ${
-                  fieldErrors.stageNo ? "border-error-border" : "border-gca-border"
-                }`}
-                onSelect={(id) => {
-                  setStageNo(id);
-                  setFieldErrors((current) => ({ ...current, stageNo: undefined }));
-                }}
+                style="h-[40px] w-full rounded-[8px] border border-gca-border px-[13px] text-[14px]"
+                onSelect={(id) => setStageNo(id)}
               />
-              {fieldErrors.stageNo && (
-                <span className="text-[12px] text-error-text">{fieldErrors.stageNo}</span>
-              )}
             </div>
             <div className="flex w-full flex-col gap-[6px]">
               <label className="text-[14px] text-gca-dark">
@@ -315,7 +301,7 @@ export function RiskForm({
           <div className="w-[280px] shrink-0">
             <p className="text-[14px] font-semibold text-gca-dark">Status</p>
             <p className="mt-[4px] text-[13px] text-gca-show">
-              Addressed risks stay visible until closed.
+              Closed risks stay visible and can be reopened.
             </p>
           </div>
           <div className="flex w-full max-w-[792px] flex-col gap-[16px]">
@@ -331,28 +317,6 @@ export function RiskForm({
                 onSelect={(id) => setStatus(id as RiskStatus)}
               />
             </div>
-            {status === "dismissed" && (
-              <div className="flex flex-col gap-[6px]">
-                <label className="text-[14px] text-gca-dark">
-                  Dismissal reason<span className="text-error-text">*</span>
-                </label>
-                <textarea
-                  value={dismissalReason}
-                  onChange={(e) => {
-                    setDismissalReason(e.target.value);
-                    setFieldErrors((current) => ({ ...current, dismissalReason: undefined }));
-                  }}
-                  rows={2}
-                  aria-invalid={!!fieldErrors.dismissalReason}
-                  className={`rounded-[8px] border px-[13px] py-[11px] text-[14px] outline-none focus:border-gca-green ${
-                    fieldErrors.dismissalReason ? "border-error-border" : "border-gca-border"
-                  }`}
-                />
-                {fieldErrors.dismissalReason && (
-                  <span className="text-[12px] text-error-text">{fieldErrors.dismissalReason}</span>
-                )}
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -373,7 +337,7 @@ export function RiskForm({
                   <button
                     key={lvl.value}
                     onClick={() => setLikelihood(lvl.value)}
-                    className={`flex-1 cursor-pointer rounded-[6px] py-[7px] text-[13px] ${
+                    className={`flex-1 cursor-pointer rounded-[6px] py-[6px] text-[13px] ${
                       likelihood === lvl.value
                         ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                         : "font-normal text-gca-show"
@@ -391,7 +355,7 @@ export function RiskForm({
                   <button
                     key={lvl.value}
                     onClick={() => setImpact(lvl.value)}
-                    className={`flex-1 cursor-pointer rounded-[6px] py-[7px] text-[13px] ${
+                    className={`flex-1 cursor-pointer rounded-[6px] py-[6px] text-[13px] ${
                       impact === lvl.value
                         ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                         : "font-normal text-gca-show"
@@ -447,9 +411,17 @@ export function RiskForm({
             <button
               onClick={deleteRisk}
               disabled={saving || !deleteReason.trim()}
-              className="cursor-pointer rounded-[8px] bg-error-text px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
+              className="relative flex cursor-pointer items-center justify-center gap-[6px] rounded-[8px] bg-error-text px-[14px] py-[6px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
             >
-              Confirm delete
+              <span className={pendingAction === "delete" ? "invisible" : undefined}>
+                Confirm delete
+              </span>
+              {pendingAction === "delete" && (
+                <LoaderCircle
+                  className="absolute left-1/2 top-1/2 size-[14px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                  aria-label="Deleting"
+                />
+              )}
             </button>
           </div>
         </div>
@@ -476,9 +448,17 @@ export function RiskForm({
           <button
             onClick={submit}
             disabled={saving}
-            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+            className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
           >
-            {editing ? "Save changes" : "Save risk"}
+            <span className={pendingAction === "save" ? "invisible" : undefined}>
+              {editing ? "Save changes" : "Save risk"}
+            </span>
+            {pendingAction === "save" && (
+              <LoaderCircle
+                className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                aria-label="Saving"
+              />
+            )}
           </button>
         </div>
       </div>

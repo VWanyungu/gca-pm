@@ -108,6 +108,48 @@ export async function parseMpp(bytes: Buffer): Promise<ParsedSchedule> {
   );
 }
 
+export interface ScheduleExportInput {
+  project_name: string | null;
+  status_date: string | null;
+  tasks: ParsedTask[];
+}
+
+/** The inverse of parseMpp: current task data in, an MS Project file out (ScheduleBuilder on
+ *  the Java side). There is no binary .mpp writer available, so this is MSPDI XML — the format
+ *  MS Project opens natively — not a .mpp file. */
+export async function buildScheduleExport(input: ScheduleExportInput): Promise<Buffer> {
+  let response: Response;
+  try {
+    response = await fetch(`${PARSER_URL}/export`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+      signal: AbortSignal.timeout(PARSE_TIMEOUT_MS),
+    });
+  } catch (err) {
+    throw new MppParserUnavailableError(
+      `Could not reach the schedule parser at ${PARSER_URL}: ${
+        err instanceof Error ? err.message : 'unknown error'
+      }`,
+    );
+  }
+
+  if (response.status !== 200) {
+    let message = `The schedule parser returned ${response.status} while building the export`;
+    try {
+      const payload = (await response.json()) as { message?: string };
+      if (payload.message) {
+        message = payload.message;
+      }
+    } catch {
+      // Body wasn't JSON; keep the generic message.
+    }
+    throw new MppParserUnavailableError(message);
+  }
+
+  return Buffer.from(await response.arrayBuffer());
+}
+
 export async function parserIsReachable(): Promise<boolean> {
   try {
     const response = await fetch(`${PARSER_URL}/health`, { signal: AbortSignal.timeout(2000) });

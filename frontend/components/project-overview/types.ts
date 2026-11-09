@@ -17,13 +17,28 @@ export interface ProjectDetail {
   is_mechanical: boolean | null;
   is_civil: boolean | null;
   is_electrical: boolean | null;
+  banner_photos?: string[] | null;
 }
+
+export interface DprPhoto {
+  photo_id: string;
+  dpr_id: string;
+  caption: string | null;
+  taken_at: string | null;
+  report_date: string;
+  stage_no: number;
+  uploader_name: string | null;
+  url: string;
+}
+
+export type PdmStageKind = "kickoff" | "pdm" | "closure";
 
 export interface StageRow {
   project_id: string;
   stage_no: number;
   stage_name: string;
   phase_id: number;
+  kind: PdmStageKind;
   in_scope: boolean;
   state: "not_started" | "active" | "inactive" | "complete";
 }
@@ -84,6 +99,7 @@ export interface StageActivity {
   due_date: string | null;
   owner_id: string | null;
   completed_at?: string | null;
+  requires_attachment?: boolean;
   created_by?: string;
   created_at?: string;
 }
@@ -92,6 +108,7 @@ export interface StageActivityAttachment {
   attachment_id: string;
   activity_id: string;
   caption: string | null;
+  access_url: string;
   sort_order: number;
   uploaded_at: string;
 }
@@ -101,6 +118,7 @@ export interface StageDetail {
   stage_no: number;
   stage_name: string;
   phase_id: number;
+  kind: PdmStageKind;
   in_scope: boolean;
   state: "not_started" | "active" | "inactive" | "complete";
   added_to_scope_at: string;
@@ -119,7 +137,7 @@ export interface ChecklistItem {
 export interface StageRisk {
   risk_id: string;
   title: string;
-  status: "open" | "mitigated" | "closed" | "dismissed" | "auto_resolved";
+  status: "open" | "closed";
   kind: "risk" | "issue";
   impact: number;
   source: "manual" | "overdue_task";
@@ -148,6 +166,7 @@ export function initials(firstName: string, lastName: string): string {
 }
 
 export const STAGE_SHORT_NAME: Record<number, string> = {
+  0: "Kickoff",
   1: "Concept",
   2: "Feasibility",
   3: "Structuring",
@@ -158,4 +177,5 @@ export const STAGE_SHORT_NAME: Record<number, string> = {
   8: "Comm...",
   9: "O&M",
   10: "Decomm...",
+  11: "Closure",
 };

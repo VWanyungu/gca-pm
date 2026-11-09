@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { Users } from '../database/utils/database.js';
 import hashPassword from '../utils/hashPassword.js';
 import { createUserSchema } from '../utils/validation.js';
+import { sendRouteError } from '../utils/errors.js';
 const router = express.Router();
 router.post('/', async (req, res) => {
     try {
@@ -32,8 +33,7 @@ router.post('/', async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 export default router;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LoaderCircle } from "lucide-react";
 import type { AdminUserDetail, RoleGrantDetail } from "./types";
 import { useSetUserStatus } from "./use-admin-users-data";
 import { mainRoleWarning } from "./format";
@@ -79,18 +80,26 @@ export function DeactivateUserModal({
         <div className="mt-[24px] flex justify-end gap-[12px]">
           <button
             onClick={onClose}
-            className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
+            className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[14px] font-medium text-gca-dark"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
             disabled={setStatus.isPending || blocked}
-            className={`rounded-[8px] px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40 ${
+            className={`relative flex items-center justify-center gap-[8px] rounded-[8px] px-[16px] py-[6px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40 ${
               deactivating ? "bg-error-border" : "bg-gca-green"
             }`}
           >
-            {deactivating ? "Deactivate" : "Reactivate"}
+            <span className={setStatus.isPending ? "invisible" : undefined}>
+              {deactivating ? "Deactivate" : "Reactivate"}
+            </span>
+            {setStatus.isPending && (
+              <LoaderCircle
+                className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                aria-label={deactivating ? "Deactivating" : "Reactivating"}
+              />
+            )}
           </button>
         </div>
       </div>

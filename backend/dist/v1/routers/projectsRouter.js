@@ -1,6 +1,8 @@
 import express from 'express';
 import { Projects, Programs, ProjectStages, ProjectStatusHistory, ProjectMetrics, } from '../database/utils/database.js';
 import authorize, { authorizeAnyRole } from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
+import { seedInitialScheduleSummary } from '../utils/scheduleProcessor.js';
 import { createProjectSchema, updateProjectSchema, projectIdParamSchema, listProjectsQuerySchema, suggestProjectCodeQuerySchema, } from '../utils/validation.js';
 const router = express.Router();
 const canCreate = authorize([
@@ -46,8 +48,7 @@ router.get('/suggest-code', canCreate, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // POST /projects
@@ -77,6 +78,9 @@ router.post('/', canCreate, async (req, res) => {
             ...input,
             created_by: req.user.userId,
         });
+        // Best-effort: a project with no mock schedule is still a created project, so this
+        // never fails the request — it just leaves the Schedule tab empty until a real upload.
+        await seedInitialScheduleSummary(result.project, req.user.userId).catch((err) => console.error('Failed to seed initial schedule for', result.project.project_id, err));
         res.status(201).json({
             status: 'success',
             data: result,
@@ -92,8 +96,7 @@ router.post('/', canCreate, async (req, res) => {
             });
             return;
         }
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /projects
@@ -120,8 +123,7 @@ router.get('/', canListProjects, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // GET /projects/:projectId
@@ -134,7 +136,8 @@ router.get('/:projectId', canViewProject, async (req, res) => {
     const { projectId } = params.value;
     try {
         const project = await Projects.getById(projectId);
-        if (!project) {
+        const isGlobalAdmin = (req.user?.role ?? []).some((grant) => grant.role === 'Admin' && grant.scope_type === 'global');
+        if (!project || (project.status === 'deleted' && !isGlobalAdmin)) {
             res.status(404).json({ status: 'error', data: null, message: 'Project not found' });
             return;
         }
@@ -156,8 +159,7 @@ router.get('/:projectId', canViewProject, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // PATCH /projects/:projectId
@@ -174,6 +176,14 @@ router.patch('/:projectId', canManageProject, async (req, res) => {
     }
     const { projectId } = params.value;
     const input = body.value;
+    // AC-PRJ-11: deletion is Admin-only even through this general-purpose route.
+    if (input.status === 'deleted') {
+        const isGlobalAdmin = (req.user?.role ?? []).some((grant) => grant.role === 'Admin' && grant.scope_type === 'global');
+        if (!isGlobalAdmin) {
+            res.status(403).json({ status: 'error', data: null, message: 'Not authorized' });
+            return;
+        }
+    }
     try {
         const existing = await Projects.getById(projectId);
         if (!existing) {
@@ -196,13 +206,16 @@ router.patch('/:projectId', canManageProject, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
         // Validation or transition errors return 400
-        if (message.includes('Invalid project status transition') || message.includes('Reason is required')) {
-            res.status(400).json({ status: 'error', data: null, message });
+        if (err instanceof Error &&
+            err.constructor === Error &&
+            (err.message.includes('Invalid project status transition') ||
+                err.message.includes('Reason is required') ||
+                err.message.includes('Closure stage must be complete'))) {
+            res.status(400).json({ status: 'error', data: null, message: err.message });
             return;
         }
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 // DELETE /projects/:projectId
@@ -215,11 +228,13 @@ router.delete('/:projectId', canDeleteProject, async (req, res) => {
     const { projectId } = params.value;
     try {
         const existing = await Projects.getById(projectId);
-        if (!existing) {
+        if (!existing || existing.status === 'deleted') {
             res.status(404).json({ status: 'error', data: null, message: 'Project not found' });
             return;
         }
-        await Projects.delete(projectId);
+        // AC-PRJ-11: soft delete — the row stays, status flips to 'deleted' and the
+        // transition is logged like any other (via Projects.update), it's just hidden from view.
+        await Projects.update(projectId, { status: 'deleted' }, req.user.userId, null);
         res.status(200).json({
             status: 'success',
             data: null,
@@ -227,8 +242,7 @@ router.delete('/:projectId', canDeleteProject, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 export default router;

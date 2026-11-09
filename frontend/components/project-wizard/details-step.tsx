@@ -7,7 +7,8 @@ import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import Dropdown from "@/components/Dropdown";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, LoaderCircle } from "lucide-react";
+import { BannerPhotosUpload } from "@/components/banner-photos-upload";
 
 export const detailsSchema = z.object({
   name: z.string().trim().min(1, "Project name is required").max(500),
@@ -16,9 +17,12 @@ export const detailsSchema = z.object({
   expected_start_date: z.string().min(1, "Start date is required"),
   expected_end_date: z.string().optional(),
   site_location: z.string().optional(),
+  site_lat: z.number().min(-90).max(90).optional(),
+  site_lng: z.number().min(-180).max(180).optional(),
   is_mechanical: z.boolean(),
   is_civil: z.boolean(),
   is_electrical: z.boolean(),
+  banner_photos: z.array(z.string()).optional(),
 });
 
 export type DetailsFormValues = z.infer<typeof detailsSchema>;
@@ -180,6 +184,43 @@ export const DetailsStep = forwardRef<DetailsStepHandle, DetailsStepProps>(funct
         />
       </Field>
 
+      <div className="flex flex-col gap-[16px] sm:flex-row">
+        <Field
+          label="Latitude (optional)"
+          error={errors.site_lat?.message}
+          className="w-full sm:w-1/2"
+        >
+          <input
+            type="number"
+            step="any"
+            {...register("site_lat", {
+              setValueAs: (v) => (v === "" || v === null || v === undefined || isNaN(Number(v)) ? undefined : Number(v)),
+            })}
+            placeholder="e.g. -1.2921"
+            className={`h-[42px] rounded-[8px] border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green ${
+              errors.site_lat ? "border-error-border" : "border-gca-border"
+            }`}
+          />
+        </Field>
+        <Field
+          label="Longitude (optional)"
+          error={errors.site_lng?.message}
+          className="w-full sm:w-1/2"
+        >
+          <input
+            type="number"
+            step="any"
+            {...register("site_lng", {
+              setValueAs: (v) => (v === "" || v === null || v === undefined || isNaN(Number(v)) ? undefined : Number(v)),
+            })}
+            placeholder="e.g. 36.8219"
+            className={`h-[42px] rounded-[8px] border px-[12px] text-[14px] text-gca-dark outline-none focus:border-gca-green ${
+              errors.site_lng ? "border-error-border" : "border-gca-border"
+            }`}
+          />
+        </Field>
+      </div>
+
       <fieldset className="flex flex-col gap-[10px]">
         <legend className="pb-[6px] text-[13px] font-medium text-gca-dark">Works</legend>
         <div className="flex flex-wrap items-center gap-[12px]">
@@ -191,7 +232,7 @@ export const DetailsStep = forwardRef<DetailsStepHandle, DetailsStepProps>(funct
                 type="button"
                 aria-pressed={selected}
                 onClick={() => setValue(field, !selected, { shouldDirty: true })}
-                className={`flex w-[180px] flex-1 cursor-pointer items-center gap-[12px] rounded-[8px] border px-[14px] py-[12px] ${
+                className={`flex w-[180px] flex-1 cursor-pointer items-center gap-[12px] rounded-[8px] border px-[14px] py-[6px] ${
                   selected ? "border-gca-green bg-gca-badge-bg" : "border-gca-border"
                 }`}
               >
@@ -209,13 +250,18 @@ export const DetailsStep = forwardRef<DetailsStepHandle, DetailsStepProps>(funct
         </div>
       </fieldset>
 
+      <BannerPhotosUpload
+        value={useWatch({ control, name: "banner_photos" }) ?? []}
+        onChange={(photos) => setValue("banner_photos", photos, { shouldDirty: true })}
+      />
+
       <div
         className={`hidden md:flex items-center justify-between pt-[24px] ${singlePage ? "flex-wrap gap-3" : ""}`}
       >
         <button
           type="button"
           onClick={onCancel}
-          className={`cursor-pointer px-[4px] py-[11px] text-[14px] font-semibold text-gca-show hover:text-red-500 ${
+          className={`cursor-pointer px-[4px] py-[6px] text-[14px] font-semibold text-gca-show hover:text-red-500 ${
             singlePage ? "hidden xl:inline-flex" : ""
           }`}
         >
@@ -227,14 +273,20 @@ export const DetailsStep = forwardRef<DetailsStepHandle, DetailsStepProps>(funct
               type="button"
               disabled={saving}
               onClick={handleSubmit(onSave)}
-              className="cursor-pointer rounded-[8px] border border-gca-border px-[18px] py-[11px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
+              className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-gca-border px-[18px] py-[6px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
             >
-              Save changes
+              <span className={saving ? "invisible" : undefined}>Save changes</span>
+              {saving && (
+                <LoaderCircle
+                  className="absolute left-1/2 top-1/2 size-[16px] -translate-x-1/2 -translate-y-1/2 animate-spin"
+                  aria-label="Saving"
+                />
+              )}
             </button>
           )}
           <button
             type="submit"
-            className={`flex cursor-pointer items-center gap-[10px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover ${
+            className={`flex cursor-pointer items-center gap-[10px] rounded-[8px] bg-gca-green px-[18px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover ${
               singlePage ? "hidden xl:flex" : ""
             }`}
           >

@@ -63,7 +63,7 @@ export function TaskPickerSheet({ projectId, open, onClose, onPick }: TaskPicker
                 onPick(task);
                 onClose();
               }}
-              className={`flex cursor-pointer items-center justify-between py-[12px] text-left ${
+              className={`flex cursor-pointer items-center justify-between py-[6px] text-left ${
                 i > 0 ? "border-t border-gca-border" : ""
               }`}
             >

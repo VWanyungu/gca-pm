@@ -1,6 +1,7 @@
 import express from 'express';
 import { StageStateHistory, ProjectStages, Projects, } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import { sendRouteError } from '../utils/errors.js';
 import { stageStateHistoryProjectParamsSchema, stageStateHistoryEventParamsSchema, createStageStateHistorySchema, updateStageStateHistorySchema, listStageStateHistoryQuerySchema, } from '../utils/validation.js';
 // mergeParams so :projectId from the parent mount reaches authorize + handlers.
 const router = express.Router({ mergeParams: true });
@@ -137,8 +138,7 @@ router.post('/', canManage, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 router.get('/', canView, async (req, res) => {
@@ -169,8 +169,7 @@ router.get('/', canView, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 router.get('/:eventId', canView, async (req, res) => {
@@ -193,8 +192,7 @@ router.get('/:eventId', canView, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 router.patch('/:eventId', canManage, async (req, res) => {
@@ -253,8 +251,7 @@ router.patch('/:eventId', canManage, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 router.delete('/:eventId', canManage, async (req, res) => {
@@ -278,8 +275,7 @@ router.delete('/:eventId', canManage, async (req, res) => {
         });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 export default router;

@@ -59,7 +59,7 @@ export function formatScheduleImpact(days: number | null): string {
 export function formatCostImpact(amount: number | null, currency: string | null): string {
   if (amount == null || !currency) return "—";
   const sign = amount < 0 ? "-" : "";
-  const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(
+  const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 0 }).format(
     Math.abs(amount),
   );
   return `${sign}${currency} ${compact}`;

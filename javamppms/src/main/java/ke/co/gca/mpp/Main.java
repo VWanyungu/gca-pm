@@ -46,6 +46,7 @@ public final class Main {
       respond(exchange, 200, Map.of("status", "ok"));
     });
     server.createContext("/parse", Main::handleParse);
+    server.createContext("/export", Main::handleExport);
     server.start();
 
     System.out.println("javamppms listening on http://" + host + ":" + port);
@@ -94,6 +95,47 @@ public final class Main {
     }
 
     respond(exchange, result.diagnostics().isEmpty() ? 200 : 422, result);
+  }
+
+  private static void handleExport(HttpExchange exchange) throws IOException {
+    if (handleCorsPreflight(exchange)) return;
+    if (!"POST".equals(exchange.getRequestMethod())) {
+      respond(exchange, 405, Map.of("status", "error", "message", "POST the schedule JSON to this endpoint."));
+      return;
+    }
+
+    byte[] body;
+    try (InputStream in = exchange.getRequestBody()) {
+      body = in.readNBytes(MAX_BYTES + 1);
+    }
+    if (body.length == 0) {
+      respond(exchange, 400, Map.of("status", "error", "message", "Request body was empty."));
+      return;
+    }
+    if (body.length > MAX_BYTES) {
+      respond(exchange, 413, Map.of("status", "error", "message", "Request body is larger than 50 MB."));
+      return;
+    }
+
+    byte[] xml;
+    try {
+      BuildRequest request = JSON.readValue(body, BuildRequest.class);
+      xml = ScheduleBuilder.build(request);
+    } catch (RuntimeException | IOException e) {
+      respond(exchange, 500, Map.of("status", "error", "message", "Could not build the export: " + describe(e)));
+      return;
+    }
+
+    exchange.getResponseHeaders().set("Content-Type", "application/xml; charset=utf-8");
+    exchange.sendResponseHeaders(200, xml.length);
+    try (OutputStream os = exchange.getResponseBody()) {
+      os.write(xml);
+    }
+  }
+
+  private static String describe(Exception e) {
+    String message = e.getMessage();
+    return message == null || message.isBlank() ? e.getClass().getSimpleName() : message;
   }
 
   private static void respond(HttpExchange exchange, int status, Object body) throws IOException {

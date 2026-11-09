@@ -2,6 +2,7 @@ import express from 'express';
 import { Search } from '../database/utils/database.js';
 import { authorizeAnyRole } from '../middlewares/authorize.js';
 import { searchQuerySchema } from '../utils/validation.js';
+import { sendRouteError } from '../utils/errors.js';
 const router = express.Router();
 // Global search spans projects, so it has no :projectId for authorize() to scope against —
 // any grant gets in, and the results are then narrowed to what that grant can see.
@@ -43,8 +44,7 @@ router.get('/', canSearch, async (req, res) => {
         res.status(200).json({ status: 'success', data: results, message: 'Search results' });
     }
     catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        res.status(500).json({ status: 'error', data: null, message });
+        sendRouteError(res, err);
     }
 });
 export default router;

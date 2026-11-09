@@ -5,6 +5,8 @@ import {
   ProjectStages,
 } from '../database/utils/database.js';
 import authorize from '../middlewares/authorize.js';
+import requireKickoffComplete from '../middlewares/requireKickoffComplete.js';
+import { sendRouteError } from '../utils/errors.js';
 import {
   customMilestoneProjectParamsSchema,
   customMilestoneParamsSchema,
@@ -35,7 +37,7 @@ const canManage = authorize([
 ]);
 
 // POST /projects/:projectId/custom-milestones
-router.post('/', canManage, async (req, res) => {
+router.post('/', requireKickoffComplete(), canManage, async (req, res) => {
   const params = customMilestoneProjectParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -87,8 +89,7 @@ router.post('/', canManage, async (req, res) => {
       message: 'Custom milestone created',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -139,8 +140,7 @@ router.get('/', canView, async (req, res) => {
       message: 'Custom milestones retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -175,13 +175,12 @@ router.get('/:milestoneId', canView, async (req, res) => {
       message: 'Custom milestone retrieved',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
 // PATCH /projects/:projectId/custom-milestones/:milestoneId
-router.patch('/:milestoneId', canManage, async (req, res) => {
+router.patch('/:milestoneId', requireKickoffComplete(), canManage, async (req, res) => {
   const params = customMilestoneParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -226,8 +225,7 @@ router.patch('/:milestoneId', canManage, async (req, res) => {
       message: 'Custom milestone updated',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
@@ -255,13 +253,12 @@ router.delete('/:milestoneId', canManage, async (req, res) => {
       message: 'Custom milestone removed',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 
 // POST /projects/:projectId/custom-milestones/:milestoneId/restore
-router.post('/:milestoneId/restore', canManage, async (req, res) => {
+router.post('/:milestoneId/restore', requireKickoffComplete(), canManage, async (req, res) => {
   const params = customMilestoneParamsSchema.validate(req.params);
   if (params.error) {
     res.status(400).json({ status: 'error', data: null, message: params.error.message });
@@ -284,8 +281,7 @@ router.post('/:milestoneId/restore', canManage, async (req, res) => {
       message: 'Custom milestone restored',
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ status: 'error', data: null, message });
+    sendRouteError(res, err);
   }
 });
 

@@ -39,6 +39,7 @@ export interface ScheduleTask {
   duration_minutes: number;
   start: string;
   expected_finish: string;
+  baseline_finish: string | null;
   actual_start: string | null;
   actual_finish: string | null;
   pct_work_complete: string;
@@ -60,18 +61,17 @@ export interface OverdueTask extends ScheduleTask {
 }
 
 /**
- * Whether the task's risk still stands for it. A dismissed risk was thrown out by the PM and
- * an auto-resolved one closed itself when the task stopped being overdue — if the task is
- * overdue again, neither speaks for it, so the PM can raise a fresh one.
+ * Whether the task's risk still stands for it. A closed risk — whether the PM closed it or it
+ * closed itself once the task caught up — no longer speaks for the task, so the PM can raise a
+ * fresh one if it falls overdue again.
  */
 export function hasOpenRisk(task: OverdueTask): boolean {
-  if (!task.risk_id) return false;
-  return task.risk_status !== "dismissed" && task.risk_status !== "auto_resolved";
+  return task.risk_status === "open";
 }
 
-/** How a spent risk is described next to the button that offers to raise another. */
-export function spentRiskLabel(status: string | null): string {
-  return status === "auto_resolved" ? "Previous risk auto-resolved" : "Previous risk dismissed";
+/** Shown next to the button that offers to raise another risk, once the previous one closed. */
+export function spentRiskLabel(): string {
+  return "Previous risk closed";
 }
 
 export interface VersionChange {
@@ -123,6 +123,12 @@ export function workDays(durationMinutes: number): number {
 export function daysLate(expectedFinish: string): number {
   const ms = Date.now() - new Date(expectedFinish).getTime();
   return Math.max(1, Math.round(ms / 86_400_000));
+}
+
+/** The planned finish date shown in the Table and Gantt's "Finish" column — the baseline date
+ *  from the uploaded schedule, falling back to the forecast finish when not yet baselined. */
+export function plannedFinish(t: ScheduleTask): string {
+  return t.baseline_finish ?? t.expected_finish;
 }
 
 export function formatShortDate(iso: string): string {
@@ -326,6 +332,14 @@ export function clampToWindow(start: Date, end: Date, window: DateWindow): { sta
   const clampedStart = start < window.start ? window.start : start;
   const clampedEnd = end > window.end ? window.end : end;
   return { start: clampedStart, end: clampedEnd < clampedStart ? clampedStart : clampedEnd };
+}
+
+/** A leaf task is always editable. The project's single top-level row is editable only while
+ *  it has no child tasks at all — once leaf tasks exist it is computed from them instead
+ *  (mirrors the backend's editScheduleTask rule). */
+export function canEditScheduleTask(task: ScheduleTask, allTasks: ScheduleTask[]): boolean {
+  if (!task.is_summary) return true;
+  return !allTasks.some((t) => !t.is_summary);
 }
 
 export function taskStatusLabel(t: ScheduleTask): { label: string; className: string } {

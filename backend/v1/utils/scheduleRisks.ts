@@ -98,7 +98,7 @@ export async function autoResolveOverdueRisks(
 
   for (const resolution of resolutions) {
     await trx('risk').where({ risk_id: resolution.risk_id }).update({
-      status: 'auto_resolved',
+      status: 'closed',
       auto_resolution_reason: resolution.reason,
       closed_at: trx.fn.now(),
     });
@@ -132,11 +132,13 @@ export async function refreshProjectMetrics(
 ): Promise<MetricsSnapshot | null> {
   const { rows } = await trx.raw(
     `
-    WITH qualifying AS (
+    WITH leaf AS (
       SELECT r.duration_minutes::numeric            AS weight,
              r.pct_work_complete                    AS actual_i,
              ${PLANNED_I_EXPR}                      AS planned_i,
+             r.baseline_start,
              r.baseline_finish,
+             r.start,
              r.expected_finish
       FROM schedule_task t
       JOIN schedule_task_revision r ON r.task_id = t.task_id AND r.valid_to IS NULL
@@ -144,13 +146,34 @@ export async function refreshProjectMetrics(
         AND t.removed_in_version_id IS NULL
         AND r.is_summary = false
         AND r.is_active = true
+    ),
+    -- A schedule uploaded with no child tasks has only its editable summary row; fall back to
+    -- that row alone so editing it still drives the project's own metrics and dates.
+    qualifying AS (
+      SELECT * FROM leaf
+      UNION ALL
+      SELECT 1::numeric                              AS weight,
+             r.pct_work_complete                      AS actual_i,
+             ${PLANNED_I_EXPR}                        AS planned_i,
+             r.baseline_start,
+             r.baseline_finish,
+             r.start,
+             r.expected_finish
+      FROM schedule_task t
+      JOIN schedule_task_revision r ON r.task_id = t.task_id AND r.valid_to IS NULL
+      WHERE t.project_id = :projectId
+        AND t.removed_in_version_id IS NULL
+        AND r.is_active = true
+        AND NOT EXISTS (SELECT 1 FROM leaf)
     )
     SELECT (now() AT TIME ZONE :tz)::date                            AS as_of_date,
            COALESCE(SUM(weight), 0)                                  AS weight_total,
            SUM(weight * actual_i)                                    AS actual_weighted,
            SUM(weight * planned_i)                                   AS planned_weighted,
            (MAX(baseline_finish) AT TIME ZONE :tz)::date             AS baseline_finish,
-           (MAX(expected_finish) AT TIME ZONE :tz)::date             AS forecast_finish
+           (MAX(expected_finish) AT TIME ZONE :tz)::date             AS forecast_finish,
+           (MIN(COALESCE(baseline_start, start)) AT TIME ZONE :tz)::date   AS project_start,
+           (MAX(COALESCE(baseline_finish, expected_finish)) AT TIME ZONE :tz)::date AS project_planned_finish
     FROM qualifying
     `,
     { projectId, tz: timezone },
@@ -207,6 +230,15 @@ export async function refreshProjectMetrics(
       'forecast_finish',
       'computed_at',
     ]);
+
+  // A schedule upload overwrites the project's own start/planned-end dates from the uploaded
+  // plan, same as it overwrites progress — `start`/`expected_finish` are NOT NULL on every
+  // qualifying revision, so these are always present once weightTotal > 0.
+  await trx('projects').where({ project_id: projectId }).update({
+    expected_start_date: toDateString(row.project_start),
+    expected_end_date: toDateString(row.project_planned_finish),
+    updated_at: trx.fn.now(),
+  });
 
   return snapshot;
 }

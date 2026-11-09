@@ -57,19 +57,19 @@ export function UploadProcessingBanner({
 
   return (
     <div className="flex w-full flex-col gap-[16px] rounded-[12px] border border-gca-border bg-gca-surface p-[20px]">
-      <div className="flex w-full items-center justify-between">
-        <div className="flex items-center gap-[12px]">
-          <span className="flex size-[32px] items-center justify-center rounded-[6px] bg-gca-page-bg text-[11px] font-semibold text-gca-show">
+      <div className="flex w-full flex-col items-start gap-[12px] sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-[12px]">
+          <span className="flex size-[32px] shrink-0 items-center justify-center rounded-[6px] bg-gca-page-bg text-[11px] font-semibold text-gca-show">
             .mpp
           </span>
-          <div>
-            <p className="text-[14px] font-semibold text-gca-dark">Processing {fileName}</p>
+          <div className="min-w-0">
+            <p className="truncate text-[14px] font-semibold text-gca-dark">Processing {fileName}</p>
             <p className="text-[12px] text-gca-show">
               {fileSizeLabel} · Usually takes under a minute. You can keep using the schedule.
             </p>
           </div>
         </div>
-        <button onClick={onCancel} className="cursor-pointer text-[13px] font-medium text-gca-show hover:text-red-500">
+        <button onClick={onCancel} className="shrink-0 cursor-pointer text-[13px] font-medium text-gca-show hover:text-red-500">
           Cancel upload
         </button>
       </div>
@@ -78,7 +78,7 @@ export function UploadProcessingBanner({
         <div className="h-full rounded-full bg-gca-green transition-all duration-500" style={{ width: `${progressPct}%` }} />
       </div>
 
-      <div className="flex w-full items-center justify-between">
+      <div className="grid w-full grid-cols-1 gap-[12px] sm:grid-cols-2 lg:flex lg:items-center lg:justify-between lg:gap-[16px]">
         {STEPS.map((step, i) => {
           const done = i < stepIndex;
           const active = i === stepIndex;

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { reportError } from "@/lib/toast";
+import { api } from "@/lib/api-client";
 import { useWeatherCategories } from "./use-dpr-wizard-data";
+import { useProjectDetail } from "@/components/project-overview/use-project-data";
 import type { DprDraftInput } from "./types";
 
 export interface CurrentWeather {
@@ -69,20 +71,57 @@ function buildWeatherPatch(
 }
 
 /**
- * The "Auto" weather option: on click, reads the engineer's current device location (not the
- * project's stored site coordinates) and fills weather/temp/humidity/wind from the live
- * forecast there — overwriting whatever's already in the draft, since picking it is an explicit
- * request to replace the reading. Nothing runs until the engineer clicks it.
+ * The "Auto" weather option: on click, uses the project's stored site coordinates if set;
+ * otherwise falls back to the engineer's current device location, and fills
+ * weather/temp/humidity/wind from the live forecast there.
  */
-export function useAutoWeatherFill(update: (patch: Partial<DprDraftInput>) => void) {
+export function useAutoWeatherFill(
+  update: (patch: Partial<DprDraftInput>) => void,
+  projectId?: string,
+) {
   const [loading, setLoading] = useState(false);
   const { data: weatherCategories } = useWeatherCategories();
+  const { data: projectData } = useProjectDetail(projectId ?? "");
 
   async function fill() {
     setLoading(true);
     try {
-      const position = await getCurrentPosition();
-      const weather = await fetchCurrentWeather(position.coords.latitude, position.coords.longitude);
+      let lat: number | null = null;
+      let lng: number | null = null;
+
+      let pLat = projectData?.project?.site_lat;
+      let pLng = projectData?.project?.site_lng;
+
+      // If not yet available from the hook cache, attempt a direct fetch if projectId was supplied
+      if ((pLat === undefined || pLng === undefined) && projectId) {
+        try {
+          const res = await api.get<{
+            project: { site_lat: number | null; site_lng: number | null };
+          }>(`/projects/${projectId}`);
+          if (res.status === "success" && res.data?.project) {
+            pLat = res.data.project.site_lat;
+            pLng = res.data.project.site_lng;
+          }
+        } catch {
+          // ignore error and proceed to device location fallback
+        }
+      }
+
+      if (
+        typeof pLat === "number" &&
+        !isNaN(pLat) &&
+        typeof pLng === "number" &&
+        !isNaN(pLng)
+      ) {
+        lat = pLat;
+        lng = pLng;
+      } else {
+        const position = await getCurrentPosition();
+        lat = position.coords.latitude;
+        lng = position.coords.longitude;
+      }
+
+      const weather = await fetchCurrentWeather(lat, lng);
       if (!weatherCategories?.length) {
         reportError("Could not load today's weather");
         return;

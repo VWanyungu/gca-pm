@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import jwt from 'jsonwebtoken';
-import { isTokenBlacklisted } from '../utils/checkCache.js';
+import { isTokenBlacklisted, isSessionInvalidated } from '../utils/checkCache.js';
 /**
  * `allowExpired` is for /token only: refreshing happens precisely because the access token
  * has expired, so rejecting it there makes the route unreachable. The signature and the
@@ -29,6 +29,11 @@ export default function authenticateToken({ allowExpired = false } = {}) {
             const blacklisted = await isTokenBlacklisted(token);
             if (blacklisted) {
                 res.status(403).json({ status: 'fail', data: null, message: 'Token is blacklisted' });
+                return;
+            }
+            const { iat } = decoded;
+            if (iat !== undefined && (await isSessionInvalidated(req.user.userId, iat))) {
+                res.status(403).json({ status: 'fail', data: null, message: 'Session invalidated, please log in again' });
                 return;
             }
             next();
