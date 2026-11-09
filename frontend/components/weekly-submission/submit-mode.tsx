@@ -217,7 +217,7 @@ export function SubmitMode({
               {formatWeekPeriod(submission.week_start)}
             </p>
           </div>
-          {submission.status === "draft" ? (
+          {/* {submission.status === "draft" ? (
             <span className="rounded-[999px] px-[10px] py-[3px] text-[12px] font-medium text-gca-warning">
               Draft
             </span>
@@ -225,7 +225,7 @@ export function SubmitMode({
             <span className="rounded-[999px] px-[10px] py-[3px] text-[12px] font-medium text-gca-green">
               Submitted
             </span>
-          )}
+          )} */}
         </div>
 
         <WeekDprStrip
@@ -243,7 +243,7 @@ export function SubmitMode({
               <div className="flex w-full flex-col gap-[16px]">
                 <div className="flex flex-col items-start">
                   <h3 className="text-[16px] font-semibold text-gca-dark">Progress</h3>
-                  <p className="text-[13px] text-gca-show">From the schedule</p>
+                  {/* <p className="text-[13px] text-gca-show">From the schedule</p> */}
                 </div>
 
                 {/* Three tiles side by side at 375px would clip the third, so the row wraps
@@ -355,7 +355,7 @@ export function SubmitMode({
                       <div className="mt-[8px] flex items-center gap-[12px]">
                         <button
                           onClick={() => setAddingRisk(true)}
-                          className="flex cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface py-[10px] pl-[14px] pr-[16px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+                          className="flex cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface py-[6px] pl-[14px] pr-[16px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
                         >
                           Add from register
                         </button>
@@ -365,7 +365,9 @@ export function SubmitMode({
                             disabled={pendingRiskAction === "no-risks"}
                             className="relative cursor-pointer text-[13px] font-medium text-gca-green disabled:opacity-50"
                           >
-                            <span className={pendingRiskAction === "no-risks" ? "invisible" : undefined}>
+                            <span
+                              className={pendingRiskAction === "no-risks" ? "invisible" : undefined}
+                            >
                               No risks this week
                             </span>
                             {pendingRiskAction === "no-risks" && (
@@ -437,7 +439,7 @@ export function SubmitMode({
                   <button
                     onClick={submit}
                     disabled={!ready || submitting}
-                    className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green py-[10px] text-[14px] font-semibold text-gca-on-accent disabled:opacity-50"
+                    className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green py-[6px] text-[14px] font-semibold text-gca-on-accent disabled:opacity-50"
                   >
                     <span className={submitting ? "invisible" : undefined}>Submit</span>
                     {submitting && (
@@ -447,13 +449,13 @@ export function SubmitMode({
                       />
                     )}
                   </button>
-                  {!ready && (
+                  {/* {!ready && (
                     <p className="text-[12px] text-error-text">
                       {!checks.commentary
                         ? "Write a commentary to submit."
                         : "Mark a top risk, or 'No risks this week', to submit."}
                     </p>
-                  )}
+                  )} */}
                   {!DEPARTMENT_LEAD_EMAIL && (
                     <p className="text-[11px] text-gca-muted">
                       Set NEXT_PUBLIC_DEPARTMENT_LEAD_EMAIL to email the department lead on submit.
@@ -485,7 +487,7 @@ export function SubmitMode({
               <button
                 onClick={submit}
                 disabled={!ready || submitting}
-                className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green py-[12px] text-[15px] font-semibold text-gca-on-accent disabled:opacity-50"
+                className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green py-[6px] text-[15px] font-semibold text-gca-on-accent disabled:opacity-50"
               >
                 <span className={submitting ? "invisible" : undefined}>Submit</span>
                 {submitting && (

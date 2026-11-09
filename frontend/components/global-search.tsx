@@ -125,7 +125,7 @@ export const GlobalSearch = forwardRef<
   return (
     <div ref={containerRef} className={`relative ${className ?? ""}`}>
       <div
-        className={`flex items-center gap-[10px] rounded-lg bg-gca-page-bg ${inputBoxClassName ?? "px-[12px] py-[8px]"}`}
+        className={`flex items-center gap-[10px] rounded-full bg-gca-page-bg ${inputBoxClassName ?? "px-[12px] py-[0px]"}`}
       >
         <Search className="size-[16px] shrink-0 text-gca-muted" />
         <input
@@ -141,7 +141,7 @@ export const GlobalSearch = forwardRef<
           onKeyDown={onKeyDown}
           placeholder="Search projects, risks, changes"
           aria-label="Search projects, risks, change requests and milestones"
-          className="min-w-0 w-full bg-transparent text-[14px] text-gca-dark outline-none placeholder:text-gca-muted"
+          className="min-w-0 w-full bg-transparent text-[13px] text-gca-dark outline-none placeholder:text-gca-muted"
         />
         {showShortcutHint && !query && (
           <kbd className="shrink-0 rounded-[4px] border border-gca-border bg-gca-surface px-[6px] py-[2px] text-[11px] font-medium text-gca-show">
@@ -183,14 +183,16 @@ export const GlobalSearch = forwardRef<
                     {group.label}
                   </p>
                   {hits.map((hit) => {
-                    const index = flat.findIndex((f) => f.group === group.key && f.hit.id === hit.id);
+                    const index = flat.findIndex(
+                      (f) => f.group === group.key && f.hit.id === hit.id,
+                    );
                     return (
                       <button
                         key={`${group.key}-${hit.id}`}
                         type="button"
                         onMouseEnter={() => setActiveIndex(index)}
                         onClick={() => go(hrefFor(group.key, hit))}
-                        className={`flex w-full cursor-pointer items-center gap-[10px] px-[16px] py-[10px] text-left ${
+                        className={`flex w-full cursor-pointer items-center gap-[10px] px-[16px] py-[6px] text-left ${
                           index === activeIndex ? "bg-gca-badge-bg" : "hover:bg-gca-page-bg"
                         }`}
                       >

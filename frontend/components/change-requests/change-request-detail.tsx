@@ -114,7 +114,7 @@ export function ChangeRequestDetail({
             {canEdit && (
               <button
                 onClick={onEdit}
-                className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+                className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
               >
                 <Pencil className="size-[14px]" />
                 Edit
@@ -124,7 +124,7 @@ export function ChangeRequestDetail({
               <button
                 onClick={withdraw}
                 disabled={saving}
-                className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
+                className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
               >
                 <span className={pendingAction === "withdraw" ? "invisible" : undefined}>
                   Withdraw
@@ -141,14 +141,14 @@ export function ChangeRequestDetail({
               <>
                 <button
                   onClick={() => setRejecting((r) => !r)}
-                  className="cursor-pointer rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+                  className="cursor-pointer rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
                 >
                   Reject
                 </button>
                 <button
                   onClick={() => decide("approve")}
                   disabled={saving}
-                  className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+                  className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
                 >
                   <span className={pendingAction === "approve" ? "invisible" : undefined}>
                     Approve
@@ -184,7 +184,7 @@ export function ChangeRequestDetail({
               <button
                 onClick={() => decide("reject")}
                 disabled={saving || !comment.trim()}
-                className="relative flex cursor-pointer items-center justify-center gap-[6px] rounded-[8px] bg-error-text px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
+                className="relative flex cursor-pointer items-center justify-center gap-[6px] rounded-[8px] bg-error-text px-[14px] py-[6px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
               >
                 <span className={pendingAction === "reject" ? "invisible" : undefined}>
                   Confirm reject

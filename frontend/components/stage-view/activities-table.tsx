@@ -2,12 +2,7 @@
 
 import { useState } from "react";
 import { Plus, ClipboardList, Check, Search } from "lucide-react";
-import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
 import { api } from "@/lib/api-client";
@@ -69,7 +64,9 @@ function buildColumns(
           <button
             onClick={() => toggleSelected(row.original.activity_id)}
             className={`cursor-pointer flex size-[16px] items-center justify-center rounded-[4px] border-2 ${
-              selected.has(row.original.activity_id) ? "border-gca-green bg-gca-green" : "border-gca-border"
+              selected.has(row.original.activity_id)
+                ? "border-gca-green bg-gca-green"
+                : "border-gca-border"
             }`}
           >
             {selected.has(row.original.activity_id) && (
@@ -171,8 +168,19 @@ export function ActivitiesTable({
     .map((a) => a.activity_id);
   const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
 
-  const columns = buildColumns(team, selected, allSelected, selectableIds.length, toggleSelected, toggleSelectAll);
-  const table = useReactTable({ data: filteredActivities, columns, getCoreRowModel: getCoreRowModel() });
+  const columns = buildColumns(
+    team,
+    selected,
+    allSelected,
+    selectableIds.length,
+    toggleSelected,
+    toggleSelectAll,
+  );
+  const table = useReactTable({
+    data: filteredActivities,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
 
   function changeTab(next: "all" | "open" | "done") {
     setTab(next);
@@ -210,14 +218,16 @@ export function ActivitiesTable({
       <div className="flex w-full flex-col gap-[12px] sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-[2px]">
           <p className="text-[16px] font-semibold text-gca-dark">Activities</p>
-          <p className="text-[13px] text-gca-show">
-            {total === 0 ? "No activities yet" : `${doneCount} of ${activities.length} done`}
-          </p>
+          {total > 0 && (
+            <p className="text-[13px] text-gca-show">
+              {`${doneCount} of ${activities.length} done`}
+            </p>
+          )}
         </div>
         {allowAdd && (
           <button
             onClick={onAddActivity}
-            className="flex shrink-0 cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+            className="flex shrink-0 cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
           >
             <Plus className="size-[10px]" />
             Add activity
@@ -301,7 +311,7 @@ export function ActivitiesTable({
               <button
                 onClick={markSelectedComplete}
                 disabled={marking}
-                className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[8px] text-[13px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+                className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[13px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
               >
                 Mark {selected.size} as complete
               </button>
@@ -311,13 +321,17 @@ export function ActivitiesTable({
           <div className="flex w-full flex-col">
             <div className="flex w-full items-center gap-[10px] py-[8px] text-[12px] font-medium text-gca-muted border-b border-gca-border">
               {(() => {
-                const [selectHeader, activityHeader, dueHeader, statusHeader] = table.getFlatHeaders();
+                const [selectHeader, activityHeader, dueHeader, statusHeader] =
+                  table.getFlatHeaders();
                 return (
                   <>
                     {selectableIds.length > 0 &&
                       flexRender(selectHeader.column.columnDef.header, selectHeader.getContext())}
                     <p className="w-[57%]">
-                      {flexRender(activityHeader.column.columnDef.header, activityHeader.getContext())}
+                      {flexRender(
+                        activityHeader.column.columnDef.header,
+                        activityHeader.getContext(),
+                      )}
                     </p>
                     <p className="w-[20%] text-center">
                       {flexRender(dueHeader.column.columnDef.header, dueHeader.getContext())}

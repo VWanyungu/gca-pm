@@ -163,7 +163,7 @@ export function RequestFeedbackPopover({
             <button
               onClick={generate}
               disabled={selectedIds.size === 0 || sending}
-              className="flex w-[170px] items-center justify-center rounded-[8px] bg-gca-green px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50 sm:w-[190px]"
+              className="flex w-[170px] items-center justify-center rounded-[8px] bg-gca-green px-[14px] py-[6px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50 sm:w-[190px]"
             >
               {sending ? (
                 <LoaderCircle className="size-[16px] animate-spin" aria-hidden="true" />
@@ -221,13 +221,13 @@ export function RequestFeedbackPopover({
                       step.requests.map((r) => feedbackLink(r.token)).join("\n"),
                     )
                   }
-                  className="flex cursor-pointer items-center gap-[8px] rounded-[8px] px-[6px] py-[8px] text-[13px] text-gca-dark hover:bg-gca-page-bg"
+                  className="flex cursor-pointer items-center gap-[8px] rounded-[8px] px-[6px] py-[6px] text-[13px] text-gca-dark hover:bg-gca-page-bg"
                 >
                   <Copy className="size-[14px]" /> Copy all {step.requests.length} links
                 </button>
                 <button
                   onClick={() => emailEachLink(step.requests)}
-                  className="flex cursor-pointer items-center gap-[8px] rounded-[8px] px-[6px] py-[8px] text-[13px] text-gca-dark hover:bg-gca-page-bg"
+                  className="flex cursor-pointer items-center gap-[8px] rounded-[8px] px-[6px] py-[6px] text-[13px] text-gca-dark hover:bg-gca-page-bg"
                 >
                   <Mail className="size-[14px]" /> Email each contact their link
                 </button>
@@ -242,7 +242,7 @@ export function RequestFeedbackPopover({
             )}
             <button
               onClick={() => setStep({ mode: "choose" })}
-              className="flex cursor-pointer items-center gap-[8px] rounded-[8px] px-[6px] py-[8px] text-[13px] text-gca-dark hover:bg-gca-page-bg"
+              className="flex cursor-pointer items-center gap-[8px] rounded-[8px] px-[6px] py-[6px] text-[13px] text-gca-dark hover:bg-gca-page-bg"
             >
               <Plus className="size-[14px]" /> Create another link
             </button>

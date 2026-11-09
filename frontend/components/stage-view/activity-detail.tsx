@@ -102,14 +102,14 @@ export function ActivityDetail({
           <div className="flex items-center gap-[12px]">
             <button
               onClick={onEdit}
-              className="cursor-pointer rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+              className="cursor-pointer rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
             >
               Edit
             </button>
             <button
               onClick={toggleDone}
               disabled={togglingDone}
-              className={`${activity.status === "done" ? "border border-gca-green text-gca-dark hover:text-gca-green" : "bg-gca-green hover:bg-gca-green-hover text-gca-on-accent"} relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] px-[16px] py-[10px] text-[14px] font-semibold disabled:opacity-60`}
+              className={`${activity.status === "done" ? "border border-gca-green text-gca-dark hover:text-gca-green" : "bg-gca-green hover:bg-gca-green-hover text-gca-on-accent"} relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] px-[16px] py-[6px] text-[14px] font-semibold disabled:opacity-60`}
             >
               <span className={togglingDone ? "invisible" : undefined}>
                 {activity.status === "done" ? "Mark open" : "Mark done"}
@@ -198,7 +198,7 @@ export function ActivityDetail({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="relative flex w-fit cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[9px] text-[13px] font-medium text-gca-dark hover:bg-gca-page-bg disabled:opacity-60"
+                className="relative flex w-fit cursor-pointer items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[6px] text-[13px] font-medium text-gca-dark hover:bg-gca-page-bg disabled:opacity-60"
               >
                 <Paperclip className={`size-[13px] ${uploading ? "invisible" : undefined}`} />
                 <span className={uploading ? "invisible" : undefined}>Add attachment</span>

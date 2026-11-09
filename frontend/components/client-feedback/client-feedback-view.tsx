@@ -98,7 +98,7 @@ export function ClientFeedbackView({ projectId }: { projectId: string }) {
           <div className="relative">
             <button
               onClick={() => setPopoverOpen((open) => !open)}
-              className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
+              className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
             >
               Request feedback
             </button>

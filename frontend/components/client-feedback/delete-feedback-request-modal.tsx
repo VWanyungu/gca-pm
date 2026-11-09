@@ -40,14 +40,14 @@ export function DeleteFeedbackRequestModal({
         <div className="mt-[24px] flex justify-end gap-[12px]">
           <button
             onClick={onClose}
-            className="cursor-pointer rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
+            className="cursor-pointer rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[14px] font-medium text-gca-dark"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
             disabled={deleting}
-            className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-error-border px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40"
+            className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-error-border px-[16px] py-[6px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40"
           >
             <span className={deleting ? "invisible" : undefined}>Delete request</span>
             {deleting && (

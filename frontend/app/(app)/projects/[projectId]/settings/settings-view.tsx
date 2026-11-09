@@ -240,7 +240,9 @@ export default function SettingsView({ projectId }: { projectId: string }) {
                     step="any"
                     {...register("site_lat", {
                       setValueAs: (v) =>
-                        v === "" || v === null || v === undefined || isNaN(Number(v)) ? null : Number(v),
+                        v === "" || v === null || v === undefined || isNaN(Number(v))
+                          ? null
+                          : Number(v),
                     })}
                     disabled={!canManage}
                     placeholder="e.g. -1.2921"
@@ -255,7 +257,9 @@ export default function SettingsView({ projectId }: { projectId: string }) {
                     step="any"
                     {...register("site_lng", {
                       setValueAs: (v) =>
-                        v === "" || v === null || v === undefined || isNaN(Number(v)) ? null : Number(v),
+                        v === "" || v === null || v === undefined || isNaN(Number(v))
+                          ? null
+                          : Number(v),
                     })}
                     disabled={!canManage}
                     placeholder="e.g. 36.8219"
@@ -279,7 +283,7 @@ export default function SettingsView({ projectId }: { projectId: string }) {
                         disabled={!canManage}
                         aria-pressed={f.value}
                         onClick={() => f.onChange(!f.value)}
-                        className={`flex w-[180px] flex-1 items-center gap-[12px] rounded-[8px] border px-[14px] py-[12px] disabled:cursor-default ${
+                        className={`flex w-[180px] flex-1 items-center gap-[12px] rounded-[8px] border px-[14px] py-[6px] disabled:cursor-default ${
                           f.value ? "border-gca-green bg-gca-badge-bg" : "border-gca-border"
                         } ${canManage ? "cursor-pointer" : ""}`}
                       >
@@ -340,14 +344,15 @@ export default function SettingsView({ projectId }: { projectId: string }) {
                 <button
                   type="submit"
                   disabled={updateProject.isPending}
-                  className="flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-60"
+                  className="flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-medium text-gca-on-accent disabled:opacity-60"
                 >
-                  <span className="flex size-[16px] shrink-0 items-center justify-center">
-                    {updateProject.isPending && (
+                  {updateProject.isPending ? (
+                    <span className="flex size-[16px] shrink-0 items-center justify-center">
                       <LoaderCircle className="size-[16px] animate-spin" aria-label="Saving" />
-                    )}
-                  </span>
-                  Save changes
+                    </span>
+                  ) : (
+                    "Save changes"
+                  )}
                 </button>
               </div>
             )}
@@ -379,7 +384,7 @@ export default function SettingsView({ projectId }: { projectId: string }) {
             </div>
 
             {canDelete && (
-              <div className="rounded-[12px] border border-error-border bg-error-bg p-[20px]">
+              <div className="rounded-[12px]  bg-error-bg p-[20px]">
                 <h2 className="text-[14px] font-semibold text-gca-dark">Delete project</h2>
                 <p className="mt-[8px] text-[13px] text-gca-muted">
                   Permanently deletes the project and all its data. This cannot be undone.
@@ -387,7 +392,7 @@ export default function SettingsView({ projectId }: { projectId: string }) {
                 <button
                   type="button"
                   onClick={() => setDeleting(true)}
-                  className="mt-[16px] w-full rounded-[8px] border border-error-border bg-gca-surface px-[14px] py-[10px] text-[14px] font-medium text-error-text"
+                  className="mt-[16px] w-full rounded-[8px] border border-error-border bg-gca-surface px-[14px] py-[6px] text-[14px] font-medium text-error-text"
                 >
                   Delete project
                 </button>

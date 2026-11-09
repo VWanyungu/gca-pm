@@ -32,14 +32,14 @@ export function InvalidateSessionsModal({
         <div className="mt-[24px] flex justify-end gap-[12px]">
           <button
             onClick={onClose}
-            className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
+            className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[14px] font-medium text-gca-dark"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
             disabled={invalidateSessions.isPending}
-            className="relative flex items-center justify-center gap-[8px] rounded-[8px] bg-error-border px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40"
+            className="relative flex items-center justify-center gap-[8px] rounded-[8px] bg-error-border px-[16px] py-[6px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40"
           >
             <span className={invalidateSessions.isPending ? "invisible" : undefined}>Sign out</span>
             {invalidateSessions.isPending && (

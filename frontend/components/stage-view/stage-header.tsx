@@ -100,7 +100,7 @@ export function StageHeader({
           {!hasChecklist && (
             <button
               onClick={onAddChecklist}
-              className="flex w-full cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[11px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg sm:w-auto sm:py-[10px]"
+              className="flex w-full cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg sm:w-auto sm:py-[6px]"
             >
               <Plus className="size-[10px]" />
               Add a checklist
@@ -110,7 +110,7 @@ export function StageHeader({
             <button
               onClick={onToggleComplete}
               disabled={stage.state === "not_started" || togglingComplete}
-              className={`${stage.state === "complete" ? "border border-gca-green text-gca-dark hover:text-gca-green" : "bg-gca-green hover:bg-gca-green-hover text-gca-on-accent"} relative flex w-full cursor-pointer items-center justify-center gap-[8px] rounded-[8px] px-[16px] py-[11px] text-[14px] font-semibold disabled:opacity-50 sm:w-auto sm:py-[10px]`}
+              className={`${stage.state === "complete" ? "border border-gca-green text-gca-dark hover:text-gca-green" : "bg-gca-green hover:bg-gca-green-hover text-gca-on-accent"} relative flex w-full cursor-pointer items-center justify-center gap-[8px] rounded-[8px] px-[16px] py-[6px] text-[14px] font-semibold disabled:opacity-50 sm:w-auto sm:py-[6px]`}
             >
               <span className={togglingComplete ? "invisible" : undefined}>
                 {stage.state === "complete" ? "Reopen stage" : "Mark as complete"}

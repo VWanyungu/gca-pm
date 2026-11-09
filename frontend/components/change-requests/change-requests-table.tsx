@@ -2,12 +2,7 @@
 
 import { useState } from "react";
 import { Plus, GitPullRequest, Search } from "lucide-react";
-import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import Dropdown from "@/components/Dropdown";
 import { EmptyState } from "@/components/empty-state";
 import { MobileFilterToggle } from "@/components/mobile-filter-toggle";
@@ -81,7 +76,9 @@ function buildColumns(): ColumnDef<ChangeRequest>[] {
       id: "type",
       header: "Type",
       meta: { className: "hidden md:block md:w-[12%]" },
-      cell: ({ row }) => <p className="text-[13px] text-gca-dark">{TYPE_LABEL[row.original.type]}</p>,
+      cell: ({ row }) => (
+        <p className="text-[13px] text-gca-dark">{TYPE_LABEL[row.original.type]}</p>
+      ),
     },
     {
       id: "schedule",
@@ -107,7 +104,9 @@ function buildColumns(): ColumnDef<ChangeRequest>[] {
       id: "raised",
       header: "Raised",
       meta: { className: "hidden md:block md:w-[14%]" },
-      cell: ({ row }) => <p className="text-[13px] text-gca-dark">{formatShortDate(row.original.raised_at)}</p>,
+      cell: ({ row }) => (
+        <p className="text-[13px] text-gca-dark">{formatShortDate(row.original.raised_at)}</p>
+      ),
     },
     {
       id: "status",
@@ -159,7 +158,11 @@ export function ChangeRequestsTable({
   const pages = data?.pagination.pages ?? 1;
 
   const columns = buildColumns();
-  const table = useReactTable({ data: changeRequests, columns, getCoreRowModel: getCoreRowModel() });
+  const table = useReactTable({
+    data: changeRequests,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
 
   const stageOptions = [
     { id: STAGE_FILTER_ALL, name: "All stages" },
@@ -180,14 +183,14 @@ export function ChangeRequestsTable({
           <h1 className="text-[24px] font-semibold tracking-[-0.36px] text-gca-dark">
             Change requests
           </h1>
-          <p className="mt-[4px] text-[14px] text-gca-show">
+          {/* <p className="mt-[4px] text-[14px] text-gca-show">
             Raise, review and track scope, schedule and cost changes.
-          </p>
+          </p> */}
         </div>
         {canRaise && (
           <button
             onClick={onRaise}
-            className="flex w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[12px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover sm:w-auto sm:py-[10px]"
+            className="flex w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover sm:w-auto sm:py-[6px]"
           >
             <Plus className="size-[14px]" />
             Raise change request
@@ -249,7 +252,12 @@ export function ChangeRequestsTable({
           <div className="flex w-full flex-col">
             <div className="hidden w-full items-center gap-[10px] border-b border-gca-border py-[8px] text-[12px] font-medium text-gca-muted md:flex">
               {table.getFlatHeaders().map((header) => (
-                <p key={header.id} className={(header.column.columnDef.meta as { className?: string } | undefined)?.className}>
+                <p
+                  key={header.id}
+                  className={
+                    (header.column.columnDef.meta as { className?: string } | undefined)?.className
+                  }
+                >
                   {flexRender(header.column.columnDef.header, header.getContext())}
                 </p>
               ))}
@@ -258,14 +266,16 @@ export function ChangeRequestsTable({
               <button
                 key={row.id}
                 onClick={() => onOpen(row.original.change_id)}
-                className={`flex w-full cursor-pointer flex-col items-start gap-[4px] py-[14px] text-left md:flex-row md:items-center md:gap-[10px] md:py-[12px] ${
+                className={`flex w-full cursor-pointer flex-col items-start gap-[4px] py-[6px] text-left md:flex-row md:items-center md:gap-[10px] md:py-[6px] ${
                   i > 0 ? "border-t border-gca-border" : ""
                 }`}
               >
                 {row.getVisibleCells().map((cell) => (
                   <span
                     key={cell.id}
-                    className={(cell.column.columnDef.meta as { className?: string } | undefined)?.className}
+                    className={
+                      (cell.column.columnDef.meta as { className?: string } | undefined)?.className
+                    }
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </span>

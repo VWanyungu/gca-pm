@@ -337,7 +337,7 @@ export function RiskForm({
                   <button
                     key={lvl.value}
                     onClick={() => setLikelihood(lvl.value)}
-                    className={`flex-1 cursor-pointer rounded-[6px] py-[7px] text-[13px] ${
+                    className={`flex-1 cursor-pointer rounded-[6px] py-[6px] text-[13px] ${
                       likelihood === lvl.value
                         ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                         : "font-normal text-gca-show"
@@ -355,7 +355,7 @@ export function RiskForm({
                   <button
                     key={lvl.value}
                     onClick={() => setImpact(lvl.value)}
-                    className={`flex-1 cursor-pointer rounded-[6px] py-[7px] text-[13px] ${
+                    className={`flex-1 cursor-pointer rounded-[6px] py-[6px] text-[13px] ${
                       impact === lvl.value
                         ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                         : "font-normal text-gca-show"
@@ -411,7 +411,7 @@ export function RiskForm({
             <button
               onClick={deleteRisk}
               disabled={saving || !deleteReason.trim()}
-              className="relative flex cursor-pointer items-center justify-center gap-[6px] rounded-[8px] bg-error-text px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
+              className="relative flex cursor-pointer items-center justify-center gap-[6px] rounded-[8px] bg-error-text px-[14px] py-[6px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
             >
               <span className={pendingAction === "delete" ? "invisible" : undefined}>
                 Confirm delete
@@ -448,7 +448,7 @@ export function RiskForm({
           <button
             onClick={submit}
             disabled={saving}
-            className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+            className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
           >
             <span className={pendingAction === "save" ? "invisible" : undefined}>
               {editing ? "Save changes" : "Save risk"}

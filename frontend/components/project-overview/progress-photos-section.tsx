@@ -38,7 +38,7 @@ export function ProgressPhotosSection({
         <div className="flex w-full flex-wrap items-center justify-between gap-[8px]">
           <div className="flex items-center gap-[10px]">
             <h3 className="text-[16px] font-semibold text-gca-dark">Progress photos</h3>
-            <span className="text-[13px] text-gca-muted">from daily progress reports</span>
+            {/* <span className="text-[13px] text-gca-muted">from daily progress reports</span> */}
           </div>
           <Link
             href={`/projects/${projectId}/dpr`}
@@ -52,8 +52,8 @@ export function ProgressPhotosSection({
           <EmptyState
             icon={Images}
             title="No progress photos yet"
-            description="Photos attached to daily progress reports will show up here."
-            action={{ label: "Go to Daily Progress Reports", href: `/projects/${projectId}/dpr` }}
+            // description="Photos attached to daily progress reports will show up here."
+            // action={{ label: "Go to Daily Progress Reports", href: `/projects/${projectId}/dpr` }}
             className="py-0"
           />
         </div>
@@ -99,8 +99,7 @@ export function ProgressPhotosSection({
                 sizes="(max-width: 1024px) 100vw, 552px"
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
                 unoptimized={
-                  primaryPhoto.url.startsWith("data:") ||
-                  primaryPhoto.url.startsWith("blob:")
+                  primaryPhoto.url.startsWith("data:") || primaryPhoto.url.startsWith("blob:")
                 }
               />
             </div>
@@ -132,10 +131,7 @@ export function ProgressPhotosSection({
                     fill
                     sizes="(max-width: 640px) 100vw, 268px"
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    unoptimized={
-                      photo.url.startsWith("data:") ||
-                      photo.url.startsWith("blob:")
-                    }
+                    unoptimized={photo.url.startsWith("data:") || photo.url.startsWith("blob:")}
                   />
                 </div>
                 <div className="flex flex-col gap-[2px]">
@@ -180,8 +176,7 @@ export function ProgressPhotosSection({
                 sizes="900px"
                 className="object-contain"
                 unoptimized={
-                  selectedPhoto.url.startsWith("data:") ||
-                  selectedPhoto.url.startsWith("blob:")
+                  selectedPhoto.url.startsWith("data:") || selectedPhoto.url.startsWith("blob:")
                 }
               />
               <button
@@ -217,4 +212,3 @@ export function ProgressPhotosSection({
     </section>
   );
 }
-

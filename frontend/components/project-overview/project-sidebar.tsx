@@ -164,7 +164,7 @@ export function ProjectSidebar() {
           <>
             <button
               onClick={() => setStagesOpen((o) => !o)}
-              className="flex items-center justify-between rounded-[8px] px-[12px] py-[8px] hover:bg-gca-page-bg"
+              className="flex items-center justify-between rounded-[8px] px-[12px] py-[6px] hover:bg-gca-page-bg"
             >
               <span className="flex items-center gap-[10px]">
                 <ListTree className="size-[16px] text-gca-show" />

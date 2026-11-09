@@ -52,7 +52,7 @@ export function MilestoneDetail({
           {canManage && isCustom && (
             <button
               onClick={onEdit}
-              className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+              className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
             >
               <Pencil className="size-[14px]" />
               Edit

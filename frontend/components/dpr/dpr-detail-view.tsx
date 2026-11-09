@@ -244,7 +244,7 @@ export function DprDetailView({
 
             <button
               onClick={() => exportDpr("pdf")}
-              className="flex cursor-pointer items-center gap-[10px] rounded-[6px] px-[10px] py-[9px] text-left bg-gca-page-bg px-[6px] py-[4px] text-[13px]"
+              className="flex cursor-pointer items-center gap-[10px] rounded-[6px] px-[10px] py-[6px] text-left bg-gca-page-bg px-[6px] py-[4px] text-[13px]"
             >
               {/* <span className="rounded-[4px] font-bold text-gca-green">PDF</span> */}
               <Download size={18} className="font-bold text-gca-green" />
@@ -254,7 +254,7 @@ export function DprDetailView({
               <div className="absolute right-0 top-[44px] z-10 flex w-[238px] flex-col gap-[2px] rounded-[12px] border border-gca-border bg-gca-surface p-[6px] shadow-[0px_10px_28px_0px_rgba(23,48,31,0.08)]">
                 <button
                   onClick={() => exportDpr("pdf")}
-                  className="flex cursor-pointer items-center gap-[10px] rounded-[6px] px-[10px] py-[9px] text-left hover:bg-gca-page-bg"
+                  className="flex cursor-pointer items-center gap-[10px] rounded-[6px] px-[10px] py-[6px] text-left hover:bg-gca-page-bg"
                 >
                   <span className="rounded-[4px] bg-error-bg px-[6px] py-[4px] text-[11px] font-bold text-error-text">
                     PDF
@@ -306,7 +306,7 @@ export function DprDetailView({
               <button
                 key={s.id}
                 onClick={() => goToSection(s.id)}
-                className={`w-[212px] cursor-pointer rounded-[6px] px-[10px] py-[7px] text-left text-[13px] ${
+                className={`w-[212px] cursor-pointer rounded-[6px] px-[10px] py-[6px] text-left text-[13px] ${
                   activeSection === s.id
                     ? "bg-gca-badge-bg font-semibold text-gca-green"
                     : "font-normal text-gca-show hover:bg-gca-page-bg"

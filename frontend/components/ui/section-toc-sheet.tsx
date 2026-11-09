@@ -37,7 +37,7 @@ export function SectionTocSheet({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-[20px] right-[20px] z-40 flex cursor-pointer items-center gap-[8px] rounded-full border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark shadow-[0px_8px_20px_0px_rgba(23,48,31,0.18)]"
+        className="fixed bottom-[20px] right-[20px] z-40 flex cursor-pointer items-center gap-[8px] rounded-full border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[14px] font-semibold text-gca-dark shadow-[0px_8px_20px_0px_rgba(23,48,31,0.18)]"
       >
         <List className="size-[16px]" />
         {label}
@@ -58,7 +58,7 @@ export function SectionTocSheet({
                   role="tab"
                   aria-selected={isActive}
                   onClick={() => select(section.id)}
-                  className={`cursor-pointer rounded-[8px] px-[12px] py-[12px] text-left text-[15px] ${
+                  className={`cursor-pointer rounded-[8px] px-[12px] py-[6px] text-left text-[15px] ${
                     isActive
                       ? "bg-gca-badge-bg font-semibold text-gca-green"
                       : "font-medium text-gca-dark hover:bg-gca-page-bg"

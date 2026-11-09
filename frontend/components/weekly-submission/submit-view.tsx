@@ -142,7 +142,7 @@ export function SubmitView({
                 <button
                   onClick={startWeek}
                   disabled={creating}
-                  className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent disabled:opacity-50"
+                  className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent disabled:opacity-50"
                 >
                   Start submission
                 </button>

@@ -16,9 +16,9 @@ interface ProjectHeroProps {
 
 // Fallback banner images matching the clean architectural style of the Figma mockup
 const FALLBACK_BANNERS = [
-  "https://images.unsplash.com/photo-1541888946425-d0fbb186156f?q=80&w=1600&auto=format&fit=crop",
+  // "https://images.unsplash.com/photo-1541888946425-d0fbb186156f?q=80&w=1600&auto=format&fit=crop",
   "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=1600&auto=format&fit=crop",
+  // "https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=1600&auto=format&fit=crop",
 ];
 
 export function ProjectHero({
@@ -46,7 +46,6 @@ export function ProjectHero({
   }
 
   // Derive facts for the project
-  const isGitanga = project.name.toLowerCase().includes("gitanga");
   const inScopeStages = stages.filter((s) => s.in_scope);
   const completedStages = stages.filter((s) => s.state === "complete");
   const upcomingMilestones = milestones.filter((m) => !m.actual_date);
@@ -120,9 +119,9 @@ export function ProjectHero({
                 {project.name}
               </h1>
 
-              <div className="flex flex-wrap items-center gap-[8px] text-[13px] text-white/80 sm:text-[14px]">
+              <div className="flex flex-wrap items-center gap-[16px] text-[13px] text-white/80 sm:text-[14px] font-extralight">
                 <span>{project.client_name ?? "Gas Connect Africa"}</span>
-                <span className="size-[3px] rounded-full bg-white/50" />
+                {/* <span className="size-[3px] rounded-full bg-white/50" /> */}
                 <span className="flex items-center gap-[4px]">
                   <MapPin className="size-[13px] text-white/70" />
                   <span>{project.site_location ?? "Nairobi, Kenya"}</span>
@@ -131,77 +130,41 @@ export function ProjectHero({
             </div>
 
             {/* Facts Row */}
-            <div className="flex items-center gap-[18px] pt-[4px]">
-              {isGitanga ? (
-                <>
-                  <div className="flex items-center gap-[8px]">
-                    <span className="text-[24px] font-medium leading-none text-white sm:text-[28px]">
-                      3.8
-                    </span>
-                    <div className="flex flex-col text-[11px] leading-[13px] text-white/70 sm:text-[12px] sm:leading-[14px]">
-                      <span>km of</span>
-                      <span>gas main</span>
-                    </div>
-                  </div>
-                  <div className="h-[28px] w-px bg-white/20" />
-                  <div className="flex items-center gap-[8px]">
-                    <span className="text-[24px] font-medium leading-none text-white sm:text-[28px]">
-                      212
-                    </span>
-                    <div className="flex flex-col text-[11px] leading-[13px] text-white/70 sm:text-[12px] sm:leading-[14px]">
-                      <span>meter</span>
-                      <span>points</span>
-                    </div>
-                  </div>
-                  <div className="h-[28px] w-px bg-white/20" />
-                  <div className="flex items-center gap-[8px]">
-                    <span className="text-[24px] font-medium leading-none text-white sm:text-[28px]">
-                      3
-                    </span>
-                    <div className="flex flex-col text-[11px] leading-[13px] text-white/70 sm:text-[12px] sm:leading-[14px]">
-                      <span>retail</span>
-                      <span>blocks</span>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center gap-[8px]">
-                    <span className="text-[24px] font-medium leading-none text-white sm:text-[28px]">
-                      {completedStages.length}/{inScopeStages.length}
-                    </span>
-                    <div className="flex flex-col text-[11px] leading-[13px] text-white/70 sm:text-[12px] sm:leading-[14px]">
-                      <span>stages</span>
-                      <span>done</span>
-                    </div>
-                  </div>
-                  <div className="h-[28px] w-px bg-white/20" />
-                  <div className="flex items-center gap-[8px]">
-                    <span className="text-[24px] font-medium leading-none text-white sm:text-[28px]">
-                      {upcomingMilestones.length}
-                    </span>
-                    <div className="flex flex-col text-[11px] leading-[13px] text-white/70 sm:text-[12px] sm:leading-[14px]">
-                      <span>upcoming</span>
-                      <span>milestones</span>
-                    </div>
-                  </div>
-                  <div className="h-[28px] w-px bg-white/20" />
-                  <div className="flex items-center gap-[8px]">
-                    <span className="text-[24px] font-medium leading-none text-white sm:text-[28px]">
-                      {activeScopes.length}
-                    </span>
-                    <div className="flex flex-col text-[11px] leading-[13px] text-white/70 sm:text-[12px] sm:leading-[14px]">
-                      <span>scopes</span>
-                      <span>active</span>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+            {/* <div className="flex items-center gap-[18px] pt-[4px]">
+              <div className="flex items-center gap-[8px]">
+                <span className="text-[24px] font-medium leading-none text-white sm:text-[28px]">
+                  {completedStages.length}/{inScopeStages.length}
+                </span>
+                <div className="flex flex-col text-[11px] leading-[13px] text-white/70 sm:text-[12px] sm:leading-[14px]">
+                  <span>stages</span>
+                  <span>done</span>
+                </div>
+              </div>
+              <div className="h-[28px] w-px bg-white/20" />
+              <div className="flex items-center gap-[8px]">
+                <span className="text-[24px] font-medium leading-none text-white sm:text-[28px]">
+                  {upcomingMilestones.length}
+                </span>
+                <div className="flex flex-col text-[11px] leading-[13px] text-white/70 sm:text-[12px] sm:leading-[14px]">
+                  <span>upcoming</span>
+                  <span>milestones</span>
+                </div>
+              </div>
+              <div className="h-[28px] w-px bg-white/20" />
+              <div className="flex items-center gap-[8px]">
+                <span className="text-[24px] font-medium leading-none text-white sm:text-[28px]">
+                  {activeScopes.length}
+                </span>
+                <div className="flex flex-col text-[11px] leading-[13px] text-white/70 sm:text-[12px] sm:leading-[14px]">
+                  <span>scopes</span>
+                  <span>active</span>
+                </div>
+              </div>
+            </div> */}
           </div>
 
           {/* Thumbnails Strip */}
-          {photos.length > 0 && (
+          {photos.length > 1 && (
             <div className="flex shrink-0 items-center gap-[8px]">
               {photos.slice(0, 3).map((photoUrl, idx) => {
                 const isActive = idx === photoIndex;
@@ -248,4 +211,3 @@ export function ProjectHero({
     </section>
   );
 }
-

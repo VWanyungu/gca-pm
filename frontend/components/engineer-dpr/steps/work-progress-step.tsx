@@ -142,7 +142,7 @@ export function WorkProgressStep({
         <button
           type="button"
           onClick={addWorkItem}
-          className="flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-dashed border-gca-border py-[14px] text-[14px] font-medium text-gca-green"
+          className="flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-dashed border-gca-border py-[6px] text-[14px] font-medium text-gca-green"
         >
           <Plus className="size-[14px]" />
           Add work area
@@ -257,7 +257,7 @@ export function WorkProgressStep({
           <button
             type="button"
             onClick={() => setPickerOpen(true)}
-            className="flex flex-1 cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-dashed border-gca-border py-[14px] text-[14px] font-medium text-gca-green"
+            className="flex flex-1 cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-dashed border-gca-border py-[6px] text-[14px] font-medium text-gca-green"
           >
             <Plus className="size-[14px]" />
             Schedule task
@@ -265,7 +265,7 @@ export function WorkProgressStep({
           <button
             type="button"
             onClick={addFreeTextActivity}
-            className="flex flex-1 cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-dashed border-gca-border py-[14px] text-[14px] font-medium text-gca-green"
+            className="flex flex-1 cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-dashed border-gca-border py-[6px] text-[14px] font-medium text-gca-green"
           >
             <Plus className="size-[14px]" />
             Custom task

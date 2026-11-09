@@ -234,7 +234,7 @@ export function PersonnelStep({ draft, update, projectId, errors = {} }: StepPro
                 type="button"
                 onClick={() => addRoleCount(groupIndex)}
                 disabled={roles.length === 0}
-                className="flex w-fit cursor-pointer items-center gap-[8px] pt-[8px] text-[14px] font-medium text-gca-green disabled:opacity-50"
+                className="flex w-fit cursor-pointer items-center gap-[8px] pt-[6px] text-[14px] font-medium text-gca-green disabled:opacity-50"
               >
                 <Plus className="size-[10px]" />
                 Add role
@@ -247,7 +247,7 @@ export function PersonnelStep({ draft, update, projectId, errors = {} }: StepPro
       <button
         type="button"
         onClick={addGroup}
-        className="flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-dashed border-gca-border py-[14px] text-[14px] font-medium text-gca-green"
+        className="flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-dashed border-gca-border py-[6px] text-[14px] font-medium text-gca-green"
       >
         <Plus className="size-[14px]" />
         Add contractor group

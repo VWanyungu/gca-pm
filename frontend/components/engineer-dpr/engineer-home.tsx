@@ -102,7 +102,7 @@ export function EngineerHome() {
             {todaysDpr ? (
               <button
                 onClick={() => router.push(`/engineer/dpr/new?projectId=${primaryProject.project_id}`)}
-                className="flex w-full items-center justify-center rounded-[10px] bg-gca-green py-[14px]"
+                className="flex w-full items-center justify-center rounded-[10px] bg-gca-green py-[6px]"
               >
                 <p className="text-[15px] font-semibold text-gca-on-accent">
                   {todaysDpr.status === "draft" ? "Resume draft" : "View today's DPR"}
@@ -111,7 +111,7 @@ export function EngineerHome() {
             ) : (
               <button
                 onClick={() => startDpr(primaryProject.project_id)}
-                className="flex w-full items-center justify-center rounded-[10px] bg-gca-green py-[14px]"
+                className="flex w-full items-center justify-center rounded-[10px] bg-gca-green py-[6px]"
               >
                 <p className="text-[15px] font-semibold text-gca-on-accent">Start today&apos;s DPR</p>
               </button>

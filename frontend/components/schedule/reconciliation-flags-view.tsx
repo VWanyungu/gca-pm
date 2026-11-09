@@ -99,7 +99,7 @@ export function ReconciliationFlagsView({
           <button
             onClick={() => acknowledge(Array.from(selected))}
             disabled={saving}
-            className="flex cursor-pointer items-center gap-[6px] rounded-[8px] bg-gca-green px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+            className="flex cursor-pointer items-center gap-[6px] rounded-[8px] bg-gca-green px-[14px] py-[6px] text-[13px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
           >
             <span className="flex size-[13px] shrink-0 items-center justify-center">
               {saving && !savingFlagId && <LoaderCircle className="size-[13px] animate-spin" />}

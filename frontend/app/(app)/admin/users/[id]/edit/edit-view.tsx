@@ -28,13 +28,13 @@ export default function EditUserView({ userId }: { userId: string }) {
         <div className="flex gap-[8px]">
           <button
             onClick={() => setShowInvalidateModal(true)}
-            className="rounded-[8px] border border-gca-border bg-gca-surface px-[14px] py-[8px] text-[13px] font-medium text-gca-dark"
+            className="rounded-[8px] border border-gca-border bg-gca-surface px-[14px] py-[6px] text-[13px] font-medium text-gca-dark"
           >
             Sign out everywhere
           </button>
           <button
             onClick={() => setShowStatusModal(true)}
-            className={`rounded-[8px] px-[14px] py-[8px] text-[13px] font-medium ${
+            className={`rounded-[8px] px-[14px] py-[6px] text-[13px] font-medium ${
               user.status === "active"
                 ? "border border-gca-border bg-gca-surface text-error-text"
                 : "bg-gca-green text-gca-on-accent"

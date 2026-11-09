@@ -222,7 +222,7 @@ export function DprWizardForm({
           <button
             onClick={onPrimary}
             disabled={submitting}
-            className="shrink-0 cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+            className="shrink-0 cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
           >
             {isFinalAction && submitting ? (
               <LoaderCircle
@@ -257,7 +257,7 @@ export function DprWizardForm({
                 key={step.key}
                 type="button"
                 onClick={() => scrollToSection(step.key)}
-                className={`cursor-pointer rounded-[6px] px-[10px] py-[7px] text-left text-[13px] ${
+                className={`cursor-pointer rounded-[6px] px-[10px] py-[6px] text-left text-[13px] ${
                   activeSectionKey === step.key
                     ? "bg-gca-badge-bg font-semibold text-gca-green"
                     : "font-normal text-gca-show hover:bg-gca-page-bg"
@@ -299,7 +299,7 @@ export function DprWizardForm({
               <button
                 onClick={onSaveDraft}
                 disabled={saving}
-                className="flex flex-1 cursor-pointer items-center justify-center rounded-[8px] border border-gca-border bg-gca-surface py-[13px] text-[15px] font-semibold text-gca-dark disabled:opacity-60"
+                className="flex flex-1 cursor-pointer items-center justify-center rounded-[8px] border border-gca-border bg-gca-surface py-[6px] text-[15px] font-semibold text-gca-dark disabled:opacity-60"
               >
                 {saving ? (
                   <LoaderCircle className="size-[18px] animate-spin" aria-label="Saving draft" />
@@ -311,7 +311,7 @@ export function DprWizardForm({
             <button
               onClick={onPrimary}
               disabled={submitting}
-              className="flex flex-1 cursor-pointer items-center justify-center rounded-[8px] bg-gca-green py-[13px] text-[15px] font-semibold text-gca-on-accent disabled:opacity-60"
+              className="flex flex-1 cursor-pointer items-center justify-center rounded-[8px] bg-gca-green py-[6px] text-[15px] font-semibold text-gca-on-accent disabled:opacity-60"
             >
               {isFinalAction && submitting ? (
                 <LoaderCircle

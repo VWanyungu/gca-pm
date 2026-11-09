@@ -160,7 +160,7 @@ export function RisksTable({ projectId, team, canManage, onAddRisk, onOpenRisk }
         {canManage && (
           <button
             onClick={onAddRisk}
-            className="flex w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[12px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover sm:w-auto sm:py-[10px]"
+            className="flex w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover sm:w-auto sm:py-[6px]"
           >
             <Plus className="size-[14px]" />
             New risk
@@ -223,7 +223,7 @@ export function RisksTable({ projectId, team, canManage, onAddRisk, onOpenRisk }
               <button
                 key={row.id}
                 onClick={() => onOpenRisk(row.original.risk_id)}
-                className={`flex w-full cursor-pointer flex-col items-start gap-[4px] py-[14px] text-left md:flex-row md:items-center md:gap-[10px] md:py-[12px] ${
+                className={`flex w-full cursor-pointer flex-col items-start gap-[4px] py-[6px] text-left md:flex-row md:items-center md:gap-[10px] md:py-[6px] ${
                   i > 0 ? "border-t border-gca-border" : ""
                 }`}
               >

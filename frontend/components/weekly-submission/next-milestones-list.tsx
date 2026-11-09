@@ -16,7 +16,7 @@ export function NextMilestonesList({ milestones }: { milestones: Milestone[] }) 
     <div className="flex w-full flex-col gap-[16px]">
       <div>
         <h3 className="text-[16px] font-semibold text-gca-dark">Next milestones</h3>
-        <p className="mt-[2px] text-[13px] text-gca-show">Next 4 weeks, from schedule</p>
+        {/* <p className="mt-[2px] text-[13px] text-gca-show">Next 4 weeks, from schedule</p> */}
       </div>
 
       {upcoming.length === 0 ? (

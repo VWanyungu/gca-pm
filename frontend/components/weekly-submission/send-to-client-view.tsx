@@ -74,7 +74,7 @@ export function SendToClientView({
         </p>
         <button
           onClick={onBack}
-          className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent"
+          className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent"
         >
           Back to submission
         </button>
@@ -168,7 +168,7 @@ export function SendToClientView({
             <button
               onClick={() => setStep("review")}
               disabled={toEmails.length === 0}
-              className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent disabled:opacity-50"
+              className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent disabled:opacity-50"
             >
               Next: Review
             </button>
@@ -205,7 +205,7 @@ export function SendToClientView({
           <div className="flex justify-end">
             <button
               onClick={send}
-              className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent"
+              className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent"
             >
               Send to client
             </button>

@@ -232,7 +232,7 @@ export const DetailsStep = forwardRef<DetailsStepHandle, DetailsStepProps>(funct
                 type="button"
                 aria-pressed={selected}
                 onClick={() => setValue(field, !selected, { shouldDirty: true })}
-                className={`flex w-[180px] flex-1 cursor-pointer items-center gap-[12px] rounded-[8px] border px-[14px] py-[12px] ${
+                className={`flex w-[180px] flex-1 cursor-pointer items-center gap-[12px] rounded-[8px] border px-[14px] py-[6px] ${
                   selected ? "border-gca-green bg-gca-badge-bg" : "border-gca-border"
                 }`}
               >
@@ -261,7 +261,7 @@ export const DetailsStep = forwardRef<DetailsStepHandle, DetailsStepProps>(funct
         <button
           type="button"
           onClick={onCancel}
-          className={`cursor-pointer px-[4px] py-[11px] text-[14px] font-semibold text-gca-show hover:text-red-500 ${
+          className={`cursor-pointer px-[4px] py-[6px] text-[14px] font-semibold text-gca-show hover:text-red-500 ${
             singlePage ? "hidden xl:inline-flex" : ""
           }`}
         >
@@ -273,7 +273,7 @@ export const DetailsStep = forwardRef<DetailsStepHandle, DetailsStepProps>(funct
               type="button"
               disabled={saving}
               onClick={handleSubmit(onSave)}
-              className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-gca-border px-[18px] py-[11px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
+              className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-gca-border px-[18px] py-[6px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg disabled:opacity-50"
             >
               <span className={saving ? "invisible" : undefined}>Save changes</span>
               {saving && (
@@ -286,7 +286,7 @@ export const DetailsStep = forwardRef<DetailsStepHandle, DetailsStepProps>(funct
           )}
           <button
             type="submit"
-            className={`flex cursor-pointer items-center gap-[10px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover ${
+            className={`flex cursor-pointer items-center gap-[10px] rounded-[8px] bg-gca-green px-[18px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover ${
               singlePage ? "hidden xl:flex" : ""
             }`}
           >

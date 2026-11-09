@@ -146,7 +146,7 @@ export function StatusControl({
         <button
           type="button"
           onClick={() => setMenuOpen((o) => !o)}
-          className="w-full flex justify-between items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface py-[8px] pl-[12px] pr-[10px] shadow-[0px_1px_24px_0px_rgba(23,48,31,0.05)]"
+          className="w-full flex justify-between items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface py-[6px] pl-[12px] pr-[10px] shadow-[0px_1px_24px_0px_rgba(23,48,31,0.05)]"
         >
           <span className={`text-[14px] font-medium ${STATUS_COLOR[status]}`}>{LABELS[status]}</span>
           <ChevronDown className="size-[16px] text-gca-muted" />
@@ -217,7 +217,7 @@ export function StatusControl({
                   key={opt}
                   type="button"
                   onClick={() => setTarget(selected ? null : opt)}
-                  className={`flex w-full items-center gap-[10px] rounded-[8px] px-[12px] py-[9px] text-left transition-colors ${optionButtonClass}`}
+                  className={`flex w-full items-center gap-[10px] rounded-[8px] px-[12px] py-[6px] text-left transition-colors ${optionButtonClass}`}
                 >
                   <span className={`size-[18px] shrink-0 rounded-full border-2 ${dotClass}`} />
                   <span
@@ -281,7 +281,7 @@ export function StatusControl({
                 <button
                   type="button"
                   onClick={() => setTarget(null)}
-                  className={`rounded-[8px] border px-[12px] py-[7px] text-[13px] font-semibold transition-colors ${
+                  className={`rounded-[8px] border px-[12px] py-[6px] text-[13px] font-semibold transition-colors ${
                     isGlass
                       ? "border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-md"
                       : "border-gca-border text-gca-dark hover:bg-gca-page-bg"
@@ -293,7 +293,7 @@ export function StatusControl({
                   type="button"
                   onClick={confirmChange}
                   disabled={submitting}
-                  className={`relative flex items-center justify-center gap-[6px] rounded-[8px] px-[12px] py-[7px] text-[13px] font-semibold text-gca-on-accent transition-colors disabled:opacity-50 ${
+                  className={`relative flex items-center justify-center gap-[6px] rounded-[8px] px-[12px] py-[6px] text-[13px] font-semibold text-gca-on-accent transition-colors disabled:opacity-50 ${
                     target === "cancelled"
                       ? isGlass
                         ? "bg-rose-600 hover:bg-rose-700 text-white border border-rose-500/40"

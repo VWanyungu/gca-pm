@@ -112,7 +112,7 @@ export default function ProfilePage() {
         <div className="rounded-[12px] bg-gca-surface p-[12px]">
           {/* Banner */}
           <div className="relative h-[120px] w-full rounded-[8px] bg-gradient-to-r from-[#dcebdf] via-[#a9d1b3] via-55% to-[#e8f1ea] sm:h-[200px]">
-            <button className="absolute right-[12px] top-[72px] flex cursor-pointer items-center rounded-[8px] border-[1.5px] border-gca-surface bg-gca-surface/85 px-[14px] py-[8px] text-[13px] font-semibold text-gca-dark hover:bg-gca-surface sm:right-[24px] sm:top-[138px] sm:px-[18px] sm:py-[9px] sm:text-[14px]">
+            <button className="absolute right-[12px] top-[72px] flex cursor-pointer items-center rounded-[8px] border-[1.5px] border-gca-surface bg-gca-surface/85 px-[14px] py-[6px] text-[13px] font-semibold text-gca-dark hover:bg-gca-surface sm:right-[24px] sm:top-[138px] sm:px-[18px] sm:py-[6px] sm:text-[14px]">
               Edit profile
             </button>
           </div>

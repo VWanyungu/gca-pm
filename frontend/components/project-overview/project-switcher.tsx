@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, ChevronUp, FolderKanban, Search } from "lucide-react";
+import { ChevronDown, ChevronsUpDown, ChevronUp, FolderKanban, Search } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 
@@ -101,7 +101,9 @@ export function ProjectSwitcher({
     }
     if (event.key === "ArrowUp") {
       event.preventDefault();
-      setActiveIndex((i) => (projects.length === 0 ? 0 : (i - 1 + projects.length) % projects.length));
+      setActiveIndex((i) =>
+        projects.length === 0 ? 0 : (i - 1 + projects.length) % projects.length,
+      );
     }
     if (event.key === "Enter" && projects[activeIndex]) {
       event.preventDefault();
@@ -122,14 +124,15 @@ export function ProjectSwitcher({
         onClick={() => (isOpen ? setIsOpen(false) : open())}
         aria-expanded={isOpen}
         aria-label="Switch project"
-        className="flex w-full items-center justify-between rounded-[10px] px-[12px] py-[8px] hover:bg-gca-page-bg"
+        className="flex w-full items-center justify-between rounded-[10px] px-[12px] py-[6px] hover:bg-gca-page-bg"
       >
         <span className="truncate text-[14px] font-semibold text-gca-dark">{projectName}</span>
-        {isOpen ? (
+        <ChevronsUpDown className="size-[13px] text-gca-muted" />
+        {/* {isOpen ? (
           <ChevronUp className="size-[14px] shrink-0 text-gca-muted" />
         ) : (
           <ChevronDown className="size-[14px] shrink-0 text-gca-muted" />
-        )}
+        )} */}
       </button>
 
       {isOpen &&
@@ -176,7 +179,7 @@ export function ProjectSwitcher({
                     type="button"
                     onMouseEnter={() => setActiveIndex(index)}
                     onClick={() => go(project.project_id)}
-                    className={`flex w-full items-center gap-[10px] px-[16px] py-[10px] text-left ${
+                    className={`flex w-full items-center gap-[10px] px-[16px] py-[6px] text-left ${
                       index === activeIndex ? "bg-gca-badge-bg" : "hover:bg-gca-page-bg"
                     }`}
                   >

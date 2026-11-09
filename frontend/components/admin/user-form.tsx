@@ -203,14 +203,14 @@ export function UserForm({ editing }: UserFormProps) {
                 router.push("/admin/users");
                 setCreatedUser(undefined);
               }}
-              className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
+              className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[14px] font-medium text-gca-dark"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="relative flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-60"
+              className="relative flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-medium text-gca-on-accent disabled:opacity-60"
             >
               <span className={saving ? "invisible" : undefined}>
                 {currentUser ? "Save" : "Create user"}
@@ -243,7 +243,7 @@ export function UserForm({ editing }: UserFormProps) {
                 disabled
                 // shortcut: project access can only be granted once the user has an id, so the
                 // affordance stays disabled on the create route per the Figma spec.
-                className="mt-[16px] w-full rounded-[8px] border border-gca-border bg-gca-surface px-[14px] py-[10px] text-[14px] font-medium text-gca-dark disabled:opacity-60"
+                className="mt-[16px] w-full rounded-[8px] border border-gca-border bg-gca-surface px-[14px] py-[6px] text-[14px] font-medium text-gca-dark disabled:opacity-60"
               >
                 Add project access
               </button>

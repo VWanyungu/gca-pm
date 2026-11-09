@@ -291,7 +291,7 @@ export function ProjectCard({
                   <button
                     type="button"
                     onClick={copyProjectLink}
-                    className="flex w-full items-center gap-[8px] rounded-[6px] px-[10px] py-[7px] text-[12.5px] text-gca-dark transition-colors hover:bg-gca-page-bg"
+                    className="flex w-full items-center gap-[8px] rounded-[6px] px-[10px] py-[6px] text-[12.5px] text-gca-dark transition-colors hover:bg-gca-page-bg"
                   >
                     {copied ? (
                       <>

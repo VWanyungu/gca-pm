@@ -169,7 +169,7 @@ export function OverdueTasksView({
                   )}
                   <button
                     onClick={() => onAddAsRisk(t)}
-                    className="cursor-pointer flex shrink-0 items-center gap-[6px] rounded-[8px] border border-gca-border px-[14px] py-[8px] text-[13px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+                    className="cursor-pointer flex shrink-0 items-center gap-[6px] rounded-[8px] border border-gca-border px-[14px] py-[6px] text-[13px] font-semibold text-gca-dark hover:bg-gca-page-bg"
                   >
                     Add as risk
                   </button>

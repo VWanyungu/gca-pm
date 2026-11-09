@@ -76,7 +76,7 @@ function DprDeleteModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
+            className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[14px] font-medium text-gca-dark"
           >
             Cancel
           </button>
@@ -84,7 +84,7 @@ function DprDeleteModal({
             type="button"
             onClick={() => void handleConfirm()}
             disabled={deleteDpr.isPending}
-            className="relative flex items-center justify-center gap-[8px] rounded-[8px] bg-error-border px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40"
+            className="relative flex items-center justify-center gap-[8px] rounded-[8px] bg-error-border px-[16px] py-[6px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40"
           >
             <span className={deleteDpr.isPending ? "invisible" : undefined}>Delete draft</span>
             {deleteDpr.isPending && (
@@ -251,7 +251,7 @@ export function DprListView({ projectId }: { projectId: string }) {
                     reportDate: todayInTimezone(project.project.timezone),
                   })
                 }
-                className="flex w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[12px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover sm:w-auto sm:py-[10px]"
+                className="flex w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover sm:w-auto sm:py-[6px]"
               >
                 <Plus className="size-[14px]" />
                 New DPR
@@ -341,7 +341,7 @@ export function DprListView({ projectId }: { projectId: string }) {
                               : amendment.amendment_id,
                           )
                         }
-                        className="flex cursor-pointer items-center gap-[6px] rounded-[8px] border border-gca-border px-[12px] py-[8px] text-[13px] font-semibold text-gca-dark"
+                        className="flex cursor-pointer items-center gap-[6px] rounded-[8px] border border-gca-border px-[12px] py-[6px] text-[13px] font-semibold text-gca-dark"
                       >
                         <X className="size-[14px]" />
                         Reject
@@ -350,7 +350,7 @@ export function DprListView({ projectId }: { projectId: string }) {
                         type="button"
                         onClick={() => void decide(amendment, "approve")}
                         disabled={decideAmendment.isPending}
-                        className="flex cursor-pointer items-center gap-[6px] rounded-[8px] bg-gca-green px-[12px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
+                        className="flex cursor-pointer items-center gap-[6px] rounded-[8px] bg-gca-green px-[12px] py-[6px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
                       >
                         {decideAmendment.isPending &&
                         decideAmendment.variables?.amendmentId === amendment.amendment_id ? (
@@ -402,7 +402,7 @@ export function DprListView({ projectId }: { projectId: string }) {
                           type="button"
                           onClick={() => void decide(amendment, "reject")}
                           disabled={!decisionNote.trim() || decideAmendment.isPending}
-                          className="flex cursor-pointer items-center gap-[6px] rounded-[6px] bg-error-text px-[12px] py-[7px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
+                          className="flex cursor-pointer items-center gap-[6px] rounded-[6px] bg-error-text px-[12px] py-[6px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
                         >
                           <span className="flex size-[13px] shrink-0 items-center justify-center">
                             {decideAmendment.isPending &&
@@ -461,7 +461,7 @@ export function DprListView({ projectId }: { projectId: string }) {
                           type="button"
                           aria-label={`Submit DPR for ${formatDate(row.date)}`}
                           onClick={() => setSubView({ mode: "new", reportDate: row.date })}
-                          className="flex shrink-0 cursor-pointer items-center gap-[6px] rounded-[8px] border border-gca-border px-[12px] py-[8px] text-[13px] font-semibold text-gca-dark"
+                          className="flex shrink-0 cursor-pointer items-center gap-[6px] rounded-[8px] border border-gca-border px-[12px] py-[6px] text-[13px] font-semibold text-gca-dark"
                         >
                           <FilePlus2 className="size-[14px]" />
                           Submit

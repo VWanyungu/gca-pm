@@ -55,7 +55,7 @@ export default function AdminUsersPage() {
         </div>
         <button
           onClick={() => router.push(`/admin/users/new?fresh=${Date.now()}`)}
-          className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent"
+          className="rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-medium text-gca-on-accent"
         >
           Add user
         </button>

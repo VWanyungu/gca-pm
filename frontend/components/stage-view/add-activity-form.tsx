@@ -236,7 +236,7 @@ export function AddActivityForm({
         <button
           onClick={submit}
           disabled={saving}
-          className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+          className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
         >
           <span className={saving ? "invisible" : undefined}>
             {editing ? "Save changes" : "Add activity"}

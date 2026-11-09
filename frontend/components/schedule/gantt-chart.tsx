@@ -303,7 +303,7 @@ export function GanttChart({ tasks, window }: GanttChartProps) {
           <button
             type="button"
             onClick={scrollToToday}
-            className="flex cursor-pointer items-center gap-[6px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[7px] text-[13px] font-medium text-gca-dark hover:bg-gca-page-bg"
+            className="flex cursor-pointer items-center gap-[6px] rounded-[8px] border border-gca-border bg-gca-surface px-[12px] py-[6px] text-[13px] font-medium text-gca-dark hover:bg-gca-page-bg"
           >
             <CalendarDays className="size-[14px] text-gca-green" />
             Today

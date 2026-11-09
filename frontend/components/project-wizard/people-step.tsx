@@ -193,7 +193,7 @@ export function PeopleStep({
         <button
           type="button"
           onClick={addContact}
-          className="flex w-full items-center justify-center gap-[8px] rounded-[8px] border border-gca-border px-[18px] py-[11px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg md:w-[88px]"
+          className="flex w-full items-center justify-center gap-[8px] rounded-[8px] border border-gca-border px-[18px] py-[6px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg md:w-[88px]"
         >
           <Plus className="size-[10px]" />
           Add
@@ -223,8 +223,13 @@ export function PeopleStep({
                   </p>
                 </div>
               </div>
-              <button type="button" onClick={() => removeContact(i)}>
-                <X className="size-[8px] text-gca-muted" />
+              <button
+                type="button"
+                onClick={() => removeContact(i)}
+                aria-label={`Remove ${c.name}`}
+                className="flex size-[28px] shrink-0 items-center justify-center rounded-full text-gca-muted transition-colors hover:bg-gca-page-bg hover:text-error-text"
+              >
+                <X className="size-[14px]" />
               </button>
             </div>
           ))}
@@ -235,7 +240,7 @@ export function PeopleStep({
         <button
           type="button"
           onClick={onBack}
-          className={`cursor-pointer flex items-center gap-[8px] px-[4px] py-[11px] text-[14px] font-semibold text-gca-dark ${
+          className={`cursor-pointer flex items-center gap-[8px] px-[4px] py-[6px] text-[14px] font-semibold text-gca-dark ${
             singlePage ? "hidden xl:flex" : ""
           }`}
         >
@@ -247,7 +252,7 @@ export function PeopleStep({
           disabled={!value.pmUserId || !value.plannerUserId || submitting}
           onClick={onSubmit}
           aria-label={submitting ? "Saving" : undefined}
-          className="cursor-pointer w-full md:w-auto flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[18px] py-[11px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+          className="cursor-pointer w-full md:w-auto flex items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[18px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
         >
           {submitting ? (
             <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />
@@ -295,8 +300,13 @@ function SiteEngineersField({ options, selectedIds, onToggle }: SiteEngineersFie
               className="flex items-center gap-[8px] rounded-[6px] border border-gca-border bg-gca-page-bg px-[10px] py-[5px] text-[13px] font-medium text-gca-dark"
             >
               {u.name}
-              <button type="button" onClick={() => onToggle(u.id)} aria-label={`Remove ${u.name}`}>
-                <X className="size-[8px]" />
+              <button
+                type="button"
+                onClick={() => onToggle(u.id)}
+                aria-label={`Remove ${u.name}`}
+                className="flex size-[24px] shrink-0 items-center justify-center rounded-full text-gca-muted transition-colors hover:bg-gca-page-bg hover:text-error-text"
+              >
+                <X className="size-[14px]" />
               </button>
             </span>
           ))}

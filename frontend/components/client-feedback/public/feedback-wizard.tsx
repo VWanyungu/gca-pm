@@ -310,7 +310,7 @@ export function FeedbackWizard({ token }: { token: string }) {
         </div>
         <button
           onClick={() => setStep(1)}
-          className="cursor-pointer rounded-[10px] bg-gca-green py-[13px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
+          className="cursor-pointer rounded-[10px] bg-gca-green py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
         >
           Start
         </button>
@@ -361,7 +361,7 @@ export function FeedbackWizard({ token }: { token: string }) {
                 <button
                   key={n}
                   onClick={() => answerAndAdvance(question.field, n, NEXT_STEP[question.step])}
-                  className={`flex-1 cursor-pointer rounded-full border p-[14px] text-[15px] ${
+                  className={`flex-1 cursor-pointer rounded-full border px-[14px] py-[6px] text-[15px] ${
                     value === n
                       ? "border-gca-green bg-gca-green text-gca-on-accent"
                       : "border-gca-border text-gca-dark hover:border-gca-green"
@@ -406,7 +406,7 @@ export function FeedbackWizard({ token }: { token: string }) {
         <button
           onClick={submit}
           disabled={submitting}
-          className="cursor-pointer rounded-[10px] bg-gca-green py-[13px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+          className="cursor-pointer rounded-[10px] bg-gca-green py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
         >
           {submitting ? "Sending…" : "Send feedback"}
         </button>

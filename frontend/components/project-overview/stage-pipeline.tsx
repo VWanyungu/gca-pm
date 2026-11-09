@@ -122,7 +122,7 @@ export function StagePipeline({
                         <button
                           key={s.stage_no}
                           onClick={() => setCurrentStage(s.stage_no)}
-                          className={`flex w-full items-center justify-between gap-[10px] rounded-[6px] px-[10px] py-[8px] text-left ${
+                          className={`flex w-full items-center justify-between gap-[10px] rounded-[6px] px-[10px] py-[6px] text-left ${
                             selected ? "bg-gca-badge-bg" : "hover:bg-gca-page-bg"
                           }`}
                         >
@@ -177,7 +177,7 @@ export function StagePipeline({
               <button
                 onClick={saveScope}
                 disabled={saving}
-                className="relative flex items-center justify-center gap-[6px] rounded-[8px] bg-gca-green px-[14px] py-[7px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
+                className="relative flex items-center justify-center gap-[6px] rounded-[8px] bg-gca-green px-[14px] py-[6px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
               >
                 <span className={saving ? "invisible" : undefined}>Save</span>
                 {saving && (

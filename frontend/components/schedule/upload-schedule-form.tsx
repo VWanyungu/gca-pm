@@ -128,7 +128,7 @@ export function UploadScheduleForm({
           ) : (
             <button
               onClick={() => inputRef.current?.click()}
-              className="flex w-full cursor-pointer flex-col items-center justify-center gap-[8px] rounded-[8px] border border-dashed border-gca-border bg-gca-page-bg py-[32px] text-[14px] text-gca-show hover:border-gca-green"
+              className="flex w-full cursor-pointer flex-col items-center justify-center gap-[8px] rounded-[8px] border border-dashed border-gca-border bg-gca-page-bg py-[16px] text-[14px] text-gca-show hover:border-gca-green"
             >
               <Upload className="size-[18px]" />
               Click to choose a file
@@ -147,7 +147,7 @@ export function UploadScheduleForm({
             <button
               key={option.value}
               onClick={() => setScopeMode(option.value)}
-              className={`flex-1 cursor-pointer rounded-[8px] border px-[16px] py-[14px] text-left ${
+              className={`flex-1 cursor-pointer rounded-[8px] border px-[16px] py-[6px] text-left ${
                 scopeMode === option.value
                   ? "border-gca-green bg-gca-badge-bg"
                   : "border-gca-border"
@@ -182,7 +182,7 @@ export function UploadScheduleForm({
         </label> */}
         <button
           onClick={() => setRebaseline(!rebaseline)}
-          className="flex gap-[10px] text-left disabled:cursor-default w-full max-w-[792px] cursor-pointer items-start gap-[10px] rounded-[8px] bg-gca-page-bg px-[16px] py-[14px]"
+          className="flex gap-[10px] text-left disabled:cursor-default w-full max-w-[792px] cursor-pointer items-start gap-[10px] rounded-[8px] bg-gca-page-bg px-[16px] py-[6px]"
         >
           <span
             className={`flex size-[18px] shrink-0 items-center justify-center rounded-[4px] border-[1.5px] ${
@@ -234,7 +234,7 @@ export function UploadScheduleForm({
           onClick={handleUploadClick}
           disabled={!file || submitting}
           aria-label={submitting ? "Uploading" : undefined}
-          className="cursor-pointer flex min-w-[80px] items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:cursor-not-allowed disabled:opacity-50"
+          className="cursor-pointer flex min-w-[80px] items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           {submitting ? (
             <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />
@@ -264,7 +264,7 @@ export function UploadScheduleForm({
             <div className="mt-[24px] flex justify-end gap-[12px]">
               <button
                 onClick={() => setConfirmingRebaseline(false)}
-                className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
+                className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[14px] font-medium text-gca-dark"
               >
                 Cancel
               </button>
@@ -273,7 +273,7 @@ export function UploadScheduleForm({
                   setConfirmingRebaseline(false);
                   onSubmit({ file, scopeMode, rebaseline, notes: notes.trim() });
                 }}
-                className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent"
+                className="rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-medium text-gca-on-accent"
               >
                 Rebaseline
               </button>

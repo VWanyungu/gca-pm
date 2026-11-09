@@ -65,7 +65,7 @@ export function MilestonesView({ projectId }: { projectId: string }) {
             {canManage && (
               <button
                 onClick={() => setSubView({ mode: "add" })}
-                className="flex w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[12px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover sm:w-auto sm:py-[10px]"
+                className="flex w-full shrink-0 cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover sm:w-auto sm:py-[6px]"
               >
                 <Plus className="size-[14px]" />
                 Add milestone

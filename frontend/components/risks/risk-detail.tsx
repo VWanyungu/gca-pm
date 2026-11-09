@@ -70,7 +70,7 @@ export function RiskDetail({
           {canManage && (
             <button
               onClick={onEdit}
-              className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+              className="cursor-pointer flex items-center gap-[8px] rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
             >
               <Pencil className="size-[14px]" />
               Edit
@@ -115,7 +115,7 @@ export function RiskDetail({
               <button
                 onClick={saveMitigation}
                 disabled={saving}
-                className="relative flex cursor-pointer items-center justify-center gap-[6px] rounded-[8px] bg-gca-green px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+                className="relative flex cursor-pointer items-center justify-center gap-[6px] rounded-[8px] bg-gca-green px-[14px] py-[6px] text-[13px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
               >
                 <span className={saving ? "invisible" : undefined}>Save</span>
                 {saving && (

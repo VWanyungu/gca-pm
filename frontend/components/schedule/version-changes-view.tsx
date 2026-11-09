@@ -70,7 +70,7 @@ export function VersionChangesView({ projectId, version, team, onBack }: Version
         </div>
         <button
           onClick={() => downloadScheduleVersionFile(projectId, version)}
-          className="cursor-pointer rounded-[8px] border border-gca-border px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+          className="cursor-pointer rounded-[8px] border border-gca-border px-[16px] py-[6px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
         >
           Download v{version.version_no} .mpp
         </button>
@@ -89,7 +89,7 @@ export function VersionChangesView({ projectId, version, team, onBack }: Version
               setFilter(opt.id);
               setPage(1);
             }}
-            className={`cursor-pointer rounded-[6px] px-[14px] py-[7px] text-[13px] ${
+            className={`cursor-pointer rounded-[6px] px-[14px] py-[6px] text-[13px] ${
               filter === opt.id
                 ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                 : "font-normal text-gca-show"

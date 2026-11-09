@@ -59,13 +59,13 @@ export function UploadResultView({
         <div className="flex shrink-0 items-center gap-[12px]">
           <button
             onClick={onViewChanges}
-            className="cursor-pointer rounded-[8px] border border-gca-border px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+            className="cursor-pointer rounded-[8px] border border-gca-border px-[16px] py-[6px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
           >
             View changes
           </button>
           <button
             onClick={onViewSchedule}
-            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
+            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
           >
             View schedule
           </button>
@@ -126,13 +126,13 @@ export function UploadFailedView({
         <div className="flex shrink-0 items-center gap-[12px]">
           <button
             onClick={onDownloadReport}
-            className="cursor-pointer rounded-[8px] border border-gca-border px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+            className="cursor-pointer rounded-[8px] border border-gca-border px-[16px] py-[6px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
           >
             Download report
           </button>
           <button
             onClick={onUploadAgain}
-            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
+            className="cursor-pointer rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
           >
             Upload again
           </button>

@@ -194,7 +194,7 @@ export default function TeamView({ projectId }: { projectId: string }) {
               </button>
               <button
                 onClick={() => setEditMode(false)}
-                className="rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
+                className="rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
               >
                 Save changes
               </button>
@@ -202,7 +202,7 @@ export default function TeamView({ projectId }: { projectId: string }) {
           ) : (
             <button
               onClick={() => setEditMode(true)}
-              className="rounded-[8px] border border-gca-border px-[16px] py-[10px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
+              className="rounded-[8px] border border-gca-border px-[16px] py-[6px] text-[14px] font-semibold text-gca-dark hover:bg-gca-page-bg"
             >
               Edit team
             </button>
@@ -373,7 +373,7 @@ export default function TeamView({ projectId }: { projectId: string }) {
                 <button
                   onClick={addContact}
                   disabled={addingContactPending}
-                  className="flex items-center justify-center gap-[6px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-60"
+                  className="flex items-center justify-center gap-[6px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-60"
                 >
                   <span className="flex size-[14px] shrink-0 items-center justify-center">
                     {addingContactPending && <LoaderCircle className="size-[14px] animate-spin" />}
@@ -393,11 +393,11 @@ export default function TeamView({ projectId }: { projectId: string }) {
         </TeamGroup>
       </div>
 
-      {editMode && (
+      {/* {editMode && (
         <p className="text-[12px] text-gca-show">
           Changing the main PM or main Planner moves their access. The change is logged.
         </p>
-      )}
+      )} */}
     </main>
   );
 }
@@ -511,7 +511,7 @@ function AddLink({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-[8px] pt-[12px] text-[13px] font-medium text-gca-green"
+      className="flex items-center gap-[8px] pt-[6px] text-[13px] font-medium text-gca-green"
     >
       <Plus className="size-[10px]" />
       {label}
@@ -547,7 +547,7 @@ function AddRow({
       <button
         onClick={onAdd}
         disabled={adding}
-        className="flex items-center justify-center gap-[6px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-60"
+        className="flex items-center justify-center gap-[6px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-60"
       >
         <span className="flex size-[14px] shrink-0 items-center justify-center">
           {adding && <LoaderCircle className="size-[14px] animate-spin" />}

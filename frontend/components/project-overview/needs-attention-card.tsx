@@ -68,7 +68,7 @@ export function NeedsAttentionCard({
           icon={CheckCircle2}
           title="Nothing needs attention"
           description="Overdue tasks and draft submissions will show up here."
-          className="py-[24px]"
+          className="py-[72px]"
         />
       ) : (
         <div className="flex flex-col">

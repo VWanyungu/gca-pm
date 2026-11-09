@@ -80,14 +80,14 @@ export function DeactivateUserModal({
         <div className="mt-[24px] flex justify-end gap-[12px]">
           <button
             onClick={onClose}
-            className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[10px] text-[14px] font-medium text-gca-dark"
+            className="rounded-[8px] border border-gca-border bg-gca-surface px-[16px] py-[6px] text-[14px] font-medium text-gca-dark"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
             disabled={setStatus.isPending || blocked}
-            className={`relative flex items-center justify-center gap-[8px] rounded-[8px] px-[16px] py-[10px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40 ${
+            className={`relative flex items-center justify-center gap-[8px] rounded-[8px] px-[16px] py-[6px] text-[14px] font-medium text-gca-on-accent disabled:opacity-40 ${
               deactivating ? "bg-error-border" : "bg-gca-green"
             }`}
           >

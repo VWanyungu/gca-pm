@@ -184,7 +184,7 @@ export function ChangeRequestForm({
                 <button
                   key={tab.id}
                   onClick={() => setType(tab.id)}
-                  className={`flex-1 cursor-pointer rounded-[6px] py-[7px] text-[13px] ${
+                  className={`flex-1 cursor-pointer rounded-[6px] py-[6px] text-[13px] ${
                     type === tab.id
                       ? "bg-gca-surface font-medium text-gca-dark shadow-[0px_1px_24px_0px_rgba(23,48,31,0.08)]"
                       : "font-normal text-gca-show"
@@ -342,7 +342,7 @@ export function ChangeRequestForm({
           <button
             onClick={submit}
             disabled={saving}
-            className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+            className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
           >
             <span className={saving ? "invisible" : undefined}>Save</span>
             {saving && (

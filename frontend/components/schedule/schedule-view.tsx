@@ -141,7 +141,7 @@ function ExportDropdown({
                 setExporting(false);
               }
             }}
-            className="flex w-full cursor-pointer items-center px-[14px] py-[8px] text-left text-[13px] text-gca-dark hover:bg-gca-badge-bg"
+            className="flex w-full cursor-pointer items-center px-[14px] py-[6px] text-left text-[13px] text-gca-dark hover:bg-gca-badge-bg"
           >
             XML (MS Project)
           </button>
@@ -341,7 +341,7 @@ export function ScheduleView({ projectId }: { projectId: string }) {
           {canUpload && (
             <button
               onClick={() => setSubView({ mode: "upload-form" })}
-              className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
+              className="cursor-pointer flex items-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover"
             >
               <Upload className="size-[14px]" />
               Upload schedule
@@ -399,7 +399,7 @@ export function ScheduleView({ projectId }: { projectId: string }) {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`cursor-pointer flex items-start gap-[6px] border-b-2 px-[4px] pb-[10px] text-[14px] h-full ${
+              className={`cursor-pointer flex items-start gap-[6px] border-b-2 px-[4px] pb-[6px] text-[14px] h-full ${
                 tab === t.id
                   ? "border-gca-green font-semibold text-gca-dark"
                   : "border-transparent font-medium text-gca-show"

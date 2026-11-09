@@ -234,7 +234,7 @@ export function MilestoneForm({
             <button
               onClick={deleteMilestone}
               disabled={saving}
-              className="relative flex cursor-pointer items-center justify-center gap-[6px] rounded-[8px] bg-error-text px-[14px] py-[8px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
+              className="relative flex cursor-pointer items-center justify-center gap-[6px] rounded-[8px] bg-error-text px-[14px] py-[6px] text-[13px] font-semibold text-gca-on-accent disabled:opacity-50"
             >
               <span className={pendingAction === "delete" ? "invisible" : undefined}>
                 Confirm delete
@@ -271,7 +271,7 @@ export function MilestoneForm({
           <button
             onClick={submit}
             disabled={saving}
-            className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[10px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
+            className="relative flex cursor-pointer items-center justify-center gap-[8px] rounded-[8px] bg-gca-green px-[16px] py-[6px] text-[14px] font-semibold text-gca-on-accent hover:bg-gca-green-hover disabled:opacity-50"
           >
             <span className={pendingAction === "save" ? "invisible" : undefined}>
               {editing ? "Save changes" : "Add milestone"}
